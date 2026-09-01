@@ -100,10 +100,40 @@ The execution container cannot resolve external GitHub/package hosts, so native 
 
 Status: RECORDED PROCESS RULING
 
-Superpowers subagent-driven-development requires a real subagent dispatch interface. This chat runtime does not expose one, so M01 uses the Superpowers executing-plans workflow inline. This does not waive TDD, review, verification, documentation, or branch-isolation requirements.
+Superpowers subagent-driven-development requires a real subagent dispatch interface. This chat runtime does not expose one, so milestone execution uses the Superpowers executing-plans workflow inline. This does not waive TDD, review, verification, documentation, or branch-isolation requirements.
 
 ## ADR-018 — GitHub Actions is the authoritative dependency-backed runner in this chat runtime
 
 Status: RECORDED PROCESS RULING
 
-The container has PHP 8.4 and Node 22 but no Composer and cannot resolve Packagist/npm registry hosts. To preserve genuine RED→GREEN evidence, M01 may introduce test/CI configuration before production implementation and use feature-branch GitHub Actions runs as the authoritative dependency-backed test environment. Test-only commits must be observed failing for the expected missing behavior before corresponding production code is committed. This is an execution-environment adaptation, not a product architecture change.
+The container has PHP 8.4 and Node 22 but no Composer and cannot resolve Packagist/npm registry hosts. To preserve genuine RED→GREEN evidence, feature branches may introduce test/CI configuration before corresponding production behavior and use GitHub Actions as the authoritative dependency-backed test environment. Test-only commits must be observed failing for the expected missing behavior before corresponding production code is committed. This is an execution-environment adaptation, not a product architecture change.
+
+## ADR-019 — Integer schema version option
+
+Status: APPROVED IMPLEMENTATION RULING
+
+`wp_rag_ai_db_version` stores the last successfully applied integer schema version. M02 targets version 2. A migration advances the version only after that migration completes successfully.
+
+## ADR-020 — Incremental M02 source/document migrations
+
+Status: APPROVED IMPLEMENTATION RULING
+
+V001 creates the per-site knowledge sources table and V002 creates the per-site documents table. M02 intentionally does not pre-create chunks, vectors, jobs, conversations, analytics, or other later-milestone tables.
+
+## ADR-021 — Portable per-site database schema
+
+Status: APPROVED IMPLEMENTATION RULING
+
+M02 tables use `$wpdb->prefix`, JSON-encoded `longtext`, application-managed relationships without foreign keys, and UTC timestamps. Network-wide multisite activation fan-out is deferred to the compatibility audit rather than forcing network-global tables.
+
+## ADR-022 — Named migration advisory lock
+
+Status: APPROVED IMPLEMENTATION RULING
+
+Migration concurrency uses a deterministic MySQL/MariaDB `GET_LOCK`/`RELEASE_LOCK` identity derived from database name plus site prefix. Lock contention returns a non-error `LOCKED` outcome; migration failures remain errors and never advance the failed schema version.
+
+## ADR-023 — Retain-by-default uninstall
+
+Status: APPROVED IMPLEMENTATION RULING
+
+Uninstall preserves plugin data unless `wp_rag_ai_delete_data_on_uninstall` is exactly boolean `true`. Destructive cleanup is confined to the guarded WordPress uninstall path.
