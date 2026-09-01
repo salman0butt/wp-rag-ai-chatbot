@@ -21,12 +21,12 @@ interface Connection {
 	/**
 	 * Get the current database name.
 	 */
-	public function databaseName(): string;
+	public function database_name(): string;
 
 	/**
 	 * Get the WordPress charset/collation DDL fragment.
 	 */
-	public function charsetCollate(): string;
+	public function charset_collate(): string;
 
 	/**
 	 * Prepare a SQL statement.
@@ -48,7 +48,7 @@ interface Connection {
 	 *
 	 * @param string $query SQL statement.
 	 */
-	public function getVar( string $query ): string|int|float|null;
+	public function get_var( string $query ): string|int|float|null;
 
 	/**
 	 * Fetch one associative row.
@@ -56,7 +56,7 @@ interface Connection {
 	 * @param string $query SQL statement.
 	 * @return array<string, mixed>|null
 	 */
-	public function getRow( string $query ): ?array;
+	public function get_row( string $query ): ?array;
 
 	/**
 	 * Fetch associative rows.
@@ -64,7 +64,7 @@ interface Connection {
 	 * @param string $query SQL statement.
 	 * @return array<int, array<string, mixed>>
 	 */
-	public function getResults( string $query ): array;
+	public function get_results( string $query ): array;
 
 	/**
 	 * Insert one row.
@@ -98,7 +98,7 @@ interface Connection {
 	/**
 	 * Return the last auto-increment identifier.
 	 */
-	public function insertId(): int;
+	public function insert_id(): int;
 
 	/**
 	 * Apply a WordPress dbDelta DDL statement.
@@ -106,12 +106,12 @@ interface Connection {
 	 * @param string $sql DDL statement.
 	 * @return array<int|string, mixed>
 	 */
-	public function dbDelta( string $sql ): array;
+	public function db_delta( string $sql ): array;
 
 	/**
 	 * Determine whether a table exists exactly.
 	 *
 	 * @param string $table Table name.
 	 */
-	public function tableExists( string $table ): bool;
+	public function table_exists( string $table ): bool;
 }

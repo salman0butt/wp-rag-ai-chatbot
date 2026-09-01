@@ -14,6 +14,8 @@ namespace WpRagAiChatbot\Database;
  */
 final class TableNames {
 	/**
+	 * Create the table-name resolver.
+	 *
 	 * @param string $prefix Current WordPress site prefix.
 	 */
 	public function __construct( private readonly string $prefix ) {

@@ -13,8 +13,8 @@ namespace WpRagAiChatbot\Database;
  * Defines the current plugin database schema identity.
  */
 final class DatabaseSchema {
-	public const VERSION = 2;
-	public const VERSION_OPTION = 'wp_rag_ai_db_version';
+	public const VERSION            = 2;
+	public const VERSION_OPTION     = 'wp_rag_ai_db_version';
 	public const DELETE_DATA_OPTION = 'wp_rag_ai_delete_data_on_uninstall';
 
 	/**

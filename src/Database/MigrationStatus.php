@@ -14,6 +14,6 @@ namespace WpRagAiChatbot\Database;
  */
 enum MigrationStatus: string {
 	case UP_TO_DATE = 'up_to_date';
-	case MIGRATED = 'migrated';
-	case LOCKED = 'locked';
+	case MIGRATED   = 'migrated';
+	case LOCKED     = 'locked';
 }
