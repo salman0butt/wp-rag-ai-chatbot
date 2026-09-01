@@ -1,0 +1,46 @@
+# Release Checklist
+
+All items must be verified in M24 before the product is called DONE.
+
+- [ ] Approved requirements mapped to implementation.
+- [ ] M00-M24 milestone files COMPLETE with evidence.
+- [ ] No unresolved Critical review/security issues.
+- [ ] No unresolved Important review issues without explicit accepted exception.
+- [ ] PHP automated tests pass.
+- [ ] WordPress integration tests pass.
+- [ ] Static analysis passes.
+- [ ] PHPCS/WPCS passes at selected standard.
+- [ ] JS/TS tests pass.
+- [ ] ESLint/typecheck pass.
+- [ ] Production frontend builds pass.
+- [ ] Playwright/E2E passes for required browsers/viewports.
+- [ ] Accessibility verification passes.
+- [ ] Plugin installs/activates/deactivates cleanly.
+- [ ] Fresh migrations pass.
+- [ ] Upgrade migrations pass from supported prior versions.
+- [ ] Uninstall behavior matches documented retention policy.
+- [ ] Admin critical workflows work.
+- [ ] Widget floating/embed/mobile workflows work.
+- [ ] OpenAI path verified.
+- [ ] OpenRouter path verified.
+- [ ] WP AI Client compatibility verified where supported.
+- [ ] Embeddings/index compatibility rules verified.
+- [ ] Local vector retrieval works within documented limits.
+- [ ] External vector adapter contracts pass.
+- [ ] Hybrid retrieval and filters verified.
+- [ ] RAG citations validated.
+- [ ] Strict no-answer verified.
+- [ ] Conversation memory bounded.
+- [ ] WooCommerce integration verified where enabled.
+- [ ] Permission/ownership boundaries verified.
+- [ ] Action risk/authorization boundaries verified.
+- [ ] Rate limiting/denial-of-wallet controls verified.
+- [ ] Secrets absent from frontend/public APIs/logs/package.
+- [ ] Privacy exporter/eraser/retention verified.
+- [ ] Security audit passes.
+- [ ] Performance/large-data checks meet documented boundaries.
+- [ ] Compatibility matrix is current.
+- [ ] Release ZIP contains only required production assets/files.
+- [ ] Clean WordPress install can install ZIP.
+- [ ] Documentation matches actual behavior.
+- [ ] Final broad independent code review completed and findings resolved.
