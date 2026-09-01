@@ -29,6 +29,13 @@ final class BootstrapTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_lifecycle_callback_class_exists(): void
+    {
+        self::assertTrue(class_exists(Lifecycle::class), 'Lifecycle callback class must exist before WordPress registers it.');
+        self::assertTrue(is_callable([Lifecycle::class, 'activate']));
+        self::assertTrue(is_callable([Lifecycle::class, 'deactivate']));
+    }
+
     public function test_register_wires_only_the_foundation_hooks(): void
     {
         self::assertTrue(class_exists(Bootstrap::class), 'Bootstrap class must exist before hook wiring can be verified.');
