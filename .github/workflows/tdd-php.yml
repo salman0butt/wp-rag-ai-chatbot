@@ -1,0 +1,23 @@
+name: TDD PHP
+
+on:
+  push:
+    branches:
+      - feat/m01-foundation-tooling
+
+permissions:
+  contents: read
+
+jobs:
+  php-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+          extensions: dom, filter, json, libxml, mbstring, tokenizer, xml, xmlreader, xmlwriter
+      - run: composer install --no-interaction --prefer-dist
+      - run: composer test -- --filter 'PluginEntryPointTest|BootstrapTest'
