@@ -19,5 +19,8 @@ jobs:
           coverage: none
           tools: composer:v2
           extensions: dom, filter, json, libxml, mbstring, tokenizer, xml, xmlreader, xmlwriter
+      - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
       - run: composer test -- --filter 'PluginEntryPointTest|BootstrapTest'
+      - run: composer lint:php
+      - run: composer analyse
