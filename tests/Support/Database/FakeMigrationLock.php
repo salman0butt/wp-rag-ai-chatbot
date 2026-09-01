@@ -15,10 +15,18 @@ use WpRagAiChatbot\Database\MigrationLock;
  * In-memory migration lock with deterministic acquisition behavior.
  */
 final class FakeMigrationLock implements MigrationLock {
-	/** Whether acquisition was attempted. */
+	/**
+	 * Whether acquisition was attempted.
+	 *
+	 * @var bool
+	 */
 	public bool $attempted = false;
 
-	/** Whether release was called. */
+	/**
+	 * Whether release was called.
+	 *
+	 * @var bool
+	 */
 	public bool $released = false;
 
 	/**
