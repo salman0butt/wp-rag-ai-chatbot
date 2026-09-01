@@ -21,6 +21,8 @@ jobs:
           extensions: dom, filter, json, libxml, mbstring, tokenizer, xml, xmlreader, xmlwriter
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
+      - name: Measure generated Composer lockfile
+        run: wc -lc composer.lock
       - run: composer test -- --filter 'PluginEntryPointTest|BootstrapTest'
       - run: composer lint:php
       - run: composer analyse
