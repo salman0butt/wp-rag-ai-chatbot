@@ -42,11 +42,11 @@
     "env:stop": "wp-env stop",
     "lint:js": "wp-scripts lint-js src-js",
     "lint:pkg": "wp-scripts lint-pkg-json",
+    "plugin-zip": "bash scripts/plugin-zip.sh",
     "test:js": "wp-scripts test-unit-js",
     "test:wp:activation": "bash scripts/test-wp-activation.sh",
     "typecheck": "tsc --noEmit",
     "verify:js": "npm run check-engines && npm run lint:pkg && npm run lint:js && npm run typecheck && npm run test:js -- --runInBand && npm run build",
-    "wp-env": "wp-env",
-    "plugin-zip": "wp-scripts plugin-zip"
+    "wp-env": "wp-env"
   }
 }
