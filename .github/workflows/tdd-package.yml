@@ -1,0 +1,17 @@
+name: TDD Package
+
+on:
+  push:
+    branches:
+      - feat/m01-foundation-tooling
+
+permissions:
+  contents: read
+
+jobs:
+  package-guard-red:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: rm -f wp-rag-ai-chatbot.zip
+      - run: bash scripts/assert-package.sh
