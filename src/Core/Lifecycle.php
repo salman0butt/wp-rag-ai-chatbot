@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Core;
 
+/**
+ * Owns activation and deactivation callbacks.
+ */
 final class Lifecycle {
 	/**
 	 * Run plugin activation work.

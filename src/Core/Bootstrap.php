@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Core;
 
+/**
+ * Registers the plugin's WordPress foundation hooks.
+ */
 final class Bootstrap {
 	/**
 	 * Register the plugin's foundation hooks.

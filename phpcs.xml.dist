@@ -13,5 +13,6 @@
     <exclude-pattern>build/*</exclude-pattern>
     <rule ref="WordPress">
         <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+        <exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
     </rule>
 </ruleset>
