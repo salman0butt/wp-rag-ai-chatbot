@@ -4,9 +4,12 @@
 .env
 .env.*
 !.env.example
-vendor/
-node_modules/
-coverage/
+/vendor/
+/node_modules/
+/coverage/
+/.cache/
+/build/
+/wp-rag-ai-chatbot.zip
 .phpunit.result.cache
 .phpstan.cache
 *.log
