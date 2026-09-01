@@ -88,10 +88,22 @@ RAG traces and saved regression evaluation suites are not developer-only afterth
 
 Status: APPROVED
 
-The repository initially contained no commits, so a single administrative root commit on main was necessary before an isolated feature branch could exist. Root commit `a28f96047142a78064e966a66e0ea9ebc4af1996` contains README initialization only. All further work is on `feat/m00-master-architecture` until integration is explicitly authorized.
+The repository initially contained no commits, so a single administrative root commit on main was necessary before an isolated feature branch could exist. Root commit `a28f96047142a78064e966a66e0ea9ebc4af1996` contains README initialization only. All further work is isolated from main until integration is explicitly authorized.
 
 ## ADR-016 — Sandbox prevents native git worktree
 
 Status: RECORDED ENVIRONMENT LIMITATION
 
-The execution container could not resolve github.com, so `git clone`/native local worktree creation was unavailable in this chat runtime. The connected GitHub integration is used to maintain equivalent branch isolation. A real local/Codex runtime should use the standard Superpowers git-worktree flow once repository network access is available.
+The execution container cannot resolve external GitHub/package hosts, so native clone/worktree creation is unavailable in this chat runtime. Connected GitHub branches provide repository isolation. A real local/Codex runtime should use the standard Superpowers git-worktree flow once repository network access is available.
+
+## ADR-017 — Inline executing-plans fallback
+
+Status: RECORDED PROCESS RULING
+
+Superpowers subagent-driven-development requires a real subagent dispatch interface. This chat runtime does not expose one, so M01 uses the Superpowers executing-plans workflow inline. This does not waive TDD, review, verification, documentation, or branch-isolation requirements.
+
+## ADR-018 — GitHub Actions is the authoritative dependency-backed runner in this chat runtime
+
+Status: RECORDED PROCESS RULING
+
+The container has PHP 8.4 and Node 22 but no Composer and cannot resolve Packagist/npm registry hosts. To preserve genuine RED→GREEN evidence, M01 may introduce test/CI configuration before production implementation and use feature-branch GitHub Actions runs as the authoritative dependency-backed test environment. Test-only commits must be observed failing for the expected missing behavior before corresponding production code is committed. This is an execution-environment adaptation, not a product architecture change.
