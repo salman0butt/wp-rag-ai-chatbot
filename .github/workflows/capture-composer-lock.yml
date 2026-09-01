@@ -1,0 +1,29 @@
+name: Capture Composer Lock
+
+on:
+  push:
+    branches:
+      - feat/m01-foundation-tooling
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+      - run: composer install --no-interaction --prefer-dist
+      - name: Emit minified lockfile
+        run: |
+          jq -c . composer.lock > composer.lock.min
+          echo '===COMPOSER_LOCK_BEGIN==='
+          sha256sum composer.lock.min
+          wc -c composer.lock.min
+          fold -w 18000 composer.lock.min
+          echo '===COMPOSER_LOCK_END==='
