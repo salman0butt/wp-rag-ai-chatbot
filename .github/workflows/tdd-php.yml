@@ -22,7 +22,9 @@ jobs:
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
       - name: Measure generated Composer lockfile
-        run: wc -lc composer.lock
+        run: |
+          wc -lc composer.lock
+          jq -c . composer.lock | wc -c
       - run: composer test -- --filter 'PluginEntryPointTest|BootstrapTest'
       - run: composer lint:php
       - run: composer analyse
