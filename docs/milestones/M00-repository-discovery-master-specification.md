@@ -23,8 +23,9 @@ PHP-first modular WordPress monolith with provider/vector/source/action adapters
 - [x] Current provider/competitor evidence researched.
 - [x] Master architecture presented and approved in chat.
 - [x] Written product/architecture/spec/decision documents persisted.
+- [x] Explicit competitor feature matrix persisted.
 - [x] Separate milestone files M00-M24 persisted.
-- [ ] Written specification self-review completed.
+- [x] Written specification self-review completed.
 - [ ] User reviews persisted written specification.
 
 ## Tasks
@@ -35,7 +36,9 @@ PHP-first modular WordPress monolith with provider/vector/source/action adapters
 - [x] Receive architecture approval.
 - [x] Bootstrap unavoidable root commit and create feature branch.
 - [x] Persist master documentation/ledgers.
-- [ ] Self-review persisted specification and request written-spec review.
+- [x] Self-review persisted specification.
+- [x] Fix self-review gap: add explicit evidence-state competitor matrix.
+- [ ] Obtain user review of persisted written specification.
 
 ## TDD Evidence
 Not applicable: M00 contains documentation/architecture only; no production behavior introduced.
@@ -56,34 +59,36 @@ Not applicable; no UI exists.
 Scale constraints for local vectors, job processing, bounded histories/logs and indexing are captured architecturally.
 
 ## Code Review Findings
-No production code exists. Written-spec self-review remains before completion.
+Written-spec self-review found one gap: competitor analysis lacked an explicit comparative feature table and evidence-state language. No TODO/TBD placeholders or contradictory master architecture requirements were found in the persisted master specification.
 
 ## Fixes
-None yet.
+Added a current competitor feature matrix with Confirmed/Unclear evidence language and expanded WPBot/WoowBot evidence to avoid unsupported absence claims.
 
 ## Fresh Verification Commands
-Repository content will be verified through GitHub branch/file reads and branch-vs-main comparison because local git DNS is unavailable in this runtime.
+Because local GitHub DNS is unavailable in this runtime, verification used connected GitHub reads plus repository comparison equivalent to `git diff main...feat/m00-master-architecture` / `git log main..feat/m00-master-architecture`.
 
 ## Fresh Verification Results
-Pending final M00 documentation verification.
+GitHub compare after the self-review fix reported branch `feat/m00-master-architecture` ahead of `main` by 3 commits, behind by 0, with only `.gitignore` and the approved documentation/ledger files changed. The comparison enumerated M00 through M24 milestone files and no production implementation files.
 
 ## Commits
 - `a28f96047142a78064e966a66e0ea9ebc4af1996` — approved unavoidable root bootstrap on main.
-- `c443ec94fdf440de84bfd0444a0ecf92ec498aaf` — master architecture documentation commit on feature branch.
+- `c443ec94fdf440de84bfd0444a0ecf92ec498aaf` — master architecture documentation.
+- `a7e7d98711fbe7865ecef881263d60f5474d8e87` — milestone/progress ledgers.
+- `c70de4ef488749644bc35e188003d5197a41b279` — competitor matrix self-review fix.
 
 ## Files Changed
-README bootstrap plus docs/PRODUCT.md, ARCHITECTURE.md, FEATURE-MATRIX.md, DECISIONS.md, research, specs, milestones and progress ledgers.
+README bootstrap plus `.gitignore`, docs/PRODUCT.md, ARCHITECTURE.md, FEATURE-MATRIX.md, DECISIONS.md, research, the master Superpowers spec, M00-M24 milestone files, and all requested progress ledgers.
 
 ## Known Limitations
-Local clone/worktree unavailable in this chat runtime due DNS; connected GitHub branch isolation is used.
+Local clone/worktree unavailable in this chat runtime due DNS; connected GitHub branch isolation is used. No executable test baseline exists until M01 because the repository began empty and M00 intentionally contains no production code.
 
 ## Documentation Updated
-Core M00 documentation initialized.
+All requested M00 architecture/research/milestone/progress documents initialized.
 
 ## Completion Checklist
 - [ ] Persisted spec reviewed by user.
-- [ ] M00 verification evidence fresh.
-- [ ] Status ledger points to writing-plans as exact next action.
+- [x] M00 documentation verification evidence fresh.
+- [x] Status ledger points to written-spec review as exact next action.
 
 ## Next Milestone
 M01 — WordPress Plugin Foundation & Tooling, only after persisted specification review and Superpowers writing-plans.
