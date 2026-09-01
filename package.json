@@ -1,12 +1,31 @@
 {
   "name": "wp-rag-ai-chatbot",
   "version": "0.1.0-dev",
-  "description": "WordPress-native RAG AI chatbot and customer-support platform.",
   "private": true,
+  "description": "WordPress-native RAG AI chatbot and customer-support platform.",
+  "author": "Salman Butt",
   "license": "GPL-2.0-or-later",
+  "keywords": [
+    "wordpress",
+    "ai",
+    "chatbot",
+    "rag",
+    "customer-support"
+  ],
+  "homepage": "https://github.com/salman0butt/wp-rag-ai-chatbot",
+  "repository": "git+https://github.com/salman0butt/wp-rag-ai-chatbot.git",
+  "bugs": {
+    "url": "https://github.com/salman0butt/wp-rag-ai-chatbot/issues"
+  },
   "engines": {
     "node": ">=22.0.0",
     "npm": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@wordpress/env": "^11.14.0",
+    "@wordpress/scripts": "^34.2.0",
+    "typescript": "^5.9.0"
   },
   "scripts": {
     "build": "wp-scripts build --source-path=src-js",
@@ -18,11 +37,5 @@
     "verify:js": "npm run check-engines && npm run lint:pkg && npm run lint:js && npm run typecheck && npm run test:js -- --runInBand && npm run build",
     "wp-env": "wp-env",
     "plugin-zip": "wp-scripts plugin-zip"
-  },
-  "devDependencies": {
-    "@types/jest": "^29.5.0",
-    "@wordpress/env": "^11.14.0",
-    "@wordpress/scripts": "^34.2.0",
-    "typescript": "^5.9.0"
   }
 }
