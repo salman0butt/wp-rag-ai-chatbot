@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+zip_file="wp-rag-ai-chatbot.zip"
+root_folder="wp-rag-ai-chatbot"
+
+./node_modules/.bin/wp-scripts plugin-zip "$@"
+
+forced_metadata=(
+    "$root_folder/package.json"
+    "$root_folder/README.md"
+)
+
+for path in "${forced_metadata[@]}"; do
+    if unzip -Z1 "$zip_file" | grep -Fxq "$path"; then
+        zip -dq "$zip_file" "$path"
+    fi
+done
