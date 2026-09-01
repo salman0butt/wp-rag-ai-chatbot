@@ -1,0 +1,17 @@
+.DS_Store
+.idea/
+.vscode/
+.env
+.env.*
+!.env.example
+vendor/
+node_modules/
+coverage/
+.phpunit.result.cache
+.phpstan.cache
+*.log
+*.zip
+wp-env.json
+.wordpress-org/
+.worktrees/
+worktrees/
