@@ -21,6 +21,14 @@
     "node": ">=22.0.0",
     "npm": ">=10.0.0"
   },
+  "files": [
+    "wp-rag-ai-chatbot.php",
+    "src/**",
+    "build/**",
+    "vendor/**",
+    "readme.txt",
+    "LICENSE"
+  ],
   "devDependencies": {
     "@types/jest": "^29.5.0",
     "@wordpress/env": "^11.14.0",
