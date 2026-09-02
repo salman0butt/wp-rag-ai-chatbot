@@ -46,8 +46,9 @@ final class DatabaseUninstallerTest extends TestCase {
 	 * A failed destructive query must preserve uninstall state so cleanup can be retried.
 	 */
 	public function test_failed_drop_preserves_database_options_and_throws(): void {
-		$wpdb             = new FakeWpdb( false );
-		$GLOBALS['wpdb'] = $wpdb;
+		global $wpdb;
+		// phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- This focused unit test injects the wpdb adapter dependency used by the static WordPress uninstall entry point.
+		$wpdb = new FakeWpdb( false );
 
 		Functions\expect( 'get_option' )->once()->with( DatabaseSchema::DELETE_DATA_OPTION, false )->andReturn( '1' );
 		Functions\expect( 'delete_option' )->never();
