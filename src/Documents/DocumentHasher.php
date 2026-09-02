@@ -23,7 +23,8 @@ final class DocumentHasher {
 	 */
 	public static function hash( array $payload ): string {
 		$canonical = self::canonicalize( $payload );
-		$json      = json_encode(
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Native encoding preserves JSON_THROW_ON_ERROR for this WordPress-independent domain utility.
+		$json = json_encode(
 			$canonical,
 			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
 		);

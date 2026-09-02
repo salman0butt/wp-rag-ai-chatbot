@@ -24,6 +24,7 @@ final class KnowledgeSourceRegistry {
 	 * Register one knowledge source implementation.
 	 *
 	 * @param KnowledgeSource $source Source implementation.
+	 * @throws KnowledgeSourceException When the source type is empty or already registered.
 	 */
 	public function register( KnowledgeSource $source ): void {
 		$type = trim( $source->type() );
@@ -32,7 +33,7 @@ final class KnowledgeSourceRegistry {
 			throw new KnowledgeSourceException( 'Knowledge source type must not be empty.' );
 		}
 		if ( isset( $this->sources[ $type ] ) ) {
-			throw new KnowledgeSourceException( 'Knowledge source type is already registered: ' . $type );
+			throw new KnowledgeSourceException( 'Knowledge source type is already registered.' );
 		}
 
 		$this->sources[ $type ] = $source;
@@ -51,10 +52,11 @@ final class KnowledgeSourceRegistry {
 	 * Return the source registered for a type.
 	 *
 	 * @param string $type Source type.
+	 * @throws KnowledgeSourceException When no source is registered for the requested type.
 	 */
 	public function get( string $type ): KnowledgeSource {
 		if ( ! isset( $this->sources[ $type ] ) ) {
-			throw new KnowledgeSourceException( 'Knowledge source type is not registered: ' . $type );
+			throw new KnowledgeSourceException( 'Knowledge source type is not registered.' );
 		}
 
 		return $this->sources[ $type ];
