@@ -12,7 +12,9 @@ entries="$(unzip -Z1 "$zip_file")"
 
 required=(
     "wp-rag-ai-chatbot/wp-rag-ai-chatbot.php"
+    "wp-rag-ai-chatbot/uninstall.php"
     "wp-rag-ai-chatbot/src/Core/Bootstrap.php"
+    "wp-rag-ai-chatbot/src/Database/DatabaseUninstaller.php"
     "wp-rag-ai-chatbot/vendor/autoload.php"
 )
 
