@@ -34,6 +34,7 @@ jobs:
       - run: npm audit --audit-level=critical
       - run: npm run verify:js
       - run: npm run test:provider:live-gating
+      - run: npm run test:package:assertion
 
   wordpress-smoke:
     runs-on: ubuntu-latest
