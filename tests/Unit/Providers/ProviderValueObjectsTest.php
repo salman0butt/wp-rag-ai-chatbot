@@ -22,7 +22,13 @@ use WpRagAiChatbot\Providers\ProviderHealthStatus;
 use WpRagAiChatbot\Providers\ProviderIds;
 use WpRagAiChatbot\Providers\Usage;
 
+/**
+ * Verifies normalized provider value-object behavior.
+ */
 final class ProviderValueObjectsTest extends TestCase {
+	/**
+	 * Provider IDs remain stable configuration keys.
+	 */
 	public function test_provider_ids_are_stable(): void {
 		$this->require_class( ProviderIds::class );
 
@@ -31,17 +37,23 @@ final class ProviderValueObjectsTest extends TestCase {
 		self::assertSame( 'wordpress_ai_client', ProviderIds::WORDPRESS_AI_CLIENT );
 	}
 
+	/**
+	 * Generation requests normalize only the model identifier.
+	 */
 	public function test_generation_request_normalizes_model_id_and_preserves_input(): void {
 		$this->require_class( GenerationRequest::class );
 
-		$request = new GenerationRequest( '  gpt-test  ', "  user input  ", " system instruction ", 512 );
+		$request = new GenerationRequest( '  gpt-test  ', '  user input  ', ' system instruction ', 512 );
 
 		self::assertSame( 'gpt-test', $request->model_id );
-		self::assertSame( "  user input  ", $request->input );
-		self::assertSame( " system instruction ", $request->instructions );
+		self::assertSame( '  user input  ', $request->input );
+		self::assertSame( ' system instruction ', $request->instructions );
 		self::assertSame( 512, $request->max_output_tokens );
 	}
 
+	/**
+	 * Generation requests reject invalid required values and token bounds.
+	 */
 	public function test_generation_request_rejects_blank_model_input_and_invalid_token_bounds(): void {
 		$this->require_class( GenerationRequest::class );
 
@@ -60,6 +72,9 @@ final class ProviderValueObjectsTest extends TestCase {
 		}
 	}
 
+	/**
+	 * Usage preserves unknown values and rejects invalid negative counts.
+	 */
 	public function test_usage_preserves_unknown_values_and_rejects_negative_tokens(): void {
 		$this->require_class( Usage::class );
 
@@ -73,12 +88,15 @@ final class ProviderValueObjectsTest extends TestCase {
 		new Usage( -1, null, null );
 	}
 
+	/**
+	 * Completed generations require output while incomplete results may be empty.
+	 */
 	public function test_completed_generation_requires_output_but_incomplete_may_be_empty(): void {
 		$this->require_class( GenerationResult::class );
 		$this->require_class( GenerationStatus::class );
 		$this->require_class( Usage::class );
 
-		$usage = new Usage();
+		$usage  = new Usage();
 		$result = new GenerationResult(
 			'openai_direct',
 			'gpt-test',
@@ -111,6 +129,9 @@ final class ProviderValueObjectsTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Model context windows must be positive when known.
+	 */
 	public function test_model_info_requires_positive_context_window(): void {
 		$this->require_class( ModelInfo::class );
 
@@ -130,6 +151,9 @@ final class ProviderValueObjectsTest extends TestCase {
 		new ModelInfo( 'openrouter_direct', 'vendor/model', 'Vendor Model', array(), array(), array(), 0 );
 	}
 
+	/**
+	 * Provider exceptions and health expose normalized safe fields only.
+	 */
 	public function test_provider_exception_and_health_expose_only_normalized_safe_fields(): void {
 		$this->require_class( ProviderException::class );
 		$this->require_class( ProviderErrorCode::class );
@@ -156,6 +180,11 @@ final class ProviderValueObjectsTest extends TestCase {
 		self::assertSame( 'Configured without a paid health ping.', $health->message );
 	}
 
+	/**
+	 * Assert the intended RED is a missing provider class or enum.
+	 *
+	 * @param string $class_name Class or enum name.
+	 */
 	private function require_class( string $class_name ): void {
 		self::assertTrue(
 			class_exists( $class_name ) || enum_exists( $class_name ),
