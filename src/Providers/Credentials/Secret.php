@@ -11,17 +11,18 @@ namespace WpRagAiChatbot\Providers\Credentials;
 
 use Closure;
 use JsonSerializable;
+use SensitiveParameterValue;
 
 /**
  * Holds plaintext only behind an explicit callback boundary.
  */
 final class Secret implements JsonSerializable {
 	/**
-	 * Plaintext secret value.
+	 * Plaintext secret protected from ordinary export/serialization surfaces.
 	 *
-	 * @var string
+	 * @var SensitiveParameterValue
 	 */
-	private string $value;
+	private SensitiveParameterValue $value;
 
 	/**
 	 * Create a secret.
@@ -29,7 +30,7 @@ final class Secret implements JsonSerializable {
 	 * @param string $value Plaintext secret.
 	 */
 	public function __construct( string $value ) {
-		$this->value = $value;
+		$this->value = new SensitiveParameterValue( $value );
 	}
 
 	/**
@@ -38,7 +39,12 @@ final class Secret implements JsonSerializable {
 	 * @param Closure $consumer Plaintext consumer.
 	 */
 	public function with_value( Closure $consumer ): void {
-		$consumer( $this->value );
+		$value = $this->value->getValue();
+		if ( ! is_string( $value ) ) {
+			return;
+		}
+
+		$consumer( $value );
 	}
 
 	/**
