@@ -35,14 +35,44 @@ Security is cross-cutting; M22 is the comprehensive hardening audit, not the fir
 
 ## M01 foundation security evidence
 
-- Runtime surface is intentionally minimal: no REST endpoints, database writes, external HTTP calls, credentials, file uploads, user input, or frontend/admin UI were introduced.
-- Plugin bootstrap only registers activation/deactivation hooks and a `plugins_loaded` signal.
-- Permanent GitHub Actions workflow declares `contents: read`; temporary write-enabled lockfile-generation workflows were removed after reproducible lockfiles were committed.
-- Composer audit on the verified candidate reported no security vulnerability advisories.
-- npm development tooling reported 32 transitive advisories (22 moderate, 10 high) and zero critical advisories. The M01 CI blocks critical npm findings. These packages are development/build dependencies and are excluded from the production plugin ZIP, but they remain a CI/dev supply-chain concern tracked as KI-003/TD-001.
-- Production packaging is allow-list based and asserts required runtime files while rejecting tests, docs, `.github`, environment files, Node modules, and dependency manifests/locks.
-- The package uses a production-only Composer install and includes `vendor/autoload.php`; no development Composer packages are distributed.
+- Runtime surface intentionally introduced no REST endpoints, external HTTP calls, credentials, uploads, or user-input processing.
+- Permanent GitHub Actions workflow uses read-only repository contents permission.
+- Composer audit reported no known advisories on the verified foundation candidate.
+- npm development tooling has tracked non-critical transitive advisories; Node dependencies are development/build only and are excluded from the production ZIP.
+- Production packaging is allow-list based and rejects development/private paths.
+
+## M02 database security evidence
+
+Verified runtime candidate: `4db24d95db0d572f28273734714c74a47ac8bb2e`, CI run `33603435032`.
+
+### SQL/value boundaries
+- Source/document value-bearing reads use prepared `%s`/`%d` placeholders; plugin-owned table identifiers use `%i` from trusted `TableNames` only.
+- Inserts, updates, and deletes use the narrow `$wpdb` adapter write APIs with explicit formats.
+- Real WordPress tests store and retrieve SQL-injection-shaped literals including `source-' OR 1=1 --` and `" OR 1=1 --`; row counts and source scoping remain unchanged.
+- Apostrophes, `<script>literal test data</script>`, and Unicode `مرحبا` are treated as stored data, not executable SQL or output policy.
+- Repository pagination is bounded to at most 100 records per page, limiting accidental/untrusted unbounded list requests at the persistence layer.
+
+### Migration boundary
+- Migrations run under a MySQL named advisory lock.
+- Lock contention does not execute DDL.
+- The schema version is refreshed after successful lock acquisition, closing a race where a stale process could replay migrations completed by another process.
+- Version persistence occurs after successful migration application; failed migrations retain the last successful version and release the lock in `finally`.
+- The current-schema `plugins_loaded` path exits after the lightweight version read rather than acquiring a lock or executing DDL.
+
+### Uninstall/destructive boundary
+- Data retention is the default; destructive uninstall requires the explicit persisted true/one setting.
+- `uninstall.php` is guarded by `WP_UNINSTALL_PLUGIN` and loads only the packaged Composer runtime.
+- Plugin-owned tables are dropped in safe dependency order and only through prepared `%i` identifiers.
+- A failed DROP throws `DatabaseException`; schema/policy options are not removed, preserving a retryable cleanup state.
+- Version/delete-policy options are removed only after all plugin-owned table drops succeed.
+- Real WordPress integration verifies default retention, opt-in deletion, option removal, and a clean reinstall.
+
+### Scope/secrets
+- M02 introduces no provider credentials, API keys, external model/vector calls, public REST endpoints, or new client-visible secrets.
+- Package validation requires the uninstall runtime while continuing to exclude tests, docs, `.github`, environment files, Node modules, and dependency manifests/locks.
+
+Artifact digest: `sha256:f77b32bf377b4f6fbb65cf1721a87b5e0408041ad5444816076227ab931aeab3`.
 
 ## Open security design work
 
-Exact rate-limit storage/algorithm, encrypted-at-rest plugin credential strategy for pre-WP7 direct providers, URL crawler allow/deny policy, cross-site embed token scheme, and anonymous session ownership mechanism are implementation decisions to resolve in their respective milestone plans without weakening the master trust model.
+Exact rate-limit storage/algorithm, encrypted-at-rest plugin credential strategy for pre-WP7 direct providers, URL crawler allow/deny policy, cross-site embed token scheme, anonymous session ownership mechanism, and later data-retention/privacy controls remain owned by their respective milestones. M02 does not weaken those future trust boundaries.

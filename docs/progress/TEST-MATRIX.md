@@ -4,14 +4,15 @@ Status: ACTIVE — exact milestone evidence is recorded in each milestone ledger
 
 | Layer | Purpose | First Required | Evidence location |
 |---|---|---|---|
-| PHP unit | isolated PHP/plugin behavior | M01 | M01 + CI `php-quality` |
-| WordPress integration | hooks/REST/plugin lifecycle | M01 | M01 + CI `wordpress-smoke` |
+| PHP unit | isolated PHP/plugin behavior | M01 | M01/M02 + CI `php-quality` |
+| WordPress integration | hooks/plugin lifecycle/database runtime | M01 | M01/M02 + CI `wordpress-smoke` |
 | JS/TS unit | build-tooling/component behavior | M01 | M01 + CI `js-quality` |
 | Typecheck/lint/build | frontend/toolchain production integrity | M01 foundation; M12+ UI | M01 + relevant UI milestone |
-| Dependency audit | known Composer/npm advisories | M01 | M01 + CI PHP/JS quality jobs |
-| Release ZIP guard | required runtime files; exclude dev/private files | M01 foundation; M24 release | M01 + CI `package`; M24 final audit |
-| DB migrations | fresh install + upgrades + idempotency | M02 | M02/M24 |
-| Repository/SQL | prepared queries, pagination, ownership | M02 | M02+ |
+| Dependency audit | known Composer/npm advisories | M01 | CI PHP/JS quality jobs |
+| Release ZIP guard | required runtime files; exclude dev/private files | M01 foundation; M24 release | M01/M02 + CI `package`; M24 final audit |
+| DB migrations | fresh install + upgrades + idempotency + locking/failure recovery | M02 | M02 + CI `php-quality`/`wordpress-smoke` |
+| Repository/SQL | prepared queries, pagination, source ownership/isolation | M02 | M02 + CI `wordpress-smoke` |
+| Uninstall/data policy | retain default, explicit deletion, failure retryability | M02 | M02 + CI `php-quality`/`wordpress-smoke` |
 | Provider contract | normalized generation/errors/capabilities | M03 | M03 |
 | Live provider smoke | opt-in credential-gated path | M03 | M03/M24 |
 | Knowledge source contract | normalization and access metadata | M04 | M04-M06 |
@@ -29,11 +30,26 @@ Status: ACTIVE — exact milestone evidence is recorded in each milestone ledger
 | Actions security | schema/authz/risk/audit/tool injection | M19 | M19/M22 |
 | Privacy | retention/export/erasure | M22 | M22/M24 |
 | Abuse/cost | rate limiting/denial-of-wallet | M22 | M22 |
-| Upgrade/uninstall | migration compatibility/data policy | M24 | M24 |
+| Upgrade compatibility | long-lived schema/data compatibility | M24 | M24 |
 
 ## M01 Verified Baseline
 
-- PHP: PHPUnit 10.5.64 on PHP 8.2.33 — 4 tests / 12 assertions; WPCS pass; PHPStan pass.
-- JavaScript/TypeScript: Node 22 — engine/package lint, JS lint, strict typecheck, 1 Jest test, and production build pass.
-- WordPress integration: WordPress 6.9 / PHP 8.2 activation → bootstrap resolution → deactivation → reactivation passes.
-- Packaging: production ZIP includes plugin entry point, `src/Core/Bootstrap.php`, and `vendor/autoload.php`; development/private paths are rejected.
+- PHP: PHPUnit/WPCS/PHPStan on PHP 8.2.
+- JavaScript/TypeScript: Node 22 engine/package lint, JS lint, strict typecheck, Jest, and production build.
+- WordPress integration: WordPress 6.9/PHP 8.2 activation/deactivation/reactivation.
+- Packaging: runtime allowlist plus development/private-path rejection.
+
+## M02 Verified Coverage
+
+Runtime candidate `4db24d95db0d572f28273734714c74a47ac8bb2e`, CI run `33603435032`:
+
+- **Migration unit behavior:** version ordering, already-applied skips, current-schema fast path, lock contention, failure version preservation, lock release, and post-lock version refresh race regression.
+- **Migration SQL:** V001 creates only sources; V002 creates only documents; required indexes are asserted; future tables/vector fields/foreign keys/non-portable JSON types are rejected by tests.
+- **Real WordPress migration:** clean schema creation, simulated V1→V2 upgrade through normal plugin loading, repeat/idempotent migration, expected indexes, and absence of future milestone tables.
+- **Repository integration:** 25-source pagination 10/10/5 with total 25; max requested page size clamped to 100; exact malicious-looking source/document keys; apostrophe/script-like/Unicode content; JSON metadata round-trip; source-scoped pagination; exact affected-row deletion.
+- **SQL injection regression:** values such as `source-' OR 1=1 --` and `" OR 1=1 --` remain literal data and do not expand result scope.
+- **Uninstall:** default retention, explicit opt-in deletion, option cleanup, clean reinstall, plus unit coverage proving failed destructive queries throw and preserve retry state.
+- **Package:** `uninstall.php` and `DatabaseUninstaller.php` are required archive members while tests/docs/.github/env/Node/dependency manifests remain excluded.
+- **Dependency/static gates:** Composer audit, WPCS, PHPStan, PHPUnit, npm critical-audit gate, JS lint/typecheck/tests/build all pass.
+
+Artifact evidence: ID `9836065304`, digest `sha256:f77b32bf377b4f6fbb65cf1721a87b5e0408041ad5444816076227ab931aeab3`.
