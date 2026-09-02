@@ -1,0 +1,59 @@
+<?php
+/**
+ * Database migration composition root.
+ *
+ * @package WpRagAiChatbot
+ */
+
+declare(strict_types=1);
+
+namespace WpRagAiChatbot\Database;
+
+use WpRagAiChatbot\Database\Migrations\V001CreateSourcesTable;
+use WpRagAiChatbot\Database\Migrations\V002CreateDocumentsTable;
+
+/**
+ * Composes and executes database migrations at WordPress lifecycle boundaries.
+ */
+final class DatabaseBootstrap {
+	/**
+	 * Run pending migrations.
+	 */
+	public static function migrate(): MigrationStatus {
+		return self::runner()->run();
+	}
+
+	/**
+	 * Avoid migration composition when the stored version is already current.
+	 */
+	public static function migrate_if_needed(): MigrationStatus {
+		$versions = new WordPressSchemaVersionStore();
+		if ( $versions->current() >= DatabaseSchema::VERSION ) {
+			return MigrationStatus::UP_TO_DATE;
+		}
+		return self::runner( $versions )->run();
+	}
+
+	/**
+	 * Build the migration runner from WordPress services.
+	 *
+	 * @param SchemaVersionStore|null $versions Optional version-store instance.
+	 */
+	private static function runner( ?SchemaVersionStore $versions = null ): MigrationRunner {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+		$versions ??= new WordPressSchemaVersionStore();
+
+		return new MigrationRunner(
+			$connection,
+			$versions,
+			new WpdbNamedMigrationLock( $connection ),
+			array(
+				new V001CreateSourcesTable( $tables ),
+				new V002CreateDocumentsTable( $tables ),
+			)
+		);
+	}
+}

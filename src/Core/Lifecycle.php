@@ -15,16 +15,15 @@ namespace WpRagAiChatbot\Core;
 final class Lifecycle {
 	/**
 	 * Run plugin activation work.
-	 *
-	 * M01 intentionally has no activation side effects.
 	 */
 	public static function activate(): void {
+		do_action( 'wp_rag_ai_chatbot_activate' );
 	}
 
 	/**
 	 * Run plugin deactivation work.
 	 *
-	 * M01 intentionally has no deactivation side effects.
+	 * M02 intentionally has no deactivation side effects.
 	 */
 	public static function deactivate(): void {
 	}
