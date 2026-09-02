@@ -32,7 +32,8 @@ final class WpdbConnection implements Connection {
 	 * Get the current database name.
 	 */
 	public function database_name(): string {
-		return (string) DB_NAME;
+		$name = $this->wpdb->get_var( 'SELECT DATABASE()' );
+		return is_string( $name ) ? $name : '';
 	}
 
 	/**
