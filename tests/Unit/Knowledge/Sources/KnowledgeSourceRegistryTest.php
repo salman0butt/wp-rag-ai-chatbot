@@ -76,17 +76,34 @@ final class KnowledgeSourceRegistryTest extends TestCase {
 
 	/**
 	 * Build a deterministic source double that exercises the real contract.
+	 *
+	 * @param string $type Stable source type.
 	 */
 	private function source( string $type ): KnowledgeSource {
 		return new class( $type ) implements KnowledgeSource {
-			public function __construct( private readonly string $sourceType ) {
+			/**
+			 * Create the source double.
+			 *
+			 * @param string $source_type Stable source type.
+			 */
+			public function __construct( private readonly string $source_type ) {
 			}
 
+			/**
+			 * Return the stable source type.
+			 */
 			public function type(): string {
-				return $this->sourceType;
+				return $this->source_type;
 			}
 
+			/**
+			 * Return no documents; registry tests only exercise identity.
+			 *
+			 * @param KnowledgeSourceRecord $source Source record.
+			 * @return iterable<int, never>
+			 */
 			public function documents( KnowledgeSourceRecord $source ): iterable {
+				unset( $source );
 				return array();
 			}
 		};
