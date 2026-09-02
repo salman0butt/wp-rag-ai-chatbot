@@ -30,11 +30,15 @@ use WpRagAiChatbot\Providers\WordPressAi\WordPressAiClientProvider;
 final class ProviderBootstrap {
 	/**
 	 * Composed provider registry.
+	 *
+	 * @var ProviderRegistry|null
 	 */
 	private static ?ProviderRegistry $registry = null;
 
 	/**
 	 * Composed non-secret provider configuration service.
+	 *
+	 * @var ProviderConfigurationService|null
 	 */
 	private static ?ProviderConfigurationService $configuration = null;
 
