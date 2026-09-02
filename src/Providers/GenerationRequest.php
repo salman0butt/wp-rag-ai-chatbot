@@ -17,21 +17,29 @@ use InvalidArgumentException;
 final readonly class GenerationRequest {
 	/**
 	 * Normalized model identifier.
+	 *
+	 * @var string
 	 */
 	public string $model_id;
 
 	/**
 	 * Original user input.
+	 *
+	 * @var string
 	 */
 	public string $input;
 
 	/**
 	 * Optional instruction text.
+	 *
+	 * @var string|null
 	 */
 	public ?string $instructions;
 
 	/**
 	 * Optional maximum output token count.
+	 *
+	 * @var int|null
 	 */
 	public ?int $max_output_tokens;
 
