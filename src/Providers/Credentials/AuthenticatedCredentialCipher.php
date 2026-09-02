@@ -14,7 +14,7 @@ use Throwable;
 use WpRagAiChatbot\Providers\ProviderErrorCode;
 use WpRagAiChatbot\Providers\ProviderException;
 
-// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Exception metadata is internal and is never rendered as output.
+// phpcs:disable WordPress.Security.EscapeOutput -- Exception metadata is internal and is never rendered as output.
 /**
  * Encrypts provider credentials with provider-bound authenticated encryption.
  */
@@ -339,4 +339,4 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 		);
 	}
 }
-// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
+// phpcs:enable WordPress.Security.EscapeOutput
