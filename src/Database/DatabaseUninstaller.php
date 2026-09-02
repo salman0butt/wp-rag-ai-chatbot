@@ -38,20 +38,12 @@ final class DatabaseUninstaller {
 	}
 
 	/**
-	 * Accept only canonical true forms that WordPress or admin tooling may persist.
+	 * Accept only explicit true/one forms WordPress can persist for this setting.
 	 *
 	 * @param mixed $value Persisted option value.
 	 */
 	private static function is_delete_enabled( mixed $value ): bool {
-		if ( true === $value || 1 === $value || 1.0 === $value ) {
-			return true;
-		}
-
-		if ( ! is_string( $value ) ) {
-			return false;
-		}
-
-		return in_array( strtolower( trim( $value ) ), array( '1', 'true', 'yes', 'on' ), true );
+		return in_array( $value, array( true, 1, '1' ), true );
 	}
 
 	/**
