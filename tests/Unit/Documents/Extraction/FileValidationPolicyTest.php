@@ -24,13 +24,14 @@ final class FileValidationPolicyTest extends TestCase {
 	 *
 	 * @var list<string>
 	 */
-	private array $temporaryPaths = array();
+	private array $temporary_paths = array();
 
 	/**
 	 * Remove temporary files and directories after each test.
 	 */
 	protected function tearDown(): void {
-		foreach ( array_reverse( $this->temporaryPaths ) as $path ) {
+		// phpcs:disable WordPress.WP.AlternativeFunctions -- Unit fixtures must exercise native local-file behavior outside WordPress bootstrap.
+		foreach ( array_reverse( $this->temporary_paths ) as $path ) {
 			if ( is_link( $path ) || is_file( $path ) ) {
 				unlink( $path );
 				continue;
@@ -40,8 +41,9 @@ final class FileValidationPolicyTest extends TestCase {
 				rmdir( $path );
 			}
 		}
+		// phpcs:enable WordPress.WP.AlternativeFunctions
 
-		$this->temporaryPaths = array();
+		$this->temporary_paths = array();
 	}
 
 	/**
@@ -133,7 +135,7 @@ final class FileValidationPolicyTest extends TestCase {
 		if ( ! function_exists( 'symlink' ) || ! symlink( $outside, $link ) ) {
 			self::markTestSkipped( 'Symlink creation is unavailable in this environment.' );
 		}
-		$this->temporaryPaths[] = $link;
+		$this->temporary_paths[] = $link;
 
 		$this->expectException( ExtractionException::class );
 		( new FileValidationPolicy( $this->detectorReturning( 'text/plain' ) ) )->validate( $link, $root );
@@ -154,16 +156,16 @@ final class FileValidationPolicyTest extends TestCase {
 	/**
 	 * Build a deterministic MIME detector double.
 	 *
-	 * @param string $mimeType MIME type to return.
+	 * @param string $mime_type MIME type to return.
 	 */
-	private function detectorReturning( string $mimeType ): MimeTypeDetector {
-		return new class( $mimeType ) implements MimeTypeDetector {
+	private function detectorReturning( string $mime_type ): MimeTypeDetector {
+		return new class( $mime_type ) implements MimeTypeDetector {
 			/**
 			 * Create detector.
 			 *
-			 * @param string $mimeType MIME type to return.
+			 * @param string $mime_type MIME type to return.
 			 */
-			public function __construct( private readonly string $mimeType ) {
+			public function __construct( private readonly string $mime_type ) {
 			}
 
 			/**
@@ -173,7 +175,7 @@ final class FileValidationPolicyTest extends TestCase {
 			 */
 			public function detect( string $path ): string {
 				unset( $path );
-				return $this->mimeType;
+				return $this->mime_type;
 			}
 		};
 	}
@@ -185,8 +187,9 @@ final class FileValidationPolicyTest extends TestCase {
 	 */
 	private function createDirectory( string $suffix ): string {
 		$path = sys_get_temp_dir() . '/wp-rag-m05-' . bin2hex( random_bytes( 8 ) ) . '-' . $suffix;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- Unit fixture setup needs an isolated local directory.
 		self::assertTrue( mkdir( $path, 0700 ) );
-		$this->temporaryPaths[] = $path;
+		$this->temporary_paths[] = $path;
 
 		return $path;
 	}
@@ -200,8 +203,9 @@ final class FileValidationPolicyTest extends TestCase {
 	private function createFile( string $basename, string $contents ): string {
 		$directory = $this->createDirectory( 'fixture' );
 		$path      = $directory . '/' . $basename;
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Unit fixture setup needs exact local bytes.
 		self::assertSame( strlen( $contents ), file_put_contents( $path, $contents ) );
-		$this->temporaryPaths[] = $path;
+		$this->temporary_paths[] = $path;
 
 		return $path;
 	}
