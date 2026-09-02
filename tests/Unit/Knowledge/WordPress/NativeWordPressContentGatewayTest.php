@@ -121,16 +121,16 @@ final class NativeWordPressContentGatewayTest extends TestCase {
 		self::assertTrue( class_exists( NativeWordPressContentGateway::class ), 'Native gateway must exist before post mapping can be verified.' );
 		self::assertTrue( class_exists( WordPressPost::class ), 'WordPressPost value must exist before gateway mapping can pass.' );
 
-		$post                = new stdClass();
-		$post->ID            = 42;
-		$post->post_type     = 'post';
-		$post->post_status   = 'publish';
-		$post->post_title    = 'Release notes';
-		$post->post_excerpt  = 'Short summary';
-		$post->post_content  = '<p>Long body</p>';
+		$post                    = new stdClass();
+		$post->ID                = 42;
+		$post->post_type         = 'post';
+		$post->post_status       = 'publish';
+		$post->post_title        = 'Release notes';
+		$post->post_excerpt      = 'Short summary';
+		$post->post_content      = '<p>Long body</p>';
 		$post->post_modified_gmt = '2026-09-03 00:15:00';
-		$post->post_password = '';
-		$post->post_author   = '7';
+		$post->post_password     = '';
+		$post->post_author       = '7';
 
 		$category           = new stdClass();
 		$category->taxonomy = 'category';
