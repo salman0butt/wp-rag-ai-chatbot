@@ -7,7 +7,12 @@
 
 declare(strict_types=1);
 
+use WpRagAiChatbot\Tests\Support\Providers\WordPressAi\FakeWordPressAiError;
 use WpRagAiChatbot\Tests\Support\Providers\WordPressAi\RuntimeShim;
+
+if ( ! class_exists( 'WP_Error', false ) ) {
+	class_alias( FakeWordPressAiError::class, 'WP_Error' );
+}
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedFunctionFound -- Isolated test shims mirror exact WordPress public API names.
 /**
