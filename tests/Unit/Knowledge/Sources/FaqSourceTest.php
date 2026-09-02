@@ -35,7 +35,7 @@ final class FaqSourceTest extends TestCase {
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain record public API intentionally follows the approved camelCase contract.
 		self::assertSame( 'faq:support-faq:0', $first[0]->documentKey );
 		self::assertSame( 'faq:support-faq:1', $first[1]->documentKey );
-		self::assertSame( 'Question: What is RAG?\nAnswer: Retrieval augmented generation.', $first[0]->content );
+		self::assertSame( "Question: What is RAG?\nAnswer: Retrieval augmented generation.", $first[0]->content );
 		self::assertSame( 'What is RAG?', $first[0]->title );
 		self::assertSame( 'faq', $first[0]->documentType );
 		self::assertSame( 9, $first[0]->sourceId );
@@ -86,7 +86,7 @@ final class FaqSourceTest extends TestCase {
 			( new FaqSource() )->documents(
 				$this->source(
 					config: array(
-						'items' => array(
+						'items'      => array(
 							array(
 								'question' => 'Q',
 								'answer'   => 'A',
