@@ -68,6 +68,7 @@ final class MigrationSqlTest extends TestCase {
 		self::assertStringContainsString( 'source_id bigint(20) unsigned NOT NULL', $sql );
 		self::assertStringContainsString( 'content longtext NOT NULL', $sql );
 		self::assertStringContainsString( 'metadata_json longtext NULL', $sql );
+		self::assertStringContainsString( "visibility varchar(32) NOT NULL DEFAULT 'public'", $sql );
 		self::assertStringContainsString( 'UNIQUE KEY document_key (document_key)', $sql );
 		self::assertStringContainsString( 'KEY source_id (source_id)', $sql );
 		self::assertStringContainsString( 'KEY external_id (external_id)', $sql );
