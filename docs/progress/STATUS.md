@@ -1,14 +1,14 @@
 # Global Status
 
 - Current milestone: M04 — WordPress Knowledge Source Framework.
-- Current task: Task 4 — WordPress content gateway boundary.
-- Current phase: IN PROGRESS — source contract/registry/hash, manual text, and FAQ normalization are implemented with strict TDD; WordPress gateway/source/bootstrap/smoke/final integration remain.
+- Current task: Task 5 — WordPress post/page/public-CPT source.
+- Current phase: IN PROGRESS — Tasks 1-4 are implemented with strict TDD and review; WordPress post normalization, bootstrap/extension wiring, milestone-specific WordPress smoke, final review, reconciliation, and integration remain.
 - Completed milestones on `main`: M00, M01, M02, M03.
-- Current `main`: `65c1aa9a7081ac0d831bb118a0cd445b4f5ba5e1` — M03 closeout documentation merged; CI run `33671200567` passed all permanent jobs.
+- Current `main` at this run's recovered baseline: `65c1aa9a7081ac0d831bb118a0cd445b4f5ba5e1` — M03 closeout documentation merged; CI run `33671200567` passed all permanent jobs. Re-check latest `main` before the next implementation unit and before integration.
 - Remaining milestones after M04: M05, M06, M07, M08, M09, M10, M11, M12, M13, M14, M15, M16, M17, M18, M19, M20, M21, M22, M23, M24.
 - Execution environment: connected GitHub branch isolation plus exact-SHA GitHub Actions are the dependency-backed execution path under repository policy/ADR-016/018.
 - Active M04 branch: `feat/m04-wordpress-knowledge-sources`.
-- Active PR: draft PR #4 `feat: build M04 WordPress knowledge source framework`; no review submissions or review threads were present at recovery.
+- Active PR: draft PR #4 `feat: build M04 WordPress knowledge source framework`; no submitted reviews or unresolved review threads were present at Task 4 closeout.
 - M04 design: `docs/superpowers/specs/2026-09-03-m04-wordpress-knowledge-sources-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - M04 implementation plan: `docs/superpowers/plans/2026-09-03-m04-wordpress-knowledge-sources.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - Task 1 RED/GREEN: `5108cb315ead4e7213c033d0e094c49978e8da02` / `5cdc7d105a3a80f601b826b6ccad135a862d1f61`; RED CI `33671328652`, GREEN PHP evidence in `33671611425`.
@@ -16,10 +16,15 @@
 - Task 3 valid RED: `551d1690b83b43cf0b6f8f589ce3f9d8ed3b8e25`, CI `33673099461`; WPCS/PHPStan clean, then exactly 5 missing-`FaqSource` failures (`153 tests / 782 assertions`).
 - Task 3 initial GREEN: `96f44569d2478d6a6631ac44fde30026f657dc29`, CI `33673225337`; WPCS/PHPStan clean, PHPUnit `153 tests / 798 assertions`, Composer audit clean.
 - Independent Task 3 review found one Important data-integrity issue: malformed later FAQ items were validated only after earlier items could already be yielded, allowing partial ingestion by a streaming consumer.
-- Review-fix RED: `9417ad1d80f0855f5db4ff066eae4b9ac4caf474`, CI `33673441211`; WPCS/PHPStan clean, PHPUnit `154 tests / 800 assertions / 1 failure`, exactly because the later malformed item was not rejected before first yield.
-- Review-fix GREEN: `918ca7558d100b2e5076924bc62937886b368ab2`, CI `33673592282`; WPCS/PHPStan clean, PHPUnit `154 tests / 800 assertions`, Composer audit clean. FAQ items are now fully validated/normalized before any document is yielded.
+- Task 3 review-fix RED/GREEN: `9417ad1d80f0855f5db4ff066eae4b9ac4caf474` / `918ca7558d100b2e5076924bc62937886b368ab2`; regression proved validation must complete before first yield; GREEN PHP result `154 tests / 800 assertions`, Composer audit clean.
+- Task 4 first test-only SHA `a1f18f25f718361fa4ba829b82aa5ded649a2ff1` failed WPCS before PHPUnit and is not behavioral RED.
+- Task 4 valid RED: `0bf623faf5b4f00fde0aa3fd0ad31a7dfb50e6f3`, CI `33675981175`; WPCS/PHPStan clean, PHPUnit `158 tests / 804 assertions / 4 failures`, all expected because `NativeWordPressContentGateway` did not yet exist.
+- Task 4 implementation: `WordPressContentGateway`, immutable `WordPressPost`, and `NativeWordPressContentGateway`; native queries are bounded/paged/deterministic, publish-only by default, private only by explicit opt-in, exclude password-protected posts, map permalinks, and normalize taxonomy labels without arbitrary post-meta reads or outbound HTTP.
+- Task 4 exact-head GREEN: `8a9ceb2fb6021a5f87bba460ef43eca4bec10b81`, CI `33676782328`; all permanent jobs green. PHPStan reported no errors; PHPUnit `158 tests / 822 assertions`; Composer audit clean; JS quality, package generation/assertion/artifact upload, and WordPress activation/database/provider smoke all passed.
+- Independent Task 4 second-pass review: Critical none; Important none; no submitted PR reviews or unresolved review threads. Narrow WPCS suppressions remain documented only where the approved camelCase contract/value surface requires them.
 - Completed-slice review: no unresolved Critical or Important findings. Full M04 review remains required before integration.
-- Branch integration note: M04 branch began before the current M03 closeout documentation on `main`; reconcile branch with current `main` before final M04 integration, preserving both M03 closeout evidence and M04 current-state docs.
-- M04 is not merge-ready: Tasks 4-8, real WordPress M04 smoke, final security/performance review, durable completion evidence, exact-head PR CI, branch reconciliation, merge, and post-merge `main` CI remain unfinished.
-- Blocked items: none for Task 4.
-- Exact next action: recover latest `main`, PR #4, branch head/CI and concurrency; if safe, execute Task 4 from the auto-approved plan with strict TDD — add WordPress content gateway contract/data tests first, obtain behavioral RED, implement the minimum gateway boundary, and obtain GREEN before starting WordPress post normalization.
+- Branch integration note: M04 branch began before the current M03 closeout documentation on `main`; reconcile branch with latest `main` before final M04 integration, preserving both M03 closeout evidence and M04 current-state docs.
+- M04 is not merge-ready: Tasks 5-8, milestone-specific real WordPress source smoke, final security/performance review, durable completion evidence, exact-head PR CI, branch reconciliation, merge, and post-merge `main` CI remain unfinished.
+- Documentation closeout for Task 4 is being committed after implementation GREEN; the final documentation-only branch SHA must itself pass exact-SHA CI before this run is considered cleanly closed.
+- Blocked items: none.
+- Exact next action: recover latest `main`, PR #4, branch head/exact-head CI/reviews/concurrency; if safe, execute Task 5 from the auto-approved plan with strict TDD — add `WordPressPostSource` behavior tests first for configured type selection, content normalization, traceable metadata/version-hash/access semantics and invalid/empty cases, obtain behavioral RED, implement the minimum source against `WordPressContentGateway`, and obtain GREEN before Task 6.
