@@ -150,6 +150,11 @@ final class NativeWordPressContentGatewayTest extends TestCase {
 			->with( 42, array( 'category', 'post_tag' ), array( 'fields' => 'all' ) )
 			->andReturn( array( $category, $tag ) );
 		Functions\expect( 'is_wp_error' )->once()->with( array( $category, $tag ) )->andReturn( false );
+		Functions\when( 'wp_strip_all_tags' )->alias(
+			static function ( string $text ): string {
+				return preg_replace( '/<[^>]+>/', '', $text ) ?? '';
+			}
+		);
 
 		$gateway = new NativeWordPressContentGateway();
 		$result  = $gateway->posts( array( 'post' ), false, 1, 20 );
@@ -161,7 +166,7 @@ final class NativeWordPressContentGatewayTest extends TestCase {
 		self::assertSame( 'publish', $result[0]->status );
 		self::assertSame( 'Release notes', $result[0]->title );
 		self::assertSame( 'Short summary', $result[0]->excerpt );
-		self::assertSame( '<p>Long body</p>', $result[0]->content );
+		self::assertSame( 'Long body', $result[0]->content );
 		self::assertSame( 'https://example.test/release-notes/', $result[0]->url );
 		self::assertSame( '2026-09-03 00:15:00', $result[0]->modifiedGmt );
 		self::assertNull( $result[0]->language );
