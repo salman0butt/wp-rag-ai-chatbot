@@ -107,12 +107,12 @@ final class WordPressAiClientProvider implements GenerationProvider {
 		try {
 			$text = $result->toText();
 			$id   = $result->getId();
-			$data = $result->toArray();
+			$data = $this->result_data( $result->toArray() );
 		} catch ( Throwable ) {
 			throw $this->malformed_response();
 		}
 
-		if ( ! is_string( $text ) || '' === trim( $text ) || ! is_array( $data ) ) {
+		if ( '' === trim( $text ) ) {
 			throw $this->malformed_response();
 		}
 
@@ -135,6 +135,24 @@ final class WordPressAiClientProvider implements GenerationProvider {
 			$this->usage( $data['tokenUsage'] ?? null ),
 			$this->request_id( $id )
 		);
+	}
+
+	/**
+	 * Widen documented result metadata after validating the public array boundary.
+	 *
+	 * This keeps runtime normalization defensive when optional metadata is absent,
+	 * while avoiding assumptions derived only from current WordPress stubs.
+	 *
+	 * @param mixed $data Public WordPress result metadata.
+	 * @return array<string, mixed>
+	 * @throws ProviderException When result metadata is not an array.
+	 */
+	private function result_data( mixed $data ): array {
+		if ( ! is_array( $data ) ) {
+			throw $this->malformed_response();
+		}
+
+		return $data;
 	}
 
 	/**
