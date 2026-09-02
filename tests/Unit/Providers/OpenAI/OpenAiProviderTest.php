@@ -98,7 +98,13 @@ final class OpenAiProviderTest extends TestCase {
 		$transport = new QueuedHttpTransport( array( new HttpResponse( 200, array(), $body ) ) );
 		$result    = $this->provider( $transport )->generate( new GenerationRequest( 'gpt-test', 'Hello', '   ', null ) );
 
-		self::assertSame( array( 'model' => 'gpt-test', 'input' => 'Hello' ), $transport->requests[0]->json_body );
+		self::assertSame(
+			array(
+				'model' => 'gpt-test',
+				'input' => 'Hello',
+			),
+			$transport->requests[0]->json_body
+		);
 		self::assertNull( $result->usage->input_tokens );
 		self::assertNull( $result->usage->output_tokens );
 		self::assertNull( $result->usage->total_tokens );
@@ -194,9 +200,9 @@ final class OpenAiProviderTest extends TestCase {
 	 */
 	public function test_generate_redacts_and_truncates_upstream_error_body(): void {
 		$this->require_adapter();
-		$secret    = 'openai-secret-value';
+		$secret     = 'openai-secret-value';
 		$error_body = '{"error":{"message":"' . $secret . ' ' . str_repeat( 'x', 2200 ) . '"}}';
-		$transport = new QueuedHttpTransport( array( new HttpResponse( 500, array(), $error_body ) ) );
+		$transport  = new QueuedHttpTransport( array( new HttpResponse( 500, array(), $error_body ) ) );
 
 		try {
 			$this->provider( $transport, $secret )->generate( new GenerationRequest( 'gpt-test', 'Hello' ) );
@@ -237,7 +243,7 @@ final class OpenAiProviderTest extends TestCase {
 				new HttpResponse( 200, array(), $body ),
 			)
 		);
-		$models = $this->provider( $transport, 'openai-secret' )->models();
+		$models    = $this->provider( $transport, 'openai-secret' )->models();
 
 		self::assertCount( 2, $transport->requests );
 		foreach ( $transport->requests as $request ) {
@@ -255,7 +261,13 @@ final class OpenAiProviderTest extends TestCase {
 		self::assertSame( array(), $models[0]->output_modalities );
 		self::assertSame( array(), $models[0]->capabilities );
 		self::assertNull( $models[0]->context_window );
-		self::assertSame( array( 'created' => 123, 'owned_by' => 'openai' ), $models[0]->provider_metadata );
+		self::assertSame(
+			array(
+				'created'  => 123,
+				'owned_by' => 'openai',
+			),
+			$models[0]->provider_metadata
+		);
 		self::assertSame( array(), $models[1]->provider_metadata );
 	}
 
