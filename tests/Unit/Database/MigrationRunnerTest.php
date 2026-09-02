@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Database;
 
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use WpRagAiChatbot\Database\MigrationLock;
 use WpRagAiChatbot\Database\MigrationRunner;
 use WpRagAiChatbot\Database\MigrationStatus;
 use WpRagAiChatbot\Tests\Support\Database\FailingMigration;
@@ -98,6 +99,51 @@ final class MigrationRunnerTest extends TestCase {
 		self::assertSame( MigrationStatus::UP_TO_DATE, $runner->run() );
 		self::assertFalse( $lock->attempted );
 		self::assertSame( array(), $log->versions );
+	}
+
+	/**
+	 * A version changed by another process while waiting to acquire the lock is refreshed before DDL runs.
+	 */
+	public function test_refreshes_schema_version_after_lock_acquisition(): void {
+		$store = new FakeVersionStore( 0 );
+		$log   = new MigrationLog();
+		$lock  = new class( $store ) implements MigrationLock {
+			/**
+			 * Create the race-condition fixture.
+			 *
+			 * @param FakeVersionStore $store Shared version store.
+			 */
+			public function __construct( private readonly FakeVersionStore $store ) {
+			}
+
+			/**
+			 * Simulate another process completing migrations immediately before this process owns the lock.
+			 */
+			public function acquire(): bool {
+				$this->store->advanceExternally( 2 );
+				return true;
+			}
+
+			/**
+			 * No-op release fixture.
+			 */
+			public function release(): void {
+			}
+		};
+
+		$runner = new MigrationRunner(
+			new NullConnection(),
+			$store,
+			$lock,
+			array(
+				new RecordingMigration( 1, $log ),
+				new RecordingMigration( 2, $log ),
+			)
+		);
+
+		self::assertSame( MigrationStatus::UP_TO_DATE, $runner->run() );
+		self::assertSame( array(), $log->versions );
+		self::assertSame( array(), $store->writes );
 	}
 
 	/**
