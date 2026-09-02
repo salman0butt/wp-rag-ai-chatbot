@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Tests\Unit\Providers\Credentials;
 
 use PHPUnit\Framework\TestCase;
+use Throwable;
 use WpRagAiChatbot\Providers\Credentials\Secret;
 
 /**
@@ -42,11 +43,36 @@ final class SecretTest extends TestCase {
 
 		$secret = new Secret( 'sk-test-super-secret' );
 		$debug  = $secret->__debugInfo();
+		$json   = wp_json_encode( $secret );
 
 		self::assertSame( '[REDACTED]', (string) $secret );
 		self::assertSame( '[REDACTED]', $secret->jsonSerialize() );
 		self::assertSame( array( 'value' => '[REDACTED]' ), $debug );
 		self::assertNotContains( 'sk-test-super-secret', $debug );
+		self::assertIsString( $json );
+		self::assertStringNotContainsString( 'sk-test-super-secret', $json );
+	}
+
+	/**
+	 * PHP export and native serialization surfaces must never expose plaintext.
+	 */
+	public function test_export_and_native_serialization_never_expose_plaintext(): void {
+		$this->require_secret();
+
+		$plaintext = 'sk-test-export-super-secret';
+		$secret    = new Secret( $plaintext );
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- Security regression test intentionally exercises PHP export behavior.
+		$exported = var_export( $secret, true );
+
+		self::assertStringNotContainsString( $plaintext, $exported );
+
+		try {
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Security regression test intentionally exercises native serialization behavior.
+			$serialized = serialize( $secret );
+			self::assertStringNotContainsString( $plaintext, $serialized );
+		} catch ( Throwable $exception ) {
+			self::assertStringNotContainsString( $plaintext, $exception->getMessage() );
+		}
 	}
 
 	/**
