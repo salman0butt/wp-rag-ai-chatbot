@@ -38,6 +38,15 @@ final class FakeVersionStore implements SchemaVersionStore {
 	}
 
 	/**
+	 * Simulate a version change performed by another process without recording a local write.
+	 *
+	 * @param int $version Externally persisted version.
+	 */
+	public function advanceExternally( int $version ): void {
+		$this->version = $version;
+	}
+
+	/**
 	 * Save a version.
 	 *
 	 * @param int $version Applied version.
