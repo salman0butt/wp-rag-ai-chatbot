@@ -16,12 +16,12 @@ use WP_Term;
  * Reads bounded, traceable content through WordPress core APIs.
  */
 final class NativeWordPressContentGateway implements WordPressContentGateway {
+	// phpcs:disable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Public method follows the approved M04 gateway contract.
 	/**
 	 * Return public post types in deterministic order.
 	 *
 	 * @return array<int, string>
 	 */
-	// phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Public method follows the approved M04 gateway contract.
 	public function publicPostTypes(): array {
 		$post_types = array_values( get_post_types( array( 'public' => true ), 'names' ) );
 		$post_types = array_map( 'strval', $post_types );
@@ -29,6 +29,7 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 
 		return $post_types;
 	}
+	// phpcs:enable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
 
 	/**
 	 * Return one bounded page of normalized WordPress posts.
@@ -67,7 +68,11 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 				continue;
 			}
 
-			/** @var WP_Post $post */
+			/**
+			 * Narrow the static-analysis type after the runtime object guard.
+			 *
+			 * @var WP_Post $post WordPress post-like value.
+			 */
 			$post_id   = (int) $post->ID;
 			$post_type = (string) $post->post_type;
 			$permalink = get_permalink( $post_id );
@@ -118,7 +123,11 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 				continue;
 			}
 
-			/** @var WP_Term $term */
+			/**
+			 * Narrow the static-analysis type after the runtime object guard.
+			 *
+			 * @var WP_Term $term WordPress taxonomy-term-like value.
+			 */
 			$taxonomy              = (string) $term->taxonomy;
 			$labels[ $taxonomy ][] = array(
 				'name' => (string) $term->name,
