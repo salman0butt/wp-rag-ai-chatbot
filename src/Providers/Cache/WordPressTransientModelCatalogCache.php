@@ -79,6 +79,7 @@ final class WordPressTransientModelCatalogCache implements ModelCatalogCache {
 	 * Resolve the fixed transient key for a direct provider.
 	 *
 	 * @param string $provider_id Stable provider identifier.
+	 * @throws InvalidArgumentException When the provider has no M03 transient mapping.
 	 */
 	private function transient_key( string $provider_id ): string {
 		return match ( $provider_id ) {

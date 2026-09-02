@@ -15,6 +15,9 @@ use WpRagAiChatbot\Providers\ModelCatalogProvider;
  * Adds provider-scoped model catalog caching without changing upstream adapters.
  */
 final class CachedModelCatalogProvider implements ModelCatalogProvider {
+	/**
+	 * Stable provider identifier captured from upstream.
+	 */
 	private readonly string $provider_id;
 
 	/**
