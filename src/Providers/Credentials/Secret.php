@@ -35,7 +35,7 @@ final class Secret implements JsonSerializable {
 	/**
 	 * Execute a consumer with plaintext without returning plaintext.
 	 *
-	 * @param Closure(string):void $consumer Plaintext consumer.
+	 * @param Closure $consumer Plaintext consumer.
 	 */
 	public function with_value( Closure $consumer ): void {
 		$consumer( $this->value );
