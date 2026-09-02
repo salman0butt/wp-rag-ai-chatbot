@@ -48,6 +48,11 @@ final class MigrationRunner {
 		}
 
 		try {
+			$current = $this->versions->current();
+			if ( $current >= DatabaseSchema::VERSION ) {
+				return MigrationStatus::UP_TO_DATE;
+			}
+
 			foreach ( $this->migrations as $migration ) {
 				if ( $migration->version() <= $current ) {
 					continue;
