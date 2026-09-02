@@ -123,6 +123,9 @@ final class WordPressTransientModelCatalogCacheTest extends TestCase {
 
 	/**
 	 * Build one normalized model fixture.
+	 *
+	 * @param string $provider_id Provider identifier.
+	 * @param string $model_id Model identifier.
 	 */
 	private function model( string $provider_id, string $model_id ): ModelInfo {
 		return new ModelInfo(
@@ -140,6 +143,8 @@ final class WordPressTransientModelCatalogCacheTest extends TestCase {
 	/**
 	 * Build the plain normalized transient payload for one model.
 	 *
+	 * @param string $provider_id Provider identifier.
+	 * @param string $model_id Model identifier.
 	 * @return array<string, mixed>
 	 */
 	private function model_payload( string $provider_id, string $model_id ): array {

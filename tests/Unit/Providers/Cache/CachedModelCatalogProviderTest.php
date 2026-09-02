@@ -137,6 +137,8 @@ final class CachedModelCatalogProviderTest extends TestCase {
 
 	/**
 	 * Build one normalized model fixture.
+	 *
+	 * @param string $model_id Model identifier.
 	 */
 	private function model( string $model_id ): ModelInfo {
 		return new ModelInfo(
