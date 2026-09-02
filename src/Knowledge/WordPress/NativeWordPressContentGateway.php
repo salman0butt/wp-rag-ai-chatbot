@@ -9,9 +9,6 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Knowledge\WordPress;
 
-use WP_Post;
-use WP_Term;
-
 /**
  * Reads bounded, traceable content through WordPress core APIs.
  */
@@ -64,15 +61,6 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 
 		$result = array();
 		foreach ( $posts as $post ) {
-			if ( ! $post instanceof WP_Post && ! is_object( $post ) ) {
-				continue;
-			}
-
-			/**
-			 * Narrow the static-analysis type after the runtime object guard.
-			 *
-			 * @var WP_Post $post WordPress post-like value.
-			 */
 			$post_id   = (int) $post->ID;
 			$post_type = (string) $post->post_type;
 			$permalink = get_permalink( $post_id );
@@ -119,15 +107,6 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 
 		$labels = array();
 		foreach ( $terms as $term ) {
-			if ( ! $term instanceof WP_Term && ! is_object( $term ) ) {
-				continue;
-			}
-
-			/**
-			 * Narrow the static-analysis type after the runtime object guard.
-			 *
-			 * @var WP_Term $term WordPress taxonomy-term-like value.
-			 */
 			$taxonomy              = (string) $term->taxonomy;
 			$labels[ $taxonomy ][] = array(
 				'name' => (string) $term->name,
