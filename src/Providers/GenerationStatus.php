@@ -13,8 +13,8 @@ namespace WpRagAiChatbot\Providers;
  * Provider-neutral generation completion state.
  */
 enum GenerationStatus: string {
-	case COMPLETED = 'completed';
+	case COMPLETED  = 'completed';
 	case INCOMPLETE = 'incomplete';
-	case FAILED = 'failed';
-	case UNKNOWN = 'unknown';
+	case FAILED     = 'failed';
+	case UNKNOWN    = 'unknown';
 }

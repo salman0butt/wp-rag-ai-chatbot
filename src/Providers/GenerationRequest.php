@@ -15,9 +15,24 @@ use InvalidArgumentException;
  * Immutable provider-neutral text generation request.
  */
 final readonly class GenerationRequest {
+	/**
+	 * Normalized model identifier.
+	 */
 	public string $model_id;
+
+	/**
+	 * Original user input.
+	 */
 	public string $input;
+
+	/**
+	 * Optional instruction text.
+	 */
 	public ?string $instructions;
+
+	/**
+	 * Optional maximum output token count.
+	 */
 	public ?int $max_output_tokens;
 
 	/**
