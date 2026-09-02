@@ -98,10 +98,6 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 	 */
 	private function encrypt_sodium( string $provider_id, string $plaintext ): string {
 		$nonce_size = constant( 'SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES' );
-		if ( ! is_int( $nonce_size ) || $nonce_size < 1 ) {
-			throw $this->configuration_failure( $provider_id );
-		}
-
 		$nonce      = random_bytes( $nonce_size );
 		$ciphertext = sodium_crypto_aead_xchacha20poly1305_ietf_encrypt(
 			$plaintext,
@@ -156,7 +152,7 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 		$nonce_size = constant( 'SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES' );
 		$nonce      = $this->decode_base64( $provider_id, $data['nonce'] );
 		$ciphertext = $this->decode_base64( $provider_id, $data['ciphertext'] );
-		if ( ! is_int( $nonce_size ) || strlen( $nonce ) !== $nonce_size ) {
+		if ( strlen( $nonce ) !== $nonce_size ) {
 			throw $this->configuration_failure( $provider_id );
 		}
 
