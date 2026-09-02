@@ -15,6 +15,8 @@ namespace WpRagAiChatbot\Database;
 final class DatabaseUninstaller {
 	/**
 	 * Run the destructive uninstall boundary when deletion was explicitly enabled.
+	 *
+	 * @throws DatabaseException When plugin-owned tables cannot be removed.
 	 */
 	public static function run(): void {
 		$delete_data = get_option( DatabaseSchema::DELETE_DATA_OPTION, false );
@@ -30,8 +32,12 @@ final class DatabaseUninstaller {
 		$connection = new WpdbConnection( $wpdb );
 		$tables     = new TableNames( $connection->prefix() );
 
-		$connection->query( $connection->prepare( 'DROP TABLE IF EXISTS %i', $tables->documents() ) );
-		$connection->query( $connection->prepare( 'DROP TABLE IF EXISTS %i', $tables->sources() ) );
+		foreach ( $tables->all() as $table ) {
+			$result = $connection->query( $connection->prepare( 'DROP TABLE IF EXISTS %i', $table ) );
+			if ( false === $result ) {
+				throw new DatabaseException( 'Could not remove plugin database table during uninstall.' );
+			}
+		}
 
 		delete_option( DatabaseSchema::VERSION_OPTION );
 		delete_option( DatabaseSchema::DELETE_DATA_OPTION );
