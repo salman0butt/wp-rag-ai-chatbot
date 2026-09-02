@@ -167,7 +167,7 @@ final class WordPressPostSource implements KnowledgeSource {
 		return new DocumentRecord(
 			null,
 			$document_key,
-			$source->id,
+			(int) $source->id,
 			(string) $post->id,
 			$this->type(),
 			$title,
