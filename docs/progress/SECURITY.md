@@ -132,6 +132,36 @@ Five Important M03 findings were fixed with focused regressions. Unresolved Crit
 - Documentation-complete integration head `da620a89d420bf22a7dc146b2cab84113f376fcf`, run `33670130318`: all permanent jobs green.
 - PR #2 merged as `2ed420a9217422f856afaf64b68fdde78ea0b063`; post-merge run `33670406871`: `php-quality`, `js-quality`, `wordpress-smoke`, and `package` all green.
 
+## M04 knowledge-source security evidence
+
+Pre-integration runtime/smoke candidate: `aa246186a218efa7208403c36fecd051c6c143ee`, CI `33687296386`; all four permanent jobs passed, including the new real-WordPress knowledge smoke. Artifact `wp-rag-ai-chatbot` ID `9868623773`, 75,709 bytes, digest `sha256:41f285035d298187635bfbfd9d9f8aff828003439384979503ba37e84b8b3fbf`.
+
+### Content/access boundary
+- M04 adds no public REST endpoint, upload parser, external crawler, provider call, model invocation, vector operation, or new credential handling.
+- Native WordPress enumeration is limited to public post types. Default normalization accepts published content only; private content requires explicit `include_private=true` and remains marked `private`.
+- Draft, pending, trash, and password-protected content is not emitted. The real WordPress smoke verifies draft/password exclusion and private default exclusion/explicit opt-in.
+- WordPress title, excerpt, and content markup is converted to text with `wp_strip_all_tags()` at the native adapter boundary before canonical document normalization.
+- Arbitrary post meta is never read. Only explicit post identity/status/author/permalink/text and selected taxonomy labels cross the gateway.
+- Canonical URL comes from WordPress `get_permalink()` and is traceable to the source post ID.
+
+### Determinism/integrity boundary
+- `DocumentHasher` recursively canonicalizes associative-key order while preserving list order and uses SHA-256 over a throwing JSON encoding path.
+- WordPress document hashes include key, external ID, title, canonical URL, normalized content, taxonomy/access metadata, source version, language, and visibility.
+- FAQ items are fully validated before the first document is yielded, preventing partial ingestion when a later item is malformed. This was an Important review finding fixed through dedicated RED/GREEN regression evidence.
+- `KnowledgeBootstrap` validates the extension filter return shape and every extension implementation before publishing the composed registry, so invalid extensions fail closed without exposing partial registry state.
+
+### Real WordPress lifecycle evidence
+- `npm run test:wp:knowledge` creates real published page/post, private, draft, and password-protected fixtures.
+- It verifies published normalization, canonical URL, sanitized text, stable document key/hash across repeated reads, private opt-in behavior, draft/password exclusion, and fixture cleanup.
+- Task 7 exposed no production defect; therefore no Task 7 production regression cycle was required by the approved plan.
+
+### Final M04 review result
+- Critical findings: none.
+- Important findings fixed: FAQ partial-yield integrity and native WordPress markup crossing the adapter boundary.
+- Unresolved Critical/Important findings: **none**.
+- Minor non-blocking considerations: not every defensive invalid-config guard has a separate focused test, and taxonomy lookup remains per post. Runtime enumeration is bounded to 100 records per page, stable-ID ordered, `no_found_rows`, and performs no remote I/O; batching taxonomy reads is deferred until evidence justifies added complexity.
+- M04 introduces no UI, so accessibility review is N/A.
+
 ## Open security design work
 
-Rate/cost controls for public chat/provider invocation, admin credential mutation permissions/nonces/REST shape, crawler SSRF allow/deny policy, cross-site embed session/origin policy, prompt/retrieval/tool-injection defenses, action authorization, privacy/retention, and later abuse controls remain owned by M12/M15/M19/M22 and related milestones. M03 establishes the server-side provider/credential boundary but intentionally does not expose a public prompt or credential-management REST surface.
+Rate/cost controls for public chat/provider invocation, admin credential mutation permissions/nonces/REST shape, crawler SSRF allow/deny policy, cross-site embed session/origin policy, prompt/retrieval/tool-injection defenses, action authorization, privacy/retention, and later abuse controls remain owned by M12/M15/M19/M22 and related milestones. M03 establishes the server-side provider/credential boundary; M04 establishes deterministic knowledge-source/access boundaries without exposing public prompt or remote-crawl surfaces.

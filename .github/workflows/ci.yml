@@ -56,6 +56,7 @@ jobs:
       - run: npm run test:wp:activation
       - run: npm run test:wp:database
       - run: npm run test:wp:providers
+      - run: npm run test:wp:knowledge
       - if: always()
         run: npm run env:stop
 

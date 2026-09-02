@@ -4,12 +4,12 @@ Status: ACTIVE — exact milestone evidence is recorded in each milestone ledger
 
 | Layer | Purpose | First Required | Evidence location |
 |---|---|---|---|
-| PHP unit | isolated PHP/plugin behavior | M01 | M01-M03 + CI `php-quality` |
-| WordPress integration | hooks/plugin lifecycle/database/provider runtime | M01 | M01-M03 + CI `wordpress-smoke` |
+| PHP unit | isolated PHP/plugin behavior | M01 | M01-M04 + CI `php-quality` |
+| WordPress integration | hooks/plugin lifecycle/database/provider/knowledge runtime | M01 | M01-M04 + CI `wordpress-smoke` |
 | JS/TS unit | build-tooling/component behavior | M01 | M01 + CI `js-quality` |
 | Typecheck/lint/build | frontend/toolchain production integrity | M01 foundation; M12+ UI | M01 + relevant UI milestone |
 | Dependency audit | known Composer/npm advisories | M01 | CI PHP/JS quality jobs |
-| Release ZIP guard | required runtime files; exclude dev/private files | M01 foundation; M24 release | M01-M03 + CI `package`/package assertion; M24 final audit |
+| Release ZIP guard | required runtime files; exclude dev/private files | M01 foundation; M24 release | M01-M04 + CI `package`/package assertion; M24 final audit |
 | DB migrations | fresh install + upgrades + idempotency + locking/failure recovery | M02 | M02 + CI `php-quality`/`wordpress-smoke` |
 | Repository/SQL | prepared queries, pagination, source ownership/isolation | M02 | M02 + CI `wordpress-smoke` |
 | Uninstall/data policy | retain default, explicit deletion, failure retryability | M02 | M02 + CI `php-quality`/`wordpress-smoke` |
@@ -18,7 +18,7 @@ Status: ACTIVE — exact milestone evidence is recorded in each milestone ledger
 | Provider HTTP policy | fixed endpoints/timeouts/redirects/retry classification | M03 | M03 + CI `php-quality` |
 | Provider cache | bounded catalog TTL, malformed eviction, refresh preservation | M03 | M03 + CI `php-quality` |
 | Live provider smoke | opt-in credential-gated path | M03 | M03 live-gating regression; actual live calls opt-in only |
-| Knowledge source contract | normalization and access metadata | M04 | M04-M06 |
+| Knowledge source contract | normalization and access metadata | M04 | M04-M06 + CI `php-quality`/`wordpress-smoke` |
 | Extractor security | type/size/parser failure controls | M05 | M05/M22 |
 | Chunking/indexing | boundaries/hash/dedup/incremental behavior | M07 | M07 |
 | Vector store contract | upsert/delete/search/filter/health | M08 | M08 |
@@ -46,14 +46,11 @@ Status: ACTIVE — exact milestone evidence is recorded in each milestone ledger
 
 Runtime candidate `4db24d95db0d572f28273734714c74a47ac8bb2e`, CI run `33603435032`:
 
-- **Migration unit behavior:** version ordering, already-applied skips, current-schema fast path, lock contention, failure version preservation, lock release, and post-lock version refresh race regression.
-- **Migration SQL:** V001 creates only sources; V002 creates only documents; required indexes are asserted; future tables/vector fields/foreign keys/non-portable JSON types are rejected by tests.
-- **Real WordPress migration:** clean schema creation, simulated V1→V2 upgrade through normal plugin loading, repeat/idempotent migration, expected indexes, and absence of future milestone tables.
-- **Repository integration:** 25-source pagination 10/10/5 with total 25; max requested page size clamped to 100; exact malicious-looking source/document keys; apostrophe/script-like/Unicode content; JSON metadata round-trip; source-scoped pagination; exact affected-row deletion.
-- **SQL injection regression:** values such as `source-' OR 1=1 --` and `" OR 1=1 --` remain literal data and do not expand result scope.
-- **Uninstall:** default retention, explicit opt-in deletion, option cleanup, clean reinstall, plus unit coverage proving failed destructive queries throw and preserve retry state.
-- **Package:** `uninstall.php` and `DatabaseUninstaller.php` are required archive members while tests/docs/.github/env/Node/dependency manifests remain excluded.
-- **Dependency/static gates:** Composer audit, WPCS, PHPStan, PHPUnit, npm critical-audit gate, JS lint/typecheck/tests/build all pass.
+- Migration unit behavior covers version ordering, skips, current-schema fast path, lock contention, failure preservation/release, and post-lock refresh race.
+- Migration SQL and real WordPress migration assert the intended M02 schema only, fresh install, V1→V2 upgrade, idempotency, and indexes.
+- Repository integration covers bounded pagination, exact malicious-looking keys, apostrophe/script-like/Unicode content, JSON metadata, source isolation, affected-row deletion, and SQL-injection-shaped literal values.
+- Uninstall covers retain-by-default, explicit deletion, retryable failure, option cleanup, and clean reinstall.
+- Package/dependency/static gates pass.
 
 Artifact evidence: ID `9836065304`, digest `sha256:f77b32bf377b4f6fbb65cf1721a87b5e0408041ad5444816076227ab931aeab3`.
 
@@ -61,22 +58,27 @@ Artifact evidence: ID `9836065304`, digest `sha256:f77b32bf377b4f6fbb65cf1721a87
 
 Integrated `main` commit `2ed420a9217422f856afaf64b68fdde78ea0b063`, post-merge CI run `33670406871`:
 
-- **Provider value/contracts:** stable IDs, normalized generation/result/status/usage, provider health/error/descriptor contracts, registry lookup and duplicate protection.
-- **Credential precedence/storage:** environment -> constant -> encrypted option; blank runtime values fall through; options are non-autoloaded; save/load/delete behavior and failure cases covered.
-- **Cryptography:** XChaCha20-Poly1305 preferred, AES-256-GCM fallback, provider-bound HKDF/AAD, strict envelope/base64 validation, cross-provider rejection, no-backend failure, and tamper/fail-closed behavior.
-- **Secret safety:** Secret string/JSON/debug/export/native-serialization surfaces do not expose plaintext; known secrets and credential headers redact; 2048-byte diagnostic limit; regression proves a secret crossing the truncation boundary exposes no plaintext prefix.
-- **Provider diagnostic IDs:** OpenAI/OpenRouter request-ID candidates are accepted only when known-secret sanitization leaves them unchanged; secret-bearing header/top-level IDs are rejected.
-- **HTTP policy:** WordPress transport carries exact timeout/redirect values, classifies clear timeouts, strips raw transport diagnostics; generation sends once; discovery retries once only for transport/502/503/504.
-- **Model catalog cache:** 900-second TTL, valid hit/miss, malformed transient eviction, invalidate, successful refresh, failed-refresh preservation.
-- **OpenAI/OpenRouter:** fixed endpoint generation/model-discovery contracts, normalized HTTP errors, usage/status/request IDs, malformed payload rejection, and explicit metadata-only model capability handling.
-- **WordPress AI Client:** public API feature detection, safe WP6.9 absence, public builder/result normalization, WP_Error sanitization, malformed-result handling, and fail-closed unexpected Throwable regression.
-- **Provider bootstrap/configuration:** all M03 providers composed before plugin loaded signal; descriptor serialization is secret-free/local-only; bootstrap performs no provider HTTP call.
-- **Real WordPress integration:** fake direct credential is encrypted in `wp_options`, envelope validated, autoload disabled, callback-only plaintext observation, delete behavior, precedence/fallback, runtime WP-AI feature detection, and secret-free descriptors.
-- **Live gating:** normal CI proves the live wrapper skips unless explicitly opted in and validates provider/key/model gates without making live provider calls.
-- **Package completeness:** every `src/Providers/**/*.php` runtime file is required in the release ZIP; development scripts/tests/docs/private manifests remain rejected.
-- **Review regressions:** five Important findings fixed before completion; no unresolved Critical/Important findings.
-- **Dependency/static gates:** Composer audit clean; WPCS/PHPStan clean; PHPUnit `134 tests / 747 assertions`; npm critical gate, JS lint/typecheck/Jest/build, WordPress smoke, and package artifact all green.
-- **Exact-head integration gate:** documentation-complete head `da620a89d420bf22a7dc146b2cab84113f376fcf`, run `33670130318`, passed all four permanent jobs before merge.
-- **Post-merge gate:** `main` run `33670406871` passed `php-quality`, `js-quality`, `wordpress-smoke`, and `package`; WordPress activation, database, and provider smoke all completed successfully.
+- Provider contracts, credential precedence/encrypted storage, authenticated crypto, secret redaction/export safety, fixed HTTP policy, cache behavior, OpenAI/OpenRouter adapters, optional WordPress AI Client, bootstrap/configuration, real WordPress credential smoke, live-call gating, and production-package completeness are covered.
+- Five Important review findings were fixed before completion with focused regressions; unresolved Critical/Important findings: none.
+- Composer audit, WPCS/PHPStan, PHPUnit `134 tests / 747 assertions`, npm critical gate, JS lint/typecheck/Jest/build, WordPress smoke, and package artifact all passed.
+- Documentation-complete head `da620a89d420bf22a7dc146b2cab84113f376fcf`, run `33670130318`, passed all permanent jobs before merge; post-merge run `33670406871` passed all permanent jobs.
 
 Post-merge artifact evidence: ID `9862272933`, 64,804 bytes, digest `sha256:e44bd8abbc96c1577c66ff42b4d3ba6507bb37b067f71e0b2c05d6d69ca4782b`.
+
+## M04 Verified Coverage
+
+Task 7 integration candidate `aa246186a218efa7208403c36fecd051c6c143ee`, CI run `33687296386`:
+
+- **Source contract/registry:** stable source types, registration/lookup/order, duplicate/empty rejection, extension validation, and no partial registry publication.
+- **Deterministic hashing:** recursively canonicalized associative keys, preserved list order, SHA-256 content hashes, and content/access metadata sensitivity.
+- **Manual text:** persisted-source guard, deterministic one-document normalization, blank/visibility validation, stable key/version/hash, language and visibility metadata.
+- **FAQ:** deterministic per-item keys/content/hash, full-list validation before first yield, malformed item/visibility/persistence rejection. The Important partial-yield defect has permanent RED/GREEN regression coverage.
+- **WordPress gateway:** public post-type discovery, bounded 1..100 paging, stable ID order, publish-only default/private opt-in, password exclusion, canonical permalink, author/status/text/taxonomy mapping, no arbitrary post meta.
+- **WordPress post source:** default post/page and configured public CPT selection, unsupported-type rejection, draft/pending/trash/password exclusion, explicit private opt-in, deterministic content/taxonomy metadata, stable `wp-post:{type}:{id}` key and `{modified_gmt}:{id}` version, multi-page consumption.
+- **Adapter sanitization:** dedicated Task 5 regression proves native WordPress title/excerpt/body HTML is stripped before crossing the gateway boundary.
+- **Knowledge bootstrap:** native manual/FAQ/WordPress source composition, plugins-loaded integration, valid extensions, invalid extension rejection, fail-closed composition.
+- **Real WordPress knowledge integration:** permanent `npm run test:wp:knowledge` creates published page/post, private, draft, and password-protected fixtures and proves public normalization, private default exclusion/opt-in inclusion, draft/password exclusion, canonical permalink/text, stable key/hash, and cleanup.
+- **Review:** one Important FAQ integrity defect and one adapter sanitization defect were fixed with regression evidence; final Task 8 review has no unresolved Critical/Important findings. Minor defensive-test isolation gaps and per-post taxonomy lookup remain non-blocking documented considerations.
+- **Dependency/static/permanent gates:** exact `aa246186...` run `33687296386` passed `php-quality`, `js-quality`, `wordpress-smoke`, and `package`; WordPress activation/database/provider/knowledge smoke all passed.
+
+Pre-integration artifact: ID `9868623773`, 75,709 bytes, digest `sha256:41f285035d298187635bfbfd9d9f8aff828003439384979503ba37e84b8b3fbf`.

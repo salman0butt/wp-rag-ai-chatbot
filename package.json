@@ -49,6 +49,7 @@
     "test:provider:live-gating": "bash scripts/test-live-provider-smoke-gating.sh",
     "test:wp:activation": "bash scripts/test-wp-activation.sh",
     "test:wp:database": "bash scripts/test-wp-database.sh",
+    "test:wp:knowledge": "bash scripts/test-wp-knowledge.sh",
     "test:wp:providers": "bash scripts/test-wp-providers.sh",
     "typecheck": "tsc --noEmit",
     "verify:js": "npm run check-engines && npm run lint:pkg && npm run lint:js && npm run typecheck && npm run test:js -- --runInBand && npm run build",
