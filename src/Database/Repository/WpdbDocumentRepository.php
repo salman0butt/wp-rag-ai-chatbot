@@ -26,6 +26,9 @@ use WpRagAiChatbot\Documents\DocumentRepository;
 final class WpdbDocumentRepository implements DocumentRepository {
 	/**
 	 * Create the repository.
+	 *
+	 * @param Connection $connection Database connection.
+	 * @param TableNames  $tables Plugin table names.
 	 */
 	public function __construct(
 		private readonly Connection $connection,
@@ -36,6 +39,7 @@ final class WpdbDocumentRepository implements DocumentRepository {
 	/**
 	 * Insert or update a document record.
 	 *
+	 * @param DocumentRecord $record Document record.
 	 * @throws DatabaseException When JSON encoding or the database write fails.
 	 */
 	public function save( DocumentRecord $record ): DocumentRecord {
@@ -44,21 +48,21 @@ final class WpdbDocumentRepository implements DocumentRepository {
 			throw new DatabaseException( 'Could not encode document metadata.' );
 		}
 
-		$data = array(
-			'document_key'  => $record->documentKey,
-			'source_id'     => $record->sourceId,
-			'external_id'   => $record->externalId,
-			'document_type' => $record->documentType,
-			'title'         => $record->title,
-			'canonical_url' => $record->canonicalUrl,
-			'content'       => $record->content,
-			'metadata_json' => $metadata_json,
-			'source_version'=> $record->sourceVersion,
-			'content_hash'  => $record->contentHash,
-			'language'      => $record->language,
-			'visibility'    => $record->visibility,
-			'created_at'    => $this->formatDateTime( $record->createdAt ),
-			'updated_at'    => $this->formatDateTime( $record->updatedAt ),
+		$data    = array(
+			'document_key'   => $record->documentKey,
+			'source_id'      => $record->sourceId,
+			'external_id'    => $record->externalId,
+			'document_type'  => $record->documentType,
+			'title'          => $record->title,
+			'canonical_url'  => $record->canonicalUrl,
+			'content'        => $record->content,
+			'metadata_json'  => $metadata_json,
+			'source_version' => $record->sourceVersion,
+			'content_hash'   => $record->contentHash,
+			'language'       => $record->language,
+			'visibility'     => $record->visibility,
+			'created_at'     => $this->formatDateTime( $record->createdAt ),
+			'updated_at'     => $this->formatDateTime( $record->updatedAt ),
 		);
 		$formats = array( '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' );
 
@@ -90,6 +94,8 @@ final class WpdbDocumentRepository implements DocumentRepository {
 
 	/**
 	 * Find a document by stable document key.
+	 *
+	 * @param string $document_key Stable document key.
 	 */
 	public function findByKey( string $document_key ): ?DocumentRecord {
 		$sql = $this->connection->prepare( 'SELECT * FROM %i WHERE document_key = %s LIMIT 1', $this->tables->documents(), $document_key );
@@ -99,6 +105,10 @@ final class WpdbDocumentRepository implements DocumentRepository {
 
 	/**
 	 * Return a bounded page belonging to one source.
+	 *
+	 * @param int $source_id Owning source identifier.
+	 * @param int $page One-based page.
+	 * @param int $per_page Requested page size.
 	 */
 	public function paginateBySource( int $source_id, int $page = 1, int $per_page = 20 ): PagedResult {
 		$page     = max( 1, $page );
@@ -122,6 +132,7 @@ final class WpdbDocumentRepository implements DocumentRepository {
 	/**
 	 * Delete all documents belonging to one source.
 	 *
+	 * @param int $source_id Owning source identifier.
 	 * @throws DatabaseException When the database delete fails.
 	 */
 	public function deleteBySource( int $source_id ): int {
@@ -161,6 +172,7 @@ final class WpdbDocumentRepository implements DocumentRepository {
 	/**
 	 * Decode stored document metadata.
 	 *
+	 * @param mixed $value Stored metadata JSON.
 	 * @return array<string, mixed>
 	 * @throws DatabaseException When stored metadata cannot be decoded to an array.
 	 */
@@ -171,8 +183,8 @@ final class WpdbDocumentRepository implements DocumentRepository {
 
 		try {
 			$decoded = json_decode( (string) $value, true, 512, JSON_THROW_ON_ERROR );
-		} catch ( JsonException $exception ) {
-			throw new DatabaseException( 'Stored document metadata is invalid JSON.', 0, $exception );
+		} catch ( JsonException ) {
+			throw new DatabaseException( 'Stored document metadata is invalid JSON.' );
 		}
 
 		if ( ! is_array( $decoded ) ) {
@@ -184,6 +196,8 @@ final class WpdbDocumentRepository implements DocumentRepository {
 
 	/**
 	 * Normalize a nullable database string.
+	 *
+	 * @param mixed $value Database value.
 	 */
 	private function nullableString( mixed $value ): ?string {
 		return null === $value ? null : (string) $value;
@@ -191,6 +205,8 @@ final class WpdbDocumentRepository implements DocumentRepository {
 
 	/**
 	 * Parse one UTC database datetime.
+	 *
+	 * @param string $value Database datetime value.
 	 */
 	private function dateTime( string $value ): DateTimeImmutable {
 		return new DateTimeImmutable( $value, new DateTimeZone( 'UTC' ) );
@@ -198,6 +214,8 @@ final class WpdbDocumentRepository implements DocumentRepository {
 
 	/**
 	 * Format one datetime as UTC database time.
+	 *
+	 * @param DateTimeImmutable $value Datetime value.
 	 */
 	private function formatDateTime( DateTimeImmutable $value ): string {
 		return $value->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' );

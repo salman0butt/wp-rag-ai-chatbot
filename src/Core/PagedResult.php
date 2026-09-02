@@ -23,6 +23,7 @@ final readonly class PagedResult {
 	 * @param int               $total Total matching records.
 	 * @param int               $page Current one-based page.
 	 * @param int               $perPage Effective page size.
+	 * @throws InvalidArgumentException When page or per-page is below one.
 	 */
 	public function __construct(
 		public array $items,

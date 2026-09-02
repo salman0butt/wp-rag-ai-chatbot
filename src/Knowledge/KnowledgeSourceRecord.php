@@ -19,18 +19,18 @@ final readonly class KnowledgeSourceRecord {
 	/**
 	 * Create a source record.
 	 *
-	 * @param int|null          $id Persisted identifier, or null before insert.
-	 * @param string            $sourceKey Stable source key.
-	 * @param string            $sourceType Source type.
-	 * @param string|null       $externalId External source identifier.
-	 * @param string            $title Source title.
-	 * @param string|null       $canonicalUrl Canonical URL.
-	 * @param string            $status Source status.
-	 * @param array<string,mixed> $config Source configuration.
-	 * @param string|null       $sourceHash Source content hash.
+	 * @param int|null               $id Persisted identifier, or null before insert.
+	 * @param string                 $sourceKey Stable source key.
+	 * @param string                 $sourceType Source type.
+	 * @param string|null            $externalId External source identifier.
+	 * @param string                 $title Source title.
+	 * @param string|null            $canonicalUrl Canonical URL.
+	 * @param string                 $status Source status.
+	 * @param array<string, mixed>   $config Source configuration.
+	 * @param string|null            $sourceHash Source content hash.
 	 * @param DateTimeImmutable|null $lastSyncedAt Last successful synchronization time.
-	 * @param DateTimeImmutable $createdAt Creation time.
-	 * @param DateTimeImmutable $updatedAt Last update time.
+	 * @param DateTimeImmutable      $createdAt Creation time.
+	 * @param DateTimeImmutable      $updatedAt Last update time.
 	 */
 	public function __construct(
 		public ?int $id,

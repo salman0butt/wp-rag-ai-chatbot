@@ -18,26 +18,37 @@ use WpRagAiChatbot\Core\PagedResult;
 interface KnowledgeSourceRepository {
 	/**
 	 * Insert or update a source record.
+	 *
+	 * @param KnowledgeSourceRecord $record Source record.
 	 */
 	public function save( KnowledgeSourceRecord $record ): KnowledgeSourceRecord;
 
 	/**
 	 * Find a source by persisted identifier.
+	 *
+	 * @param int $id Persisted identifier.
 	 */
 	public function findById( int $id ): ?KnowledgeSourceRecord;
 
 	/**
 	 * Find a source by stable source key.
+	 *
+	 * @param string $source_key Stable source key.
 	 */
 	public function findByKey( string $source_key ): ?KnowledgeSourceRecord;
 
 	/**
 	 * Return a bounded page of sources.
+	 *
+	 * @param int $page One-based page.
+	 * @param int $per_page Requested page size.
 	 */
 	public function paginate( int $page = 1, int $per_page = 20 ): PagedResult;
 
 	/**
 	 * Delete a source by persisted identifier.
+	 *
+	 * @param int $id Persisted identifier.
 	 */
 	public function delete( int $id ): void;
 }

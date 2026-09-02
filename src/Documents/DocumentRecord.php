@@ -20,21 +20,22 @@ final readonly class DocumentRecord {
 	/**
 	 * Create a document record.
 	 *
-	 * @param int|null               $id Persisted identifier, or null before insert.
-	 * @param string                 $documentKey Stable document key.
-	 * @param int                    $sourceId Owning knowledge-source identifier.
-	 * @param string|null            $externalId External document identifier.
-	 * @param string                 $documentType Document type.
-	 * @param string                 $title Document title.
-	 * @param string|null            $canonicalUrl Canonical URL.
-	 * @param string                 $content Normalized document content.
-	 * @param array<string, mixed>   $metadata Document metadata.
-	 * @param string|null            $sourceVersion Upstream version marker.
-	 * @param string                 $contentHash Lowercase SHA-256 content hash.
-	 * @param string|null            $language Language code when known.
-	 * @param string                 $visibility Access visibility.
-	 * @param DateTimeImmutable      $createdAt Creation time.
-	 * @param DateTimeImmutable      $updatedAt Last update time.
+	 * @param int|null             $id Persisted identifier, or null before insert.
+	 * @param string               $documentKey Stable document key.
+	 * @param int                  $sourceId Owning knowledge-source identifier.
+	 * @param string|null          $externalId External document identifier.
+	 * @param string               $documentType Document type.
+	 * @param string               $title Document title.
+	 * @param string|null          $canonicalUrl Canonical URL.
+	 * @param string               $content Normalized document content.
+	 * @param array<string, mixed> $metadata Document metadata.
+	 * @param string|null          $sourceVersion Upstream version marker.
+	 * @param string               $contentHash Lowercase SHA-256 content hash.
+	 * @param string|null          $language Language code when known.
+	 * @param string               $visibility Access visibility.
+	 * @param DateTimeImmutable    $createdAt Creation time.
+	 * @param DateTimeImmutable    $updatedAt Last update time.
+	 * @throws InvalidArgumentException When document persistence invariants are invalid.
 	 */
 	public function __construct(
 		public ?int $id,

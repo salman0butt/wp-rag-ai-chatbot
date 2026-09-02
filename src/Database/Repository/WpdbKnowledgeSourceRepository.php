@@ -26,6 +26,9 @@ use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 	/**
 	 * Create the repository.
+	 *
+	 * @param Connection $connection Database connection.
+	 * @param TableNames  $tables Plugin table names.
 	 */
 	public function __construct(
 		private readonly Connection $connection,
@@ -36,6 +39,7 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 	/**
 	 * Insert or update a source record.
 	 *
+	 * @param KnowledgeSourceRecord $record Source record.
 	 * @throws DatabaseException When JSON encoding or the database write fails.
 	 */
 	public function save( KnowledgeSourceRecord $record ): KnowledgeSourceRecord {
@@ -44,7 +48,7 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 			throw new DatabaseException( 'Could not encode knowledge source configuration.' );
 		}
 
-		$data = array(
+		$data    = array(
 			'source_key'     => $record->sourceKey,
 			'source_type'    => $record->sourceType,
 			'external_id'    => $record->externalId,
@@ -87,6 +91,8 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 	/**
 	 * Find a source by persisted identifier.
+	 *
+	 * @param int $id Persisted identifier.
 	 */
 	public function findById( int $id ): ?KnowledgeSourceRecord {
 		$sql = $this->connection->prepare( 'SELECT * FROM %i WHERE id = %d LIMIT 1', $this->tables->sources(), $id );
@@ -96,6 +102,8 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 	/**
 	 * Find a source by stable source key.
+	 *
+	 * @param string $source_key Stable source key.
 	 */
 	public function findByKey( string $source_key ): ?KnowledgeSourceRecord {
 		$sql = $this->connection->prepare( 'SELECT * FROM %i WHERE source_key = %s LIMIT 1', $this->tables->sources(), $source_key );
@@ -105,6 +113,9 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 	/**
 	 * Return a bounded page of sources.
+	 *
+	 * @param int $page One-based page.
+	 * @param int $per_page Requested page size.
 	 */
 	public function paginate( int $page = 1, int $per_page = 20 ): PagedResult {
 		$page     = max( 1, $page );
@@ -127,6 +138,7 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 	/**
 	 * Delete a source by identifier.
 	 *
+	 * @param int $id Persisted identifier.
 	 * @throws DatabaseException When the database delete fails.
 	 */
 	public function delete( int $id ): void {
@@ -160,8 +172,9 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 	}
 
 	/**
-	 * Decode a stored JSON object/array.
+	 * Decode a stored JSON object or array.
 	 *
+	 * @param mixed $value Stored JSON value.
 	 * @return array<string, mixed>
 	 * @throws DatabaseException When stored JSON cannot be decoded to an array.
 	 */
@@ -172,8 +185,8 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 		try {
 			$decoded = json_decode( (string) $value, true, 512, JSON_THROW_ON_ERROR );
-		} catch ( JsonException $exception ) {
-			throw new DatabaseException( 'Stored knowledge source configuration is invalid JSON.', 0, $exception );
+		} catch ( JsonException ) {
+			throw new DatabaseException( 'Stored knowledge source configuration is invalid JSON.' );
 		}
 
 		if ( ! is_array( $decoded ) ) {
@@ -185,6 +198,8 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 	/**
 	 * Normalize a nullable database string.
+	 *
+	 * @param mixed $value Database value.
 	 */
 	private function nullableString( mixed $value ): ?string {
 		return null === $value ? null : (string) $value;
@@ -192,6 +207,8 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 	/**
 	 * Parse one UTC database datetime.
+	 *
+	 * @param string $value Database datetime value.
 	 */
 	private function dateTime( string $value ): DateTimeImmutable {
 		return new DateTimeImmutable( $value, new DateTimeZone( 'UTC' ) );
@@ -199,6 +216,8 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 	/**
 	 * Parse a nullable UTC database datetime.
+	 *
+	 * @param mixed $value Database datetime value.
 	 */
 	private function nullableDateTime( mixed $value ): ?DateTimeImmutable {
 		return null === $value ? null : $this->dateTime( (string) $value );
@@ -206,6 +225,8 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 	/**
 	 * Format one datetime as UTC database time.
+	 *
+	 * @param DateTimeImmutable $value Datetime value.
 	 */
 	private function formatDateTime( DateTimeImmutable $value ): string {
 		return $value->setTimezone( new DateTimeZone( 'UTC' ) )->format( 'Y-m-d H:i:s' );
@@ -213,6 +234,8 @@ final class WpdbKnowledgeSourceRepository implements KnowledgeSourceRepository {
 
 	/**
 	 * Format a nullable datetime as UTC database time.
+	 *
+	 * @param DateTimeImmutable|null $value Datetime value.
 	 */
 	private function formatNullableDateTime( ?DateTimeImmutable $value ): ?string {
 		return null === $value ? null : $this->formatDateTime( $value );
