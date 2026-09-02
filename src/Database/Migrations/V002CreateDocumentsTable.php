@@ -54,6 +54,7 @@ final class V002CreateDocumentsTable implements Migration {
 			. "\tsource_version varchar(191) DEFAULT NULL,\n"
 			. "\tcontent_hash char(64) NOT NULL,\n"
 			. "\tlanguage varchar(20) DEFAULT NULL,\n"
+			. "\tvisibility varchar(32) NOT NULL DEFAULT 'public',\n"
 			. "\tcreated_at datetime NOT NULL,\n"
 			. "\tupdated_at datetime NOT NULL,\n"
 			. "\tPRIMARY KEY  (id),\n"
