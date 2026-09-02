@@ -30,6 +30,7 @@ use WpRagAiChatbot\Providers\ProviderIds;
 use WpRagAiChatbot\Providers\Security\SecretRedactor;
 use WpRagAiChatbot\Providers\Usage;
 
+// phpcs:disable WordPress.Security.EscapeOutput -- ProviderException metadata is sanitized/internal and is never rendered directly.
 /**
  * Implements fixed-endpoint OpenAI Responses generation and model discovery.
  */
@@ -97,7 +98,8 @@ final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider {
 		}
 
 		list( $authorization, $known_secrets ) = $this->credential_material( $credential );
-		$http_request                         = new HttpRequest(
+
+		$http_request = new HttpRequest(
 			ProviderIds::OPENAI_DIRECT,
 			'POST',
 			self::RESPONSES_URL,
@@ -149,8 +151,10 @@ final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider {
 	 */
 	public function models(): array {
 		$credential = $this->required_credential();
+
 		list( $authorization, $known_secrets ) = $this->credential_material( $credential );
-		$request                              = new HttpRequest(
+
+		$request = new HttpRequest(
 			ProviderIds::OPENAI_DIRECT,
 			'GET',
 			self::MODELS_URL,
@@ -394,3 +398,4 @@ final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider {
 		);
 	}
 }
+// phpcs:enable WordPress.Security.EscapeOutput
