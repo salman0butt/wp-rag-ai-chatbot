@@ -49,6 +49,7 @@ final class FileValidationPolicy {
 		}
 	}
 
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Public argument name is fixed by the approved M05 domain contract and PHP named-argument compatibility.
 	/**
 	 * Validate one local file and return immutable trusted metadata.
 	 *
@@ -56,7 +57,6 @@ final class FileValidationPolicy {
 	 * @param string|null $allowedRoot Optional canonical containment root.
 	 * @throws ExtractionException When the candidate fails validation.
 	 */
-	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Public argument name is fixed by the approved M05 domain contract and PHP named-argument compatibility.
 	public function validate( string $path, ?string $allowedRoot = null ): ValidatedFile {
 		$canonical_path = realpath( $path );
 		if ( false === $canonical_path || ! is_file( $canonical_path ) || ! is_readable( $canonical_path ) ) {
