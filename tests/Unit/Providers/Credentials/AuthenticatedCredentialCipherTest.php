@@ -188,11 +188,11 @@ final class AuthenticatedCredentialCipherTest extends TestCase {
 	 * @param string $envelope Serialized envelope.
 	 */
 	private function tamper_ciphertext( string $envelope ): string {
-		$data       = $this->decode_envelope( $envelope );
-		$encoded    = (string) $data['ciphertext'];
-		$first      = 'A' === $encoded[0] ? 'B' : 'A';
-		$tampered   = $first . substr( $encoded, 1 );
-		$needle     = '"ciphertext":"' . $encoded . '"';
+		$data        = $this->decode_envelope( $envelope );
+		$encoded     = (string) $data['ciphertext'];
+		$first       = 'A' === $encoded[0] ? 'B' : 'A';
+		$tampered    = $first . substr( $encoded, 1 );
+		$needle      = '"ciphertext":"' . $encoded . '"';
 		$replacement = '"ciphertext":"' . $tampered . '"';
 		return str_replace( $needle, $replacement, $envelope );
 	}
