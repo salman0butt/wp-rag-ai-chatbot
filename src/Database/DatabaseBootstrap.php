@@ -17,7 +17,21 @@ use WpRagAiChatbot\Database\Migrations\V002CreateDocumentsTable;
  */
 final class DatabaseBootstrap {
 	/**
-	 * Run pending migrations.
+	 * WordPress activation action callback.
+	 */
+	public static function on_activate(): void {
+		self::migrate();
+	}
+
+	/**
+	 * Early plugins_loaded callback for automatic upgrades.
+	 */
+	public static function on_plugins_loaded(): void {
+		self::migrate_if_needed();
+	}
+
+	/**
+	 * Run pending migrations and return the execution status.
 	 */
 	public static function migrate(): MigrationStatus {
 		return self::runner()->run();

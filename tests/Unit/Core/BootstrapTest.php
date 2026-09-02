@@ -51,13 +51,15 @@ final class BootstrapTest extends TestCase {
 	public function test_register_wires_foundation_and_database_hooks(): void {
 		self::assertTrue( class_exists( Bootstrap::class ), 'Bootstrap class must exist before hook wiring can be verified.' );
 		self::assertTrue( class_exists( DatabaseBootstrap::class ), 'DatabaseBootstrap must exist before database hook wiring can pass.' );
+		self::assertTrue( is_callable( array( DatabaseBootstrap::class, 'on_activate' ) ) );
+		self::assertTrue( is_callable( array( DatabaseBootstrap::class, 'on_plugins_loaded' ) ) );
 
 		$plugin_file = '/tmp/wp-rag-ai-chatbot/wp-rag-ai-chatbot.php';
 
 		Functions\expect( 'register_activation_hook' )->once()->with( $plugin_file, array( Lifecycle::class, 'activate' ) );
 		Functions\expect( 'register_deactivation_hook' )->once()->with( $plugin_file, array( Lifecycle::class, 'deactivate' ) );
-		Functions\expect( 'add_action' )->once()->with( 'wp_rag_ai_chatbot_activate', array( DatabaseBootstrap::class, 'migrate' ) );
-		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( DatabaseBootstrap::class, 'migrate_if_needed' ), 5 );
+		Functions\expect( 'add_action' )->once()->with( 'wp_rag_ai_chatbot_activate', array( DatabaseBootstrap::class, 'on_activate' ) );
+		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( DatabaseBootstrap::class, 'on_plugins_loaded' ), 5 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( Bootstrap::class, 'load' ) );
 
 		Bootstrap::register( $plugin_file );

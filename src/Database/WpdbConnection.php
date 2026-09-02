@@ -32,7 +32,7 @@ final class WpdbConnection implements Connection {
 	 * Get the current database name.
 	 */
 	public function database_name(): string {
-		return defined( 'DB_NAME' ) ? (string) DB_NAME : (string) $this->wpdb->dbname;
+		return (string) DB_NAME;
 	}
 
 	/**
@@ -45,12 +45,11 @@ final class WpdbConnection implements Connection {
 	/**
 	 * Prepare a SQL statement supplied by trusted repository or migration code.
 	 *
-	 * @param string $query SQL with placeholders.
-	 * @param mixed  ...$args Placeholder values.
+	 * @param literal-string $query SQL with placeholders.
+	 * @param mixed          ...$args Placeholder values.
 	 * @throws DatabaseException When wpdb cannot prepare the statement.
 	 */
 	public function prepare( string $query, mixed ...$args ): string {
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- This adapter receives internal SQL templates; all values are supplied separately as placeholders.
 		$prepared = $this->wpdb->prepare( $query, ...$args );
 		if ( ! is_string( $prepared ) ) {
 			throw new DatabaseException( 'Could not prepare database query.' );
@@ -73,10 +72,10 @@ final class WpdbConnection implements Connection {
 	 *
 	 * @param string $query SQL statement.
 	 */
-	public function get_var( string $query ): string|int|float|null {
+	public function get_var( string $query ): ?string {
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Connection callers prepare all value-bearing SQL before execution.
 		$value = $this->wpdb->get_var( $query );
-		return is_string( $value ) || is_int( $value ) || is_float( $value ) ? $value : null;
+		return is_string( $value ) ? $value : null;
 	}
 
 	/**

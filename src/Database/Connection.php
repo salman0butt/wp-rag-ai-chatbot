@@ -31,8 +31,8 @@ interface Connection {
 	/**
 	 * Prepare a SQL statement.
 	 *
-	 * @param string $query SQL with WordPress placeholders.
-	 * @param mixed  ...$args Placeholder values.
+	 * @param literal-string $query SQL with WordPress placeholders.
+	 * @param mixed          ...$args Placeholder values.
 	 */
 	public function prepare( string $query, mixed ...$args ): string;
 
