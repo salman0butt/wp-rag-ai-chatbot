@@ -84,6 +84,8 @@ final class DocumentExtractionContractsTest extends TestCase {
 
 			/**
 			 * Extract one validated file.
+			 *
+			 * @param ValidatedFile $file Validated file.
 			 */
 			public function extract( ValidatedFile $file ): ExtractedDocument {
 				return new ExtractedDocument( 'text', array( 'name' => $file->basename ) );
@@ -101,6 +103,8 @@ final class DocumentExtractionContractsTest extends TestCase {
 
 			/**
 			 * Extract one validated file.
+			 *
+			 * @param ValidatedFile $file Validated file.
 			 */
 			public function extract( ValidatedFile $file ): ExtractedDocument {
 				return new ExtractedDocument( 'duplicate', array() );
