@@ -5,13 +5,32 @@
 - Completed milestones: **M00-M04** are integrated on `main`.
 - M05 design/spec: `docs/superpowers/specs/2026-09-03-m05-file-document-ingestion-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - M05 implementation plan: `docs/superpowers/plans/2026-09-03-m05-file-document-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`.
-- M05 Task 1 — **Extraction contracts and registry — COMPLETE pending final documentation-head CI confirmation**. Added `ValidatedFile`, `ExtractedDocument`, `DocumentExtractor`, `DocumentExtractorRegistry`, and `ExtractionException`.
-- Task 1 behavioral RED: SHA `71bcc9dc5545575f410416d44a613c1b60ec5e44`, CI `33690105092`; PHPStan reached no errors and PHPUnit produced **172 tests / 872 assertions / 5 intentional missing-contract failures**. Earlier WPCS-only failures are not counted as behavioral RED.
-- Task 1 implementation GREEN: SHA `73a442de5254074630273708504b088fe5e31bd1`, CI `33690461154`; PHPStan no errors, PHPUnit **172 / 883**, Composer audit clean, JS quality and package/artifact gates green.
-- Task 1 independent review: **0 Critical**, **1 Important** coverage gap (invalid SHA-256 and empty/blank MIME ownership invariants lacked direct tests). Fixed at `7a1d1fc6e2c4386f93b4f547f5ba926d963ec150`; PHP verification then passed with **175 tests / 889 assertions**, PHPStan no errors, Composer audit clean. Remaining Critical/Important: **0 / 0**.
-- M05 is **not merge-ready**: Tasks 2–7 remain. Do not merge the branch or advance to M06.
-- Blocked items: none.
-- Exact next unfinished action: execute **M05 Task 2 — File validation policy**. Add `MimeTypeDetector`/`FileValidationPolicy` tests for readable regular files, empty input, >10 MiB, unsupported extension, MIME spoofing, allowed-root traversal/symlink escape, and lowercase SHA-256; capture genuine behavioral RED before production code; then implement the minimum server-side `finfo` detector and explicit extension/MIME allow-list, followed by full GREEN, security review, and exact-head permanent CI.
+- M05 Tasks **1–2 are complete pending final documentation-head CI confirmation**; Tasks 3–7 remain.
+
+## M05 Task 1 — Extraction contracts and registry
+- Added `ValidatedFile`, `ExtractedDocument`, `DocumentExtractor`, `DocumentExtractorRegistry`, and `ExtractionException`.
+- Behavioral RED: `71bcc9dc5545575f410416d44a613c1b60ec5e44`, CI `33690105092`; PHPStan no errors; PHPUnit **172 tests / 872 assertions / 5 intentional missing-contract failures**.
+- Implementation GREEN: `73a442de5254074630273708504b088fe5e31bd1`, CI `33690461154`; PHPStan no errors, PHPUnit **172 / 883**, Composer audit clean, JS/package gates green.
+- Independent review: **0 Critical / 1 Important** coverage gap; fixed at `7a1d1fc6e2c4386f93b4f547f5ba926d963ec150`, then **175 / 889** passing. Remaining Critical/Important: **0 / 0**.
+- Final Task 1 handoff SHA `e5c3a8da89c09591a69c29da045723c982f4eb23`; CI `33690878698` passed all permanent jobs.
+
+## M05 Task 2 — File validation policy
+- Added `MimeTypeDetector`, `NativeMimeTypeDetector`, and `FileValidationPolicy`.
+- Trust boundary now canonicalizes local paths, requires readable regular non-empty files, defaults to a 10 MiB ceiling, enforces explicit extension/MIME agreement using server-side `finfo`, prevents canonical allowed-root and symlink escape, and records deterministic lowercase SHA-256 in `ValidatedFile`.
+- Client MIME is not an input and is never trusted. Unsupported extensions/MIME pairs fail closed.
+- First test SHA `bb7e15f...` failed WPCS before PHPUnit and is **not** behavioral RED.
+- Valid Task 2 RED: `874a2e5d2dc901d79175806f8b5c37a4c2a5ae73`, CI `33692375663`; PHPStan no errors; PHPUnit **183 / 897 / 8 failures**, all exactly because Task 2 contracts were absent.
+- Initial behavioral GREEN: `0c844673f6c374161f8cd5634223520c249ea1b3`, CI `33692560859`; PHPStan no errors; PHPUnit **183 / 929**, Composer audit clean; PHP/JS/package green. The later review-fix head supersedes it for final Task 2 verification.
+- Distinct second-pass review found **0 Critical / 1 Important** API issue: approved public signature requires named parameter `$allowedRoot`, while the initial implementation exposed `$allowed_root`.
+- Review regression RED: `6c2fe061dc6959001d91044f828113ec49de0c62`, CI `33692753424`; PHPStan no errors; PHPUnit **184 / 932 / 1 error**, exactly `Unknown named parameter $allowedRoot`.
+- Review-fix code GREEN: `1263be3a9e7e80688cccc7234b342ce97c67c24c`, CI `33692911228`; PHPStan no errors; PHPUnit **184 / 933**, Composer audit clean. Remaining Critical/Important: **0 / 0**.
+- SHA `c06ae273...` failed WPCS before PHPUnit due suppression placement and is explicitly not GREEN evidence.
+
+## Current gates
+- M05 is **not merge-ready**: Tasks 3–7 remain. Do not merge the branch or advance to M06.
+- No known blockers.
+- Draft feature PR: **#6 — `feat: build M05 file/document ingestion`**.
+- Exact next unfinished action: execute **M05 Task 3 — Core text extractors**. Add focused fixtures/tests for TXT, Markdown, HTML, CSV, JSON, and XML including malformed/empty/complexity failure paths and deterministic normalized output; capture genuine behavioral RED before production code; implement minimum bounded parsers, disable XML external-entity/network access, register supported MIME ownership, run full GREEN/security review, update durable docs, and require all permanent exact-head CI jobs green.
 
 ## Previous milestone closeout
 
