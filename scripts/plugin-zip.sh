@@ -11,8 +11,10 @@ forced_metadata=(
     "$root_folder/README.md"
 )
 
+archive_entries="$(unzip -Z1 "$zip_file")"
+
 for path in "${forced_metadata[@]}"; do
-    if unzip -Z1 "$zip_file" | grep -Fxq "$path"; then
+    if grep -Fxq "$path" <<< "$archive_entries"; then
         zip -dq "$zip_file" "$path"
     fi
 done
