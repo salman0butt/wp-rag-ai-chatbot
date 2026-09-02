@@ -88,6 +88,7 @@ final class ManualTextSource implements KnowledgeSource {
 				)
 			);
 		} catch ( JsonException $exception ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- This value is the previous Throwable, not rendered output.
 			throw new KnowledgeSourceException( 'Manual text source could not be hashed.', 0, $exception );
 		}
 
