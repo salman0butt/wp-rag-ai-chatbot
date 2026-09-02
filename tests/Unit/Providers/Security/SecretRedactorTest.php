@@ -90,6 +90,23 @@ final class SecretRedactorTest extends TestCase {
 	}
 
 	/**
+	 * A secret crossing the byte limit must not expose its leading fragment.
+	 */
+	public function test_sanitize_body_redacts_secret_before_truncating_boundary_crossing_value(): void {
+		$this->require_redactor();
+		$redactor = new SecretRedactor();
+		$secret   = 'boundary-crossing-provider-secret';
+		$prefix   = str_repeat( 'c', 2040 );
+		$body     = $prefix . $secret . '-tail';
+
+		$sanitized = $redactor->sanitize_body( $body, array( $secret ) );
+
+		self::assertStringNotContainsString( substr( $secret, 0, 8 ), $sanitized );
+		self::assertStringContainsString( '[REDACTED]', $sanitized );
+		self::assertStringEndsWith( '[TRUNCATED]', $sanitized );
+	}
+
+	/**
 	 * Blank known-secret entries do not alter otherwise safe text.
 	 */
 	public function test_sanitize_ignores_blank_known_secret_entries(): void {
