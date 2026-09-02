@@ -376,7 +376,7 @@ final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider {
 	 */
 	private function request_id( HttpResponse $response ): ?string {
 		foreach ( $response->headers as $name => $value ) {
-			if ( ! is_string( $name ) || 'x-request-id' !== strtolower( $name ) || ! is_scalar( $value ) ) {
+			if ( 'x-request-id' !== strtolower( $name ) || ! is_scalar( $value ) ) {
 				continue;
 			}
 
