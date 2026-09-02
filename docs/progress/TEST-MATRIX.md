@@ -59,12 +59,13 @@ Artifact evidence: ID `9836065304`, digest `sha256:f77b32bf377b4f6fbb65cf1721a87
 
 ## M03 Verified Coverage
 
-Runtime candidate `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, CI run `33636226873`:
+Integrated `main` commit `2ed420a9217422f856afaf64b68fdde78ea0b063`, post-merge CI run `33670406871`:
 
 - **Provider value/contracts:** stable IDs, normalized generation/result/status/usage, provider health/error/descriptor contracts, registry lookup and duplicate protection.
 - **Credential precedence/storage:** environment -> constant -> encrypted option; blank runtime values fall through; options are non-autoloaded; save/load/delete behavior and failure cases covered.
 - **Cryptography:** XChaCha20-Poly1305 preferred, AES-256-GCM fallback, provider-bound HKDF/AAD, strict envelope/base64 validation, cross-provider rejection, no-backend failure, and tamper/fail-closed behavior.
-- **Secret safety:** Secret string/JSON/debug outputs redact; known secrets and credential headers redact; 2048-byte diagnostic limit; regression proves a secret crossing the truncation boundary exposes no plaintext prefix.
+- **Secret safety:** Secret string/JSON/debug/export/native-serialization surfaces do not expose plaintext; known secrets and credential headers redact; 2048-byte diagnostic limit; regression proves a secret crossing the truncation boundary exposes no plaintext prefix.
+- **Provider diagnostic IDs:** OpenAI/OpenRouter request-ID candidates are accepted only when known-secret sanitization leaves them unchanged; secret-bearing header/top-level IDs are rejected.
 - **HTTP policy:** WordPress transport carries exact timeout/redirect values, classifies clear timeouts, strips raw transport diagnostics; generation sends once; discovery retries once only for transport/502/503/504.
 - **Model catalog cache:** 900-second TTL, valid hit/miss, malformed transient eviction, invalidate, successful refresh, failed-refresh preservation.
 - **OpenAI/OpenRouter:** fixed endpoint generation/model-discovery contracts, normalized HTTP errors, usage/status/request IDs, malformed payload rejection, and explicit metadata-only model capability handling.
@@ -73,7 +74,9 @@ Runtime candidate `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, CI run `3363622687
 - **Real WordPress integration:** fake direct credential is encrypted in `wp_options`, envelope validated, autoload disabled, callback-only plaintext observation, delete behavior, precedence/fallback, runtime WP-AI feature detection, and secret-free descriptors.
 - **Live gating:** normal CI proves the live wrapper skips unless explicitly opted in and validates provider/key/model gates without making live provider calls.
 - **Package completeness:** every `src/Providers/**/*.php` runtime file is required in the release ZIP; development scripts/tests/docs/private manifests remain rejected.
-- **Review regressions:** three Important findings fixed before completion; no unresolved Critical/Important findings.
-- **Dependency/static gates:** Composer audit clean; WPCS/PHPStan clean; PHPUnit `131 tests / 738 assertions`; npm critical gate, JS lint/typecheck/Jest/build, WordPress smoke, and package artifact all green.
+- **Review regressions:** five Important findings fixed before completion; no unresolved Critical/Important findings.
+- **Dependency/static gates:** Composer audit clean; WPCS/PHPStan clean; PHPUnit `134 tests / 747 assertions`; npm critical gate, JS lint/typecheck/Jest/build, WordPress smoke, and package artifact all green.
+- **Exact-head integration gate:** documentation-complete head `da620a89d420bf22a7dc146b2cab84113f376fcf`, run `33670130318`, passed all four permanent jobs before merge.
+- **Post-merge gate:** `main` run `33670406871` passed `php-quality`, `js-quality`, `wordpress-smoke`, and `package`; WordPress activation, database, and provider smoke all completed successfully.
 
-Artifact evidence: ID `9848913900`, 64,596 bytes, digest `sha256:a674d5ad8d3a3844dd09b824cfacb9952775238f0b37f313bfbb5442af5c342b`.
+Post-merge artifact evidence: ID `9862272933`, 64,804 bytes, digest `sha256:e44bd8abbc96c1577c66ff42b4d3ba6507bb37b067f71e0b2c05d6d69ca4782b`.
