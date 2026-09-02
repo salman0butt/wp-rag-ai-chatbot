@@ -31,9 +31,9 @@ final class ManualTextSource implements KnowledgeSource {
 	 * @param KnowledgeSourceRecord $source Persisted manual source.
 	 * @return iterable<int, DocumentRecord>
 	 * @throws KnowledgeSourceException When the source/configuration is invalid.
-	 * @throws JsonException When deterministic hashing cannot encode the payload.
 	 */
 	public function documents( KnowledgeSourceRecord $source ): iterable {
+		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- M02 domain record public properties intentionally use the approved camelCase contract.
 		if ( $this->type() !== $source->sourceType ) {
 			throw new KnowledgeSourceException( 'Manual text source type does not match.' );
 		}
@@ -63,28 +63,33 @@ final class ManualTextSource implements KnowledgeSource {
 			? trim( $configured_language )
 			: null;
 
-		$document_key   = 'manual:' . $source->sourceKey;
-		$metadata       = array( 'source_type' => $this->type() );
-		$source_version = $source->sourceHash ?? DocumentHasher::hash(
-			array(
-				'source_key' => $source->sourceKey,
-				'config'     => $source->config,
-			)
-		);
-		$content_hash   = DocumentHasher::hash(
-			array(
-				'document_key'   => $document_key,
-				'external_id'    => $source->externalId,
-				'document_type'  => $this->type(),
-				'title'          => $title,
-				'canonical_url'  => null,
-				'content'        => $text,
-				'metadata'       => $metadata,
-				'source_version' => $source_version,
-				'language'       => $language,
-				'visibility'     => $visibility,
-			)
-		);
+		$document_key = 'manual:' . $source->sourceKey;
+		$metadata     = array( 'source_type' => $this->type() );
+
+		try {
+			$source_version = $source->sourceHash ?? DocumentHasher::hash(
+				array(
+					'source_key' => $source->sourceKey,
+					'config'     => $source->config,
+				)
+			);
+			$content_hash   = DocumentHasher::hash(
+				array(
+					'document_key'   => $document_key,
+					'external_id'    => $source->externalId,
+					'document_type'  => $this->type(),
+					'title'          => $title,
+					'canonical_url'  => null,
+					'content'        => $text,
+					'metadata'       => $metadata,
+					'source_version' => $source_version,
+					'language'       => $language,
+					'visibility'     => $visibility,
+				)
+			);
+		} catch ( JsonException $exception ) {
+			throw new KnowledgeSourceException( 'Manual text source could not be hashed.', 0, $exception );
+		}
 
 		yield new DocumentRecord(
 			null,
@@ -103,5 +108,6 @@ final class ManualTextSource implements KnowledgeSource {
 			$source->updatedAt,
 			$source->updatedAt
 		);
+		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 }
