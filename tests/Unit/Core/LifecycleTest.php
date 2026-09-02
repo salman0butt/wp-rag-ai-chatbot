@@ -38,6 +38,7 @@ final class LifecycleTest extends TestCase {
 	 * Activation emits the stable database-migration action.
 	 */
 	public function test_activate_emits_activation_action(): void {
+		self::assertTrue( is_callable( array( Lifecycle::class, 'activate' ) ) );
 		Functions\expect( 'do_action' )->once()->with( 'wp_rag_ai_chatbot_activate' );
 
 		Lifecycle::activate();
