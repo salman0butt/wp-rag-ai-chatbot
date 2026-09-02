@@ -46,8 +46,7 @@ final class QueuedHttpTransport implements HttpTransport {
 	 * Record a request and consume the next outcome.
 	 *
 	 * @param HttpRequest $request Provider HTTP request.
-	 * @throws HttpTransportException When the queued outcome is a transport failure.
-	 * @throws LogicException When no deterministic outcome remains.
+	 * @throws HttpTransportException|LogicException When the queued outcome fails or no outcome remains.
 	 */
 	public function send( HttpRequest $request ): HttpResponse {
 		$this->requests[] = $request;
