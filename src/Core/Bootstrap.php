@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Core;
 
 use WpRagAiChatbot\Database\DatabaseBootstrap;
+use WpRagAiChatbot\Providers\ProviderBootstrap;
 
 /**
  * Registers the plugin's WordPress foundation hooks.
@@ -25,6 +26,7 @@ final class Bootstrap {
 		register_deactivation_hook( $plugin_file, array( Lifecycle::class, 'deactivate' ) );
 		add_action( 'wp_rag_ai_chatbot_activate', array( DatabaseBootstrap::class, 'on_activate' ) );
 		add_action( 'plugins_loaded', array( DatabaseBootstrap::class, 'on_plugins_loaded' ), 5 );
+		add_action( 'plugins_loaded', array( ProviderBootstrap::class, 'register' ), 10 );
 		add_action( 'plugins_loaded', array( self::class, 'load' ) );
 	}
 
