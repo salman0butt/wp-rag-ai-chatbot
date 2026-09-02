@@ -28,8 +28,14 @@ use WpRagAiChatbot\Providers\WordPressAi\WordPressAiClientProvider;
  * Builds provider services without issuing provider requests.
  */
 final class ProviderBootstrap {
+	/**
+	 * Composed provider registry.
+	 */
 	private static ?ProviderRegistry $registry = null;
 
+	/**
+	 * Composed non-secret provider configuration service.
+	 */
 	private static ?ProviderConfigurationService $configuration = null;
 
 	/**
@@ -71,6 +77,8 @@ final class ProviderBootstrap {
 
 	/**
 	 * Return the composed provider registry.
+	 *
+	 * @throws LogicException When provider infrastructure has not been registered.
 	 */
 	public static function registry(): ProviderRegistry {
 		if ( null === self::$registry ) {
@@ -81,6 +89,8 @@ final class ProviderBootstrap {
 
 	/**
 	 * Return the composed non-secret configuration service.
+	 *
+	 * @throws LogicException When provider infrastructure has not been registered.
 	 */
 	public static function configuration(): ProviderConfigurationService {
 		if ( null === self::$configuration ) {
