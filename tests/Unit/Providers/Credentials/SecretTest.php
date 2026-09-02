@@ -35,17 +35,18 @@ final class SecretTest extends TestCase {
 	}
 
 	/**
-	 * Normal string and JSON serialization return only the redaction marker.
+	 * Normal string, JSON, and debug serialization expose only redacted data.
 	 */
-	public function test_string_and_json_serialization_never_expose_plaintext(): void {
+	public function test_string_json_and_debug_serialization_never_expose_plaintext(): void {
 		$this->require_secret();
 
 		$secret = new Secret( 'sk-test-super-secret' );
+		$debug  = $secret->__debugInfo();
 
 		self::assertSame( '[REDACTED]', (string) $secret );
-		self::assertSame( '"[REDACTED]"', json_encode( $secret, JSON_THROW_ON_ERROR ) );
-		self::assertStringNotContainsString( 'sk-test-super-secret', print_r( $secret, true ) );
-		self::assertStringContainsString( '[REDACTED]', print_r( $secret, true ) );
+		self::assertSame( '[REDACTED]', $secret->jsonSerialize() );
+		self::assertSame( array( 'value' => '[REDACTED]' ), $debug );
+		self::assertNotContains( 'sk-test-super-secret', $debug, true );
 	}
 
 	/**
