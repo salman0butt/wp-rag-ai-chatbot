@@ -23,6 +23,7 @@
   },
   "files": [
     "wp-rag-ai-chatbot.php",
+    "uninstall.php",
     "src/**",
     "build/**",
     "vendor/**",
