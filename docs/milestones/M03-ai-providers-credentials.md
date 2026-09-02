@@ -1,6 +1,6 @@
 # M03 — AI Providers, Credentials, OpenAI, OpenRouter & WP AI Client Compatibility
 
-Status: COMPLETE — runtime candidate verified; documentation-complete CI and branch integration pending.
+Status: COMPLETE — integrated into `main`; post-merge permanent CI verified green.
 
 ## Goal
 Create provider/capability contracts and secure OpenAI/OpenRouter direct adapters plus optional WordPress 7 AI Client compatibility without introducing later RAG, embeddings, admin UI, tools, or streaming scope.
@@ -35,6 +35,8 @@ No embeddings/vector runtime (M08), production RAG orchestration/streaming (M11)
 - Independent security review found boundary-crossing credential fragments could survive diagnostic truncation. RED `35e65d2855a46d7a9d4580fcaae3f175afd91902`, run `33635147048`: PHPStan clean; PHPUnit `130 tests / 731 assertions / 1 failure`, exposing `boundary[TRUNCATED]`. GREEN `00a5864d86379ed653889b405a28960991476bda` redacts before truncation and preserves complete redaction markers.
 - Independent packaging review found `assert-package.sh` accepted an archive missing all provider runtime files. Run `33635292449` failed only the package-assertion regression with `Package assertion accepted an archive missing provider runtime files.` GREEN `1f716e91ef473aa29a1486e51f70e4c11cfb8209`, run `33635472457`, passed PHP, JS including package regression, real WordPress smoke, and package jobs.
 - Independent Core-AI error-boundary review found arbitrary unexpected Throwable messages were republished although Core-managed credentials are opaque to the plugin. RED `fe28e7c134700fafcd01f7ad36e5fb152500eb20`, run `33636065968`: PHPStan clean; PHPUnit `131 tests / 737 assertions / 1 failure`, expected constant safe message vs actual `opaque-core-credential-should-never-escape`. GREEN `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, run `33636226873`: PHPStan clean and `131 tests / 738 assertions` green.
+- Secret export/native-serialization review found `Secret` plaintext could be exposed through ordinary PHP export/serialization surfaces. RED `5e721174530e493ce8274eea2567a25446c7361c`, run `33638078588`: WPCS/PHPStan clean; PHPUnit `132 tests / 742 assertions / 1 failure`, with `var_export()` containing `sk-test-export-super-secret`. GREEN `e5ab99f54baf734597c78e6a3ff5b85a1d3d4e2f`, run `33638196004`, protected the plaintext with `SensitiveParameterValue` and passed all permanent jobs.
+- Provider diagnostic request-ID review found provider-controlled request IDs could carry configured credential material. RED `4581b26297b3cc98b6adb0bf9f12b989a1dc8d47`, run `33639434957`: WPCS/PHPStan clean; PHPUnit `134 tests / 745 assertions / 2 failures`, one OpenAI and one OpenRouter. Partial GREEN `266b7b40de435a7d563ff5e2ffc1bff6744bb9a6` left only the OpenRouter case failing. Final GREEN `c8cddc7c8d4905d1436f95eeb8ef77c2f075c8af`, run `33639805500`, rejected secret-bearing IDs and passed all four permanent jobs with PHPUnit `134 tests / 747 assertions`.
 
 ## Real WordPress Integration Evidence
 Permanent `wordpress-smoke` on WordPress 6.9/PHP 8.2 verifies:
@@ -52,19 +54,21 @@ Permanent `wordpress-smoke` on WordPress 6.9/PHP 8.2 verifies:
 Normal CI never enables the live-provider script. The live wrapper exits successfully unless `WP_RAG_AI_LIVE_PROVIDER_TESTS=1`; an explicit direct provider and corresponding environment credential are then required, discovery may run, and generation is allowed at most once only when an explicit live model variable is provided.
 
 ## Security Review
-Fresh `main...feat/m03-ai-providers-credentials` review covered credential leakage/storage/precedence, cryptographic envelope/backend selection, endpoint/redirect/timeout/retry policy, normalized errors, cache failure behavior, WordPress AI compatibility, CI paid-call isolation, packaging, and milestone scope.
+Final review covered credential leakage/storage/precedence, cryptographic envelope/backend selection, endpoint/redirect/timeout/retry policy, normalized errors and diagnostics, provider-controlled request IDs, cache failure behavior, WordPress AI compatibility, CI paid-call isolation, packaging, and milestone scope.
 
 Findings fixed before completion:
 1. **Important:** truncating a provider body before known-secret redaction could leak a credential prefix when the secret crossed the 2048-byte boundary. Fixed and regression-tested.
 2. **Important:** package validation did not require M03 provider runtime files and did not forbid development `scripts/`. Fixed by requiring every runtime provider PHP source path and rejecting scripts.
 3. **Important:** unexpected WordPress AI Client Throwables could republish opaque Core/provider text that the plugin cannot reliably redact. Fixed with a constant fail-closed error message; structured `WP_Error` handling remains sanitized.
+4. **Important:** the `Secret` object's internal plaintext string could appear through PHP export/native serialization surfaces even though string/JSON/debug methods redacted. Fixed by storing plaintext in `SensitiveParameterValue`; regression covers `var_export()` and native `serialize()` behavior.
+5. **Important:** OpenAI/OpenRouter provider-controlled request IDs could include known credential material and escape as diagnostic metadata. Fixed by accepting an ID only when secret sanitization leaves it unchanged; regression covers both adapters.
 
 Unresolved Critical/Important findings: **none**.
 
 Additional verified controls:
 - Sodium XChaCha20-Poly1305 preferred; AES-256-GCM only when Sodium is unavailable.
 - Provider-bound HKDF-SHA256 key derivation and AAD; strict version/algorithm/envelope shapes; malformed/unsupported decryption fails closed.
-- Managed credential options are non-autoloaded and plaintext is never returned by `Secret` string/JSON/debug serialization.
+- Managed credential options are non-autoloaded and plaintext is not exposed through `Secret` string/JSON/debug/export/native-serialization surfaces.
 - Direct provider URLs are compile-time fixed HTTPS constants; arbitrary base URLs are not accepted.
 - Generation uses one request only; discovery retries once only for transport failure/502/503/504.
 - 401/403/429/upstream/malformed responses remain errors rather than empty-success model catalogs.
@@ -80,19 +84,14 @@ Additional verified controls:
 - Configuration descriptors are local-only and do not trigger discovery/generation.
 - No polling workers, streaming runtime, vector computation, or other later high-cost paths were introduced.
 
-## Verified Runtime Candidate
-- Commit: `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`
-- GitHub Actions run: `33636226873`
-- `php-quality`: success — Composer validation/audit, WPCS, PHPStan, PHPUnit `131 tests / 738 assertions`.
-- `js-quality`: success — npm critical audit gate, lint/typecheck/Jest/build, live-provider gate regression, package-assertion regression.
-- `wordpress-smoke`: success — activation + M02 database runtime + M03 provider integration.
-- `package`: success — strict runtime archive validation and artifact upload.
-- Artifact: `wp-rag-ai-chatbot`, ID `9848913900`, 64,596 bytes.
-- Artifact digest: `sha256:a674d5ad8d3a3844dd09b824cfacb9952775238f0b37f313bfbb5442af5c342b`.
-- Composer audit: no known advisories.
+## Final Verification and Integration
+- Security-hardened runtime candidate: `c8cddc7c8d4905d1436f95eeb8ef77c2f075c8af`; run `33639805500` passed all four permanent jobs; PHPUnit `134 tests / 747 assertions`; Composer audit clean.
+- Documentation-complete integration head: `da620a89d420bf22a7dc146b2cab84113f376fcf`; push run `33670130318` passed `php-quality`, `js-quality`, `wordpress-smoke`, and `package`.
+- Exact-head artifact: `wp-rag-ai-chatbot`, ID `9862171632`, 64,820 bytes, digest `sha256:33c99a976e89c71b74c2c44c4eecfd60954dfeba9da30f3ca58758e1cc34a533`.
+- PR #2 `fix: harden M03 provider secret boundaries` merged as `2ed420a9217422f856afaf64b68fdde78ea0b063`.
+- Post-merge `main` run `33670406871` passed all four permanent jobs, including activation + M02 database runtime + M03 provider integration smoke.
+- Post-merge artifact: `wp-rag-ai-chatbot`, ID `9862272933`, 64,804 bytes, digest `sha256:e44bd8abbc96c1577c66ff42b4d3ba6507bb37b067f71e0b2c05d6d69ca4782b`.
 - npm blocking gate: zero critical advisories; existing non-critical development-tooling advisories remain tracked and are not shipped in the production ZIP.
-
-The documentation-complete commit containing this ledger must pass the same four permanent jobs before branch integration.
 
 ## Files Changed
 M03 changes are confined to provider contracts/adapters/credentials/security/cache/HTTP/bootstrap, provider-focused tests/test doubles, real-WordPress/live-gating scripts, package/CI guards, and M03 design/plan/evidence documentation. No M04+ product runtime was implemented.
@@ -117,8 +116,8 @@ M03 changes are confined to provider contracts/adapters/credentials/security/cac
 - [x] Production ZIP provider-runtime completeness regression implemented.
 - [x] Security/performance review complete.
 - [x] All Critical/Important review findings fixed with focused RED→GREEN evidence.
-- [x] Fresh runtime candidate all-four CI green and artifact recorded.
-- [ ] Documentation-complete SHA permanent CI must be green before integration.
+- [x] Documentation-complete exact SHA passed all permanent CI jobs.
+- [x] PR merged into `main` and post-merge permanent CI passed.
 
 ## Next Milestone
-M04 — WordPress Knowledge Source Framework. Begin only after M03 is integrated into `main` and post-merge CI is green.
+M04 — WordPress Knowledge Source Framework. A fresh scheduled run must recover current GitHub state and begin the first genuinely unfinished M04 task; do not redo M03 without evidence of a defect.
