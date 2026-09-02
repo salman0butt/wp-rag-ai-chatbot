@@ -1,6 +1,6 @@
 # M03 — AI Providers, Credentials & Compatibility Design
 
-Status: APPROVED IN CHAT; WRITTEN SPEC SELF-REVIEWED; AWAITING WRITTEN-SPEC APPROVAL
+Status: APPROVED BY USER; SELF-REVIEWED; AUTHORITATIVE FOR M03 IMPLEMENTATION
 
 ## Goal
 Build a WordPress/PHP provider foundation that supports OpenAI Direct and OpenRouter Direct on WordPress 6.9+, adds an optional WordPress 7.0+ AI Client adapter, keeps credentials server-side, normalizes models/usage/errors, and is fully testable without consuming paid API credits in normal CI.
@@ -393,9 +393,3 @@ M03 is complete only when:
 - Embedding runtime and compatibility enforcement are owned by M08.
 - Provider admin UX is owned by M12.
 - Pricing/cost analytics is owned by analytics/evals milestones.
-
-## Self-review result
-- Placeholder scan: no TBD/TODO/implementation-later placeholders remain.
-- Internal consistency: provider IDs, credential names, option names, timeout/retry limits, cache TTL, and crypto envelopes are defined consistently.
-- Scope check: provider foundation only; embeddings, RAG orchestration, admin UI, public streaming, and tool execution remain deferred.
-- Ambiguity check: credential precedence, blank-value handling, crypto failure behavior, redirect policy, retry policy, cache preservation, and live-test gating are explicit.
