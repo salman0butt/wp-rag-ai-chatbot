@@ -17,6 +17,8 @@ use WpRagAiChatbot\Providers\ModelCatalogProvider;
 final class CachedModelCatalogProvider implements ModelCatalogProvider {
 	/**
 	 * Stable provider identifier captured from upstream.
+	 *
+	 * @var string
 	 */
 	private readonly string $provider_id;
 
