@@ -195,17 +195,17 @@ final class OpenRouterProvider implements GenerationProvider, ModelCatalogProvid
 				throw $this->malformed_response();
 			}
 
-			$display_name = isset( $item['name'] ) && is_string( $item['name'] ) && '' !== trim( $item['name'] )
+			$display_name   = isset( $item['name'] ) && is_string( $item['name'] ) && '' !== trim( $item['name'] )
 				? $item['name']
 				: $item['id'];
 			$context_window = isset( $item['context_length'] ) && is_int( $item['context_length'] ) && $item['context_length'] > 0
 				? $item['context_length']
 				: null;
 
-			$architecture     = isset( $item['architecture'] ) && is_array( $item['architecture'] ) ? $item['architecture'] : array();
-			$input_modalities = $this->string_list( $architecture['input_modalities'] ?? null );
+			$architecture      = isset( $item['architecture'] ) && is_array( $item['architecture'] ) ? $item['architecture'] : array();
+			$input_modalities  = $this->string_list( $architecture['input_modalities'] ?? null );
 			$output_modalities = $this->string_list( $architecture['output_modalities'] ?? null );
-			$capabilities     = $this->string_list( $item['supported_parameters'] ?? null );
+			$capabilities      = $this->string_list( $item['supported_parameters'] ?? null );
 
 			$models[] = new ModelInfo(
 				ProviderIds::OPENROUTER_DIRECT,
