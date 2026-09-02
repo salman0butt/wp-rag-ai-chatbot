@@ -2,10 +2,11 @@
 /**
  * Real WordPress database migration smoke assertions.
  *
+ * WP-CLI eval-file evaluates this file inside generated PHP, so strict_types
+ * cannot be declared here because it would no longer be the first statement.
+ *
  * @package WpRagAiChatbot
  */
-
-declare(strict_types=1);
 
 use WpRagAiChatbot\Database\DatabaseBootstrap;
 use WpRagAiChatbot\Database\MigrationStatus;
@@ -44,7 +45,7 @@ if ( ! in_array( 'document_key', $index_names( $doc_indexes ), true ) || ! in_ar
 
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
 $visibility = $wpdb->get_var( "SHOW COLUMNS FROM `{$documents}` LIKE 'visibility'", 1 );
-if ( "varchar(32)" !== $visibility ) {
+if ( 'varchar(32)' !== $visibility ) {
 	$fail( 'Missing document visibility column.' );
 }
 
