@@ -16,10 +16,18 @@ use OutOfBoundsException;
  * Maps stable provider IDs to generation and optional catalog adapters.
  */
 final class ProviderRegistry {
-	/** @var array<string, GenerationProvider> */
+	/**
+	 * Registered generation providers keyed by stable provider ID.
+	 *
+	 * @var array<string, GenerationProvider>
+	 */
 	private array $generation = array();
 
-	/** @var array<string, ModelCatalogProvider> */
+	/**
+	 * Registered model catalogs keyed by stable provider ID.
+	 *
+	 * @var array<string, ModelCatalogProvider>
+	 */
 	private array $catalogs = array();
 
 	/**
@@ -28,6 +36,7 @@ final class ProviderRegistry {
 	 * @param string                    $provider_id Stable provider identifier.
 	 * @param GenerationProvider        $provider Generation adapter.
 	 * @param ModelCatalogProvider|null $catalog Optional model catalog adapter.
+	 * @throws InvalidArgumentException When the provider ID is duplicated or mismatched.
 	 */
 	public function register( string $provider_id, GenerationProvider $provider, ?ModelCatalogProvider $catalog = null ): void {
 		if ( isset( $this->generation[ $provider_id ] ) ) {
@@ -50,6 +59,7 @@ final class ProviderRegistry {
 	 * Return a registered generation provider.
 	 *
 	 * @param string $provider_id Stable provider identifier.
+	 * @throws OutOfBoundsException When the provider is not registered.
 	 */
 	public function generation( string $provider_id ): GenerationProvider {
 		if ( ! isset( $this->generation[ $provider_id ] ) ) {
