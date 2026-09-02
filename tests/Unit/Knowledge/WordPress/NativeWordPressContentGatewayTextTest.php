@@ -53,8 +53,6 @@ final class NativeWordPressContentGatewayTextTest extends TestCase {
 		Functions\expect( 'get_posts' )->once()->andReturn( array( $post ) );
 		Functions\expect( 'get_permalink' )->once()->with( 51 )->andReturn( 'https://example.test/release/' );
 		Functions\expect( 'get_object_taxonomies' )->once()->with( 'post', 'names' )->andReturn( array() );
-		Functions\expect( 'wp_get_object_terms' )->once()->with( 51, array(), array( 'fields' => 'all' ) )->andReturn( array() );
-		Functions\expect( 'is_wp_error' )->once()->with( array() )->andReturn( false );
 		Functions\when( 'wp_strip_all_tags' )->alias(
 			static function ( string $text ): string {
 				return preg_replace( '/<[^>]+>/', '', $text ) ?? '';
