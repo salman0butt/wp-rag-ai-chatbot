@@ -52,14 +52,30 @@ final class SecretRedactor {
 	/**
 	 * Sanitize a raw provider body within the diagnostic byte limit.
 	 *
+	 * Redaction happens before truncation so a secret that crosses the byte
+	 * boundary cannot expose a plaintext prefix. If truncation lands inside the
+	 * redaction marker, retain the complete marker rather than a partial token.
+	 *
 	 * @param string       $body Raw provider body.
 	 * @param array<mixed> $known_secrets Known plaintext secrets.
 	 */
 	public function sanitize_body( string $body, array $known_secrets = array() ): string {
 		$truncated = strlen( $body ) > self::BODY_BYTE_LIMIT;
-		$limited   = $truncated ? substr( $body, 0, self::BODY_BYTE_LIMIT ) : $body;
-		$sanitized = $this->sanitize( $limited, $known_secrets );
+		$sanitized = $this->sanitize( $body, $known_secrets );
 
-		return $truncated ? $sanitized . self::TRUNCATED : $sanitized;
+		if ( ! $truncated ) {
+			return $sanitized;
+		}
+
+		$limited = substr( $sanitized, 0, self::BODY_BYTE_LIMIT );
+		$marker  = strrpos( $limited, '[' );
+		if ( false !== $marker ) {
+			$tail = substr( $limited, $marker );
+			if ( '' !== $tail && str_starts_with( self::REDACTED, $tail ) ) {
+				$limited = substr( $limited, 0, $marker ) . self::REDACTED;
+			}
+		}
+
+		return $limited . self::TRUNCATED;
 	}
 }
