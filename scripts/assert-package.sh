@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 zip_file="wp-rag-ai-chatbot.zip"
 
 if [[ ! -f "$zip_file" ]]; then
@@ -25,7 +26,16 @@ for path in "${required[@]}"; do
     fi
 done
 
-forbidden='(^|/)(tests|docs|node_modules|\.github)(/|$)|(^|/)\.env([^/]*$|/)|(^|/)\.wp-env\.json$|(^|/)(composer\.json|composer\.lock|package\.json|package-lock\.json)$'
+while IFS= read -r source_path; do
+    relative_path="${source_path#"$repo_root/"}"
+    package_path="wp-rag-ai-chatbot/$relative_path"
+    if ! grep -Fxq "$package_path" <<<"$entries"; then
+        echo "Package is missing provider runtime path: $package_path" >&2
+        exit 1
+    fi
+done < <(find "$repo_root/src/Providers" -type f -name '*.php' -print | sort)
+
+forbidden='(^|/)(tests|docs|scripts|node_modules|\.github)(/|$)|(^|/)\.env([^/]*$|/)|(^|/)\.wp-env\.json$|(^|/)(composer\.json|composer\.lock|package\.json|package-lock\.json)$'
 
 if grep -E "$forbidden" <<<"$entries"; then
     echo "Package contains development/private files" >&2
