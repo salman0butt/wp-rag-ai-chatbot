@@ -57,6 +57,16 @@ final class DocumentExtractionContractsTest extends TestCase {
 	}
 
 	/**
+	 * Validated files reject malformed hashes.
+	 */
+	public function test_validated_file_rejects_invalid_sha256(): void {
+		$this->requireM05Contracts();
+		$this->expectException( InvalidArgumentException::class );
+
+		new ValidatedFile( '/tmp/a.txt', 'a.txt', 'txt', 'text/plain', 1, str_repeat( 'A', 64 ) );
+	}
+
+	/**
 	 * Extracted documents require non-blank normalized text.
 	 */
 	public function test_extracted_document_rejects_blank_text(): void {
@@ -117,6 +127,66 @@ final class DocumentExtractionContractsTest extends TestCase {
 
 		$this->expectException( InvalidArgumentException::class );
 		$registry->register( $duplicate );
+	}
+
+	/**
+	 * Registry rejects extractors that claim no MIME types.
+	 */
+	public function test_registry_rejects_extractor_without_mime_types(): void {
+		$this->requireM05Contracts();
+
+		$extractor = new class() implements DocumentExtractor {
+			/**
+			 * Return supported MIME types.
+			 *
+			 * @return list<string>
+			 */
+			public function supportedMimeTypes(): array {
+				return array();
+			}
+
+			/**
+			 * Extract one validated file.
+			 *
+			 * @param ValidatedFile $file Validated file.
+			 */
+			public function extract( ValidatedFile $file ): ExtractedDocument {
+				return new ExtractedDocument( 'text', array( 'name' => $file->basename ) );
+			}
+		};
+
+		$this->expectException( InvalidArgumentException::class );
+		( new DocumentExtractorRegistry() )->register( $extractor );
+	}
+
+	/**
+	 * Registry rejects blank MIME ownership.
+	 */
+	public function test_registry_rejects_blank_mime_type(): void {
+		$this->requireM05Contracts();
+
+		$extractor = new class() implements DocumentExtractor {
+			/**
+			 * Return supported MIME types.
+			 *
+			 * @return list<string>
+			 */
+			public function supportedMimeTypes(): array {
+				return array( '   ' );
+			}
+
+			/**
+			 * Extract one validated file.
+			 *
+			 * @param ValidatedFile $file Validated file.
+			 */
+			public function extract( ValidatedFile $file ): ExtractedDocument {
+				return new ExtractedDocument( 'text', array( 'name' => $file->basename ) );
+			}
+		};
+
+		$this->expectException( InvalidArgumentException::class );
+		( new DocumentExtractorRegistry() )->register( $extractor );
 	}
 
 	/**
