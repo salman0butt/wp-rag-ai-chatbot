@@ -13,13 +13,14 @@ namespace WpRagAiChatbot\Knowledge\WordPress;
  * Isolates WordPress content APIs from source normalization.
  */
 interface WordPressContentGateway {
+	// phpcs:disable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Public method follows the approved M04 gateway contract.
 	/**
 	 * Return public WordPress post-type names.
 	 *
 	 * @return array<int, string>
 	 */
-	// phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Public method follows the approved M04 gateway contract.
 	public function publicPostTypes(): array;
+	// phpcs:enable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
 
 	/**
 	 * Return one bounded page of WordPress posts.
