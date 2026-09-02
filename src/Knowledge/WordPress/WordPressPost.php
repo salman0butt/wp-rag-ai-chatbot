@@ -17,18 +17,18 @@ final readonly class WordPressPost {
 	/**
 	 * Create a normalized WordPress post value.
 	 *
-	 * @param int                                                               $id Post ID.
-	 * @param string                                                            $type Post type.
-	 * @param string                                                            $status Post status.
-	 * @param string                                                            $title Post title.
-	 * @param string                                                            $excerpt Post excerpt.
-	 * @param string                                                            $content Post content.
-	 * @param string|null                                                       $url Canonical permalink.
-	 * @param string                                                            $modifiedGmt WordPress modified GMT value.
-	 * @param string|null                                                       $language Language when available.
-	 * @param bool                                                              $passwordProtected Whether a password is set.
-	 * @param int                                                               $authorId Author ID.
-	 * @param array<string, array<int, array{name:string,slug:string}>>          $taxonomyLabels Selected taxonomy labels.
+	 * @param int                                                       $id Post ID.
+	 * @param string                                                    $type Post type.
+	 * @param string                                                    $status Post status.
+	 * @param string                                                    $title Post title.
+	 * @param string                                                    $excerpt Post excerpt.
+	 * @param string                                                    $content Post content.
+	 * @param string|null                                               $url Canonical permalink.
+	 * @param string                                                    $modifiedGmt WordPress modified GMT value.
+	 * @param string|null                                               $language Language when available.
+	 * @param bool                                                      $passwordProtected Whether a password is set.
+	 * @param int                                                       $authorId Author ID.
+	 * @param array<string, array<int, array{name:string,slug:string}>> $taxonomyLabels Selected taxonomy labels.
 	 */
 	public function __construct(
 		public int $id,
