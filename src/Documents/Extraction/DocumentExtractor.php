@@ -18,6 +18,7 @@ interface DocumentExtractor {
 	 *
 	 * @return list<string>
 	 */
+	// phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Public domain contract uses camelCase consistently with existing records/contracts.
 	public function supportedMimeTypes(): array;
 
 	/**
