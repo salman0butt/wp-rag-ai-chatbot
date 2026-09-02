@@ -16,13 +16,13 @@ final class HttpRequest {
 	/**
 	 * Create a provider HTTP request.
 	 *
-	 * @param string                   $provider_id Provider identifier.
-	 * @param string                   $method HTTP method.
-	 * @param string                   $url Fixed provider endpoint URL.
-	 * @param array<string, string>    $headers Request headers.
+	 * @param string                    $provider_id Provider identifier.
+	 * @param string                    $method HTTP method.
+	 * @param string                    $url Fixed provider endpoint URL.
+	 * @param array<string, string>     $headers Request headers.
 	 * @param array<string, mixed>|null $json_body Optional JSON body.
-	 * @param int                      $timeout Total timeout in seconds.
-	 * @param int                      $redirection Maximum redirects.
+	 * @param int                       $timeout Total timeout in seconds.
+	 * @param int                       $redirection Maximum redirects.
 	 */
 	public function __construct(
 		public readonly string $provider_id,
