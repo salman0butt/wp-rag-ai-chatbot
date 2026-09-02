@@ -37,6 +37,7 @@ final class V002CreateDocumentsTable implements Migration {
 	 * Create the documents table and verify it exists.
 	 *
 	 * @param Connection $connection Database connection.
+	 * @throws DatabaseException When the documents table is still missing after dbDelta().
 	 */
 	public function up( Connection $connection ): void {
 		$table = $this->tables->documents();
