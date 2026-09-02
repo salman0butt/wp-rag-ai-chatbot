@@ -28,7 +28,7 @@ final class WpdbDocumentRepository implements DocumentRepository {
 	 * Create the repository.
 	 *
 	 * @param Connection $connection Database connection.
-	 * @param TableNames  $tables Plugin table names.
+	 * @param TableNames $tables Plugin table names.
 	 */
 	public function __construct(
 		private readonly Connection $connection,
