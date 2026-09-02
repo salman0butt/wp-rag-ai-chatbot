@@ -47,23 +47,29 @@ final class DocumentRecordTest extends TestCase {
 	}
 
 	/**
-	 * withId returns the same record data with a persisted identifier.
+	 * WithId returns the same record data with a persisted identifier.
 	 */
 	public function test_with_id_preserves_record_data_and_sets_id(): void {
 		$record = $this->record();
 		$saved  = $record->withId( 42 );
 
 		self::assertSame( 42, $saved->id );
+		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DocumentRecord public API is camelCase by approved contract.
 		self::assertSame( $record->documentKey, $saved->documentKey );
 		self::assertSame( $record->sourceId, $saved->sourceId );
 		self::assertSame( $record->metadata, $saved->metadata );
 		self::assertSame( $record->contentHash, $saved->contentHash );
 		self::assertSame( $record->createdAt, $saved->createdAt );
 		self::assertSame( $record->updatedAt, $saved->updatedAt );
+		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
 	/**
 	 * Build a valid record with selected overrides.
+	 *
+	 * @param string $document_key Document key override.
+	 * @param int    $source_id Source ID override.
+	 * @param string $content_hash Content-hash override.
 	 */
 	private function record(
 		string $document_key = 'document-1',
