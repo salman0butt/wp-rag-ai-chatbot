@@ -20,12 +20,15 @@ use WpRagAiChatbot\Knowledge\Sources\KnowledgeSourceException;
  * Verifies deterministic FAQ normalization.
  */
 final class FaqSourceTest extends TestCase {
+	/**
+	 * Multiple FAQ items normalize deterministically with stable keys and hashes.
+	 */
 	public function test_normalizes_multiple_faq_documents_deterministically(): void {
 		$this->requireSource();
-		$source = $this->source();
+		$source     = $this->source();
 		$normalizer = new FaqSource();
-		$first = iterator_to_array( $normalizer->documents( $source ) );
-		$second = iterator_to_array( $normalizer->documents( $source ) );
+		$first      = iterator_to_array( $normalizer->documents( $source ) );
+		$second     = iterator_to_array( $normalizer->documents( $source ) );
 
 		self::assertCount( 2, $first );
 		self::assertCount( 2, $second );
@@ -38,7 +41,13 @@ final class FaqSourceTest extends TestCase {
 		self::assertSame( 9, $first[0]->sourceId );
 		self::assertSame( 'en', $first[0]->language );
 		self::assertSame( 'private', $first[0]->visibility );
-		self::assertSame( array( 'source_type' => 'faq', 'item_index' => 0 ), $first[0]->metadata );
+		self::assertSame(
+			array(
+				'source_type' => 'faq',
+				'item_index'  => 0,
+			),
+			$first[0]->metadata
+		);
 		self::assertSame( 'faq-source-v1', $first[0]->sourceVersion );
 		self::assertSame( $source->updatedAt, $first[0]->createdAt );
 		self::assertSame( $source->updatedAt, $first[0]->updatedAt );
@@ -48,24 +57,60 @@ final class FaqSourceTest extends TestCase {
 		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
+	/**
+	 * Malformed FAQ items fail closed.
+	 */
 	public function test_rejects_malformed_item(): void {
 		$this->requireSource();
 		$this->expectException( KnowledgeSourceException::class );
-		iterator_to_array( ( new FaqSource() )->documents( $this->source( config: array( 'items' => array( array( 'question' => 'Missing answer' ) ) ) ) ) );
+		iterator_to_array(
+			( new FaqSource() )->documents(
+				$this->source(
+					config: array(
+						'items' => array(
+							array( 'question' => 'Missing answer' ),
+						),
+					)
+				)
+			)
+		);
 	}
 
+	/**
+	 * FAQ visibility is limited to supported values.
+	 */
 	public function test_rejects_invalid_visibility(): void {
 		$this->requireSource();
 		$this->expectException( KnowledgeSourceException::class );
-		iterator_to_array( ( new FaqSource() )->documents( $this->source( config: array( 'items' => array( array( 'question' => 'Q', 'answer' => 'A' ) ), 'visibility' => 'members-only' ) ) ) );
+		iterator_to_array(
+			( new FaqSource() )->documents(
+				$this->source(
+					config: array(
+						'items' => array(
+							array(
+								'question' => 'Q',
+								'answer'   => 'A',
+							),
+						),
+						'visibility' => 'members-only',
+					)
+				)
+			)
+		);
 	}
 
+	/**
+	 * FAQ normalization requires a persisted source.
+	 */
 	public function test_rejects_unpersisted_source(): void {
 		$this->requireSource();
 		$this->expectException( KnowledgeSourceException::class );
 		iterator_to_array( ( new FaqSource() )->documents( $this->source( id: null ) ) );
 	}
 
+	/**
+	 * FAQ sources require at least one configured item.
+	 */
 	public function test_rejects_empty_items_list(): void {
 		$this->requireSource();
 		$this->expectException( KnowledgeSourceException::class );
@@ -73,22 +118,31 @@ final class FaqSourceTest extends TestCase {
 	}
 
 	/**
+	 * Build a FAQ source record with selected overrides.
+	 *
 	 * @param int|null             $id Persisted identifier.
 	 * @param array<string, mixed> $config Source configuration.
 	 */
 	private function source(
 		?int $id = 9,
 		array $config = array(
-			'items' => array(
-				array( 'question' => 'What is RAG?', 'answer' => 'Retrieval augmented generation.' ),
-				array( 'question' => 'Does it support WordPress?', 'answer' => 'Yes.' ),
+			'items'      => array(
+				array(
+					'question' => 'What is RAG?',
+					'answer'   => 'Retrieval augmented generation.',
+				),
+				array(
+					'question' => 'Does it support WordPress?',
+					'answer'   => 'Yes.',
+				),
 			),
-			'language' => 'en',
+			'language'   => 'en',
 			'visibility' => 'private',
 		)
 	): KnowledgeSourceRecord {
 		$created_at = new DateTimeImmutable( '2026-09-01 10:00:00', new DateTimeZone( 'UTC' ) );
 		$updated_at = new DateTimeImmutable( '2026-09-02 11:00:00', new DateTimeZone( 'UTC' ) );
+
 		return new KnowledgeSourceRecord(
 			$id,
 			'support-faq',
@@ -105,6 +159,9 @@ final class FaqSourceTest extends TestCase {
 		);
 	}
 
+	/**
+	 * Fail clearly while the test-first production class does not exist.
+	 */
 	private function requireSource(): void {
 		if ( ! class_exists( FaqSource::class ) ) {
 			self::fail( 'FaqSource class does not exist yet.' );
