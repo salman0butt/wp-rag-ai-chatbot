@@ -4,17 +4,20 @@ Status: ACTIVE — exact milestone evidence is recorded in each milestone ledger
 
 | Layer | Purpose | First Required | Evidence location |
 |---|---|---|---|
-| PHP unit | isolated PHP/plugin behavior | M01 | M01/M02 + CI `php-quality` |
-| WordPress integration | hooks/plugin lifecycle/database runtime | M01 | M01/M02 + CI `wordpress-smoke` |
+| PHP unit | isolated PHP/plugin behavior | M01 | M01-M03 + CI `php-quality` |
+| WordPress integration | hooks/plugin lifecycle/database/provider runtime | M01 | M01-M03 + CI `wordpress-smoke` |
 | JS/TS unit | build-tooling/component behavior | M01 | M01 + CI `js-quality` |
 | Typecheck/lint/build | frontend/toolchain production integrity | M01 foundation; M12+ UI | M01 + relevant UI milestone |
 | Dependency audit | known Composer/npm advisories | M01 | CI PHP/JS quality jobs |
-| Release ZIP guard | required runtime files; exclude dev/private files | M01 foundation; M24 release | M01/M02 + CI `package`; M24 final audit |
+| Release ZIP guard | required runtime files; exclude dev/private files | M01 foundation; M24 release | M01-M03 + CI `package`/package assertion; M24 final audit |
 | DB migrations | fresh install + upgrades + idempotency + locking/failure recovery | M02 | M02 + CI `php-quality`/`wordpress-smoke` |
 | Repository/SQL | prepared queries, pagination, source ownership/isolation | M02 | M02 + CI `wordpress-smoke` |
 | Uninstall/data policy | retain default, explicit deletion, failure retryability | M02 | M02 + CI `php-quality`/`wordpress-smoke` |
-| Provider contract | normalized generation/errors/capabilities | M03 | M03 |
-| Live provider smoke | opt-in credential-gated path | M03 | M03/M24 |
+| Provider contract | normalized generation/errors/capabilities | M03 | M03 + CI `php-quality` |
+| Credential security | precedence/encryption/non-autoload/redaction/fail-closed errors | M03 | M03 + CI `php-quality`/`wordpress-smoke` |
+| Provider HTTP policy | fixed endpoints/timeouts/redirects/retry classification | M03 | M03 + CI `php-quality` |
+| Provider cache | bounded catalog TTL, malformed eviction, refresh preservation | M03 | M03 + CI `php-quality` |
+| Live provider smoke | opt-in credential-gated path | M03 | M03 live-gating regression; actual live calls opt-in only |
 | Knowledge source contract | normalization and access metadata | M04 | M04-M06 |
 | Extractor security | type/size/parser failure controls | M05 | M05/M22 |
 | Chunking/indexing | boundaries/hash/dedup/incremental behavior | M07 | M07 |
@@ -53,3 +56,24 @@ Runtime candidate `4db24d95db0d572f28273734714c74a47ac8bb2e`, CI run `3360343503
 - **Dependency/static gates:** Composer audit, WPCS, PHPStan, PHPUnit, npm critical-audit gate, JS lint/typecheck/tests/build all pass.
 
 Artifact evidence: ID `9836065304`, digest `sha256:f77b32bf377b4f6fbb65cf1721a87b5e0408041ad5444816076227ab931aeab3`.
+
+## M03 Verified Coverage
+
+Runtime candidate `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, CI run `33636226873`:
+
+- **Provider value/contracts:** stable IDs, normalized generation/result/status/usage, provider health/error/descriptor contracts, registry lookup and duplicate protection.
+- **Credential precedence/storage:** environment -> constant -> encrypted option; blank runtime values fall through; options are non-autoloaded; save/load/delete behavior and failure cases covered.
+- **Cryptography:** XChaCha20-Poly1305 preferred, AES-256-GCM fallback, provider-bound HKDF/AAD, strict envelope/base64 validation, cross-provider rejection, no-backend failure, and tamper/fail-closed behavior.
+- **Secret safety:** Secret string/JSON/debug outputs redact; known secrets and credential headers redact; 2048-byte diagnostic limit; regression proves a secret crossing the truncation boundary exposes no plaintext prefix.
+- **HTTP policy:** WordPress transport carries exact timeout/redirect values, classifies clear timeouts, strips raw transport diagnostics; generation sends once; discovery retries once only for transport/502/503/504.
+- **Model catalog cache:** 900-second TTL, valid hit/miss, malformed transient eviction, invalidate, successful refresh, failed-refresh preservation.
+- **OpenAI/OpenRouter:** fixed endpoint generation/model-discovery contracts, normalized HTTP errors, usage/status/request IDs, malformed payload rejection, and explicit metadata-only model capability handling.
+- **WordPress AI Client:** public API feature detection, safe WP6.9 absence, public builder/result normalization, WP_Error sanitization, malformed-result handling, and fail-closed unexpected Throwable regression.
+- **Provider bootstrap/configuration:** all M03 providers composed before plugin loaded signal; descriptor serialization is secret-free/local-only; bootstrap performs no provider HTTP call.
+- **Real WordPress integration:** fake direct credential is encrypted in `wp_options`, envelope validated, autoload disabled, callback-only plaintext observation, delete behavior, precedence/fallback, runtime WP-AI feature detection, and secret-free descriptors.
+- **Live gating:** normal CI proves the live wrapper skips unless explicitly opted in and validates provider/key/model gates without making live provider calls.
+- **Package completeness:** every `src/Providers/**/*.php` runtime file is required in the release ZIP; development scripts/tests/docs/private manifests remain rejected.
+- **Review regressions:** three Important findings fixed before completion; no unresolved Critical/Important findings.
+- **Dependency/static gates:** Composer audit clean; WPCS/PHPStan clean; PHPUnit `131 tests / 738 assertions`; npm critical gate, JS lint/typecheck/Jest/build, WordPress smoke, and package artifact all green.
+
+Artifact evidence: ID `9848913900`, 64,596 bytes, digest `sha256:a674d5ad8d3a3844dd09b824cfacb9952775238f0b37f313bfbb5442af5c342b`.

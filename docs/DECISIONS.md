@@ -137,3 +137,27 @@ Migration concurrency uses a deterministic MySQL/MariaDB `GET_LOCK`/`RELEASE_LOC
 Status: APPROVED IMPLEMENTATION RULING
 
 Uninstall preserves plugin data unless `wp_rag_ai_delete_data_on_uninstall` is exactly boolean `true`. Destructive cleanup is confined to the guarded WordPress uninstall path.
+
+## ADR-024 — Direct-provider credential precedence and authenticated storage
+
+Status: APPROVED IMPLEMENTATION RULING
+
+OpenAI Direct and OpenRouter Direct credentials resolve in fixed precedence order: environment variable, matching PHP constant, then plugin-managed WordPress option. Blank runtime values do not mask a lower source. Plugin-managed credentials are non-autoloaded and encrypted with authenticated encryption: Sodium XChaCha20-Poly1305 is preferred, AES-256-GCM is the fallback, and provider-bound HKDF/AAD prevents ciphertext from being silently reused across providers. Decryption failures are configuration errors; plaintext fallback is forbidden.
+
+## ADR-025 — Fixed provider network policy and bounded retries
+
+Status: APPROVED IMPLEMENTATION RULING
+
+Direct-provider adapters use compile-time fixed HTTPS endpoints only; arbitrary admin/user base URLs are not accepted. Redirects are disabled. Generation has a 45-second timeout and no automatic retry because it may be a paid/non-idempotent operation. Model discovery has a 10-second timeout and at most one retry only for transport failure or HTTP 502/503/504. Authentication, authorization, rate-limit, other HTTP failures, and malformed payloads are surfaced as normalized errors rather than hidden by retries or empty-success responses.
+
+## ADR-026 — Model catalog cache stores normalized metadata only
+
+Status: APPROVED IMPLEMENTATION RULING
+
+Direct-provider model catalogs are cached in fixed WordPress transients for 900 seconds. Cache payloads contain normalized non-secret model metadata only. Malformed cache data is evicted. Refresh replaces a valid cache only after successful upstream normalization; failed refresh preserves the previous valid cache and rethrows the provider error. Model capabilities are taken from explicit provider metadata, never inferred from model-name strings.
+
+## ADR-027 — WordPress AI Client is optional public-API compatibility
+
+Status: APPROVED IMPLEMENTATION RULING
+
+The WordPress AI Client adapter is optional enhancement behavior, not a requirement for the WordPress 6.9 baseline. It uses documented public WordPress AI entrypoints/builder/result methods only. Missing/unsupported Core AI features report the provider unavailable rather than fatal. The plugin does not inspect Core-managed connector credentials. Structured `WP_Error` diagnostics are sanitized; unexpected Throwables fail closed with a constant generic message because opaque Core/provider secrets cannot be reliably enumerated by the plugin.

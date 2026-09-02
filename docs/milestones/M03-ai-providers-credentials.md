@@ -1,72 +1,124 @@
 # M03 — AI Providers, Credentials, OpenAI, OpenRouter & WP AI Client Compatibility
 
-Status: NOT STARTED
+Status: COMPLETE — runtime candidate verified; documentation-complete CI and branch integration pending.
 
 ## Goal
-Create provider/capability contracts and secure OpenAI/OpenRouter direct adapters plus WP 7 AI Client/Connectors compatibility.
+Create provider/capability contracts and secure OpenAI/OpenRouter direct adapters plus optional WordPress 7 AI Client compatibility without introducing later RAG, embeddings, admin UI, tools, or streaming scope.
 
 ## Dependencies
 M01-M02.
 
-## In Scope
-Credentials/configuration backend; model discovery/cache; capability metadata; generation/error/usage normalization; OpenAI current APIs; OpenRouter current APIs; WP AI Client feature detection/adapter; mock contract tests; opt-in live smoke tests.
+## Authoritative Plan
+`docs/superpowers/plans/2026-09-02-m03-ai-providers-credentials-v2.md`
 
-## Out of Scope
-Full embeddings indexing (M08), production RAG orchestration (M11), admin provider UI (M12).
+## Delivered Scope
+- Stable provider contracts/value objects for generation, health, errors, usage, descriptors, and model catalogs.
+- Direct OpenAI and OpenRouter adapters behind a provider registry; model IDs stay configuration/discovery data rather than domain constants.
+- Server-only credential precedence: environment -> PHP constant -> plugin-managed encrypted WordPress option, with blank runtime values falling through.
+- Authenticated credential storage using Sodium XChaCha20-Poly1305 when available and AES-256-GCM fallback, provider-bound HKDF/AAD, strict envelopes, non-autoloaded options, and fail-closed decryption.
+- Secret value object and diagnostic redaction boundary; provider errors are normalized before leaving adapters.
+- Fixed HTTPS provider endpoints, zero redirects, exact 45-second generation and 10-second discovery timeouts, no generation retry, and one bounded discovery retry only for transport failures or 502/503/504.
+- Fifteen-minute normalized model-catalog transient cache with malformed-cache eviction and failed-refresh preservation.
+- OpenAI Responses API generation and model discovery.
+- OpenRouter chat-completions generation and model discovery.
+- Optional WordPress 7 AI Client adapter using public APIs only, with graceful WordPress 6.9 degradation.
+- Non-secret provider configuration descriptors and bootstrap/registry composition without startup network calls.
+- Permanent real-WordPress provider integration smoke and opt-in live-provider smoke gating.
+- Production ZIP guard requiring every runtime `src/Providers/**/*.php` file while excluding tests/docs/scripts/private/development files.
 
-## Architecture
-Provider registry + narrow capability contracts; server-only credentials; no hard-coded model IDs in domain logic.
+## Out of Scope Preserved
+No embeddings/vector runtime (M08), production RAG orchestration/streaming (M11), provider admin UI (M12), pricing tables, arbitrary provider base URLs, public prompt endpoints, tools/actions, or later knowledge/indexing implementation was added.
 
-## Acceptance Criteria
-OpenAI/OpenRouter mocked contracts pass; capability/model discovery works; errors normalized/redacted; WP 7 adapter degrades cleanly on older supported WP; public REST cannot expose keys.
+## TDD / RED→GREEN Evidence
+- Provider infrastructure RED `16d1282029806f74b9feeed3a3e0510a15b23046`, run `33626731444`: PHPStan clean; PHPUnit `129 tests / 683 assertions / 6 failures`, all expected missing registry/config/bootstrap behavior. GREEN culminated at `410cdf93de60f266943bbf0105e3c482f79a0e87`, run `33627365943`: PHPStan clean and `129 tests / 729 assertions` green.
+- Real WordPress provider smoke/live-gating integration was permanently wired by `a42c94963c202f55510d815c5ea1c0aa59cf7243`; run `33627872789` passed all four jobs, including activation, M02 DB smoke, M03 provider smoke, and offline live-gating checks.
+- Independent security review found boundary-crossing credential fragments could survive diagnostic truncation. RED `35e65d2855a46d7a9d4580fcaae3f175afd91902`, run `33635147048`: PHPStan clean; PHPUnit `130 tests / 731 assertions / 1 failure`, exposing `boundary[TRUNCATED]`. GREEN `00a5864d86379ed653889b405a28960991476bda` redacts before truncation and preserves complete redaction markers.
+- Independent packaging review found `assert-package.sh` accepted an archive missing all provider runtime files. Run `33635292449` failed only the package-assertion regression with `Package assertion accepted an archive missing provider runtime files.` GREEN `1f716e91ef473aa29a1486e51f70e4c11cfb8209`, run `33635472457`, passed PHP, JS including package regression, real WordPress smoke, and package jobs.
+- Independent Core-AI error-boundary review found arbitrary unexpected Throwable messages were republished although Core-managed credentials are opaque to the plugin. RED `fe28e7c134700fafcd01f7ad36e5fb152500eb20`, run `33636065968`: PHPStan clean; PHPUnit `131 tests / 737 assertions / 1 failure`, expected constant safe message vs actual `opaque-core-credential-should-never-escape`. GREEN `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, run `33636226873`: PHPStan clean and `131 tests / 738 assertions` green.
 
-## Tasks
-Pending plan.
+## Real WordPress Integration Evidence
+Permanent `wordpress-smoke` on WordPress 6.9/PHP 8.2 verifies:
+- clean plugin activation plus the complete M02 migration/repository/uninstall smoke;
+- provider bootstrap composition without provider HTTP calls;
+- deterministic fake OpenAI credential encrypted in `wp_options` with no plaintext at rest;
+- versioned approved authenticated-encryption envelope and strict base64 fields;
+- credential option autoload disabled;
+- plaintext only observed through the explicit `Secret::with_value()` callback boundary;
+- deletion removes the managed credential option;
+- environment precedence and blank runtime fallback where controllable;
+- WordPress AI feature-detection state matches the runtime without generation;
+- serialized provider descriptors contain no secret/ciphertext/KDF/header material.
 
-## TDD Evidence
-Pending.
-
-## Integration Test Evidence
-Provider HTTP contract + WordPress configuration integration required.
-
-## E2E / Visual Verification
-N/A until admin configuration UI.
+Normal CI never enables the live-provider script. The live wrapper exits successfully unless `WP_RAG_AI_LIVE_PROVIDER_TESTS=1`; an explicit direct provider and corresponding environment credential are then required, discovery may run, and generation is allowed at most once only when an explicit live model variable is provided.
 
 ## Security Review
-Credential precedence/storage, SSRF/endpoint configuration, log redaction, cost abuse surfaces.
+Fresh `main...feat/m03-ai-providers-credentials` review covered credential leakage/storage/precedence, cryptographic envelope/backend selection, endpoint/redirect/timeout/retry policy, normalized errors, cache failure behavior, WordPress AI compatibility, CI paid-call isolation, packaging, and milestone scope.
 
-## Accessibility Review where UI exists
-N/A.
+Findings fixed before completion:
+1. **Important:** truncating a provider body before known-secret redaction could leak a credential prefix when the secret crossed the 2048-byte boundary. Fixed and regression-tested.
+2. **Important:** package validation did not require M03 provider runtime files and did not forbid development `scripts/`. Fixed by requiring every runtime provider PHP source path and rejecting scripts.
+3. **Important:** unexpected WordPress AI Client Throwables could republish opaque Core/provider text that the plugin cannot reliably redact. Fixed with a constant fail-closed error message; structured `WP_Error` handling remains sanitized.
 
-## Performance Review where relevant
-Bounded model discovery caching, HTTP timeouts/retries.
+Unresolved Critical/Important findings: **none**.
 
-## Code Review Findings
-Pending.
+Additional verified controls:
+- Sodium XChaCha20-Poly1305 preferred; AES-256-GCM only when Sodium is unavailable.
+- Provider-bound HKDF-SHA256 key derivation and AAD; strict version/algorithm/envelope shapes; malformed/unsupported decryption fails closed.
+- Managed credential options are non-autoloaded and plaintext is never returned by `Secret` string/JSON/debug serialization.
+- Direct provider URLs are compile-time fixed HTTPS constants; arbitrary base URLs are not accepted.
+- Generation uses one request only; discovery retries once only for transport failure/502/503/504.
+- 401/403/429/upstream/malformed responses remain errors rather than empty-success model catalogs.
+- Failed model refresh cannot replace a valid cache entry because cache write occurs only after successful upstream normalization.
+- Capability metadata is read only from explicit provider payload fields; model names are not parsed heuristically.
+- WordPress AI adapter uses documented public entrypoints/builder/result methods and reports unavailable cleanly on the supported pre-WP7 baseline.
 
-## Fixes
-Pending.
+## Performance Review
+- Provider bootstrap composes local objects only and performs no startup model discovery or paid generation.
+- Direct generation/discovery requests are bounded by 45s/10s timeouts and zero redirects.
+- Discovery retry budget is at most one additional request; generation never retries.
+- Model catalogs use a fixed 900-second transient TTL and normalized cache payloads.
+- Configuration descriptors are local-only and do not trigger discovery/generation.
+- No polling workers, streaming runtime, vector computation, or other later high-cost paths were introduced.
 
-## Fresh Verification Commands
-Pending.
+## Verified Runtime Candidate
+- Commit: `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`
+- GitHub Actions run: `33636226873`
+- `php-quality`: success — Composer validation/audit, WPCS, PHPStan, PHPUnit `131 tests / 738 assertions`.
+- `js-quality`: success — npm critical audit gate, lint/typecheck/Jest/build, live-provider gate regression, package-assertion regression.
+- `wordpress-smoke`: success — activation + M02 database runtime + M03 provider integration.
+- `package`: success — strict runtime archive validation and artifact upload.
+- Artifact: `wp-rag-ai-chatbot`, ID `9848913900`, 64,596 bytes.
+- Artifact digest: `sha256:a674d5ad8d3a3844dd09b824cfacb9952775238f0b37f313bfbb5442af5c342b`.
+- Composer audit: no known advisories.
+- npm blocking gate: zero critical advisories; existing non-critical development-tooling advisories remain tracked and are not shipped in the production ZIP.
 
-## Fresh Verification Results
-Pending.
-
-## Commits
-Pending.
+The documentation-complete commit containing this ledger must pass the same four permanent jobs before branch integration.
 
 ## Files Changed
-Pending.
+M03 changes are confined to provider contracts/adapters/credentials/security/cache/HTTP/bootstrap, provider-focused tests/test doubles, real-WordPress/live-gating scripts, package/CI guards, and M03 design/plan/evidence documentation. No M04+ product runtime was implemented.
 
 ## Known Limitations
-Pending.
+- Live OpenAI/OpenRouter discovery/generation is intentionally credential-gated and is not executed in normal CI; no production credentials were supplied during M03 completion.
+- WordPress AI Client is optional: WordPress 6.9 remains supported and reports the adapter unavailable when the WP7 public AI API is absent.
+- Provider model/capability metadata may evolve upstream; M03 intentionally avoids hard-coded model-name heuristics and relies on discovery/explicit metadata.
+- Existing non-critical WordPress JavaScript development-tooling advisories remain tracked and are excluded from the production ZIP.
+- Native local git worktree/dependency execution remains unavailable in this chat runtime because external DNS is restricted; connected GitHub branch isolation + GitHub Actions remain the verified execution path under ADR-016/018.
 
 ## Documentation Updated
-Pending.
+`docs/DECISIONS.md`, M03 milestone, global STATUS, TEST-MATRIX, SECURITY, KNOWN-ISSUES, and TECH-DEBT.
 
 ## Completion Checklist
-All mandatory gates.
+- [x] Provider contracts, registry, descriptors, and bootstrap implemented.
+- [x] OpenAI/OpenRouter direct generation and model discovery implemented.
+- [x] Credential precedence, encrypted storage, Secret boundary, and redaction implemented.
+- [x] Fixed HTTP safety/retry policy and model catalog caching implemented.
+- [x] Optional public WordPress AI Client adapter implemented with WP6.9 degradation.
+- [x] Permanent real WordPress provider integration and offline live-gating tests implemented.
+- [x] Production ZIP provider-runtime completeness regression implemented.
+- [x] Security/performance review complete.
+- [x] All Critical/Important review findings fixed with focused RED→GREEN evidence.
+- [x] Fresh runtime candidate all-four CI green and artifact recorded.
+- [ ] Documentation-complete SHA permanent CI must be green before integration.
 
 ## Next Milestone
-M04 — WordPress Knowledge Source Framework.
+M04 — WordPress Knowledge Source Framework. Begin only after M03 is integrated into `main` and post-merge CI is green.
