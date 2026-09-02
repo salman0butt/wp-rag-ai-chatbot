@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Knowledge\Sources;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Generator;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\Sources\FaqSource;
@@ -74,6 +75,29 @@ final class FaqSourceTest extends TestCase {
 				)
 			)
 		);
+	}
+
+	/**
+	 * The complete FAQ list is validated before any document is yielded.
+	 */
+	public function test_rejects_later_malformed_item_before_first_yield(): void {
+		$this->requireSource();
+		$documents = ( new FaqSource() )->documents(
+			$this->source(
+				config: array(
+					'items' => array(
+						array(
+							'question' => 'Valid question',
+							'answer'   => 'Valid answer',
+						),
+						array( 'question' => 'Missing answer' ),
+					),
+				)
+			)
+		);
+		self::assertInstanceOf( Generator::class, $documents );
+		$this->expectException( KnowledgeSourceException::class );
+		$documents->rewind();
 	}
 
 	/**
