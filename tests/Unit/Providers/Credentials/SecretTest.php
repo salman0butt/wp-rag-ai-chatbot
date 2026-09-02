@@ -46,7 +46,7 @@ final class SecretTest extends TestCase {
 		self::assertSame( '[REDACTED]', (string) $secret );
 		self::assertSame( '[REDACTED]', $secret->jsonSerialize() );
 		self::assertSame( array( 'value' => '[REDACTED]' ), $debug );
-		self::assertNotContains( 'sk-test-super-secret', $debug, true );
+		self::assertNotContains( 'sk-test-super-secret', $debug );
 	}
 
 	/**
