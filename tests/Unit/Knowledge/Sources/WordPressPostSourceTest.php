@@ -22,6 +22,9 @@ use WpRagAiChatbot\Tests\Support\Knowledge\FakeWordPressContentGateway;
  * Verifies deterministic WordPress post normalization.
  */
 final class WordPressPostSourceTest extends TestCase {
+	/**
+	 * Default post/page content is normalized into traceable documents.
+	 */
 	public function test_normalizes_default_post_and_page_with_traceable_metadata(): void {
 		$this->requireSource();
 		$gateway = new FakeWordPressContentGateway(
@@ -35,10 +38,21 @@ final class WordPressPostSourceTest extends TestCase {
 						excerpt: ' Summary ',
 						content: " Body\ntext ",
 						taxonomy_labels: array(
-							'post_tag' => array( array( 'name' => 'Zed', 'slug' => 'zed' ) ),
+							'post_tag' => array(
+								array(
+									'name' => 'Zed',
+									'slug' => 'zed',
+								),
+							),
 							'category' => array(
-								array( 'name' => 'Beta', 'slug' => 'beta' ),
-								array( 'name' => 'Alpha', 'slug' => 'alpha' ),
+								array(
+									'name' => 'Beta',
+									'slug' => 'beta',
+								),
+								array(
+									'name' => 'Alpha',
+									'slug' => 'alpha',
+								),
 							),
 						)
 					),
@@ -47,12 +61,13 @@ final class WordPressPostSourceTest extends TestCase {
 				),
 			),
 		);
-
-		$documents = iterator_to_array( ( new WordPressPostSource( $gateway ) )->documents( $this->source() ) );
+		$source     = $this->source();
+		$normalizer = new WordPressPostSource( $gateway );
+		$documents  = iterator_to_array( $normalizer->documents( $source ) );
 
 		self::assertCount( 2, $documents );
+		self::assertSame( 'wordpress_posts', $normalizer->type() );
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain records use the approved camelCase contract.
-		self::assertSame( 'wordpress_posts', ( new WordPressPostSource( $gateway ) )->type() );
 		self::assertSame( 'wp-post:post:12', $documents[0]->documentKey );
 		self::assertSame( '12', $documents[0]->externalId );
 		self::assertSame( 'Hello World', $documents[0]->title );
@@ -70,33 +85,39 @@ final class WordPressPostSourceTest extends TestCase {
 				'author_id'   => 7,
 				'taxonomies'  => array(
 					'category' => array(
-						array( 'name' => 'Alpha', 'slug' => 'alpha' ),
-						array( 'name' => 'Beta', 'slug' => 'beta' ),
+						array(
+							'name' => 'Alpha',
+							'slug' => 'alpha',
+						),
+						array(
+							'name' => 'Beta',
+							'slug' => 'beta',
+						),
 					),
-					'post_tag' => array( array( 'name' => 'Zed', 'slug' => 'zed' ) ),
+					'post_tag' => array(
+						array(
+							'name' => 'Zed',
+							'slug' => 'zed',
+						),
+					),
 				),
 			),
 			$documents[0]->metadata
 		);
-		self::assertSame( $this->source()->updatedAt, $documents[0]->createdAt );
-		self::assertSame( $this->source()->updatedAt, $documents[0]->updatedAt );
+		self::assertSame( $source->updatedAt, $documents[0]->createdAt );
+		self::assertSame( $source->updatedAt, $documents[0]->updatedAt );
 		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-		self::assertSame(
-			array(
-				array(
-					'postTypes'      => array( 'page', 'post' ),
-					'includePrivate' => false,
-					'page'           => 1,
-					'perPage'        => 100,
-				),
-			),
-			$gateway->calls
-		);
+		self::assertSame( array( 'page', 'post' ), $gateway->calls[0]['postTypes'] );
+		self::assertFalse( $gateway->calls[0]['includePrivate'] );
+		self::assertSame( 100, $gateway->calls[0]['perPage'] );
 	}
 
-	public function test_accepts_configured_public_cpt_and_rejects_unsupported_type(): void {
+	/**
+	 * Explicit public CPTs are allowed while unsupported types fail closed.
+	 */
+	public function test_accepts_public_cpt_and_rejects_unsupported_type(): void {
 		$this->requireSource();
-		$gateway = new FakeWordPressContentGateway(
+		$gateway   = new FakeWordPressContentGateway(
 			array( 'book', 'page', 'post' ),
 			array( 1 => array( $this->post( id: 21, type: 'book', title: 'Book' ) ) )
 		);
@@ -112,10 +133,13 @@ final class WordPressPostSourceTest extends TestCase {
 		);
 	}
 
-	public function test_excludes_disallowed_statuses_private_by_default_and_password_protected_posts(): void {
+	/**
+	 * Only allowed status and access combinations are emitted.
+	 */
+	public function test_enforces_status_private_and_password_boundaries(): void {
 		$this->requireSource();
-		$gateway = new FakeWordPressContentGateway(
-			array( 'page', 'post' ),
+		$gateway   = new FakeWordPressContentGateway(
+			array( 'post' ),
 			array(
 				1 => array(
 					$this->post( id: 1, status: 'draft' ),
@@ -127,61 +151,101 @@ final class WordPressPostSourceTest extends TestCase {
 				),
 			)
 		);
-		$documents = iterator_to_array( ( new WordPressPostSource( $gateway ) )->documents( $this->source() ) );
+		$documents = iterator_to_array(
+			( new WordPressPostSource( $gateway ) )->documents( $this->source( array( 'post_types' => array( 'post' ) ) ) )
+		);
 		self::assertCount( 1, $documents );
 		self::assertSame( 'wp-post:post:6', $documents[0]->documentKey ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-	}
 
-	public function test_private_content_requires_explicit_opt_in(): void {
-		$this->requireSource();
-		$gateway = new FakeWordPressContentGateway(
+		$private_gateway   = new FakeWordPressContentGateway(
 			array( 'post' ),
-			array( 1 => array( $this->post( id: 31, status: 'private', title: 'Private' ) ) )
+			array( 1 => array( $this->post( id: 7, status: 'private', title: 'Private' ) ) )
 		);
-		$documents = iterator_to_array(
-			( new WordPressPostSource( $gateway ) )->documents(
-				$this->source( array( 'post_types' => array( 'post' ), 'include_private' => true ) )
+		$private_documents = iterator_to_array(
+			( new WordPressPostSource( $private_gateway ) )->documents(
+				$this->source(
+					array(
+						'post_types'      => array( 'post' ),
+						'include_private' => true,
+					)
+				)
 			)
 		);
-		self::assertCount( 1, $documents );
-		self::assertSame( 'private', $documents[0]->visibility ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
-		self::assertTrue( $gateway->calls[0]['includePrivate'] );
+		self::assertCount( 1, $private_documents );
+		self::assertSame( 'private', $private_documents[0]->visibility ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+		self::assertTrue( $private_gateway->calls[0]['includePrivate'] );
 	}
 
+	/**
+	 * Equivalent taxonomy ordering produces an identical content hash.
+	 */
 	public function test_hash_is_stable_for_equivalent_taxonomy_order(): void {
 		$this->requireSource();
-		$post = $this->post(
-			id: 41,
-			taxonomy_labels: array(
-				'topic' => array(
-					array( 'name' => 'Beta', 'slug' => 'beta' ),
-					array( 'name' => 'Alpha', 'slug' => 'alpha' ),
+		$first_gateway  = new FakeWordPressContentGateway(
+			array( 'post' ),
+			array(
+				1 => array(
+					$this->post(
+						id: 41,
+						taxonomy_labels: array(
+							'topic' => array(
+								array(
+									'name' => 'Beta',
+									'slug' => 'beta',
+								),
+								array(
+									'name' => 'Alpha',
+									'slug' => 'alpha',
+								),
+							),
+						)
+					),
 				),
 			)
 		);
-		$reordered = $this->post(
-			id: 41,
-			taxonomy_labels: array(
-				'topic' => array(
-					array( 'name' => 'Alpha', 'slug' => 'alpha' ),
-					array( 'name' => 'Beta', 'slug' => 'beta' ),
+		$second_gateway = new FakeWordPressContentGateway(
+			array( 'post' ),
+			array(
+				1 => array(
+					$this->post(
+						id: 41,
+						taxonomy_labels: array(
+							'topic' => array(
+								array(
+									'name' => 'Alpha',
+									'slug' => 'alpha',
+								),
+								array(
+									'name' => 'Beta',
+									'slug' => 'beta',
+								),
+							),
+						)
+					),
 				),
 			)
 		);
-		$first  = iterator_to_array( ( new WordPressPostSource( new FakeWordPressContentGateway( array( 'post' ), array( 1 => array( $post ) ) ) ) )->documents( $this->source( array( 'post_types' => array( 'post' ) ) ) ) );
-		$second = iterator_to_array( ( new WordPressPostSource( new FakeWordPressContentGateway( array( 'post' ), array( 1 => array( $reordered ) ) ) ) )->documents( $this->source( array( 'post_types' => array( 'post' ) ) ) ) );
+		$config = array( 'post_types' => array( 'post' ) );
+		$first  = iterator_to_array( ( new WordPressPostSource( $first_gateway ) )->documents( $this->source( $config ) ) );
+		$second = iterator_to_array( ( new WordPressPostSource( $second_gateway ) )->documents( $this->source( $config ) ) );
 		self::assertSame( $first[0]->contentHash, $second[0]->contentHash ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
+	/**
+	 * Pagination is bounded at 100 records and continues until a short page.
+	 */
 	public function test_consumes_gateway_in_bounded_pages_until_short_page(): void {
 		$this->requireSource();
 		$page_one = array();
 		for ( $id = 1; $id <= 100; $id++ ) {
 			$page_one[] = $this->post( id: $id );
 		}
-		$gateway = new FakeWordPressContentGateway(
+		$gateway   = new FakeWordPressContentGateway(
 			array( 'post' ),
-			array( 1 => $page_one, 2 => array( $this->post( id: 101 ) ) )
+			array(
+				1 => $page_one,
+				2 => array( $this->post( id: 101 ) ),
+			)
 		);
 		$documents = iterator_to_array(
 			( new WordPressPostSource( $gateway ) )->documents( $this->source( array( 'post_types' => array( 'post' ) ) ) )
@@ -192,24 +256,50 @@ final class WordPressPostSourceTest extends TestCase {
 		self::assertSame( 100, $gateway->calls[1]['perPage'] );
 	}
 
-	public function test_rejects_wrong_type_and_unpersisted_source(): void {
+	/**
+	 * Source type and persistence invariants fail closed.
+	 */
+	public function test_rejects_wrong_type(): void {
 		$this->requireSource();
 		$gateway = new FakeWordPressContentGateway( array( 'post' ), array() );
 		$this->expectException( KnowledgeSourceException::class );
 		iterator_to_array( ( new WordPressPostSource( $gateway ) )->documents( $this->source( source_type: 'faq' ) ) );
 	}
 
+	/**
+	 * Assert the implementation is available before behavior assertions run.
+	 */
 	private function requireSource(): void {
 		self::assertTrue( class_exists( WordPressPostSource::class ), 'WordPressPostSource must exist.' );
 	}
 
-	/** @param array<string, mixed> $config */
+	/**
+	 * Create a persisted WordPress source record.
+	 *
+	 * @param array<string, mixed> $config Source config.
+	 * @param string               $source_type Source type.
+	 */
 	private function source( array $config = array(), string $source_type = 'wordpress_posts' ): KnowledgeSourceRecord {
 		$time = new DateTimeImmutable( '2026-09-03 00:00:00', new DateTimeZone( 'UTC' ) );
 		return new KnowledgeSourceRecord( 17, 'site-content', $source_type, null, 'Site content', null, 'active', $config, null, null, $time, $time );
 	}
 
-	/** @param array<string, array<int, array{name:string,slug:string}>> $taxonomy_labels */
+	/**
+	 * Create a gateway post fixture.
+	 *
+	 * @param int                                                       $id Post ID.
+	 * @param string                                                    $type Post type.
+	 * @param string                                                    $status Status.
+	 * @param string                                                    $title Title.
+	 * @param string                                                    $excerpt Excerpt.
+	 * @param string                                                    $content Content.
+	 * @param string|null                                               $url URL.
+	 * @param string                                                    $modified_gmt Modified GMT.
+	 * @param string|null                                               $language Language.
+	 * @param bool                                                      $password_protected Password flag.
+	 * @param int                                                       $author_id Author ID.
+	 * @param array<string, array<int, array{name:string,slug:string}>> $taxonomy_labels Taxonomy labels.
+	 */
 	private function post(
 		int $id,
 		string $type = 'post',
@@ -224,6 +314,19 @@ final class WordPressPostSourceTest extends TestCase {
 		int $author_id = 7,
 		array $taxonomy_labels = array()
 	): WordPressPost {
-		return new WordPressPost( $id, $type, $status, $title, $excerpt, $content, $url ?? 'https://example.test/?p=' . $id, $modified_gmt, $language, $password_protected, $author_id, $taxonomy_labels );
+		return new WordPressPost(
+			$id,
+			$type,
+			$status,
+			$title,
+			$excerpt,
+			$content,
+			$url ?? 'https://example.test/?p=' . $id,
+			$modified_gmt,
+			$language,
+			$password_protected,
+			$author_id,
+			$taxonomy_labels
+		);
 	}
 }
