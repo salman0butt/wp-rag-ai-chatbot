@@ -120,7 +120,7 @@ final class CoreTextExtractorsTest extends TestCase {
 	 */
 	public function test_html_extractor_strips_script_style_and_comments(): void {
 		$this->requireTask3Contracts();
-		$html = '<!doctype html><html><head><style>.x{display:none}</style><script>alert(1)</script></head>'
+		$html      = '<!doctype html><html><head><style>.x{display:none}</style><script>alert(1)</script></head>'
 			. '<body><!-- secret --><h1>Title</h1><p>Hello <strong>world</strong>.</p><ul><li>One</li><li>Two</li></ul></body></html>';
 		$file      = $this->validatedFile( 'page.html', $html, 'text/html' );
 		$extracted = ( new HtmlDocumentExtractor() )->extract( $file );
@@ -152,7 +152,14 @@ final class CoreTextExtractorsTest extends TestCase {
 		$extracted = ( new CsvDocumentExtractor() )->extract( $file );
 
 		self::assertSame( "name\tcity\nAda\tOslo\nLinus\tHelsinki", $extracted->text );
-		self::assertSame( array( 'format' => 'csv', 'rows' => 3, 'columns' => 2 ), $extracted->metadata );
+		self::assertSame(
+			array(
+				'format'  => 'csv',
+				'rows'    => 3,
+				'columns' => 2,
+			),
+			$extracted->metadata
+		);
 	}
 
 	/**
@@ -223,7 +230,13 @@ final class CoreTextExtractorsTest extends TestCase {
 		$extracted = ( new XmlDocumentExtractor() )->extract( $file );
 
 		self::assertSame( "Hello\nOne\nTwo", $extracted->text );
-		self::assertSame( array( 'format' => 'xml', 'root' => 'catalog' ), $extracted->metadata );
+		self::assertSame(
+			array(
+				'format' => 'xml',
+				'root'   => 'catalog',
+			),
+			$extracted->metadata
+		);
 	}
 
 	/**
@@ -242,7 +255,7 @@ final class CoreTextExtractorsTest extends TestCase {
 	 */
 	public function test_xml_extractor_rejects_document_type_and_entities(): void {
 		$this->requireTask3Contracts();
-		$xml = '<?xml version="1.0"?><!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>';
+		$xml  = '<?xml version="1.0"?><!DOCTYPE root [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root>&xxe;</root>';
 		$file = $this->validatedFile( 'hostile.xml', $xml, 'application/xml' );
 
 		$this->expectException( ExtractionException::class );
