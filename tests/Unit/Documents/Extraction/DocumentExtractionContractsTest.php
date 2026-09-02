@@ -39,7 +39,9 @@ final class DocumentExtractionContractsTest extends TestCase {
 		self::assertSame( '/tmp/knowledge.txt', $file->path );
 		self::assertSame( 'knowledge.txt', $file->basename );
 		self::assertSame( 'txt', $file->extension );
+		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- ValidatedFile public API follows the approved domain contract.
 		self::assertSame( 'text/plain', $file->mimeType );
+		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 		self::assertSame( 128, $file->size );
 		self::assertSame( str_repeat( 'a', 64 ), $file->sha256 );
 	}
@@ -70,20 +72,36 @@ final class DocumentExtractionContractsTest extends TestCase {
 	public function test_registry_resolves_exact_mime_and_rejects_duplicates(): void {
 		$this->requireM05Contracts();
 
-		$first = new class implements DocumentExtractor {
+		$first     = new class() implements DocumentExtractor {
+			/**
+			 * Return supported MIME types.
+			 *
+			 * @return list<string>
+			 */
 			public function supportedMimeTypes(): array {
 				return array( 'text/plain' );
 			}
 
+			/**
+			 * Extract one validated file.
+			 */
 			public function extract( ValidatedFile $file ): ExtractedDocument {
 				return new ExtractedDocument( 'text', array( 'name' => $file->basename ) );
 			}
 		};
-		$duplicate = new class implements DocumentExtractor {
+		$duplicate = new class() implements DocumentExtractor {
+			/**
+			 * Return supported MIME types.
+			 *
+			 * @return list<string>
+			 */
 			public function supportedMimeTypes(): array {
 				return array( 'text/plain' );
 			}
 
+			/**
+			 * Extract one validated file.
+			 */
 			public function extract( ValidatedFile $file ): ExtractedDocument {
 				return new ExtractedDocument( 'duplicate', array() );
 			}
