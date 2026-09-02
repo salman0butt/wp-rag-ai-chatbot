@@ -19,8 +19,9 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 	/**
 	 * Return public post types in deterministic order.
 	 *
-	 * @return list<string>
+	 * @return array<int, string>
 	 */
+	// phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Public method follows the approved M04 gateway contract.
 	public function publicPostTypes(): array {
 		$post_types = array_values( get_post_types( array( 'public' => true ), 'names' ) );
 		$post_types = array_map( 'strval', $post_types );
@@ -32,11 +33,11 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 	/**
 	 * Return one bounded page of normalized WordPress posts.
 	 *
-	 * @param list<string> $post_types Post types to query.
-	 * @param bool         $include_private Whether private posts may be included.
-	 * @param int          $page One-based page number.
-	 * @param int          $per_page Maximum posts per page.
-	 * @return list<WordPressPost>
+	 * @param array<int, string> $post_types Post types to query.
+	 * @param bool               $include_private Whether private posts may be included.
+	 * @param int                $page One-based page number.
+	 * @param int                $per_page Maximum posts per page.
+	 * @return array<int, WordPressPost>
 	 */
 	public function posts( array $post_types, bool $include_private, int $page, int $per_page ): array {
 		$post_types = array_values( array_unique( array_map( 'strval', $post_types ) ) );
@@ -66,6 +67,7 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 				continue;
 			}
 
+			/** @var WP_Post $post */
 			$post_id   = (int) $post->ID;
 			$post_type = (string) $post->post_type;
 			$permalink = get_permalink( $post_id );
@@ -94,7 +96,7 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 	 *
 	 * @param int    $post_id Post ID.
 	 * @param string $post_type Post type.
-	 * @return array<string, list<array{name:string,slug:string}>>
+	 * @return array<string, array<int, array{name:string,slug:string}>>
 	 */
 	private function taxonomyLabels( int $post_id, string $post_type ): array {
 		$taxonomies = array_values( get_object_taxonomies( $post_type, 'names' ) );
@@ -116,7 +118,8 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 				continue;
 			}
 
-			$taxonomy = (string) $term->taxonomy;
+			/** @var WP_Term $term */
+			$taxonomy              = (string) $term->taxonomy;
 			$labels[ $taxonomy ][] = array(
 				'name' => (string) $term->name,
 				'slug' => (string) $term->slug,
