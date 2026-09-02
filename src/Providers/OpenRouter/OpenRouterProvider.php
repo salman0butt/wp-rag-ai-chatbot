@@ -148,7 +148,7 @@ final class OpenRouterProvider implements GenerationProvider, ModelCatalogProvid
 			$text,
 			$this->generation_status( $this->finish_reason( $data ) ),
 			$this->usage( $data['usage'] ?? null ),
-			$this->success_request_id( $response, $data )
+			$this->success_request_id( $response, $data, $known_secrets )
 		);
 	}
 
@@ -288,7 +288,7 @@ final class OpenRouterProvider implements GenerationProvider, ModelCatalogProvid
 			$error_code,
 			ProviderIds::OPENROUTER_DIRECT,
 			$message,
-			$this->header_request_id( $response )
+			$this->header_request_id( $response, $known_secrets )
 		);
 	}
 
@@ -405,41 +405,56 @@ final class OpenRouterProvider implements GenerationProvider, ModelCatalogProvid
 	}
 
 	/**
-	 * Return x-request-id header or explicit top-level generation ID.
+	 * Return x-request-id header or explicit top-level generation ID when safe.
 	 *
 	 * @param HttpResponse         $response Provider HTTP response.
 	 * @param array<string, mixed> $data Decoded successful response.
+	 * @param string[]             $known_secrets Plaintext values that must not appear in diagnostics.
 	 */
-	private function success_request_id( HttpResponse $response, array $data ): ?string {
-		$header_id = $this->header_request_id( $response );
+	private function success_request_id( HttpResponse $response, array $data, array $known_secrets ): ?string {
+		$header_id = $this->header_request_id( $response, $known_secrets );
 		if ( null !== $header_id ) {
 			return $header_id;
 		}
 
-		if ( ! isset( $data['id'] ) || ! is_scalar( $data['id'] ) ) {
-			return null;
-		}
-
-		$request_id = trim( (string) $data['id'] );
-		return '' === $request_id ? null : $request_id;
+		return $this->safe_request_id_candidate( $data['id'] ?? null, $known_secrets );
 	}
 
 	/**
 	 * Return a safe scalar x-request-id header when supplied.
 	 *
 	 * @param HttpResponse $response Provider HTTP response.
+	 * @param string[]     $known_secrets Plaintext values that must not appear in diagnostics.
 	 */
-	private function header_request_id( HttpResponse $response ): ?string {
+	private function header_request_id( HttpResponse $response, array $known_secrets ): ?string {
 		foreach ( $response->headers as $name => $value ) {
-			if ( 'x-request-id' !== strtolower( $name ) || ! is_scalar( $value ) ) {
+			if ( 'x-request-id' !== strtolower( $name ) ) {
 				continue;
 			}
 
-			$request_id = trim( (string) $value );
-			return '' === $request_id ? null : $request_id;
+			return $this->safe_request_id_candidate( $value, $known_secrets );
 		}
 
 		return null;
+	}
+
+	/**
+	 * Normalize one provider-controlled diagnostic ID only when it is secret-free.
+	 *
+	 * @param mixed    $value Provider-controlled request ID value.
+	 * @param string[] $known_secrets Plaintext values that must not appear in diagnostics.
+	 */
+	private function safe_request_id_candidate( mixed $value, array $known_secrets ): ?string {
+		if ( ! is_scalar( $value ) ) {
+			return null;
+		}
+
+		$request_id = trim( (string) $value );
+		if ( '' === $request_id ) {
+			return null;
+		}
+
+		return $this->redactor->sanitize( $request_id, $known_secrets ) === $request_id ? $request_id : null;
 	}
 
 	/**
