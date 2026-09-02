@@ -41,7 +41,7 @@ final class ProviderRequestIdRedactionTest extends TestCase {
 				),
 			)
 		);
-		$result = $this->openai( $success_transport, $secret )->generate( new GenerationRequest( 'gpt-test', 'Hello' ) );
+		$result            = $this->openai( $success_transport, $secret )->generate( new GenerationRequest( 'gpt-test', 'Hello' ) );
 		self::assertNull( $result->request_id );
 
 		$error_transport = new QueuedHttpTransport(
@@ -71,7 +71,7 @@ final class ProviderRequestIdRedactionTest extends TestCase {
 				),
 			)
 		);
-		$result = $this->openrouter( $success_transport, $secret )->generate( new GenerationRequest( 'router/test', 'Hello' ) );
+		$result            = $this->openrouter( $success_transport, $secret )->generate( new GenerationRequest( 'router/test', 'Hello' ) );
 		self::assertNull( $result->request_id );
 
 		$error_transport = new QueuedHttpTransport(
