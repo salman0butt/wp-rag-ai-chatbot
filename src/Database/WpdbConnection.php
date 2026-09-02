@@ -43,13 +43,14 @@ final class WpdbConnection implements Connection {
 	}
 
 	/**
-	 * Prepare a SQL statement.
+	 * Prepare a SQL statement supplied by trusted repository or migration code.
 	 *
 	 * @param string $query SQL with placeholders.
 	 * @param mixed  ...$args Placeholder values.
 	 * @throws DatabaseException When wpdb cannot prepare the statement.
 	 */
 	public function prepare( string $query, mixed ...$args ): string {
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- This adapter receives internal SQL templates; all values are supplied separately as placeholders.
 		$prepared = $this->wpdb->prepare( $query, ...$args );
 		if ( ! is_string( $prepared ) ) {
 			throw new DatabaseException( 'Could not prepare database query.' );
