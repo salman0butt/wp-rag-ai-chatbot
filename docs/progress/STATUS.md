@@ -13,7 +13,6 @@
 - M04 implementation plan: `docs/superpowers/plans/2026-09-03-m04-wordpress-knowledge-sources.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - Task 1 RED/GREEN: `5108cb315ead4e7213c033d0e094c49978e8da02` / `5cdc7d105a3a80f601b826b6ccad135a862d1f61`; RED CI `33671328652`, GREEN PHP evidence in `33671611425`.
 - Task 2 RED/GREEN: `93e3be47058777c332cf3d31417b89c191f1020b` / `a1813a695f59193cb6e48615aa9daf2915aafa8d`; RED CI `33671716477`, GREEN CI `33672126600`; GREEN PHP result `148 tests / 777 assertions`, Composer audit clean.
-- Task 3 invalid test-only attempts: `8176c4d13fb491ccc1f87e0986186cf4eca084e1` and `9e7a2cff7398216aea108d417a01da28c0df49b4` stopped at WPCS before PHPUnit and are not behavioral RED evidence.
 - Task 3 valid RED: `551d1690b83b43cf0b6f8f589ce3f9d8ed3b8e25`, CI `33673099461`; WPCS/PHPStan clean, then exactly 5 missing-`FaqSource` failures (`153 tests / 782 assertions`).
 - Task 3 initial GREEN: `96f44569d2478d6a6631ac44fde30026f657dc29`, CI `33673225337`; WPCS/PHPStan clean, PHPUnit `153 tests / 798 assertions`, Composer audit clean.
 - Independent Task 3 review found one Important data-integrity issue: malformed later FAQ items were validated only after earlier items could already be yielded, allowing partial ingestion by a streaming consumer.
