@@ -38,6 +38,7 @@ final class FileValidationPolicy {
 	 *
 	 * @param MimeTypeDetector $mime_type_detector Server-side MIME detector.
 	 * @param int              $max_file_size Maximum allowed file size in bytes.
+	 * @throws ExtractionException When the configured maximum is invalid.
 	 */
 	public function __construct(
 		private readonly MimeTypeDetector $mime_type_detector,
@@ -62,7 +63,7 @@ final class FileValidationPolicy {
 		}
 
 		if ( null !== $allowed_root ) {
-			$this->assertWithinAllowedRoot( $canonical_path, $allowed_root );
+			$this->assert_within_allowed_root( $canonical_path, $allowed_root );
 		}
 
 		$extension = strtolower( pathinfo( $canonical_path, PATHINFO_EXTENSION ) );
@@ -106,7 +107,7 @@ final class FileValidationPolicy {
 	 * @param string $allowed_root Configured allowed root.
 	 * @throws ExtractionException When the root is invalid or containment fails.
 	 */
-	private function assertWithinAllowedRoot( string $canonical_path, string $allowed_root ): void {
+	private function assert_within_allowed_root( string $canonical_path, string $allowed_root ): void {
 		$canonical_root = realpath( $allowed_root );
 		if ( false === $canonical_root || ! is_dir( $canonical_root ) ) {
 			throw new ExtractionException( 'Allowed file root is invalid.' );
