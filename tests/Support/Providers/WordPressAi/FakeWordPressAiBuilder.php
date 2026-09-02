@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Support\Providers\WordPressAi;
 
+use Throwable;
+
 /**
  * Deterministic fake for the documented WordPress AI prompt builder methods.
  */
@@ -19,6 +21,13 @@ final class FakeWordPressAiBuilder {
 	 * @var array<int, array<int, int|string>>
 	 */
 	public array $calls = array();
+
+	/**
+	 * Optional failure raised by generate_text_result().
+	 *
+	 * @var Throwable|null
+	 */
+	public ?Throwable $exception = null;
 
 	/**
 	 * Create a fake builder around one deterministic result.
@@ -59,10 +68,15 @@ final class FakeWordPressAiBuilder {
 	}
 
 	/**
-	 * Return the deterministic result.
+	 * Return the deterministic result or raise the configured failure.
+	 *
+	 * @throws Throwable When the test configures a generation failure.
 	 */
 	public function generate_text_result(): object {
 		$this->calls[] = array( 'generate' );
+		if ( null !== $this->exception ) {
+			throw $this->exception;
+		}
 		return $this->result;
 	}
 }

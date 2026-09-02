@@ -222,6 +222,32 @@ final class WordPressAiClientProviderTest extends TestCase {
 	}
 
 	/**
+	 * Unexpected Core throwables fail closed instead of republishing opaque messages.
+	 */
+	#[RunInSeparateProcess]
+	#[PreserveGlobalState( false )]
+	public function test_unexpected_core_throwable_does_not_republish_opaque_message(): void {
+		$this->require_adapter();
+		$this->load_runtime_shim();
+		RuntimeShim::$supports_ai = true;
+		$builder                  = new FakeWordPressAiBuilder( new FakeWordPressAiResult( 'unused', '', array() ) );
+		$builder->exception       = new \RuntimeException( 'opaque-core-credential-should-never-escape' );
+		RuntimeShim::$builder     = $builder;
+
+		try {
+			( new WordPressAiClientProvider( new SecretRedactor() ) )->generate(
+				new GenerationRequest( 'core-model', 'Hello' )
+			);
+			self::fail( 'Expected normalized WordPress AI throwable failure.' );
+		} catch ( ProviderException $exception ) {
+			self::assertSame( ProviderErrorCode::UNKNOWN, $exception->error_code );
+			self::assertSame( ProviderIds::WORDPRESS_AI_CLIENT, $exception->provider_id );
+			self::assertSame( 'WordPress AI Client request failed.', $exception->getMessage() );
+			self::assertStringNotContainsString( 'opaque-core-credential', $exception->getMessage() );
+		}
+	}
+
+	/**
 	 * A documented result that cannot produce valid text becomes malformed response.
 	 */
 	#[RunInSeparateProcess]
