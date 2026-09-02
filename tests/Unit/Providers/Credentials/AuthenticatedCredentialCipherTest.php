@@ -189,20 +189,12 @@ final class AuthenticatedCredentialCipherTest extends TestCase {
 	 */
 	private function tamper_ciphertext( string $envelope ): string {
 		$data       = $this->decode_envelope( $envelope );
-		$ciphertext = base64_decode( (string) $data['ciphertext'], true );
-		self::assertIsString( $ciphertext );
-		self::assertNotSame( '', $ciphertext );
-		$ciphertext[0]       = chr( ord( $ciphertext[0] ) ^ 1 );
-		$data['ciphertext']  = base64_encode( $ciphertext );
-		$tag                 = isset( $data['tag'] ) ? ',"tag":"' . $data['tag'] . '"' : '';
-		return sprintf(
-			'{"v":%d,"alg":"%s","nonce":"%s","ciphertext":"%s"%s}',
-			$data['v'],
-			$data['alg'],
-			$data['nonce'],
-			$data['ciphertext'],
-			$tag
-		);
+		$encoded    = (string) $data['ciphertext'];
+		$first      = 'A' === $encoded[0] ? 'B' : 'A';
+		$tampered   = $first . substr( $encoded, 1 );
+		$needle     = '"ciphertext":"' . $encoded . '"';
+		$replacement = '"ciphertext":"' . $tampered . '"';
+		return str_replace( $needle, $replacement, $envelope );
 	}
 
 	/**
