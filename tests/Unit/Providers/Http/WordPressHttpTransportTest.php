@@ -44,7 +44,7 @@ final class WordPressHttpTransportTest extends TestCase {
 	 */
 	public function test_send_passes_explicit_request_policy_and_normalizes_response(): void {
 		$this->require_transport();
-		$request = new HttpRequest(
+		$request     = new HttpRequest(
 			ProviderIds::OPENAI_DIRECT,
 			'POST',
 			'https://api.openai.com/v1/responses',
@@ -120,7 +120,7 @@ final class WordPressHttpTransportTest extends TestCase {
 	}
 
 	/**
-	 * cURL error 28 evidence is normalized as a timeout.
+	 * Curl error 28 evidence is normalized as a timeout.
 	 */
 	public function test_send_classifies_curl_error_28_as_timeout(): void {
 		$this->require_transport();
@@ -172,7 +172,7 @@ final class WordPressHttpTransportTest extends TestCase {
 			10,
 			0
 		);
-		$error = new FakeWordPressHttpError( 'http_request_failed', 'Could not resolve provider host.' );
+		$error   = new FakeWordPressHttpError( 'http_request_failed', 'Could not resolve provider host.' );
 
 		Functions\expect( 'wp_remote_request' )->once()->andReturn( $error );
 		Functions\expect( 'is_wp_error' )->once()->with( $error )->andReturn( true );
