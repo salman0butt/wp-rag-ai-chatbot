@@ -92,11 +92,11 @@ final class WordPressAiClientProvider implements GenerationProvider {
 			}
 			$builder->using_model_preference( $request->model_id );
 			$result = $builder->generate_text_result();
-		} catch ( Throwable $exception ) {
+		} catch ( Throwable ) {
 			throw new ProviderException(
 				ProviderErrorCode::UNKNOWN,
 				ProviderIds::WORDPRESS_AI_CLIENT,
-				$this->redactor->sanitize( $exception->getMessage() )
+				'WordPress AI Client request failed.'
 			);
 		}
 
