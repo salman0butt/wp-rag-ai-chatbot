@@ -16,18 +16,19 @@ interface WordPressContentGateway {
 	/**
 	 * Return public WordPress post-type names.
 	 *
-	 * @return list<string>
+	 * @return array<int, string>
 	 */
+	// phpcs:ignore WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Public method follows the approved M04 gateway contract.
 	public function publicPostTypes(): array;
 
 	/**
 	 * Return one bounded page of WordPress posts.
 	 *
-	 * @param list<string> $post_types Post types to query.
-	 * @param bool         $include_private Whether private posts may be included.
-	 * @param int          $page One-based page number.
-	 * @param int          $per_page Maximum posts per page.
-	 * @return list<WordPressPost>
+	 * @param array<int, string> $post_types Post types to query.
+	 * @param bool               $include_private Whether private posts may be included.
+	 * @param int                $page One-based page number.
+	 * @param int                $per_page Maximum posts per page.
+	 * @return array<int, WordPressPost>
 	 */
 	public function posts( array $post_types, bool $include_private, int $page, int $per_page ): array;
 }
