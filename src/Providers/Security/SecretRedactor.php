@@ -13,14 +13,14 @@ namespace WpRagAiChatbot\Providers\Security;
  * Removes credential material before provider diagnostics are exposed.
  */
 final class SecretRedactor {
-	private const REDACTED         = '[REDACTED]';
-	private const TRUNCATED        = '[TRUNCATED]';
-	private const BODY_BYTE_LIMIT  = 2048;
+	private const REDACTED        = '[REDACTED]';
+	private const TRUNCATED       = '[TRUNCATED]';
+	private const BODY_BYTE_LIMIT = 2048;
 
 	/**
 	 * Sanitize provider diagnostic text.
 	 *
-	 * @param string $text Diagnostic text.
+	 * @param string       $text Diagnostic text.
 	 * @param array<mixed> $known_secrets Known plaintext secrets.
 	 */
 	public function sanitize( string $text, array $known_secrets = array() ): string {
@@ -52,7 +52,7 @@ final class SecretRedactor {
 	/**
 	 * Sanitize a raw provider body within the diagnostic byte limit.
 	 *
-	 * @param string $body Raw provider body.
+	 * @param string       $body Raw provider body.
 	 * @param array<mixed> $known_secrets Known plaintext secrets.
 	 */
 	public function sanitize_body( string $body, array $known_secrets = array() ): string {
