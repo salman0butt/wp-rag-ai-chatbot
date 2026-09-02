@@ -14,6 +14,7 @@ use Throwable;
 use WpRagAiChatbot\Providers\ProviderErrorCode;
 use WpRagAiChatbot\Providers\ProviderException;
 
+// phpcs:disable WordPress.Security.EscapeOutput.OutputNotEscaped -- Exception metadata is internal and is never rendered as output.
 /**
  * Encrypts provider credentials with provider-bound authenticated encryption.
  */
@@ -93,6 +94,7 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 	 *
 	 * @param string $provider_id Provider identifier.
 	 * @param string $plaintext Credential plaintext.
+	 * @throws ProviderException When Sodium encryption cannot be performed.
 	 */
 	private function encrypt_sodium( string $provider_id, string $plaintext ): string {
 		$nonce_size = constant( 'SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES' );
@@ -116,6 +118,7 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 	 *
 	 * @param string $provider_id Provider identifier.
 	 * @param string $plaintext Credential plaintext.
+	 * @throws ProviderException When AES-GCM encryption cannot be performed.
 	 */
 	private function encrypt_aes_gcm( string $provider_id, string $plaintext ): string {
 		$nonce      = random_bytes( self::AES_NONCE_SIZE );
@@ -143,6 +146,7 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 	 *
 	 * @param string               $provider_id Provider identifier.
 	 * @param array<string, mixed> $data Envelope data.
+	 * @throws ProviderException When the envelope cannot be authenticated.
 	 */
 	private function decrypt_sodium( string $provider_id, array $data ): string {
 		if ( ! $this->has_exact_keys( $data, array( 'v', 'alg', 'nonce', 'ciphertext' ) ) ) {
@@ -174,6 +178,7 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 	 *
 	 * @param string               $provider_id Provider identifier.
 	 * @param array<string, mixed> $data Envelope data.
+	 * @throws ProviderException When the envelope cannot be authenticated.
 	 */
 	private function decrypt_aes_gcm( string $provider_id, array $data ): string {
 		if ( ! $this->has_exact_keys( $data, array( 'v', 'alg', 'nonce', 'ciphertext', 'tag' ) ) ) {
@@ -209,6 +214,7 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 	 * @param string $provider_id Provider identifier.
 	 * @param string $envelope Serialized encrypted envelope.
 	 * @return array<string, mixed>
+	 * @throws ProviderException When the serialized envelope is malformed or unsupported.
 	 */
 	private function decode_envelope( string $provider_id, string $envelope ): array {
 		try {
@@ -267,6 +273,7 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 	 *
 	 * @param string $provider_id Provider identifier.
 	 * @param mixed  $value Encoded field value.
+	 * @throws ProviderException When the field is not strict base64 text.
 	 */
 	private function decode_base64( string $provider_id, mixed $value ): string {
 		if ( ! is_string( $value ) ) {
@@ -332,3 +339,4 @@ final class AuthenticatedCredentialCipher implements CredentialCipher {
 		);
 	}
 }
+// phpcs:enable WordPress.Security.EscapeOutput.OutputNotEscaped
