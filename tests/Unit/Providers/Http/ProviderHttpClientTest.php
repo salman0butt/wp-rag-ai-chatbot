@@ -102,6 +102,7 @@ final class ProviderHttpClientTest extends TestCase {
 			static function () use ( &$calls, $response ): HttpResponse {
 				++$calls;
 				if ( 1 === $calls ) {
+					// phpcs:ignore WordPress.Security.EscapeOutput -- Test-only transport exception is never rendered.
 					throw new HttpTransportException( ProviderErrorCode::TRANSPORT, 'Provider transport failed.' );
 				}
 				return $response;
