@@ -44,6 +44,7 @@ final class PagedResultTest extends TestCase {
 		self::assertSame( array( 'a', 'b' ), $result->items );
 		self::assertSame( 25, $result->total );
 		self::assertSame( 2, $result->page );
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- PagedResult public API is camelCase by approved contract.
 		self::assertSame( 10, $result->perPage );
 	}
 }
