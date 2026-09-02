@@ -19,8 +19,8 @@ jobs:
           tools: composer:v2
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
-      - run: composer audit
       - run: composer verify:php
+      - run: composer audit
 
   js-quality:
     runs-on: ubuntu-latest
