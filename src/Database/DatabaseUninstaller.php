@@ -1,0 +1,54 @@
+<?php
+/**
+ * Database uninstall policy.
+ *
+ * @package WpRagAiChatbot
+ */
+
+declare(strict_types=1);
+
+namespace WpRagAiChatbot\Database;
+
+/**
+ * Deletes plugin-owned database state only after explicit opt-in.
+ */
+final class DatabaseUninstaller {
+	/**
+	 * Run the destructive uninstall boundary when deletion was explicitly enabled.
+	 */
+	public static function run(): void {
+		$delete_data = get_option( DatabaseSchema::DELETE_DATA_OPTION, false );
+		if ( ! self::is_delete_enabled( $delete_data ) ) {
+			return;
+		}
+
+		global $wpdb;
+		if ( ! $wpdb instanceof \wpdb ) {
+			return;
+		}
+
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+
+		$connection->query( $connection->prepare( 'DROP TABLE IF EXISTS %i', $tables->documents() ) );
+		$connection->query( $connection->prepare( 'DROP TABLE IF EXISTS %i', $tables->sources() ) );
+
+		delete_option( DatabaseSchema::VERSION_OPTION );
+		delete_option( DatabaseSchema::DELETE_DATA_OPTION );
+	}
+
+	/**
+	 * Accept only the explicit persisted true/one forms WordPress can return.
+	 *
+	 * @param mixed $value Persisted option value.
+	 */
+	private static function is_delete_enabled( mixed $value ): bool {
+		return true === $value || 1 === $value || '1' === $value;
+	}
+
+	/**
+	 * Static service only.
+	 */
+	private function __construct() {
+	}
+}
