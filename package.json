@@ -45,6 +45,7 @@
     "lint:pkg": "wp-scripts lint-pkg-json",
     "plugin-zip": "bash scripts/plugin-zip.sh",
     "test:js": "wp-scripts test-unit-js",
+    "test:package:assertion": "bash scripts/test-package-assertion.sh",
     "test:provider:live-gating": "bash scripts/test-live-provider-smoke-gating.sh",
     "test:wp:activation": "bash scripts/test-wp-activation.sh",
     "test:wp:database": "bash scripts/test-wp-database.sh",
