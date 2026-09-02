@@ -6,7 +6,7 @@ Status: IN PROGRESS
 Normalize selected WordPress content into traceable knowledge Documents through extensible source contracts.
 
 ## Dependencies
-M02. M03 is also integrated on `main` and its post-merge CI is green.
+M02. M03 is integrated and documentation-closed on current `main` SHA `65c1aa9a7081ac0d831bb118a0cd445b4f5ba5e1`; its post-closeout CI is green.
 
 ## In Scope
 Pages/posts/public CPTs; selected taxonomy metadata; manual text; FAQ/Q&A; selected URLs/sitemap configuration foundation where source boundary fits; source versions/hashes/access metadata; source registry/hooks.
@@ -30,8 +30,8 @@ Supported WP sources normalize deterministically; draft/private/role access poli
 
 - Task 1 — source contract, registry, deterministic hashing: implemented and PHP-verified.
 - Task 2 — manual text source: implemented and PHP-verified.
-- Task 3 — FAQ source: next unfinished task.
-- Task 4 — WordPress content gateway: pending.
+- Task 3 — FAQ source: implemented, reviewed, Important partial-yield finding fixed with regression, and PHP-verified.
+- Task 4 — WordPress content gateway: next unfinished task.
 - Task 5 — WordPress post/page/public-CPT source: pending.
 - Task 6 — registry bootstrap/extension hook: pending.
 - Task 7 — real WordPress knowledge smoke coverage: pending.
@@ -41,90 +41,96 @@ Supported WP sources normalize deterministically; draft/private/role access poli
 
 ### Task 1
 
-- RED SHA: `5108cb315ead4e7213c033d0e094c49978e8da02`.
-- RED CI: `33671328652`.
-- RED result: PHPCS/PHPStan passed; PHPUnit `142 tests / 755 assertions`, 8 expected failures because `DocumentHasher`, `KnowledgeSource`, `KnowledgeSourceRegistry`, and `KnowledgeSourceException` did not yet exist.
-- GREEN implementation SHA: `5cdc7d105a3a80f601b826b6ccad135a862d1f61` after the initial implementation and WPCS-quality correction.
-- GREEN evidence: `php-quality` passed on CI run `33671611425`.
+- RED SHA: `5108cb315ead4e7213c033d0e094c49978e8da02`; CI `33671328652`.
+- RED result: PHPCS/PHPStan passed; PHPUnit `142 tests / 755 assertions`, 8 expected missing-class failures.
+- GREEN implementation SHA: `5cdc7d105a3a80f601b826b6ccad135a862d1f61`; PHP verification passed in CI `33671611425`.
 
 ### Task 2
 
-- RED SHA: `93e3be47058777c332cf3d31417b89c191f1020b`.
-- RED CI: `33671716477`.
+- RED SHA: `93e3be47058777c332cf3d31417b89c191f1020b`; CI `33671716477`.
 - RED result: PHPCS/PHPStan passed; PHPUnit `148 tests / 763 assertions`, 6 expected failures because `ManualTextSource` did not yet exist.
-- Production commits: `1b190f7a6f812db15a8ff301fcf8fbd7997df290`, `72776a22e64c3841d86e9da36decaaf1696fd197`, `a1813a695f59193cb6e48615aa9daf2915aafa8d`.
-- GREEN SHA: `a1813a695f59193cb6e48615aa9daf2915aafa8d`.
-- GREEN CI: `33672126600`.
-- GREEN PHP result: PHPCS/PHPStan clean; PHPUnit `148 tests / 777 assertions`; Composer audit clean.
+- GREEN SHA: `a1813a695f59193cb6e48615aa9daf2915aafa8d`; CI `33672126600`.
+- GREEN result: PHPCS/PHPStan clean; PHPUnit `148 tests / 777 assertions`; Composer audit clean.
+
+### Task 3
+
+- Initial test attempts `8176c4d13fb491ccc1f87e0986186cf4eca084e1` and `9e7a2cff7398216aea108d417a01da28c0df49b4` stopped at test-only WPCS issues before PHPUnit and are **not** counted as behavioral RED.
+- Valid RED SHA: `551d1690b83b43cf0b6f8f589ce3f9d8ed3b8e25`; CI `33673099461`.
+- Valid RED result: WPCS/PHPStan clean; PHPUnit `153 tests / 782 assertions / 5 failures`, all because `FaqSource` did not exist.
+- Initial GREEN SHA: `96f44569d2478d6a6631ac44fde30026f657dc29`; CI `33673225337`.
+- Initial GREEN result: WPCS/PHPStan clean; PHPUnit `153 tests / 798 assertions`; Composer audit clean.
+- Independent review found one Important data-integrity issue: a malformed later FAQ item could be discovered only after an earlier document had already been yielded, allowing a streaming consumer to persist partial normalized output.
+- Review-fix RED SHA: `9417ad1d80f0855f5db4ff066eae4b9ac4caf474`; CI `33673441211`.
+- Review-fix RED result: WPCS/PHPStan clean; PHPUnit `154 tests / 800 assertions / 1 failure`, exactly because `KnowledgeSourceException` was not thrown before the first yield.
+- Review-fix GREEN SHA: `918ca7558d100b2e5076924bc62937886b368ab2`; CI `33673592282`.
+- Review-fix GREEN result: WPCS/PHPStan clean; PHPUnit `154 tests / 800 assertions`; Composer audit clean. The implementation validates and normalizes the complete FAQ item list before yielding any document.
 
 ## Integration Test Evidence
-Real WordPress M04 knowledge lifecycle/source smoke remains pending. Existing activation/database/provider smoke continues to run in permanent CI, but does not satisfy M04's new knowledge-source smoke acceptance gate.
+Real WordPress M04 knowledge lifecycle/source smoke remains pending. Existing activation/database/provider smoke is permanent CI coverage but does not satisfy M04's new knowledge-source smoke acceptance gate.
 
 ## E2E / Visual Verification
 N/A; M04 introduces no UI.
 
 ## Security Review
-Current slice reviewed for deterministic hashing, fail-closed source validation, supported `public|private` manual visibility, no credentials, no arbitrary metadata, and no outbound HTTP. No unresolved Critical/Important findings in Tasks 1-2. Full milestone security review remains pending.
+Tasks 1-3 reviewed for deterministic hashing, fail-closed source validation, supported `public|private` visibility, no credential handling, no arbitrary outbound HTTP, and no partial FAQ emission after later-item validation failure. No unresolved Critical/Important finding in the completed slice. Full milestone security review remains pending.
 
 ## Accessibility Review where UI exists
 N/A.
 
 ## Performance Review where relevant
-Current source registry/hash/manual normalization is bounded and contains no network/database enumeration. WordPress pagination/N+1 review remains pending for Tasks 4-5.
+Current registry/hash/manual/FAQ normalization is bounded and contains no network/database enumeration. WordPress pagination/N+1 review remains pending for Tasks 4-5.
 
 ## Code Review Findings
 
-Current slice independent review:
+Completed-slice review:
 
 - Critical: none.
-- Important: none unresolved.
-- Minor: WPCS interprets pre-existing M02 camelCase domain properties and exception-cause chaining conservatively; suppressions were kept narrowly scoped and documented rather than weakening global CI.
+- Important: one — FAQ validation originally occurred item-by-item during yielding, so a malformed later item could permit partial ingestion. Fixed by validating the complete item list before the first yield; regression RED/GREEN recorded above.
+- Important unresolved: none.
+- Minor: WPCS interprets pre-existing M02 camelCase domain properties and exception-cause chaining conservatively; suppressions remain narrowly scoped and documented.
 
 Full milestone review remains required before integration.
 
 ## Fixes
 
-- Corrected test-only PHPCS issues before accepting Task 1 RED; the invalid lint failure was not counted as behavioral RED.
+- Corrected test-only WPCS issues before accepting behavioral RED evidence.
 - Added explicit throws documentation and generic registry exception messages instead of exposing dynamic source identifiers.
 - Preserved native `json_encode(... JSON_THROW_ON_ERROR)` in the WordPress-independent deterministic hasher with a narrow documented WPCS suppression.
-- Isolated pre-existing M02 camelCase property accesses with a narrow naming suppression in `ManualTextSource`.
-- Translated `JsonException` into `KnowledgeSourceException` while preserving the previous Throwable, with a single false-positive output-escaping suppression on exception chaining.
+- Isolated pre-existing M02 camelCase property accesses with narrow naming suppressions in source normalizers.
+- Translated `JsonException` into `KnowledgeSourceException` while preserving the previous Throwable with a narrow false-positive output-escaping suppression.
+- Prevalidated and normalized every FAQ item before the first `yield`, preventing partial document emission when a later item is malformed.
 
 ## Fresh Verification Commands
-Dependency-backed execution uses permanent GitHub Actions in this runtime. Exact commands represented by the current CI include `composer verify:php`, `composer audit`, `npm run verify:js`, existing WordPress smoke commands, build/package generation, and package assertions.
+Dependency-backed execution uses permanent GitHub Actions in this runtime. Exact commands represented by CI include `composer verify:php`, `composer audit`, `npm run verify:js`, WordPress smoke commands, build/package generation, and package assertions.
 
 ## Fresh Verification Results
-For `a1813a695f59193cb6e48615aa9daf2915aafa8d`, CI run `33672126600` recorded:
-
-- `php-quality`: SUCCESS — PHP verification and Composer audit green, PHPUnit `148 tests / 777 assertions`.
-- `js-quality`: SUCCESS.
-- `package`: SUCCESS.
-- `wordpress-smoke`: still running when this milestone entry was written. A later run must re-check exact-SHA state; this entry intentionally does not claim the full run is green.
+For review-fix GREEN SHA `918ca7558d100b2e5076924bc62937886b368ab2`, CI run `33673592282` records PHP verification green: WPCS/PHPStan clean, PHPUnit `154 tests / 800 assertions`, Composer audit clean. The remaining permanent jobs must be re-checked before treating that exact SHA as fully green.
 
 ## Commits
 
 - `ca7a9bfb828a817488f144f51a1dc250e3a89226` — M04 design.
 - `8958372e1ef93cce090a14fb88e95b8e3f254fca` — M04 implementation plan.
-- `dd4861d2561148850e62adbc61e23a0e931d0bc2` / `5ef5d301fb0ca328f435c56af8a5e718c156f4e7` — initial Task 1 tests.
-- `6dc4219ad17f4838e7e2dbe59041325e26e14866` / `5108cb315ead4e7213c033d0e094c49978e8da02` — test-quality corrections and valid Task 1 RED.
-- `d7ded3ab94df65627256bbca340618c21b01db0b` / `5cdc7d105a3a80f601b826b6ccad135a862d1f61` — Task 1 implementation/quality fix.
-- `93e3be47058777c332cf3d31417b89c191f1020b` — Task 2 RED tests.
-- `1b190f7a6f812db15a8ff301fcf8fbd7997df290` / `72776a22e64c3841d86e9da36decaaf1696fd197` / `a1813a695f59193cb6e48615aa9daf2915aafa8d` — Task 2 implementation and focused quality corrections.
+- `5108cb315ead4e7213c033d0e094c49978e8da02` / `5cdc7d105a3a80f601b826b6ccad135a862d1f61` — Task 1 RED/GREEN.
+- `93e3be47058777c332cf3d31417b89c191f1020b` / `a1813a695f59193cb6e48615aa9daf2915aafa8d` — Task 2 RED/GREEN.
+- `8176c4d13fb491ccc1f87e0986186cf4eca084e1`, `9e7a2cff7398216aea108d417a01da28c0df49b4` — Task 3 test-quality attempts, not behavioral RED.
+- `551d1690b83b43cf0b6f8f589ce3f9d8ed3b8e25` — Task 3 valid RED.
+- `96f44569d2478d6a6631ac44fde30026f657dc29` — Task 3 initial GREEN implementation.
+- `9417ad1d80f0855f5db4ff066eae4b9ac4caf474` / `918ca7558d100b2e5076924bc62937886b368ab2` — Important review-fix RED/GREEN.
 
 ## Files Changed
-Current slice adds M04 design/plan documentation, knowledge-source contract/exception/registry, deterministic document hashing, manual-text normalization, and unit tests for those behaviors. The remaining M04 files are intentionally not started yet.
+Current M04 slice adds design/plan documentation, knowledge-source contract/exception/registry, deterministic document hashing, manual-text normalization, FAQ normalization, and unit tests for those behaviors.
 
 ## Known Limitations
-FAQ normalization, WordPress gateway/source normalization, source bootstrap/filter extension wiring, real WordPress source smoke coverage, final review/evidence, and integration are unfinished. No remote URL fetch is implemented by design in M04.
+WordPress gateway/source normalization, source bootstrap/filter extension wiring, real WordPress source smoke coverage, final security/performance review, branch reconciliation with current `main`, milestone evidence, and integration are unfinished. No remote URL fetch is implemented by design in M04.
 
 ## Documentation Updated
 `docs/superpowers/specs/2026-09-03-m04-wordpress-knowledge-sources-design.md`, `docs/superpowers/plans/2026-09-03-m04-wordpress-knowledge-sources.md`, this milestone ledger, and `docs/progress/STATUS.md`.
 
 ## Completion Checklist
-Not complete. M04 must not merge or transition to M05 until Tasks 3-8 pass their TDD, review, exact-head CI, integration, and post-merge gates.
+Not complete. M04 must not merge or transition to M05 until Tasks 4-8 pass their TDD, review, exact-head CI, integration, and post-merge gates.
 
 ## Exact Next Action
-Recover latest branch/CI state and concurrency first. If safe, execute Task 3 using strict TDD: add FAQ source tests, capture expected RED, implement the minimum `FaqSource`, capture GREEN, then continue only if the next coherent unit can be completed safely.
+Recover latest `main`, PR #4, branch head, CI, and concurrency. If safe, execute Task 4 from the auto-approved plan using strict TDD: add the WordPress content gateway contract/data behavior tests first, obtain expected RED, then implement the minimum gateway boundary and obtain GREEN before starting WordPress post normalization.
 
 ## Next Milestone
 M05 — File/Document Ingestion, only after M04 is genuinely complete and post-merge `main` CI is green.
