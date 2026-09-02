@@ -64,7 +64,7 @@ final class OpenRouterProviderTest extends TestCase {
 				),
 			)
 		);
-		$result = $this->provider( $transport, 'router-secret' )->generate(
+		$result    = $this->provider( $transport, 'router-secret' )->generate(
 			new GenerationRequest( 'openrouter/requested', 'Say hello', 'Be concise', 64 )
 		);
 
@@ -267,7 +267,7 @@ final class OpenRouterProviderTest extends TestCase {
 				new HttpResponse( 200, array(), $body ),
 			)
 		);
-		$models = $this->provider( $transport, 'router-secret' )->models();
+		$models    = $this->provider( $transport, 'router-secret' )->models();
 
 		self::assertCount( 2, $transport->requests );
 		foreach ( $transport->requests as $request ) {
