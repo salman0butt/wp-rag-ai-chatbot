@@ -1,18 +1,21 @@
 # Global Status
 
-- Current milestone: M03 — AI Providers, Credentials & Compatibility.
-- Current task: integrate the security-hardened M03 branch, then require post-merge `main` CI green before M04 starts.
-- Current phase: SECURITY-HARDENED RUNTIME CANDIDATE VERIFIED; DURABLE EVIDENCE UPDATE / INTEGRATION PENDING.
-- Completed milestones on `main`: M00, M01, M02.
-- Runtime-complete milestone pending integration: M03.
-- Remaining milestones after M03 integration: M04, M05, M06, M07, M08, M09, M10, M11, M12, M13, M14, M15, M16, M17, M18, M19, M20, M21, M22, M23, M24.
-- Blocked items: Native local git clone/worktree and package-registry access remain unavailable in this chat runtime because external DNS is restricted. Connected GitHub branch isolation plus GitHub Actions remain the dependency-backed execution path under ADR-016/018.
-- M03 branch: `feat/m03-ai-providers-credentials`.
-- M03 authoritative plan: `docs/superpowers/plans/2026-09-02-m03-ai-providers-credentials-v2.md`.
-- M03 security-hardened runtime candidate: `c8cddc7c8d4905d1436f95eeb8ef77c2f075c8af`; GitHub Actions run `33639805500` passed `php-quality`, `js-quality`, `wordpress-smoke`, and `package`.
-- M03 PHP evidence at `c8cddc7c8d4905d1436f95eeb8ef77c2f075c8af`: WPCS/PHPStan clean; PHPUnit `134 tests / 747 assertions` green; Composer audit clean.
-- M03 integration evidence: real WordPress activation + M02 database smoke + M03 encrypted-credential/provider-descriptor smoke green; normal CI makes no paid/live provider calls.
-- M03 artifact at run `33639805500`: `wp-rag-ai-chatbot` ID `9850332472`, 64,822 bytes, digest `sha256:d0c8683f0f39e0c0587101e433d05086bccf73766d577d7d6874f4bd85125266`.
-- M03 review: five Important issues found and fixed with focused regressions (boundary-crossing secret redaction; provider-runtime package completeness; fail-closed unexpected Core-AI Throwables; Secret export/native-serialization leakage; secret-bearing provider request IDs). Unresolved Critical/Important findings: none.
-- Additional TDD evidence: Secret export RED `5e721174530e493ce8274eea2567a25446c7361c` / run `33638078588` failed with the plaintext present in `var_export()`; GREEN `e5ab99f54baf734597c78e6a3ff5b85a1d3d4e2f` / run `33638196004` passed. Request-ID RED `4581b26297b3cc98b6adb0bf9f12b989a1dc8d47` / run `33639434957` failed both OpenAI/OpenRouter regressions; partial GREEN `266b7b40de435a7d563ff5e2ffc1bff6744bb9a6` left only OpenRouter failing; final GREEN `c8cddc7c8d4905d1436f95eeb8ef77c2f075c8af` / run `33639805500` passed all four permanent jobs.
-- Exact next action: require all four permanent CI jobs green on the durable-evidence documentation SHA, create/update the M03 PR to `main`, merge only while the exact head SHA remains verified, then require post-merge `main` CI green. M04 must not start before that post-merge gate passes.
+- Current milestone: M04 — WordPress Knowledge Source Framework.
+- Current task: continue the auto-approved M04 implementation plan at Task 3 — FAQ source normalization.
+- Current phase: IN PROGRESS — source contract/registry/hash foundation and manual-text normalization implemented with TDD; WordPress/FAQ/bootstrap/smoke work remains.
+- Completed milestones on `main`: M00, M01, M02, M03.
+- M03 integration evidence: `main` merge SHA `2ed420a9217422f856afaf64b68fdde78ea0b063`; post-merge CI run `33670406871` passed `php-quality`, `js-quality`, `wordpress-smoke`, and `package`.
+- Remaining milestones after M04: M05, M06, M07, M08, M09, M10, M11, M12, M13, M14, M15, M16, M17, M18, M19, M20, M21, M22, M23, M24.
+- Execution environment: native local git clone/worktree and package-registry access are unavailable in this chat runtime because external DNS is restricted. Connected GitHub branch isolation plus exact-SHA GitHub Actions are the dependency-backed execution path under repository policy/ADR-016/018.
+- M04 branch: `feat/m04-wordpress-knowledge-sources`.
+- M04 design: `docs/superpowers/specs/2026-09-03-m04-wordpress-knowledge-sources-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
+- M04 implementation plan: `docs/superpowers/plans/2026-09-03-m04-wordpress-knowledge-sources.md` — `AUTO-APPROVED — SCHEDULED MODE`.
+- Task 1 RED: `5108cb315ead4e7213c033d0e094c49978e8da02`, CI run `33671328652`; PHPCS/PHPStan passed, then PHPUnit failed exactly 8 tests because `DocumentHasher` / knowledge-source contract classes did not exist (`142 tests / 755 assertions`).
+- Task 1 GREEN implementation: `5cdc7d105a3a80f601b826b6ccad135a862d1f61`; source contract, exception, deterministic registry, and canonical SHA-256 `DocumentHasher` added. The PHP verification job passed on exact-SHA CI run `33671611425`.
+- Task 2 RED: `93e3be47058777c332cf3d31417b89c191f1020b`, CI run `33671716477`; PHPCS/PHPStan passed, then PHPUnit failed exactly 6 tests because `ManualTextSource` did not exist (`148 tests / 763 assertions`).
+- Task 2 production commits: `1b190f7a6f812db15a8ff301fcf8fbd7997df290`, `72776a22e64c3841d86e9da36decaaf1696fd197`, `a1813a695f59193cb6e48615aa9daf2915aafa8d`.
+- Task 2 GREEN: exact-SHA CI run `33672126600` PHP verification passed at `a1813a695f59193cb6e48615aa9daf2915aafa8d`; PHPCS/PHPStan clean, PHPUnit `148 tests / 777 assertions` green, Composer audit clean. At the time this ledger entry was written, `js-quality` and `package` were green and `wordpress-smoke` was still running; do not treat the full run as green until that job completes.
+- Review of the completed M04 slice (contract/registry/hash/manual source): no unresolved Critical or Important correctness/security/data-integrity findings. The WPCS suppressions are narrow and document pre-existing M02 camelCase domain properties plus non-output exception chaining. Full milestone review remains required before integration.
+- M04 is not merge-ready: FAQ, WordPress gateway/source, registry bootstrap, real WordPress knowledge smoke, final security/performance review, milestone evidence, exact-head PR CI, and post-merge CI remain unfinished.
+- Blocked items: none for the next planned task.
+- Exact next action: recover the latest branch/CI state; if no concurrent M04 writer is active, execute Task 3 from the M04 plan using strict TDD — add `FaqSourceTest`, obtain expected RED, implement `FaqSource`, and obtain GREEN before proceeding to the WordPress gateway.
