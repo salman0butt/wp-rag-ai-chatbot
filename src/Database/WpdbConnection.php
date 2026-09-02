@@ -50,6 +50,7 @@ final class WpdbConnection implements Connection {
 	 * @throws DatabaseException When wpdb cannot prepare the statement.
 	 */
 	public function prepare( string $query, mixed ...$args ): string {
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- The literal-string contract restricts templates; values remain separate placeholders.
 		$prepared = $this->wpdb->prepare( $query, ...$args );
 		if ( ! is_string( $prepared ) ) {
 			throw new DatabaseException( 'Could not prepare database query.' );
