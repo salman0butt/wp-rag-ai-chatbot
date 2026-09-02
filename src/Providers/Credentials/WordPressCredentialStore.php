@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use WpRagAiChatbot\Providers\ProviderErrorCode;
 use WpRagAiChatbot\Providers\ProviderException;
 
+// phpcs:disable WordPress.Security.EscapeOutput -- Exception metadata is internal and is never rendered as output.
 /**
  * Stores plugin-managed credentials as encrypted, non-autoloaded options.
  */
@@ -77,7 +78,7 @@ final class WordPressCredentialStore implements CredentialStore {
 			return;
 		}
 
-		if ( $envelope === get_option( $config->option_name, null ) ) {
+		if ( get_option( $config->option_name, null ) === $envelope ) {
 			return;
 		}
 
@@ -101,7 +102,6 @@ final class WordPressCredentialStore implements CredentialStore {
 	 * @param string $provider_id Provider identifier.
 	 */
 	private function configuration_failure( string $provider_id ): ProviderException {
-		// phpcs:ignore WordPress.Security.EscapeOutput -- Exception metadata is internal and is never rendered as output.
 		return new ProviderException(
 			ProviderErrorCode::CONFIGURATION,
 			$provider_id,
