@@ -57,6 +57,25 @@ final class FaqSource implements KnowledgeSource {
 			? trim( $configured_language )
 			: null;
 
+		$normalized_items = array();
+		foreach ( $items as $index => $item ) {
+			if ( ! is_array( $item ) ) {
+				throw new KnowledgeSourceException( 'FAQ source contains an invalid item.' );
+			}
+
+			$question = $item['question'] ?? null;
+			$answer   = $item['answer'] ?? null;
+			if ( ! is_string( $question ) || '' === trim( $question ) || ! is_string( $answer ) || '' === trim( $answer ) ) {
+				throw new KnowledgeSourceException( 'FAQ source items require non-empty question and answer values.' );
+			}
+
+			$normalized_items[] = array(
+				'index'    => $index,
+				'question' => trim( $question ),
+				'answer'   => trim( $answer ),
+			);
+		}
+
 		try {
 			$source_version = $source->sourceHash ?? DocumentHasher::hash(
 				array(
@@ -65,19 +84,10 @@ final class FaqSource implements KnowledgeSource {
 				)
 			);
 
-			foreach ( $items as $index => $item ) {
-				if ( ! is_array( $item ) ) {
-					throw new KnowledgeSourceException( 'FAQ source contains an invalid item.' );
-				}
-
-				$question = $item['question'] ?? null;
-				$answer   = $item['answer'] ?? null;
-				if ( ! is_string( $question ) || '' === trim( $question ) || ! is_string( $answer ) || '' === trim( $answer ) ) {
-					throw new KnowledgeSourceException( 'FAQ source items require non-empty question and answer values.' );
-				}
-
-				$question     = trim( $question );
-				$answer       = trim( $answer );
+			foreach ( $normalized_items as $item ) {
+				$index        = $item['index'];
+				$question     = $item['question'];
+				$answer       = $item['answer'];
 				$document_key = 'faq:' . $source->sourceKey . ':' . $index;
 				$content      = "Question: {$question}\nAnswer: {$answer}";
 				$metadata     = array(
