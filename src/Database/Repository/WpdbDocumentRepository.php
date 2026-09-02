@@ -140,7 +140,7 @@ final class WpdbDocumentRepository implements DocumentRepository {
 		if ( false === $result ) {
 			throw new DatabaseException( 'Could not delete documents for source.' );
 		}
-		return $result;
+		return (int) $result;
 	}
 
 	/**
