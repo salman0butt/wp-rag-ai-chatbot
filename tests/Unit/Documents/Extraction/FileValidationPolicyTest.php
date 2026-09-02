@@ -124,6 +124,25 @@ final class FileValidationPolicyTest extends TestCase {
 	}
 
 	/**
+	 * The approved public API keeps the planned allowedRoot named argument.
+	 */
+	public function test_validate_supports_planned_allowed_root_named_argument(): void {
+		$this->requireTask2Contracts();
+		$root = $this->createDirectory( 'allowed' );
+		$path = $root . '/inside.txt';
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Unit fixture setup needs exact local bytes.
+		self::assertSame( 6, file_put_contents( $path, 'inside' ) );
+		$this->temporary_paths[] = $path;
+
+		$file = ( new FileValidationPolicy( $this->detectorReturning( 'text/plain' ) ) )->validate(
+			$path,
+			allowedRoot: $root
+		);
+
+		self::assertSame( realpath( $path ), $file->path );
+	}
+
+	/**
 	 * A symlink inside the allowed root cannot resolve to a file outside it.
 	 */
 	public function test_validate_rejects_symlink_escape(): void {
