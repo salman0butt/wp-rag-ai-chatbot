@@ -5,7 +5,7 @@
 - Completed milestones: **M00-M04** are integrated on `main`.
 - M05 design/spec: `docs/superpowers/specs/2026-09-03-m05-file-document-ingestion-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - M05 implementation plan: `docs/superpowers/plans/2026-09-03-m05-file-document-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`.
-- M05 Tasks **1–2 are complete pending final documentation-head CI confirmation**; Tasks 3–7 remain.
+- M05 Tasks **1–2 are COMPLETE**; Tasks 3–7 remain.
 
 ## M05 Task 1 — Extraction contracts and registry
 - Added `ValidatedFile`, `ExtractedDocument`, `DocumentExtractor`, `DocumentExtractorRegistry`, and `ExtractionException`.
@@ -25,6 +25,7 @@
 - Review regression RED: `6c2fe061dc6959001d91044f828113ec49de0c62`, CI `33692753424`; PHPStan no errors; PHPUnit **184 / 932 / 1 error**, exactly `Unknown named parameter $allowedRoot`.
 - Review-fix code GREEN: `1263be3a9e7e80688cccc7234b342ce97c67c24c`, CI `33692911228`; PHPStan no errors; PHPUnit **184 / 933**, Composer audit clean. Remaining Critical/Important: **0 / 0**.
 - SHA `c06ae273...` failed WPCS before PHPUnit due suppression placement and is explicitly not GREEN evidence.
+- Documentation head `87e56c6fc76f829918c8bf3cef449a3c1c422343`, CI `33693060308`, passed **php-quality, js-quality, package/artifact upload, and wordpress-smoke**, including activation/database/provider/knowledge smoke. This closes the Task 2 handoff gate.
 
 ## Current gates
 - M05 is **not merge-ready**: Tasks 3–7 remain. Do not merge the branch or advance to M06.
