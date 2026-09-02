@@ -62,7 +62,8 @@ final class WordPressPostSource implements KnowledgeSource {
 		$page       = 1;
 
 		do {
-			$posts = $this->gateway->posts( $post_types, $include_private, $page, self::PAGE_SIZE );
+			$posts      = $this->gateway->posts( $post_types, $include_private, $page, self::PAGE_SIZE );
+			$post_count = count( $posts );
 			foreach ( $posts as $post ) {
 				if ( ! in_array( $post->type, $post_types, true ) || $post->passwordProtected ) {
 					continue;
@@ -75,7 +76,7 @@ final class WordPressPostSource implements KnowledgeSource {
 			}
 
 			++$page;
-		} while ( count( $posts ) >= self::PAGE_SIZE );
+		} while ( $post_count >= self::PAGE_SIZE );
 		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
