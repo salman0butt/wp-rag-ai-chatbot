@@ -27,7 +27,7 @@ final class WordPressPostSourceTest extends TestCase {
 	 */
 	public function test_normalizes_default_post_and_page_with_traceable_metadata(): void {
 		$this->requireSource();
-		$gateway = new FakeWordPressContentGateway(
+		$gateway    = new FakeWordPressContentGateway(
 			array( 'book', 'page', 'post' ),
 			array(
 				1 => array(
@@ -225,9 +225,9 @@ final class WordPressPostSourceTest extends TestCase {
 				),
 			)
 		);
-		$config = array( 'post_types' => array( 'post' ) );
-		$first  = iterator_to_array( ( new WordPressPostSource( $first_gateway ) )->documents( $this->source( $config ) ) );
-		$second = iterator_to_array( ( new WordPressPostSource( $second_gateway ) )->documents( $this->source( $config ) ) );
+		$config         = array( 'post_types' => array( 'post' ) );
+		$first          = iterator_to_array( ( new WordPressPostSource( $first_gateway ) )->documents( $this->source( $config ) ) );
+		$second         = iterator_to_array( ( new WordPressPostSource( $second_gateway ) )->documents( $this->source( $config ) ) );
 		self::assertSame( $first[0]->contentHash, $second[0]->contentHash ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
