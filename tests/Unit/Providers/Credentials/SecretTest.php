@@ -43,7 +43,7 @@ final class SecretTest extends TestCase {
 
 		$secret = new Secret( 'sk-test-super-secret' );
 		$debug  = $secret->__debugInfo();
-		$json   = json_encode( $secret );
+		$json   = wp_json_encode( $secret );
 
 		self::assertSame( '[REDACTED]', (string) $secret );
 		self::assertSame( '[REDACTED]', $secret->jsonSerialize() );
@@ -61,11 +61,13 @@ final class SecretTest extends TestCase {
 
 		$plaintext = 'sk-test-export-super-secret';
 		$secret    = new Secret( $plaintext );
-		$exported  = var_export( $secret, true );
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export -- Security regression test intentionally exercises PHP export behavior.
+		$exported = var_export( $secret, true );
 
 		self::assertStringNotContainsString( $plaintext, $exported );
 
 		try {
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Security regression test intentionally exercises native serialization behavior.
 			$serialized = serialize( $secret );
 			self::assertStringNotContainsString( $plaintext, $serialized );
 		} catch ( Throwable $exception ) {
