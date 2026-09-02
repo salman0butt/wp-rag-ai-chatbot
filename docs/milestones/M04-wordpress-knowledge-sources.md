@@ -33,8 +33,8 @@ Supported WP sources normalize deterministically; draft/private/role access poli
 - Task 3 — FAQ source: complete; Important partial-yield review finding fixed with regression coverage and verified.
 - Task 4 — WordPress content gateway: complete, reviewed, and exact-head CI verified.
 - Task 5 — WordPress post/page/public-CPT source: complete, reviewed, and exact-head CI verified.
-- Task 6 — registry bootstrap/extension hook: next unfinished task.
-- Task 7 — real WordPress knowledge smoke coverage: pending.
+- Task 6 — registry bootstrap/extension hook: complete, reviewed, and implementation CI verified; documentation-head CI pending at this ledger commit.
+- Task 7 — real WordPress knowledge smoke coverage: next unfinished task.
 - Task 8 — full review, verification, durable evidence, PR integration: pending.
 
 ## TDD Evidence
@@ -68,6 +68,11 @@ Supported WP sources normalize deterministically; draft/private/role access poli
 - Sanitization implementation `4dab1fe52720d6071d9065c431df68920d2ba5e5` applies `wp_strip_all_tags()` to title/excerpt/content at the native WordPress boundary. `e032f995697c7722b877dc97f4619f401af57d56` aligned the existing gateway mapping test; CI `33683081722` then identified only an over-specified mock expectation for a taxonomy call that correctly does not occur when no taxonomies exist. `5a00b73b3e01417986e02583351d21b907093490` removed that impossible expectation without changing runtime behavior.
 - Exact Task 5 implementation GREEN `5a00b73b3e01417986e02583351d21b907093490`, CI `33683221417`: PHPStan `[OK] No errors`; PHPUnit `165 tests / 862 assertions`; Composer audit clean; `js-quality`, `package`, and `wordpress-smoke` all passed. WordPress activation/database/provider smoke passed. Package assertion/upload passed; artifact `9867077987`, 74,913 bytes, digest `sha256:2442a81d6114242c2ac233f3a11f815b4f940cbadc840f8a89cfdec2a5e3547d`.
 
+### Task 6
+- Valid RED `8b5076468f9b5f2d490c97aa44edc884f9a3d269`, CI `33684412647`: PHPStan/WPCS clean; PHPUnit reached `167 tests / 861 assertions` with one error and two failures, all caused by the intentionally missing `KnowledgeBootstrap` class/behavior.
+- Implementation commits `b540ec466e70a613998fa91a8f0ec5415ffcffc6` and `5289e17f299af079de7d3ffdcfcfc42088c6c159` added the composition root and plugins-loaded hook.
+- Exact implementation GREEN `5289e17f299af079de7d3ffdcfcfc42088c6c159`, CI `33684501524`: PHPStan `[OK] No errors`; PHPUnit `167 tests / 867 assertions`; Composer audit clean; `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed. WordPress activation/database/provider smoke passed.
+
 ## Task 4 Implementation Notes
 - `WordPressContentGateway` isolates WordPress core APIs from source normalization.
 - Native queries are deterministic, bounded to `1..100`, publish-only by default, add private only by explicit opt-in, exclude password-protected posts, map permalinks, and normalize taxonomy labels.
@@ -82,20 +87,26 @@ Supported WP sources normalize deterministically; draft/private/role access poli
 - Source version is `{modified_gmt}:{post_id}` and `DocumentHasher` captures the full canonical payload, including taxonomy/access metadata.
 - Native WordPress title/excerpt/content HTML is converted to text with `wp_strip_all_tags()` before it crosses the adapter boundary.
 
+## Task 6 Implementation Notes
+- `KnowledgeBootstrap` composes `manual_text`, `faq`, and native `wordpress_posts` implementations into one deterministic `KnowledgeSourceRegistry`.
+- The `wp_rag_ai_chatbot_knowledge_sources` filter supplies additional source implementations only; non-array filter returns or items not implementing `KnowledgeSource` fail closed with `KnowledgeSourceException`.
+- Registry publication occurs only after every native and extension source has registered successfully, preventing exposure of partially composed state.
+- Core bootstrap registers knowledge composition on `plugins_loaded` after database bootstrap; provider and knowledge composition remain independent at priority 10.
+
 ## Integration Test Evidence
-Task 7's real M04 WordPress knowledge lifecycle/source smoke remains pending. Existing permanent activation/database/provider smoke stayed green on Task 5 exact-head CI but does not replace the milestone-specific Task 7 knowledge smoke acceptance gate.
+Task 7's real M04 WordPress knowledge lifecycle/source smoke remains pending. Existing permanent activation/database/provider smoke stayed green on Task 6 exact implementation CI but does not replace the milestone-specific Task 7 knowledge smoke acceptance gate.
 
 ## E2E / Visual Verification
 N/A; M04 introduces no UI.
 
 ## Security Review
-Tasks 1-5 have been reviewed for deterministic hashing, fail-closed source validation, supported `public|private` visibility, no credential handling, no arbitrary outbound HTTP, no arbitrary post-meta ingestion, password-protected exclusion, explicit private-status opt-in, sanitization at the WordPress adapter boundary, and no partial FAQ emission after later-item validation failure. No unresolved Critical/Important finding exists in the completed slice. Full milestone security review remains pending in Task 8.
+Tasks 1-6 have been reviewed for deterministic hashing, fail-closed source validation and extension registration, supported `public|private` visibility, no credential handling, no arbitrary outbound HTTP, no arbitrary post-meta ingestion, password-protected exclusion, explicit private-status opt-in, sanitization at the WordPress adapter boundary, and no partial FAQ emission after later-item validation failure. No unresolved Critical/Important finding exists in the completed slice. Full milestone security review remains pending in Task 8.
 
 ## Accessibility Review where UI exists
 N/A.
 
 ## Performance Review where relevant
-The native gateway and Task 5 source use 100-record bounded paging, stable ID ordering, `no_found_rows`, and no remote I/O. Taxonomy lookup remains per-post and is a known performance consideration for Task 7/Task 8 real-WordPress verification; no premature batching optimization was added without evidence.
+The native gateway and Task 5 source use 100-record bounded paging, stable ID ordering, `no_found_rows`, and no remote I/O. Task 6 adds only one in-memory registry composition pass at plugin load. Taxonomy lookup remains per-post and is a known performance consideration for Task 7/Task 8 real-WordPress verification; no premature batching optimization was added without evidence.
 
 ## Code Review Findings
 Completed-slice isolated second-pass review:
@@ -103,24 +114,27 @@ Completed-slice isolated second-pass review:
 - Important fixed: one from Task 3 — FAQ validation originally allowed partial ingestion; fixed and regression-tested.
 - Task 4 Critical/Important: none.
 - Task 5 Critical/Important: none.
+- Task 6 Critical/Important: none.
 - Important unresolved: none.
-- PR #4 has no submitted reviews and no unresolved inline review threads at Task 5 closeout.
+- PR #4 has no submitted reviews and no unresolved inline review threads at Task 6 closeout review.
 - Minor follow-up for full Task 8 review: focused Task 5 tests do not separately isolate every defensive config/persistence guard even though production rejects invalid source type, unpersisted source IDs, malformed `include_private`, and unsupported post types. This is non-blocking for Task 5's planned behavior and should be reconsidered during milestone-wide gap review.
+- Minor Task 6 test gap: production also rejects a non-array extension-filter result; the required contract-item rejection and valid extension registration are explicitly covered, while the broader defensive return-shape guard is covered by static review rather than a dedicated test.
 
-A separate reviewer/subagent is not available in this runtime; this was an isolated second-pass review against the approved Task 5 plan and diff, not represented as external human approval.
+A separate reviewer/subagent is not available in this runtime; Task 6 received an isolated second-pass review against the approved plan, implementation, tests, exact-SHA CI, and extension/security boundaries, not represented as external human approval.
 
 ## Fixes
-- Corrected test-only WPCS issues before accepting behavioral RED evidence.
+- Corrected test-only WPCS issues before accepting behavioral RED evidence in earlier tasks.
 - Preserved earlier Task 1-4 review fixes and narrow WPCS suppressions documented for approved camelCase domain contracts.
 - Task 5: corrected WPCS loop-condition style and PHPStan source-ID narrowing without changing runtime behavior.
 - Task 5: added an explicit adapter-boundary sanitization RED/GREEN regression and converted WordPress title/excerpt/body HTML to safe text.
 - Task 5: aligned existing gateway expectations with the new text boundary and removed an impossible empty-taxonomy mock expectation discovered by exact-SHA CI.
+- Task 6 required no post-GREEN Critical/Important code fix; second-pass review found no blocking defect.
 
 ## Fresh Verification Commands
 Dependency-backed execution uses permanent GitHub Actions in this runtime. Exact commands represented by CI include `composer verify:php`, `composer audit`, `npm run verify:js`, provider live-gating/package assertions, WordPress activation/database/provider smoke commands, build/package generation, package assertions, and artifact upload.
 
 ## Fresh Verification Results
-Task 5 exact implementation SHA `5a00b73b3e01417986e02583351d21b907093490` passed CI `33683221417` across all permanent jobs. PHPStan reported no errors; PHPUnit passed `165 tests / 862 assertions`; Composer audit was clean; JS quality, package generation/assertion/upload, and WordPress activation/database/provider smoke all passed.
+Task 6 exact implementation SHA `5289e17f299af079de7d3ffdcfcfc42088c6c159` passed CI `33684501524` across all permanent jobs. PHPStan reported no errors; PHPUnit passed `167 tests / 867 assertions`; Composer audit was clean; JS quality, package generation/assertion/upload, and WordPress activation/database/provider smoke all passed.
 
 This ledger update changes the branch head after implementation GREEN. The resulting documentation-only head must pass its own exact-SHA CI before this run is cleanly closed.
 
@@ -137,21 +151,23 @@ This ledger update changes the branch head after implementation GREEN. The resul
 - `3900eb204141df50008e1da02e725c4c47de08ae`, `6e89a54525f342bf0a9051453c93ebea592b0c08`, `2550b1e74a2c25b73dcb0bb189bbf9f867c73fc2` — Task 5 source implementation/quality corrections/core GREEN.
 - `0d5d9576fd794820ef7a9671d325e3134e21277d` / `4dab1fe52720d6071d9065c431df68920d2ba5e5` — Task 5 adapter sanitization RED/implementation.
 - `e032f995697c7722b877dc97f4619f401af57d56`, `5a00b73b3e01417986e02583351d21b907093490` — Task 5 test-alignment correction and exact implementation GREEN.
+- `d6998481d9549af6dc16d59cc96ee9fe51f1d147`, `8b5076468f9b5f2d490c97aa44edc884f9a3d269` — Task 6 test-first commits; second SHA is valid behavioral RED.
+- `b540ec466e70a613998fa91a8f0ec5415ffcffc6`, `5289e17f299af079de7d3ffdcfcfc42088c6c159` — Task 6 bootstrap implementation and exact implementation GREEN.
 
 ## Files Changed
-Current M04 slice includes design/plan documentation, source contract/exception/registry, deterministic hashing, manual text and FAQ sources, WordPress content gateway/value/native adapter, WordPress post/page/public-CPT source, fake gateway support, and focused unit tests.
+Current M04 slice includes design/plan documentation, source contract/exception/registry, deterministic hashing, manual text and FAQ sources, WordPress content gateway/value/native adapter, WordPress post/page/public-CPT source, knowledge registry bootstrap/extension hook, fake gateway support, and focused unit tests.
 
 ## Known Limitations
-Registry bootstrap/filter wiring, real M04 WordPress knowledge smoke, final security/performance review, branch reconciliation with current `main`, milestone completion evidence, and integration are unfinished. Taxonomy retrieval is currently per post. No remote URL fetch is implemented by design in M04.
+Real M04 WordPress knowledge smoke, final security/performance review, branch reconciliation with current `main`, milestone completion evidence, and integration are unfinished. Taxonomy retrieval is currently per post. No remote URL fetch is implemented by design in M04.
 
 ## Documentation Updated
 `docs/superpowers/specs/2026-09-03-m04-wordpress-knowledge-sources-design.md`, `docs/superpowers/plans/2026-09-03-m04-wordpress-knowledge-sources.md`, this milestone ledger, and `docs/progress/STATUS.md`.
 
 ## Completion Checklist
-Not complete. M04 must not merge or transition to M05 until Tasks 6-8 pass TDD, review, exact-head CI, integration, and post-merge gates.
+Not complete. M04 must not merge or transition to M05 until Tasks 7-8 pass integration smoke, review, exact-head CI, integration, and post-merge gates.
 
 ## Exact Next Action
-Recover latest `main`, PR #4, branch head, exact-head CI, reviews, and concurrency. If safe, execute Task 6 from the auto-approved plan using strict TDD: create failing `KnowledgeBootstrapTest`/`BootstrapTest` coverage proving the plugins-loaded hook and native default sources, obtain behavioral RED, then implement `KnowledgeBootstrap::register()` and integrate it after database bootstrap, applying `wp_rag_ai_chatbot_knowledge_sources` only to additional `KnowledgeSource` instances and rejecting invalid filter values; require focused/full PHP GREEN before Task 7.
+Recover latest `main`, PR #4, branch head, exact-head CI, reviews, and concurrency. If safe, execute Task 7 from the auto-approved plan: add `scripts/test-wp-knowledge.php` and `scripts/test-wp-knowledge.sh` plus `npm run test:wp:knowledge`/CI wiring; create real published page/post, private, draft, and password-protected fixtures; prove public normalization, private default exclusion/opt-in inclusion, draft/password exclusion, stable key/hash, and cleanup; fix any production defect only through a unit RED/GREEN regression first; require all permanent jobs green on the exact final Task 7 SHA before Task 8.
 
 ## Next Milestone
 M05 — File/Document Ingestion, only after M04 is genuinely complete and post-merge `main` CI is green.
