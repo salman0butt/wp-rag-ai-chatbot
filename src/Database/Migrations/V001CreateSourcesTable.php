@@ -37,6 +37,7 @@ final class V001CreateSourcesTable implements Migration {
 	 * Create the sources table and verify it exists.
 	 *
 	 * @param Connection $connection Database connection.
+	 * @throws DatabaseException When the sources table is still missing after dbDelta().
 	 */
 	public function up( Connection $connection ): void {
 		$table = $this->tables->sources();
