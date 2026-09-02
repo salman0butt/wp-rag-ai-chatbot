@@ -58,42 +58,46 @@ final class WpdbConnection implements Connection {
 	}
 
 	/**
-	 * Execute a SQL statement.
+	 * Execute a SQL statement that was prepared by the caller when values are present.
 	 *
 	 * @param string $query SQL statement.
 	 */
 	public function query( string $query ): int|bool {
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Connection callers prepare all value-bearing SQL before execution.
 		return $this->wpdb->query( $query );
 	}
 
 	/**
-	 * Fetch one scalar value.
+	 * Fetch one scalar value from caller-prepared SQL.
 	 *
 	 * @param string $query SQL statement.
 	 */
 	public function get_var( string $query ): string|int|float|null {
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Connection callers prepare all value-bearing SQL before execution.
 		$value = $this->wpdb->get_var( $query );
 		return is_string( $value ) || is_int( $value ) || is_float( $value ) ? $value : null;
 	}
 
 	/**
-	 * Fetch one associative row.
+	 * Fetch one associative row from caller-prepared SQL.
 	 *
 	 * @param string $query SQL statement.
 	 * @return array<string, mixed>|null
 	 */
 	public function get_row( string $query ): ?array {
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Connection callers prepare all value-bearing SQL before execution.
 		$row = $this->wpdb->get_row( $query, ARRAY_A );
 		return is_array( $row ) ? $row : null;
 	}
 
 	/**
-	 * Fetch associative rows.
+	 * Fetch associative rows from caller-prepared SQL.
 	 *
 	 * @param string $query SQL statement.
 	 * @return array<int, array<string, mixed>>
 	 */
 	public function get_results( string $query ): array {
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Connection callers prepare all value-bearing SQL before execution.
 		$rows = $this->wpdb->get_results( $query, ARRAY_A );
 		return is_array( $rows ) ? $rows : array();
 	}
