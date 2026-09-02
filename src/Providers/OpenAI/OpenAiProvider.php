@@ -139,7 +139,7 @@ final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider {
 			$text,
 			$this->generation_status( $data['status'] ?? null ),
 			$this->usage( $data['usage'] ?? null ),
-			$this->request_id( $response )
+			$this->request_id( $response, $known_secrets )
 		);
 	}
 
@@ -274,7 +274,7 @@ final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider {
 			$error_code,
 			ProviderIds::OPENAI_DIRECT,
 			$message,
-			$this->request_id( $response )
+			$this->request_id( $response, $known_secrets )
 		);
 	}
 
@@ -373,15 +373,20 @@ final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider {
 	 * Return a safe scalar x-request-id header when supplied.
 	 *
 	 * @param HttpResponse $response Provider HTTP response.
+	 * @param string[]     $known_secrets Plaintext values that must not appear in diagnostics.
 	 */
-	private function request_id( HttpResponse $response ): ?string {
+	private function request_id( HttpResponse $response, array $known_secrets ): ?string {
 		foreach ( $response->headers as $name => $value ) {
 			if ( 'x-request-id' !== strtolower( $name ) || ! is_scalar( $value ) ) {
 				continue;
 			}
 
 			$request_id = trim( (string) $value );
-			return '' === $request_id ? null : $request_id;
+			if ( '' === $request_id ) {
+				return null;
+			}
+
+			return $this->redactor->sanitize( $request_id, $known_secrets ) === $request_id ? $request_id : null;
 		}
 
 		return null;
