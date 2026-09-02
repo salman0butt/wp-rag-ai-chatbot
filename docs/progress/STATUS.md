@@ -1,21 +1,13 @@
 # Global Status
 
-- Current milestone: M04 — WordPress Knowledge Source Framework.
-- Current task: Task 8 — final review, exact-head verification, PR integration, and post-merge verification.
-- Current phase: M04 IMPLEMENTATION COMPLETE; pre-merge integration gates in progress.
-- Completed milestones on `main`: M00, M01, M02, M03.
-- Recovered `main` baseline: `65c1aa9a7081ac0d831bb118a0cd445b4f5ba5e1`; M03 is complete/documentation-closed and its permanent CI is green.
-- Active branch: `feat/m04-wordpress-knowledge-sources`.
-- Active PR: #4 `feat: build M04 WordPress knowledge source framework` (draft until final exact-head gate).
-- M04 design: `docs/superpowers/specs/2026-09-03-m04-wordpress-knowledge-sources-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
-- M04 plan: `docs/superpowers/plans/2026-09-03-m04-wordpress-knowledge-sources.md` — `AUTO-APPROVED — SCHEDULED MODE`.
-- Tasks 1-6 are complete with recorded behavioral RED/GREEN evidence in the milestone ledger. Task 3's Important partial-yield integrity finding and Task 5's adapter sanitization defect were each fixed through dedicated regression RED/GREEN cycles.
-- Task 7 real WordPress integration: commit `aa246186a218efa7208403c36fecd051c6c143ee`, CI `33687296386`; `php-quality`, `js-quality`, `wordpress-smoke`, and `package` all passed. The new `npm run test:wp:knowledge` smoke created real published page/post, private, draft, and password-protected fixtures; verified public normalization, explicit private opt-in, draft/password exclusion, canonical URL/text normalization, stable key/hash, and cleanup. No production defect was exposed, so no Task 7 production RED was required by the approved plan.
-- Task 7 artifact: `wp-rag-ai-chatbot`, ID `9868623773`, 75,709 bytes, digest `sha256:41f285035d298187635bfbfd9d9f8aff828003439384979503ba37e84b8b3fbf`.
-- Task 8 milestone-wide second pass: Critical none; Important unresolved none. Earlier Important findings are fixed and permanently regression-tested. Minor non-blocking gaps remain documented in the M04 ledger (defensive guard isolation and taxonomy per-post lookup performance consideration).
-- PR #4 review state at Task 8 review: no submitted reviews and no unresolved inline review threads. A separate reviewer/subagent is unavailable in this runtime; the final review is an isolated second-pass against the approved design/plan, code, tests, CI, real WordPress smoke, and security/performance boundaries, not external human approval.
-- M04 branch was 60 commits ahead / 5 behind `main` before Task 8 reconciliation. The five behind commits are M03 closeout documentation only. Task 8 reconciles them with a two-parent merge commit while preserving the current M04 state.
-- M04 is merge-ready only after the reconciled/documentation-complete exact branch SHA passes all permanent CI jobs and PR #4 has no blocking review state. After merge, fresh `main` CI must pass before M04 is marked fully complete and M05 begins.
-- Execution environment: connected GitHub branch isolation plus exact-SHA GitHub Actions are the dependency-backed execution path under ADR-016/018.
+- Current milestone: **M05 — File/Document Ingestion** is the next unfinished milestone.
+- Current phase: **M04 COMPLETE AND INTEGRATED**; M00-M04 are complete on `main`.
+- M04 feature PR: #4 `feat: build M04 WordPress knowledge source framework`.
+- M04 feature merge: `666bb02dc6780f2fb3c818bbbf4d3fe1a0778555`.
+- M04 final reconciled feature head: `f09f293c913203bdc498e76a28413e3ab2614f5c`; exact-head CI `33687964210` passed `php-quality`, `js-quality`, `package`, and `wordpress-smoke`, including activation/database/provider/knowledge smoke. Artifact `9868887017`, 75,694 bytes, digest `sha256:0bb2f525d4ae4c37a0d69d7f9d02716b94868e5db9f07a0d8362918b6c47904e`.
+- M04 post-merge `main` CI: run `33688297306` on `666bb02dc6780f2fb3c818bbbf4d3fe1a0778555`; all four permanent jobs passed, including `npm run test:wp:knowledge` in real WordPress. Post-merge artifact `9869009969`, 75,695 bytes, digest `sha256:5d5e69b131b33a87614dfb86ef228e5fd3c168065b077e1bfbaf2af16ec82590`.
+- M04 review result: Critical none; Important unresolved none. Important FAQ partial-yield integrity and WordPress adapter sanitization findings were fixed with dedicated RED/GREEN regressions before integration.
+- M04 design/spec and implementation plan remain `AUTO-APPROVED — SCHEDULED MODE` under repository policy.
+- M04 durable closeout details: `docs/progress/M04-CLOSEOUT.md`; the earlier M04 milestone ledger contains the full task-by-task TDD history and pre-merge gate evidence.
 - Blocked items: none.
-- Exact next action: create the reconciled Task 8 documentation/merge-state commit, require all permanent CI jobs green on that exact SHA, update PR #4 out of draft, merge with expected-head protection, then verify fresh `main` CI and record the post-merge closeout before beginning M05.
+- Exact next unfinished action: start a fresh recovery from latest `main`, read mandatory repo/Superpowers instructions, inspect M05 milestone plus existing specs/plans/code/CI/PRs for concurrency, then auto-approve the M05 design/spec/plan under scheduled policy and begin the first M05 implementation task with strict behavioral RED/GREEN evidence. Do not redo M04 unless fresh evidence shows a defect.
