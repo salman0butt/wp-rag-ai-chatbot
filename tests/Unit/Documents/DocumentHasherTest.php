@@ -22,7 +22,7 @@ final class DocumentHasherTest extends TestCase {
 	public function test_hash_is_stable_when_associative_key_order_changes(): void {
 		$this->requireHasher();
 
-		$first = array(
+		$first  = array(
 			'title'    => 'Example',
 			'metadata' => array(
 				'post_type' => 'page',
