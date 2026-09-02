@@ -75,7 +75,7 @@ Artifact digest: `sha256:f77b32bf377b4f6fbb65cf1721a87b5e0408041ad5444816076227a
 
 ## M03 provider security evidence
 
-Verified runtime candidate: `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, CI run `33636226873`; artifact digest `sha256:a674d5ad8d3a3844dd09b824cfacb9952775238f0b37f313bfbb5442af5c342b`.
+Integrated `main` commit: `2ed420a9217422f856afaf64b68fdde78ea0b063`; post-merge CI run `33670406871` passed all four permanent jobs. Artifact `wp-rag-ai-chatbot` ID `9862272933`, digest `sha256:e44bd8abbc96c1577c66ff42b4d3ba6507bb37b067f71e0b2c05d6d69ca4782b`.
 
 ### Credential trust boundary
 - Direct-provider credentials resolve in explicit precedence order: environment -> PHP constant -> plugin-managed option. Runtime values are trimmed and blank values fall through instead of masking safer lower-priority configuration.
@@ -83,7 +83,7 @@ Verified runtime candidate: `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, CI run `
 - Sodium XChaCha20-Poly1305 is preferred; AES-256-GCM is the approved fallback when Sodium is unavailable.
 - Key derivation uses HKDF-SHA256 over WordPress auth salts with provider-specific context; authenticated additional data is also provider-bound.
 - Envelope version/algorithm/field shapes and base64 payloads are strictly validated. Unsupported algorithms, malformed/tampered envelopes, wrong-provider decryption, or missing approved crypto backends fail closed with generic configuration errors.
-- `Secret` does not reveal plaintext through string conversion, JSON serialization, or debug info; plaintext is exposed only to an explicit callback consumer.
+- `Secret` does not reveal plaintext through string conversion, JSON serialization, debug info, PHP export, or native serialization; plaintext is exposed only to an explicit callback consumer. The export/native-serialization regression is permanently covered.
 - Real WordPress integration verifies fake credential plaintext is absent from the raw `wp_options` value and autoload is disabled.
 
 ### Provider network boundary
@@ -99,7 +99,13 @@ Verified runtime candidate: `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, CI run `
 - Provider bodies are bounded to 2048 bytes for diagnostics.
 - Review found truncation-before-redaction could expose a prefix when a secret crossed the byte boundary. RED `35e65d2855a46d7a9d4580fcaae3f175afd91902` / run `33635147048` proved the leak. Production now redacts the complete body before truncation and preserves a whole `[REDACTED]` marker at boundary cuts.
 - Review found unexpected WordPress AI Client Throwables could contain opaque Core/provider details the plugin cannot know as redaction inputs. RED `fe28e7c134700fafcd01f7ad36e5fb152500eb20` / run `33636065968` proved the opaque message escaped. Unexpected Throwables now fail closed with `WordPress AI Client request failed.` Structured `WP_Error` data remains sanitized through the public error boundary.
+- Review found provider-controlled OpenAI/OpenRouter request IDs could include configured plaintext credentials. RED `4581b26297b3cc98b6adb0bf9f12b989a1dc8d47` / run `33639434957` failed both adapters. OpenAI was fixed at `266b7b40de435a7d563ff5e2ffc1bff6744bb9a6`; final OpenRouter GREEN `c8cddc7c8d4905d1436f95eeb8ef77c2f075c8af` / run `33639805500` rejects any request-ID candidate changed by secret sanitization.
 - Provider descriptors are non-secret DTOs and real WordPress smoke verifies serialized descriptors omit secrets, ciphertext, KDF data, and authentication headers.
+
+### Secret object export boundary
+- Review found the internal plaintext string in `Secret` could be visible through `var_export()` / native serialization despite safe string/JSON/debug methods.
+- RED `5e721174530e493ce8274eea2567a25446c7361c` / run `33638078588` reached PHPUnit and failed because `var_export()` contained `sk-test-export-super-secret`.
+- GREEN `e5ab99f54baf734597c78e6a3ff5b85a1d3d4e2f` / run `33638196004` stores plaintext inside PHP 8.2 `SensitiveParameterValue`; all permanent jobs passed. Tests assert plaintext is absent from `var_export()`, native serialization output when available, and thrown serialization messages.
 
 ### Model/catalog boundary
 - Model capability metadata is populated only from explicit provider metadata; model IDs/names are not parsed as security/capability heuristics.
@@ -119,8 +125,12 @@ Verified runtime candidate: `11c660db87bd10343aea9e8f4d93fa33fb53e2e2`, CI run `
 - Development `scripts/`, tests, docs, `.github`, environment files, Node modules, and dependency manifests/locks remain forbidden in the production ZIP.
 - The package-assertion regression is permanent in CI.
 
-### Review result
-Three Important M03 findings were fixed with focused RED→GREEN tests. Unresolved Critical/Important findings: **none**.
+### Final review and integration result
+Five Important M03 findings were fixed with focused regressions. Unresolved Critical/Important findings: **none**.
+
+- Security-hardened runtime candidate `c8cddc7c8d4905d1436f95eeb8ef77c2f075c8af`, run `33639805500`: all permanent jobs green; PHPUnit `134 tests / 747 assertions`; Composer audit clean.
+- Documentation-complete integration head `da620a89d420bf22a7dc146b2cab84113f376fcf`, run `33670130318`: all permanent jobs green.
+- PR #2 merged as `2ed420a9217422f856afaf64b68fdde78ea0b063`; post-merge run `33670406871`: `php-quality`, `js-quality`, `wordpress-smoke`, and `package` all green.
 
 ## Open security design work
 
