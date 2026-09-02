@@ -33,6 +33,7 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 	 * Extract deterministic visible HTML text.
 	 *
 	 * @param ValidatedFile $file Validated local file.
+	 * @throws ExtractionException When the validated file cannot be safely extracted.
 	 */
 	public function extract( ValidatedFile $file ): ExtractedDocument {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Extraction reads only a previously validated local file.
@@ -59,11 +60,13 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 		if ( false === $ignored ) {
 			throw new ExtractionException( 'Unable to extract HTML document.' );
 		}
+		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 		foreach ( $ignored as $node ) {
 			if ( null !== $node->parentNode ) {
 				$node->parentNode->removeChild( $node );
 			}
 		}
+		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
 		$nodes = $xpath->query( '//body//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6 or self::p or self::li or self::tr]' );
 		if ( false === $nodes ) {
@@ -72,6 +75,7 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 
 		$lines = array();
 		foreach ( $nodes as $node ) {
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 			$text = preg_replace( '/\s+/u', ' ', trim( $node->textContent ) );
 			if ( is_string( $text ) && '' !== $text ) {
 				$lines[] = $text;

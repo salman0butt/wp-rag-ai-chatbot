@@ -34,6 +34,7 @@ final class XmlDocumentExtractor implements DocumentExtractor {
 	 * Extract deterministic XML leaf text.
 	 *
 	 * @param ValidatedFile $file Validated local file.
+	 * @throws ExtractionException When the validated file cannot be safely extracted.
 	 */
 	public function extract( ValidatedFile $file ): ExtractedDocument {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Extraction reads only a previously validated local file.
@@ -56,6 +57,7 @@ final class XmlDocumentExtractor implements DocumentExtractor {
 			libxml_use_internal_errors( $previous );
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 		$root = $document->documentElement;
 		if ( ! $loaded || ! $root instanceof DOMElement ) {
 			throw new ExtractionException( 'Unable to extract XML document.' );
@@ -70,6 +72,7 @@ final class XmlDocumentExtractor implements DocumentExtractor {
 
 		$lines = array();
 		foreach ( $nodes as $node ) {
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 			$text = preg_replace( '/\s+/u', ' ', trim( $node->textContent ) );
 			if ( is_string( $text ) && '' !== $text ) {
 				$lines[] = $text;
@@ -84,6 +87,7 @@ final class XmlDocumentExtractor implements DocumentExtractor {
 			implode( "\n", $lines ),
 			array(
 				'format' => 'xml',
+				// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 				'root'   => $root->tagName,
 			)
 		);
@@ -94,12 +98,14 @@ final class XmlDocumentExtractor implements DocumentExtractor {
 	 *
 	 * @param DOMElement $element Current element.
 	 * @param int        $depth Current depth.
+	 * @throws ExtractionException When XML nesting exceeds the extraction limit.
 	 */
 	private function assertDepth( DOMElement $element, int $depth ): void {
 		if ( $depth > self::MAX_DEPTH ) {
 			throw new ExtractionException( 'XML document exceeds extraction limits.' );
 		}
 
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 		foreach ( $element->childNodes as $child ) {
 			if ( $child instanceof DOMElement ) {
 				$this->assertDepth( $child, $depth + 1 );

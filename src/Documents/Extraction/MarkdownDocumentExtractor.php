@@ -28,6 +28,7 @@ final class MarkdownDocumentExtractor implements DocumentExtractor {
 	 * Extract normalized Markdown text.
 	 *
 	 * @param ValidatedFile $file Validated local file.
+	 * @throws ExtractionException When the validated file cannot be safely extracted.
 	 */
 	public function extract( ValidatedFile $file ): ExtractedDocument {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Extraction reads only a previously validated local file.

@@ -31,6 +31,7 @@ final class CsvDocumentExtractor implements DocumentExtractor {
 	 * Extract deterministic tabular text.
 	 *
 	 * @param ValidatedFile $file Validated local file.
+	 * @throws ExtractionException When the validated file cannot be safely extracted.
 	 */
 	public function extract( ValidatedFile $file ): ExtractedDocument {
 		// phpcs:disable WordPress.WP.AlternativeFunctions -- Extraction reads only a previously validated local file and needs streaming CSV parsing.
@@ -39,11 +40,16 @@ final class CsvDocumentExtractor implements DocumentExtractor {
 			throw new ExtractionException( 'Unable to extract CSV document.' );
 		}
 
-		$lines       = array();
-		$row_count   = 0;
+		$lines        = array();
+		$row_count    = 0;
 		$column_count = 0;
 		try {
-			while ( false !== ( $row = fgetcsv( $handle, 0, ',', '"', '\\' ) ) ) {
+			while ( true ) {
+				$row = fgetcsv( $handle, 0, ',', '"', '\\' );
+				if ( false === $row ) {
+					break;
+				}
+
 				++$row_count;
 				if ( $row_count > self::MAX_ROWS || count( $row ) > self::MAX_COLUMNS ) {
 					throw new ExtractionException( 'CSV document exceeds extraction limits.' );

@@ -28,6 +28,7 @@ final class TextDocumentExtractor implements DocumentExtractor {
 	 * Extract normalized plain text.
 	 *
 	 * @param ValidatedFile $file Validated local file.
+	 * @throws ExtractionException When the validated file cannot be safely extracted.
 	 */
 	public function extract( ValidatedFile $file ): ExtractedDocument {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Extraction reads only a previously validated local file.
