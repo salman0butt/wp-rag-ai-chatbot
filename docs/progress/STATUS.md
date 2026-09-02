@@ -19,7 +19,7 @@
 - Independent Task 3 review found one Important data-integrity issue: malformed later FAQ items were validated only after earlier items could already be yielded, allowing partial ingestion by a streaming consumer.
 - Review-fix RED: `9417ad1d80f0855f5db4ff066eae4b9ac4caf474`, CI `33673441211`; WPCS/PHPStan clean, PHPUnit `154 tests / 800 assertions / 1 failure`, exactly because the later malformed item was not rejected before first yield.
 - Review-fix GREEN: `918ca7558d100b2e5076924bc62937886b368ab2`, CI `33673592282`; WPCS/PHPStan clean, PHPUnit `154 tests / 800 assertions`, Composer audit clean. FAQ items are now fully validated/normalized before any document is yielded.
-- Task 3 code-level GREEN is established. Final documentation-head exact-SHA CI must still be checked before the next invocation treats the branch head itself as fully verified.
+- Task 3 code-level GREEN is established. The current documentation head is this status commit and must have exact-SHA permanent CI re-checked before Task 4 begins.
 - Completed-slice review: no unresolved Critical or Important findings. Full M04 review remains required before integration.
 - Branch integration note: M04 branch began before the current M03 closeout documentation on `main`; reconcile branch with current `main` before final M04 integration, preserving both M03 closeout evidence and M04 current-state docs.
 - M04 is not merge-ready: Tasks 4-8, real WordPress M04 smoke, final security/performance review, durable completion evidence, exact-head PR CI, branch reconciliation, merge, and post-merge `main` CI remain unfinished.
