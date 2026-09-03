@@ -69,13 +69,10 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 		}
 
 		$modified = call_user_func( array( $product, 'get_date_modified' ) );
-		if ( ! is_object( $modified ) || ! method_exists( $modified, 'date' ) ) {
+		if ( ! is_object( $modified ) || ! method_exists( $modified, 'getTimestamp' ) ) {
 			return null;
 		}
-		$modified_gmt = trim( (string) call_user_func( array( $modified, 'date' ), 'c' ) );
-		if ( '' === $modified_gmt ) {
-			return null;
-		}
+		$modified_gmt = gmdate( 'c', (int) call_user_func( array( $modified, 'getTimestamp' ) ) );
 
 		$categories = $this->termNames( call_user_func( array( $product, 'get_category_ids' ) ), 'product_cat' );
 		$tags       = $this->termNames( call_user_func( array( $product, 'get_tag_ids' ) ), 'product_tag' );
