@@ -282,7 +282,13 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		self::assertCount( 2, $snapshot->variations );
 		self::assertSame( 101, $snapshot->variations[0]->id );
 		self::assertSame( 'SHIRT-BLUE', $snapshot->variations[0]->sku );
-		self::assertSame( array( 'Color' => 'Blue', 'Size' => 'M' ), $snapshot->variations[0]->attributes );
+		self::assertSame(
+			array(
+				'Color' => 'Blue',
+				'Size'  => 'M',
+			),
+			$snapshot->variations[0]->attributes
+		);
 		self::assertSame( 103, $snapshot->variations[1]->id );
 		self::assertSame( 'SHIRT-RED', $snapshot->variations[1]->sku );
 	}
