@@ -1,6 +1,6 @@
 # M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing
 
-Status: **IN PROGRESS — Tasks 1-3 complete; Task 4 GREEN pending fresh-session independent review.**
+Status: **IN PROGRESS — Tasks 1-3 complete; Task 4 review finding fixed and GREEN, pending fresh-session independent re-review.**
 
 ## Goal
 Create deterministic normalized content/chunks with traceability, deduplication, hashes, and incremental reindex decisions.
@@ -39,7 +39,7 @@ Chunk records retain citation/source metadata, sequence/structural parent lineag
 - [x] Task 1 — Deterministic content normalization. **Complete: strict RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [x] Task 2 — Token budget/configuration contracts. **Complete: strict RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [x] Task 3 — Immutable chunk records and structure-aware splitting. **Complete: corrected genuine RED/GREEN, exact-head CI, independent fresh-session review clean.**
-- [ ] Task 4 — Deliberate bounded overlap. **Implementation GREEN; fresh-session independent review remains required.**
+- [ ] Task 4 — Deliberate bounded overlap. **Review finding fixed and exact-SHA GREEN; fresh-session independent re-review remains required.**
 - [ ] Task 5 — Compatibility-safe deduplication.
 - [ ] Task 6 — Incremental index planning.
 - [ ] Task 7 — Source-to-index-plan integration and milestone closeout.
@@ -64,7 +64,7 @@ Chunk records retain citation/source metadata, sequence/structural parent lineag
 Task 3 established immutable chunk records, deterministic heading/paragraph/sentence/lexical/code-point splitting, zero-based sequence, stable hashes/parent lineage, copied source metadata and visibility/language/URL/version/content lineage, and provider/network/persistence-free behavior.
 
 ## Task 4 durable evidence
-### RED
+### Original RED / GREEN
 The first two Task 4 test-only attempts are deliberately not counted as valid RED:
 - `ea9c68b850fb091dce6bf531bd068a5cdce2ea0a` — PHPCS stopped on one alignment warning.
 - `8c44877fc1ac739a2bd0262fe69ec88eefd9397a` — PHPCS stopped on the remaining assignment alignment group.
@@ -74,59 +74,67 @@ No Task 4 production implementation existed at either invalid attempt.
 Valid corrected RED:
 - `49f423bcbdfd1458be31b4e376c55ef269e32a39` — `test: align M07 overlap RED fixtures`.
 - CI `33796054973`: PHPCS clean; PHPStan **No errors**; PHPUnit **280 tests / 1334 assertions / 2 intended failures**.
-- Intended failures were exactly:
-  1. same-parent adjacent chunks did not yet receive configured trailing overlap;
-  2. a near-full new chunk did not yet receive the reduced overlap that still fits `maxTokens`.
-- The cross-heading-parent isolation fixture already passed, showing existing structure boundaries were preserved.
+- Intended failures were exactly same-parent overlap and budget-reduced overlap.
 
-### GREEN
+Original GREEN:
 - `aae5ab3861928bbcc2370d72a1a550c6c6eb2745` — `feat: add bounded structural chunk overlap`.
-- CI `33796230348`: all permanent jobs passed: `php-quality`, `js-quality`, `package`, `wordpress-smoke`.
-- PHP quality: **280/280 tests / 1337 assertions**, PHPStan clean, Composer audit clean.
+- CI `33796230348`: all permanent jobs passed; PHPUnit **280/280 / 1337 assertions**, PHPStan clean, Composer audit clean.
+- Same-session review `5105957190`: **0 Critical / 0 Important unresolved**, explicitly not independent.
 
-### Task 4 behavior
-`StructureAwareChunker` now performs one bounded overlap pass after base splitting and before hashes/records are finalized. It:
+### Fresh-session independent review finding
+- Fresh-session review `5106144751`: **0 Critical / 1 Important**.
+- Finding: overlap capacity was measured through the injected `TokenCounter`, but that capacity was then treated as a count of lexical units. A counter whose budget units are larger than lexical units could therefore receive too much copied overlap and trigger final budget validation instead of reducing overlap.
+- This violated the approved Task 4 requirement to use injected counter/budget rules and preserve all original new content within `maxTokens`.
+
+### Review-fix TDD
+- First review-regression test commit `2daf879f9dca2c2545721ba7f260b2c632d664cb` is **not counted as valid RED** because CI `33798621426` stopped at PHPCS before PHPUnit.
+- Corrected genuine review-fix RED: `4f5f04fc8a5e98ed34ba1806c19ed5839568159e` — `test: align injected overlap RED fixture`.
+- RED CI `33798780250`: PHPStan **No errors**; PHPUnit reached the intended behavior and reported **281 tests / 1337 assertions / 1 error**, exactly `ChunkingException: Chunk content violates the configured token budget` for the injected counter fixture.
+- GREEN fix: `47f991ba738359738156f93072a146bfbee785ad` — `fix: respect injected overlap token budgets`.
+- GREEN CI `33799042113`: all permanent jobs passed (`php-quality`, `js-quality`, `package`, `wordpress-smoke`). PHPStan **No errors**; PHPUnit **281/281 tests / 1341 assertions**; Composer audit found no vulnerabilities.
+- Artifact `9910333596`, digest `sha256:200d6898db93c963fcb150ea268e30cb2dca395d381e984c50db2b7600c2fd36`.
+
+### Task 4 behavior after fix
+`StructureAwareChunker` performs one bounded overlap pass after base splitting and before hashes/records are finalized. It:
 - copies at most configured trailing Unicode lexical units from the prior **base** descriptor;
 - applies overlap only when adjacent descriptors have identical heading paths;
-- therefore never crosses a section or separate document call;
-- reduces overlap to remaining `maxTokens` capacity so original new content is retained;
-- computes final chunk hashes and token counts after overlap settles;
-- does not feed already-overlapped output into the next overlap source, avoiding cascading overlap growth;
+- never crosses a section or separate document call;
+- starts from the configured/remaining overlap bound and reduces the candidate until the injected `TokenCounter` confirms `candidate + new content <= maxTokens`;
+- preserves all original new content;
+- computes final chunk hashes and token counts only after overlap settles;
+- does not feed already-overlapped output into the next overlap source, avoiding cascading growth;
 - adds no provider, network, persistence, embedding, vector, queue, hook, REST, or WordPress execution behavior.
-
-### Review state
-- Same-session review `5105957190`: **0 Critical / 0 Important unresolved**, but explicitly **not independent**.
-- Required fresh-session independent review: **PENDING**.
 
 ## Security Review
 Tasks 1-4 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, alter visibility, or add queue/REST/hook execution paths. Unicode parsing remains fail-closed on invalid UTF-8.
 
 ## Performance Review
-Tasks 1-3 retain their prior bounded behavior. Task 4 adds a single descriptor pass. For each overlapped boundary it scans only the prior base chunk to select trailing lexical units; there is no rewind, recursive overlap propagation, or retry loop. Large-document integration/performance evidence remains a Task 7 requirement.
+Task 4 retains a single descriptor pass. Review-fix candidate reduction is bounded by configured `overlapTokens` (itself bounded to at most 25% of `maxTokens`), uses only the prior base descriptor, and does not recursively propagate overlap. Large-document integration/performance evidence remains a Task 7 requirement.
 
 ## Code Review Findings
 - Task 1 independent review `5104488263`: **0 Critical / 0 Important unresolved**.
 - Task 2 independent review `5105069991`: **0 Critical / 0 Important unresolved**.
 - Task 3 independent review `5105859046`: **0 Critical / 0 Important unresolved**.
 - Task 4 same-session review `5105957190`: **0 Critical / 0 Important unresolved**, not independent.
+- Task 4 fresh-session review `5106144751`: **0 Critical / 1 Important**; finding fixed via regression TDD on `47f991ba738359738156f93072a146bfbee785ad`.
 
 ## Active quality gate
-Task 4 is not complete until a fresh session independently reviews GREEN code `aae5ab3861928bbcc2370d72a1a550c6c6eb2745` against the approved spec/plan and CI `33796230348` and records 0 unresolved Critical/Important findings.
+Task 4 is still not complete until a **new fresh-session independent re-review** inspects fixed GREEN code `47f991ba738359738156f93072a146bfbee785ad` and records **0 unresolved Critical / Important findings**. This session became the implementer after fixing review `5106144751`, so it must not self-certify the post-fix independent gate.
 
-The independent reviewer must inspect overlap bounds, same-parent isolation, original new-content retention, deterministic hashes/token counts, termination/performance, Unicode lexical slicing/fail-closed behavior, and scope leakage. Task 5 must not begin before this gate closes.
+The next independent reviewer must verify the injected-counter fix, overlap bounds, same-parent isolation, original new-content retention, deterministic hashes/token counts, termination/performance, Unicode lexical slicing/fail-closed behavior, and absence of M08/M09/provider/network/persistence scope leakage. Task 5 must not begin before this gate closes.
 
 ## Known Limitations
 - Provider/model-exact tokenization remains intentionally deferred/injectable for M08.
 - Deduplication, incremental planning, and end-to-end pipeline composition remain Tasks 5-7.
 
 ## Documentation Updated
-This milestone ledger and `docs/progress/STATUS.md` contain the durable Task 4 GREEN handoff. Draft PR #9 remains the active M07 integration PR.
+This milestone ledger records the fresh-session Task 4 finding, its genuine regression RED, exact-SHA GREEN fix and remaining independent re-review gate. Draft PR #9 remains the active M07 integration PR.
 
 ## Exact next unfinished action
-Perform a **fresh-session independent review of Task 4** anchored to `aae5ab3861928bbcc2370d72a1a550c6c6eb2745` / CI `33796230348`. If clean, mark Task 4 complete in both durable ledgers and then begin **Task 5 — Compatibility-safe deduplication** with a genuine test-only RED.
+Perform a **fresh-session independent re-review of Task 4** anchored to fixed GREEN `47f991ba738359738156f93072a146bfbee785ad` / CI `33799042113`. If that review records 0 unresolved Critical/Important findings, mark Task 4 complete in both durable ledgers and only then begin **Task 5 — Compatibility-safe deduplication** with a genuine test-only RED.
 
 ## Completion Checklist
-All remaining mandatory gates remain required before M07 completion: Task 4 independent review, Tasks 5-7 genuine TDD and independent reviews, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
+All remaining mandatory gates remain required before M07 completion: Task 4 independent re-review, Tasks 5-7 genuine TDD and independent reviews, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
 
 ## Next Milestone
 M08 — Embeddings & Vector Stores.
