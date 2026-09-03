@@ -141,9 +141,6 @@ final class StructureAwareChunker {
 					if ( '' === $overlap ) {
 						break;
 					}
-					if ( $this->counter->count( $overlap ) > $this->config->overlapTokens ) {
-						continue;
-					}
 
 					$candidate = $overlap . ' ' . $content;
 					if ( $this->counter->count( $candidate ) <= $this->config->maxTokens ) {

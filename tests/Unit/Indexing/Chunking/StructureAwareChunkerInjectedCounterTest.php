@@ -54,7 +54,7 @@ final class StructureAwareChunkerInjectedCounterTest extends TestCase {
 		$chunks  = $chunker->chunks( $this->document( $content ) );
 
 		self::assertCount( 2, $chunks );
-		self::assertSame( 'delta. one two three four five.', $chunks[1]->content );
+		self::assertSame( 'gamma delta one two three four five.', $chunks[1]->content );
 		self::assertSame( 16, $chunks[1]->tokenCount );
 	}
 
