@@ -16,6 +16,15 @@ use InvalidArgumentException;
  * Immutable stable descriptive variation facts.
  */
 final readonly class WooCommerceVariation {
+	/** Variation ID. */
+	public int $id;
+
+	/** Stable variation SKU. */
+	public ?string $sku;
+
+	/** @var array<string,string> Descriptive variation choices. */
+	public array $attributes;
+
 	/**
 	 * Create a variation snapshot.
 	 *
@@ -25,14 +34,15 @@ final readonly class WooCommerceVariation {
 	 * @throws InvalidArgumentException When stable variation data is invalid.
 	 */
 	public function __construct(
-		public int $id,
-		public ?string $sku,
-		public array $attributes
+		int $id,
+		?string $sku,
+		array $attributes
 	) {
 		if ( $id < 1 ) {
 			throw new InvalidArgumentException( 'WooCommerce variation ID must be positive.' );
 		}
 
+		$this->id         = $id;
 		$this->sku        = self::normalizeOptionalString( $sku );
 		$this->attributes = self::normalizeAttributes( $attributes );
 	}

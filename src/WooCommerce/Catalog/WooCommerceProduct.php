@@ -16,6 +16,48 @@ use InvalidArgumentException;
  * Immutable allowlisted stable public catalog facts for one product.
  */
 final readonly class WooCommerceProduct {
+	/** Product ID. */
+	public int $id;
+
+	/** Supported product type. */
+	public string $type;
+
+	/** Public product status. */
+	public string $status;
+
+	/** Public catalog visibility. */
+	public string $catalogVisibility;
+
+	/** Product name. */
+	public string $name;
+
+	/** Stable short description. */
+	public string $shortDescription;
+
+	/** Stable full description. */
+	public string $description;
+
+	/** Product SKU. */
+	public ?string $sku;
+
+	/** Public product URL. */
+	public string $canonicalUrl;
+
+	/** @var array<int, string> Category labels. */
+	public array $categories;
+
+	/** @var array<int, string> Tag labels. */
+	public array $tags;
+
+	/** @var array<string, array<int, string>> Descriptive attributes. */
+	public array $attributes;
+
+	/** @var array<int, WooCommerceVariation> Stable variation descriptors. */
+	public array $variations;
+
+	/** Stable modified marker. */
+	public string $modifiedGmt;
+
 	/**
 	 * Create a product snapshot.
 	 *
@@ -36,20 +78,20 @@ final readonly class WooCommerceProduct {
 	 * @throws InvalidArgumentException When product data is invalid.
 	 */
 	public function __construct(
-		public int $id,
-		public string $type,
-		public string $status,
-		public string $catalogVisibility,
-		public string $name,
-		public string $shortDescription,
-		public string $description,
-		public ?string $sku,
-		public string $canonicalUrl,
-		public array $categories,
-		public array $tags,
-		public array $attributes,
-		public array $variations,
-		public string $modifiedGmt
+		int $id,
+		string $type,
+		string $status,
+		string $catalogVisibility,
+		string $name,
+		string $shortDescription,
+		string $description,
+		?string $sku,
+		string $canonicalUrl,
+		array $categories,
+		array $tags,
+		array $attributes,
+		array $variations,
+		string $modifiedGmt
 	) {
 		if ( $id < 1 ) {
 			throw new InvalidArgumentException( 'WooCommerce product ID must be positive.' );
@@ -85,6 +127,7 @@ final readonly class WooCommerceProduct {
 			throw new InvalidArgumentException( 'WooCommerce product modified marker must not be blank.' );
 		}
 
+		$this->id                = $id;
 		$this->type              = $type;
 		$this->status            = $status;
 		$this->catalogVisibility = $catalogVisibility;
