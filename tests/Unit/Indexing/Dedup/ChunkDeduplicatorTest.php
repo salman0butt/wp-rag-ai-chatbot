@@ -15,6 +15,7 @@ use WpRagAiChatbot\Indexing\Chunking\ChunkRecord;
 use WpRagAiChatbot\Indexing\Dedup\ChunkDeduplicator;
 use WpRagAiChatbot\Indexing\Dedup\ChunkDeduplicationResult;
 
+// phpcs:disable WordPress.NamingConventions -- Assertions intentionally use the approved camelCase domain contracts.
 /**
  * Verifies deterministic deduplication and privacy/compatibility boundaries.
  */
@@ -145,7 +146,12 @@ final class ChunkDeduplicatorTest extends TestCase {
 			'Title',
 			'https://example.test/' . $id,
 			$content,
-			DocumentHasher::hash( array( 'content' => $content, 'id' => $id ) ),
+			DocumentHasher::hash(
+				array(
+					'content' => $content,
+					'id'      => $id,
+				)
+			),
 			'v1',
 			DocumentHasher::hash( array( 'document' => $id ) ),
 			$language,
@@ -161,3 +167,4 @@ final class ChunkDeduplicatorTest extends TestCase {
 		);
 	}
 }
+// phpcs:enable WordPress.NamingConventions
