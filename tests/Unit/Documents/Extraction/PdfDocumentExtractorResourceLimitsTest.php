@@ -20,7 +20,11 @@ use WpRagAiChatbot\Documents\Extraction\ValidatedFile;
  * Verifies explicit PDF page and extracted-text limits.
  */
 final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
-	/** Temporary fixture path. */
+	/**
+	 * Temporary fixture path.
+	 *
+	 * @var string|null
+	 */
 	private ?string $temporary_path = null;
 
 	/** Remove the temporary fixture. */
@@ -141,7 +145,8 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$offsets = array( 0 );
 		foreach ( $objects as $id => $body ) {
 			$offsets[ $id ] = strlen( $pdf );
-			$pdf           .= $id . " 0 obj\n" . $body . "\nendobj\n";
+
+			$pdf .= $id . " 0 obj\n" . $body . "\nendobj\n";
 		}
 
 		$xref_offset = strlen( $pdf );
