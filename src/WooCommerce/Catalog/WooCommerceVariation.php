@@ -88,6 +88,9 @@ final readonly class WooCommerceVariation {
 			if ( '' === $name || '' === $value ) {
 				throw new InvalidArgumentException( 'WooCommerce variation attributes must contain non-empty names and values.' );
 			}
+			if ( array_key_exists( $name, $normalized ) ) {
+				throw new InvalidArgumentException( 'WooCommerce variation attribute names must be unique after normalization.' );
+			}
 
 			$normalized[ $name ] = $value;
 		}
