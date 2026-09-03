@@ -117,6 +117,22 @@ final class StructureAwareChunkerTest extends TestCase {
 	}
 
 	/**
+	 * Repeated heading labels still represent distinct section instances for overlap.
+	 */
+	public function test_overlap_does_not_cross_repeated_identical_heading_sections(): void {
+		$this->requireChunker();
+		$chunker = new StructureAwareChunker(
+			new LexicalTokenCounter(),
+			new ChunkingConfig( 32, 4, 'm07-v1', null )
+		);
+		$content = "# Same\n\nalpha beta gamma delta.\n\n# Same\n\none two three four five.";
+		$chunks  = $chunker->chunks( $this->document( $content ) );
+
+		self::assertCount( 2, $chunks );
+		self::assertSame( 'one two three four five.', $chunks[1]->content );
+	}
+
+	/**
 	 * Bounded overlap leaves every original new-content unit intact within maxTokens.
 	 */
 	public function test_overlap_is_reduced_when_needed_to_preserve_new_content_budget(): void {
