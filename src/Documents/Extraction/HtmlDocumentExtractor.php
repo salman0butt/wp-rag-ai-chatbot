@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Documents\Extraction;
 
 use DOMDocument;
+use DOMElement;
 use DOMNode;
+use DOMText;
 use DOMXPath;
 
 /**
@@ -69,27 +71,80 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 		}
 		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
-		$nodes = $xpath->query( '//body//*[self::h1 or self::h2 or self::h3 or self::h4 or self::h5 or self::h6 or self::p or self::li or self::tr]' );
-		if ( false === $nodes ) {
-			throw new ExtractionException( 'Unable to extract HTML document.' );
+		$body = $document->getElementsByTagName( 'body' )->item( 0 );
+		if ( ! $body instanceof DOMNode ) {
+			throw new ExtractionException( 'HTML document contains no extractable text.' );
 		}
 
-		$lines = array();
-		foreach ( $nodes as $node ) {
-			if ( ! $node instanceof DOMNode ) {
-				continue;
-			}
-			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
-			$text = preg_replace( '/\s+/u', ' ', trim( $node->textContent ) );
-			if ( is_string( $text ) && '' !== $text ) {
-				$lines[] = $text;
-			}
-		}
+		$lines   = array();
+		$current = '';
+		$this->collectVisibleText( $body, $lines, $current );
+		$this->flushLine( $lines, $current );
 
 		if ( array() === $lines ) {
 			throw new ExtractionException( 'HTML document contains no extractable text.' );
 		}
 
 		return new ExtractedDocument( implode( "\n", $lines ), array( 'format' => 'html' ) );
+	}
+
+	/**
+	 * Collect visible text while retaining deterministic block boundaries.
+	 *
+	 * @param DOMNode      $node Current DOM node.
+	 * @param list<string> $lines Extracted lines.
+	 * @param string       $current Current line buffer.
+	 */
+	private function collectVisibleText( DOMNode $node, array &$lines, string &$current ): void {
+		if ( $node instanceof DOMText ) {
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
+			$value = preg_replace( '/\s+/u', ' ', $node->nodeValue ?? '' );
+			if ( is_string( $value ) ) {
+				$current .= $value;
+			}
+			return;
+		}
+
+		if ( ! $node instanceof DOMElement ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
+		$tag       = strtolower( $node->tagName );
+		$is_block  = in_array(
+			$tag,
+			array( 'body', 'article', 'aside', 'blockquote', 'div', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'li', 'main', 'p', 'pre', 'section', 'tr' ),
+			true
+		);
+		$is_break  = 'br' === $tag;
+
+		if ( $is_block || $is_break ) {
+			$this->flushLine( $lines, $current );
+		}
+
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
+		foreach ( $node->childNodes as $child ) {
+			if ( $child instanceof DOMNode ) {
+				$this->collectVisibleText( $child, $lines, $current );
+			}
+		}
+
+		if ( $is_block ) {
+			$this->flushLine( $lines, $current );
+		}
+	}
+
+	/**
+	 * Flush one normalized non-empty line.
+	 *
+	 * @param list<string> $lines Extracted lines.
+	 * @param string       $current Current line buffer.
+	 */
+	private function flushLine( array &$lines, string &$current ): void {
+		$line    = preg_replace( '/\s+/u', ' ', trim( $current ) );
+		$current = '';
+		if ( is_string( $line ) && '' !== $line ) {
+			$lines[] = $line;
+		}
 	}
 }
