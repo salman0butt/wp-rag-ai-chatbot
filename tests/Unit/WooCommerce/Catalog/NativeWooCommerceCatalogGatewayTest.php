@@ -308,13 +308,7 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 				return array_shift( $cases ) ?? false;
 			}
 		);
-		Functions\when( 'get_post_field' )->alias(
-			static function (): string {
-				static $calls = 0;
-				++$calls;
-				return 4 === $calls ? 'protected' : '';
-			}
-		);
+		Functions\when( 'get_post_field' )->justReturn( 'protected' );
 
 		$gateway = new NativeWooCommerceCatalogGateway();
 
