@@ -19,16 +19,12 @@ use WpRagAiChatbot\WooCommerce\Catalog\WooCommerceVariation;
  * Verifies the stable WooCommerce catalog contracts and invariants.
  */
 final class WooCommerceProductTest extends TestCase {
-	/**
-	 * Task 1 must expose a WooCommerce-independent catalog gateway contract.
-	 */
+	/** Task 1 must expose a WooCommerce-independent catalog gateway contract. */
 	public function test_catalog_gateway_contract_exists(): void {
 		self::assertTrue( interface_exists( WooCommerceCatalogGateway::class ) );
 	}
 
-	/**
-	 * Product snapshots expose stable catalog facts in deterministic order only.
-	 */
+	/** Product snapshots expose stable catalog facts in deterministic order only. */
 	public function test_product_snapshot_normalizes_stable_catalog_facts(): void {
 		self::assertTrue( class_exists( WooCommerceProduct::class ) );
 		self::assertTrue( class_exists( WooCommerceVariation::class ) );
@@ -40,6 +36,8 @@ final class WooCommerceProductTest extends TestCase {
 		$product = new WooCommerceProduct(
 			id: 42,
 			type: 'variable',
+			status: 'publish',
+			catalogVisibility: 'visible',
 			name: 'Trail Shoe',
 			shortDescription: 'Light trail shoe.',
 			description: 'Stable descriptive copy.',
@@ -73,6 +71,8 @@ final class WooCommerceProductTest extends TestCase {
 		);
 
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain record API follows approved camelCase contract.
+		self::assertSame( 'publish', $product->status );
+		self::assertSame( 'visible', $product->catalogVisibility );
 		self::assertSame( array( 'Outdoor', 'Shoes' ), $product->categories );
 		self::assertSame( array( 'Lightweight', 'Trail' ), $product->tags );
 		self::assertSame(
@@ -86,9 +86,7 @@ final class WooCommerceProductTest extends TestCase {
 		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
-	/**
-	 * Live commerce state must not exist on the stable snapshot contract.
-	 */
+	/** Live commerce state must not exist on the stable snapshot contract. */
 	public function test_product_snapshot_has_no_live_or_customer_state_fields(): void {
 		self::assertTrue( class_exists( WooCommerceProduct::class ) );
 		if ( ! class_exists( WooCommerceProduct::class ) ) {
@@ -100,9 +98,7 @@ final class WooCommerceProductTest extends TestCase {
 		}
 	}
 
-	/**
-	 * Product identity must be positive.
-	 */
+	/** Product identity must be positive. */
 	public function test_product_snapshot_rejects_non_positive_product_id(): void {
 		self::assertTrue( class_exists( WooCommerceProduct::class ) );
 		if ( ! class_exists( WooCommerceProduct::class ) ) {
@@ -113,9 +109,7 @@ final class WooCommerceProductTest extends TestCase {
 		$this->product( id: 0 );
 	}
 
-	/**
-	 * Product names are required descriptive identity.
-	 */
+	/** Product names are required descriptive identity. */
 	public function test_product_snapshot_rejects_blank_name(): void {
 		self::assertTrue( class_exists( WooCommerceProduct::class ) );
 		if ( ! class_exists( WooCommerceProduct::class ) ) {
@@ -126,9 +120,7 @@ final class WooCommerceProductTest extends TestCase {
 		$this->product( name: '   ' );
 	}
 
-	/**
-	 * M06 accepts only the explicitly supported product kinds.
-	 */
+	/** M06 accepts only the explicitly supported product kinds. */
 	public function test_product_snapshot_rejects_unsupported_product_type(): void {
 		self::assertTrue( class_exists( WooCommerceProduct::class ) );
 		if ( ! class_exists( WooCommerceProduct::class ) ) {
@@ -139,9 +131,18 @@ final class WooCommerceProductTest extends TestCase {
 		$this->product( type: 'external' );
 	}
 
-	/**
-	 * Variation identity and options are deterministic stable facts.
-	 */
+	/** Product eligibility snapshot fields must stay within approved public states. */
+	public function test_product_snapshot_rejects_non_public_status_or_catalog_visibility(): void {
+		self::assertTrue( class_exists( WooCommerceProduct::class ) );
+		if ( ! class_exists( WooCommerceProduct::class ) ) {
+			return;
+		}
+
+		$this->expectException( InvalidArgumentException::class );
+		$this->product( status: 'private' );
+	}
+
+	/** Variation identity and options are deterministic stable facts. */
 	public function test_variation_snapshot_validates_identity_and_normalizes_options(): void {
 		self::assertTrue( class_exists( WooCommerceVariation::class ) );
 		if ( ! class_exists( WooCommerceVariation::class ) ) {
@@ -174,16 +175,22 @@ final class WooCommerceProductTest extends TestCase {
 	 *
 	 * @param int    $id Product ID override.
 	 * @param string $type Product type override.
+	 * @param string $status Product status override.
+	 * @param string $catalog_visibility Catalog visibility override.
 	 * @param string $name Product name override.
 	 */
 	private function product(
 		int $id = 42,
 		string $type = 'simple',
+		string $status = 'publish',
+		string $catalog_visibility = 'visible',
 		string $name = 'Trail Shoe'
 	): WooCommerceProduct {
 		return new WooCommerceProduct(
 			id: $id,
 			type: $type,
+			status: $status,
+			catalogVisibility: $catalog_visibility,
 			name: $name,
 			shortDescription: 'Light trail shoe.',
 			description: 'Stable descriptive copy.',
