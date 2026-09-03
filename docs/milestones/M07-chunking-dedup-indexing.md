@@ -1,6 +1,6 @@
 # M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing
 
-Status: **IN PROGRESS — Tasks 1-3 complete; Task 4 review finding fixed and GREEN, pending fresh-session independent re-review.**
+Status: **IN PROGRESS — Tasks 1-3 complete; Task 4 second review finding fixed and GREEN, pending fresh-session independent re-review.**
 
 ## Goal
 Create deterministic normalized content/chunks with traceability, deduplication, hashes, and incremental reindex decisions.
@@ -39,7 +39,7 @@ Chunk records retain citation/source metadata, sequence/structural parent lineag
 - [x] Task 1 — Deterministic content normalization. **Complete: strict RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [x] Task 2 — Token budget/configuration contracts. **Complete: strict RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [x] Task 3 — Immutable chunk records and structure-aware splitting. **Complete: corrected genuine RED/GREEN, exact-head CI, independent fresh-session review clean.**
-- [ ] Task 4 — Deliberate bounded overlap. **Review finding fixed and exact-SHA GREEN; fresh-session independent re-review remains required.**
+- [ ] Task 4 — Deliberate bounded overlap. **Second independent-review finding fixed and exact-SHA GREEN; a new fresh-session independent re-review remains required.**
 - [ ] Task 5 — Compatibility-safe deduplication.
 - [ ] Task 6 — Incremental index planning.
 - [ ] Task 7 — Source-to-index-plan integration and milestone closeout.
@@ -81,12 +81,12 @@ Original GREEN:
 - CI `33796230348`: all permanent jobs passed; PHPUnit **280/280 / 1337 assertions**, PHPStan clean, Composer audit clean.
 - Same-session review `5105957190`: **0 Critical / 0 Important unresolved**, explicitly not independent.
 
-### Fresh-session independent review finding
+### First fresh-session independent review finding
 - Fresh-session review `5106144751`: **0 Critical / 1 Important**.
 - Finding: overlap capacity was measured through the injected `TokenCounter`, but that capacity was then treated as a count of lexical units. A counter whose budget units are larger than lexical units could therefore receive too much copied overlap and trigger final budget validation instead of reducing overlap.
 - This violated the approved Task 4 requirement to use injected counter/budget rules and preserve all original new content within `maxTokens`.
 
-### Review-fix TDD
+### First review-fix TDD
 - First review-regression test commit `2daf879f9dca2c2545721ba7f260b2c632d664cb` is **not counted as valid RED** because CI `33798621426` stopped at PHPCS before PHPUnit.
 - Corrected genuine review-fix RED: `4f5f04fc8a5e98ed34ba1806c19ed5839568159e` — `test: align injected overlap RED fixture`.
 - RED CI `33798780250`: PHPStan **No errors**; PHPUnit reached the intended behavior and reported **281 tests / 1337 assertions / 1 error**, exactly `ChunkingException: Chunk content violates the configured token budget` for the injected counter fixture.
@@ -94,12 +94,28 @@ Original GREEN:
 - GREEN CI `33799042113`: all permanent jobs passed (`php-quality`, `js-quality`, `package`, `wordpress-smoke`). PHPStan **No errors**; PHPUnit **281/281 tests / 1341 assertions**; Composer audit found no vulnerabilities.
 - Artifact `9910333596`, digest `sha256:200d6898db93c963fcb150ea268e30cb2dca395d381e984c50db2b7600c2fd36`.
 
-### Task 4 behavior after fix
+### Second fresh-session independent review finding
+- Fresh-session re-review `5106687305`: **0 Critical / 1 Important**.
+- Finding: the first fix enforced the final combined `maxTokens` bound but still interpreted `overlapTokens` as a lexical-unit limit. With an injected counter charging multiple budget units per lexical unit and spare capacity in the destination chunk, the copied overlap itself could exceed the configured `overlapTokens` budget.
+- This violated Task 4's explicit requirement that overlap is at most the configured token budget using the injected counter semantics.
+
+### Second review-fix TDD
+- Regression commit `a135dd8eb361b1c95722a927ba2a5b6ef7b6c258` / CI `33804508511` is **not counted as valid RED** because the newly added fixture expected punctuation that did not exist in the source paragraph. PHPUnit reached the test, but the fixture expectation itself was wrong.
+- Premature implementation commit `56b03b248e164ed3c118181c730bcbae7a47f74a` is therefore **not counted as valid GREEN evidence** for the corrected cycle.
+- Corrected genuine RED: `817839912b46022020e5019fb2d771d054799b83` — `test: correct injected overlap budget red`. Production overlap behavior was restored to the pre-fix state before this RED was verified.
+- RED CI `33804895198`: PHPStan **No errors**; PHPUnit **282 tests / 1343 assertions / 1 intended failure**. Expected bounded content `gamma delta one two three four five.` but old code produced `alpha beta gamma delta one two three four five.`, proving copied overlap exceeded the configured injected-counter budget.
+- GREEN fix: `68af1fc882ecee55d9e7c6282353a48ded3f3fc1` — `fix: bound overlap by injected counter`.
+- GREEN CI `33805024423`: all permanent jobs passed (`php-quality`, `js-quality`, `package`, `wordpress-smoke`); PHPStan **No errors**; PHPUnit **282/282 tests / 1344 assertions**; Composer audit found no vulnerabilities.
+- Artifact `9912573130`, digest `sha256:4d72466e2e2e754dd8de975cda84dfb9897b1f0d704850993c69ac7c0a570af3`.
+- Same-session post-fix review `5106763646`: **0 Critical / 0 Important unresolved**, explicitly not independent.
+
+### Task 4 behavior after second fix
 `StructureAwareChunker` performs one bounded overlap pass after base splitting and before hashes/records are finalized. It:
-- copies at most configured trailing Unicode lexical units from the prior **base** descriptor;
+- starts with a bounded trailing lexical-unit candidate from the prior **base** descriptor;
+- rejects/shrinks any overlap whose injected `TokenCounter` cost exceeds configured `overlapTokens`;
+- independently rejects/shrinks any combined overlap + original new content whose injected-counter cost exceeds `maxTokens`;
 - applies overlap only when adjacent descriptors have identical heading paths;
 - never crosses a section or separate document call;
-- starts from the configured/remaining overlap bound and reduces the candidate until the injected `TokenCounter` confirms `candidate + new content <= maxTokens`;
 - preserves all original new content;
 - computes final chunk hashes and token counts only after overlap settles;
 - does not feed already-overlapped output into the next overlap source, avoiding cascading growth;
@@ -109,29 +125,31 @@ Original GREEN:
 Tasks 1-4 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, alter visibility, or add queue/REST/hook execution paths. Unicode parsing remains fail-closed on invalid UTF-8.
 
 ## Performance Review
-Task 4 retains a single descriptor pass. Review-fix candidate reduction is bounded by configured `overlapTokens` (itself bounded to at most 25% of `maxTokens`), uses only the prior base descriptor, and does not recursively propagate overlap. Large-document integration/performance evidence remains a Task 7 requirement.
+Task 4 retains a single descriptor pass. Candidate reduction is bounded by configured `overlapTokens` (itself bounded to at most 25% of `maxTokens`), uses only the prior base descriptor, and does not recursively propagate overlap. The second fix adds one injected-counter call per attempted overlap candidate without introducing an unbounded loop. Large-document integration/performance evidence remains a Task 7 requirement.
 
 ## Code Review Findings
 - Task 1 independent review `5104488263`: **0 Critical / 0 Important unresolved**.
 - Task 2 independent review `5105069991`: **0 Critical / 0 Important unresolved**.
 - Task 3 independent review `5105859046`: **0 Critical / 0 Important unresolved**.
 - Task 4 same-session review `5105957190`: **0 Critical / 0 Important unresolved**, not independent.
-- Task 4 fresh-session review `5106144751`: **0 Critical / 1 Important**; finding fixed via regression TDD on `47f991ba738359738156f93072a146bfbee785ad`.
+- Task 4 first fresh-session review `5106144751`: **0 Critical / 1 Important**; finding fixed via regression TDD.
+- Task 4 second fresh-session re-review `5106687305`: **0 Critical / 1 Important**; finding fixed via corrected regression TDD on `68af1fc882ecee55d9e7c6282353a48ded3f3fc1`.
+- Task 4 same-session post-fix review `5106763646`: **0 Critical / 0 Important unresolved**, not independent.
 
 ## Active quality gate
-Task 4 is still not complete until a **new fresh-session independent re-review** inspects fixed GREEN code `47f991ba738359738156f93072a146bfbee785ad` and records **0 unresolved Critical / Important findings**. This session became the implementer after fixing review `5106144751`, so it must not self-certify the post-fix independent gate.
+Task 4 is still not complete until a **new fresh-session independent re-review** inspects fixed GREEN code `68af1fc882ecee55d9e7c6282353a48ded3f3fc1` and records **0 unresolved Critical / Important findings**. This session became the implementer after finding and fixing review `5106687305`, so it must not self-certify the post-fix independent gate.
 
-The next independent reviewer must verify the injected-counter fix, overlap bounds, same-parent isolation, original new-content retention, deterministic hashes/token counts, termination/performance, Unicode lexical slicing/fail-closed behavior, and absence of M08/M09/provider/network/persistence scope leakage. Task 5 must not begin before this gate closes.
+The next independent reviewer must verify both injected-counter bounds (`overlapTokens` and combined `maxTokens`), same-parent isolation, original new-content retention, deterministic hashes/token counts, bounded termination/performance, Unicode lexical slicing/fail-closed behavior, and absence of M08/M09/provider/network/persistence scope leakage. Task 5 must not begin before this gate closes.
 
 ## Known Limitations
 - Provider/model-exact tokenization remains intentionally deferred/injectable for M08.
 - Deduplication, incremental planning, and end-to-end pipeline composition remain Tasks 5-7.
 
 ## Documentation Updated
-This milestone ledger records the fresh-session Task 4 finding, its genuine regression RED, exact-SHA GREEN fix and remaining independent re-review gate. Draft PR #9 remains the active M07 integration PR.
+This milestone ledger records both fresh-session Task 4 findings, corrected TDD evidence, exact-SHA GREEN fixes, and the remaining independent re-review gate. Draft PR #9 remains the active M07 integration PR.
 
 ## Exact next unfinished action
-Perform a **fresh-session independent re-review of Task 4** anchored to fixed GREEN `47f991ba738359738156f93072a146bfbee785ad` / CI `33799042113`. If that review records 0 unresolved Critical/Important findings, mark Task 4 complete in both durable ledgers and only then begin **Task 5 — Compatibility-safe deduplication** with a genuine test-only RED.
+Perform a **fresh-session independent re-review of Task 4** anchored to fixed GREEN `68af1fc882ecee55d9e7c6282353a48ded3f3fc1` / CI `33805024423`. If that review records 0 unresolved Critical/Important findings, mark Task 4 complete in both durable ledgers and only then begin **Task 5 — Compatibility-safe deduplication** with a genuine test-only RED.
 
 ## Completion Checklist
 All remaining mandatory gates remain required before M07 completion: Task 4 independent re-review, Tasks 5-7 genuine TDD and independent reviews, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
