@@ -26,11 +26,12 @@ final class StructureAwareChunkerInjectedCounterTest extends TestCase {
 	 * Overlap shrinks to the actual remaining budget reported by an injected counter.
 	 */
 	public function test_overlap_respects_injected_counter_budget_units(): void {
-		$counter = new class() implements TokenCounter {
+		$counter     = new class() implements TokenCounter {
 			/**
 			 * Count each lexical unit as two budget units.
 			 *
 			 * @param string $text Text to count.
+			 * @throws RuntimeException When the fixture is invalid UTF-8.
 			 */
 			public function count( string $text ): int {
 				$matched = preg_match_all( '/[\p{L}\p{N}]+|[^\s\p{L}\p{N}]/u', $text );
@@ -41,7 +42,7 @@ final class StructureAwareChunkerInjectedCounterTest extends TestCase {
 				return $matched * 2;
 			}
 		};
-		$chunker = new StructureAwareChunker(
+		$chunker     = new StructureAwareChunker(
 			$counter,
 			new ChunkingConfig( 32, 4, 'm07-v1', null )
 		);
