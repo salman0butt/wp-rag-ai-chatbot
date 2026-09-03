@@ -262,16 +262,26 @@ final readonly class WooCommerceProduct {
 	}
 
 	/**
-	 * Normalize variation order deterministically.
+	 * Normalize variation order deterministically and reject duplicate identity.
 	 *
 	 * @param array<int, WooCommerceVariation> $variations Raw variations.
 	 * @return array<int, WooCommerceVariation>
+	 * @throws InvalidArgumentException When a variation ID appears more than once.
 	 */
 	private static function normalizeVariations( array $variations ): array {
 		usort(
 			$variations,
 			static fn ( WooCommerceVariation $left, WooCommerceVariation $right ): int => $left->id <=> $right->id
 		);
+
+		$previous_id = null;
+		foreach ( $variations as $variation ) {
+			if ( $previous_id === $variation->id ) {
+				throw new InvalidArgumentException( 'WooCommerce variation IDs must be unique within a product snapshot.' );
+			}
+			$previous_id = $variation->id;
+		}
+
 		return $variations;
 	}
 }
