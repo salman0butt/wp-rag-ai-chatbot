@@ -1,6 +1,6 @@
 # M05 — File/Document Ingestion
 
-Status: IN PROGRESS — Tasks 1–3 complete; Tasks 4–7 remain.
+Status: IN PROGRESS — Tasks 1–4 complete; Tasks 5–7 remain.
 
 ## Goal
 Safely extract and normalize supported document/file formats into canonical Documents.
@@ -29,7 +29,7 @@ Each supported format has success/failure fixtures; spoofed/oversized/malformed 
 - [x] Task 1 — Extraction contracts and registry.
 - [x] Task 2 — File validation policy.
 - [x] Task 3 — Core text extractors.
-- [ ] Task 4 — PDF and DOCX parser adapters.
+- [x] Task 4 — PDF and DOCX parser adapters.
 - [ ] Task 5 — File knowledge source and bootstrap.
 - [ ] Task 6 — Real WordPress file-ingestion smoke coverage.
 - [ ] Task 7 — Integration, security review, documentation, and merge.
@@ -95,22 +95,36 @@ A final bounded second pass then found one additional Important XML correctness 
 - XML review-fix GREEN: `442063e463885cde958ceec47cd991c01ac4d917`, CI `33698452380`; PHPStan no errors; PHPUnit **204 / 1009**, all passing; Composer audit clean.
 - Final Task 3 second pass: **0 Critical / 0 Important** remaining findings.
 
+## Task 4 Implementation
+Task 4 adds isolated `smalot/pdfparser` and `phpoffice/phpword` adapters plus parser-specific resource guards:
+- `PdfDocumentExtractor` owns `application/pdf`, extracts deterministic visible text, rejects malformed/encrypted PDFs through the stable `ExtractionException` boundary, caps parsed pages at 200 and normalized output at 2 MiB by default, caps compressed-stream decode memory at 8 MiB by default, and disables retained image content to reduce parser memory pressure.
+- `DocxArchiveInspector` inspects the ZIP container before PHPWord sees it, with defaults of 1,000 entries and 20 MiB aggregate uncompressed bytes.
+- `DocxDocumentExtractor` owns the DOCX MIME type, runs the archive inspector first, loads through PHPWord's Word2007 reader, recursively collects visible text, and normalizes malformed/parser failures without leaking file paths.
+- Package assertions require parser runtime files while pruning development-only dependency files from the distributable plugin archive.
+
+### Task 4 TDD / Review Evidence
+- The recovered Task 4 history contains test-first parser/resource regressions and implementation/package commits before this closeout. The PDF resource regression commit `12a1c5718e6b7568bdf3f7ffce9e7e12ecb69c45` added page/text ceiling tests before the corresponding bounded constructor behavior; subsequent quality-only test commits converged before implementation commits `070dd5dc...` / `bcc4417b...`. Earlier adapter tests also cover valid/malformed/encrypted PDF, valid/malformed DOCX, MIME ownership, and DOCX ZIP entry/uncompressed-size limits.
+- Independent Task 4 security/performance second pass found **0 Critical / 1 Important** issue: page/text ceilings were checked only after `parseFile()`/text decoding, so a hostile compressed stream could consume parser-side decode memory before those post-parse checks applied.
+- Review-fix behavioral RED: `15863a76e7d9358a486e310a6f60ef06a921467c`, CI `33708944268`; PHPStan reported no errors, then PHPUnit executed **216 tests / 1050 assertions / 4 failures**, all exactly caused by the intentionally missing public `maxDecodeBytes` parser-limit contract.
+- Review-fix GREEN: `0b5f99da94316a091e7e33711808bc774a7ad25f`, CI `33709090219`; PHPStan no errors; PHPUnit **216 / 1053**, Composer audit reported no security advisories, JS quality passed, package/assertion/artifact upload passed, and WordPress activation/database/provider/knowledge smoke passed.
+- Green artifact: `9876293491`, **700,875 bytes**, digest `sha256:4288efcad7b7bbaffbcc5a0f5731734992cee6437c3bc8e47cca08dd0f8957cf`.
+- Dependency review from the committed lock file: `phpoffice/phpword 1.4.0` is `LGPL-3.0-only`; `smalot/pdfparser v2.12.5` is `LGPL-3.0`; transitive `phpoffice/math 0.3.0` is MIT. Composer audit is clean at the Task 4 GREEN SHA.
+- Final Task 4 second pass after the decode-memory fix: **0 Critical / 0 Important** remaining findings. PR #6 has no submitted reviews or unresolved review threads at closeout.
+
 ## Integration Test Evidence
-Tasks 1–3 are PHP-domain/filesystem/parser boundaries. Existing WordPress activation/database/provider/knowledge smoke remains the permanent regression gate. Dedicated real WordPress file-ingestion smoke is Task 6 after PDF/DOCX and source/bootstrap wiring exist.
+Tasks 1–4 are PHP-domain/filesystem/parser boundaries. Existing WordPress activation/database/provider/knowledge smoke remains the permanent regression gate and is green on Task 4 implementation SHA `0b5f99da...`. Dedicated real WordPress file-ingestion smoke is Task 6 after source/bootstrap wiring exists.
 
 ## E2E / Visual Verification
-No M05 upload UI exists in Tasks 1–3; visual verification is not applicable.
+No M05 upload UI exists through Task 4; visual verification is not applicable.
 
 ## Security Review
-Through Task 3, the boundary fails closed for nonexistent/non-regular/unreadable candidates, empty files, files over the configured/default 10 MiB ceiling, unsupported extensions, extension/MIME disagreement, invalid allowed roots, canonical path/symlink escape, failed MIME detection/hashing, binary/null-byte text, malformed/deep JSON, malformed/deep XML, XML `DOCTYPE`/external entity declarations, and excessive HTML/CSV structure. HTML/XML use libxml network-disabled parsing. No shell execution, remote fetch, OCR, macro execution, or arbitrary archive extraction is introduced.
-
-PDF/DOCX parser-library security, archive inspection, password protection, and decompression/resource limits remain mandatory in Task 4.
+Through Task 4, the boundary fails closed for nonexistent/non-regular/unreadable candidates, empty files, files over the configured/default 10 MiB ceiling, unsupported extensions, extension/MIME disagreement, invalid allowed roots, canonical path/symlink escape, failed MIME detection/hashing, binary/null-byte text, malformed/deep JSON, malformed/deep XML, XML `DOCTYPE`/external entity declarations, excessive HTML/CSV structure, malformed/encrypted PDF, excessive PDF page/text/decode-memory use, malformed DOCX, and excessive DOCX ZIP entry/uncompressed-byte counts. HTML/XML use libxml network-disabled parsing. No shell execution, remote fetch, OCR, macro execution, or arbitrary archive extraction is introduced.
 
 ## Accessibility Review where UI exists
-No UI exists in Tasks 1–3; not applicable.
+No UI exists in Tasks 1–4; not applicable.
 
 ## Performance Review where relevant
-Validation constrains files to <=10 MiB by default before parser dispatch. Task 3 adds deterministic parser ceilings: HTML <=5,000 elements, CSV <=1,000 rows and <=100 columns, JSON depth <=64, XML depth <=64. PDF/DOCX parser resource controls are Task 4.
+Validation constrains files to <=10 MiB by default before parser dispatch. Core parser ceilings remain HTML <=5,000 elements, CSV <=1,000 rows and <=100 columns, JSON depth <=64, XML depth <=64. PDF adds <=200 pages, <=2 MiB normalized text, and <=8 MiB compressed-stream decode memory by default with image-content retention disabled. DOCX adds <=1,000 ZIP entries and <=20 MiB aggregate uncompressed bytes before PHPWord parsing.
 
 ## Fresh Verification Commands
 Authoritative CI executes:
@@ -123,22 +137,17 @@ Authoritative CI executes:
 - package build/assertion/artifact upload
 - WordPress activation/database/provider/knowledge smoke
 
-## Commits Added for Task 3
-- `c8af88a5...` — initial Task 3 test-only WPCS iteration; not behavioral RED.
-- `5379d8b4...` — valid primary behavioral RED.
-- `3490f021...` — initial core extractor implementation; WPCS blocked GREEN.
-- `1878c288...` — coding-standard corrections.
-- `87dd33be...` — static-type corrections / initial PHP GREEN.
-- `cd41be2c...` — HTML/Markdown review regression RED.
-- `97d6bd39...` — generic visible HTML behavior fix.
-- `350079a2...` — HTML coding-standard correction.
-- `383a5a25...` — HTML static-type correction / review-fix PHP GREEN.
-- `4f0adcd9...` — XML mixed-content review test; WPCS-only iteration, not behavioral RED.
-- `89d0eaf4...` — valid XML mixed-content review RED.
-- `442063e4...` — XML mixed-content review fix / GREEN.
+## Commits Added for Task 4 Closeout
+Task 4 spans the recovered adapter/dependency/package sequence plus the final review-fix pair. Key closeout commits are:
+- `12a1c571...` — PDF page/text resource regression tests.
+- `070dd5dc...`, `bcc4417b...` — bounded PDF implementation iterations.
+- `b23cca26...`, `b8bd4ed3...`, `b16800c5...` — parser-runtime package assertions and package pruning corrections.
+- `017a3a43...` — prior exact-head standards correction with green CI.
+- `15863a76...` — decode-memory review regression / valid behavioral RED.
+- `0b5f99da...` — decode-memory implementation / Task 4 review-fix GREEN.
 
 ## Known Limitations
-Tasks 1–3 intentionally do not add PDF/DOCX parser dependencies/adapters, register a `file` knowledge source, or provide real WordPress file-ingestion smoke. PDF/DOCX adapters are Task 4; source/bootstrap and smoke are Tasks 5–6; whole-milestone reconciliation/security/review/merge is Task 7. These remain mandatory before M05 can merge.
+Tasks 1–4 intentionally do not yet register a `file` knowledge source or provide real WordPress file-ingestion smoke. Source/bootstrap and smoke are Tasks 5–6; whole-milestone reconciliation/security/review/merge is Task 7. These remain mandatory before M05 can merge.
 
 ## Documentation Updated
 - `docs/superpowers/specs/2026-09-03-m05-file-document-ingestion-design.md`
@@ -147,10 +156,10 @@ Tasks 1–3 intentionally do not add PDF/DOCX parser dependencies/adapters, regi
 - `docs/progress/STATUS.md` is the global handoff ledger.
 
 ## Completion Checklist
-M05 is not complete. Tasks 1–3 are complete once the final documentation-head CI is green; Tasks 4–7 and final milestone review/integration gates remain.
+M05 is not complete. Tasks 1–4 are complete once this documentation-head CI is green; Tasks 5–7 and final milestone review/integration gates remain.
 
 ## Exact Next Unfinished Action
-Execute **Task 4 — PDF and DOCX parser adapters** with strict TDD. Add tests/fixtures first for valid extraction, malformed failure normalization, unsupported/password-protected PDF behavior, and DOCX archive entry/uncompressed-size resource limits; capture genuine behavioral RED before dependencies/adapters exist; then add PHP 8.2-compatible `smalot/pdfparser` and `phpoffice/phpword`, keep both libraries behind small adapters, inspect DOCX ZIP resources before PHPWord parsing, normalize parser errors without leaking paths, run Composer audit/full verification/package/permanent CI, and record dependency license/security review evidence.
+Execute **Task 5 — File knowledge source and bootstrap** with strict TDD. Add tests first for the file-source contract, validation → extractor-registry dispatch → canonical `DocumentRecord` normalization, deterministic source keys/version/hash/metadata, unsupported or invalid input failures, and bootstrap registration; capture genuine behavioral RED before production wiring, then implement the minimum source/bootstrap integration, run focused/full GREEN plus independent review, update durable evidence, and require all permanent CI jobs green on the exact final SHA before Task 6.
 
 ## Next Milestone
 M06 — WooCommerce Knowledge Ingestion, only after genuine M05 completion and post-merge `main` verification.
