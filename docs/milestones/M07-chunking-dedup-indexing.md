@@ -1,6 +1,6 @@
 # M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing
 
-Status: **IN PROGRESS — Tasks 1 complete; Task 2 implementation/exact-code-head CI green with independent fresh-session review pending.**
+Status: **IN PROGRESS — Tasks 1-3 complete; Task 4 next.**
 
 ## Goal
 Create deterministic normalized content/chunks with traceability, deduplication, hashes, and incremental reindex decisions.
@@ -36,107 +36,89 @@ Chunk records retain citation/source metadata, sequence/structural parent lineag
 - Retrieved/document content remains untrusted literal data and is never interpreted as executable instructions.
 
 ## Tasks
-- [x] Task 1 — Deterministic content normalization. **Complete: strict RED/GREEN, exact-head CI, and independent fresh-session review clean.**
-- [ ] Task 2 — Token budget/configuration contracts. **Implementation + exact-code-head CI green; independent fresh-session review pending.**
-- [ ] Task 3 — Immutable chunk records and structure-aware splitting.
+- [x] Task 1 — Deterministic content normalization. **Complete: strict RED/GREEN, exact-head CI, independent fresh-session review clean.**
+- [x] Task 2 — Token budget/configuration contracts. **Complete: strict RED/GREEN, exact-head CI, independent fresh-session review clean.**
+- [x] Task 3 — Immutable chunk records and structure-aware splitting. **Complete: corrected genuine RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [ ] Task 4 — Deliberate bounded overlap.
 - [ ] Task 5 — Compatibility-safe deduplication.
 - [ ] Task 6 — Incremental index planning.
 - [ ] Task 7 — Source-to-index-plan integration and milestone closeout.
 
 ## Task 1 durable evidence
-Task 1 introduces only `ContentNormalizer`, a WordPress-independent canonical whitespace normalizer. It converts CRLF/lone CR to LF, removes only a leading UTF-8 BOM, strips trailing horizontal spaces/tabs per line, collapses runs of three or more line feeds to two, trims document-edge spaces/tabs/newlines, and otherwise preserves literal content including prompt-like/HTML-like/shortcode/PHP-like text.
+- RED `3e34a6d1125592a256463c3e75ee9406fa3e5e3a`; CI `33775003445`: PHPStan clean; PHPUnit 263 tests / 1252 assertions / 7 intended missing-class failures.
+- GREEN `de41fd281d95f2a367df163ea66d8713357b8a14`; CI `33775193798`: all permanent jobs passed; PHPUnit 263 / 1252; Composer audit clean.
+- Independent fresh-session review `5104488263`: **0 Critical / 0 Important unresolved**.
 
-### Task 1 RED
-- Test-only commit: `3e34a6d1125592a256463c3e75ee9406fa3e5e3a` — `test: define M07 content normalization behavior`.
-- CI: `33775003445`.
-- PHPStan: **clean** before PHPUnit.
-- PHPUnit: **263 tests / 1252 assertions / 7 expected failures**.
-- Every failure was a new `ContentNormalizerTest` behavior and failed exactly with `ContentNormalizer class does not exist yet.`
-
-### Task 1 GREEN / review
-- Minimal production commit: `de41fd281d95f2a367df163ea66d8713357b8a14` — `feat: add deterministic content normalizer`.
-- Exact-code-head CI: `33775193798` — all permanent jobs passed.
-- PHPStan clean; PHPUnit **263 tests / 1252 assertions**, all passed; Composer audit clean.
-- Artifact: `9901292022`, 712652 bytes, digest `sha256:1457cf8e2c625978959806ceb0e75c2409460a2ac3db4ad03e738de78873c552`.
-- Same-session review `5104040492`: **0 Critical / 0 Important unresolved**, explicitly not independent.
-- Independent fresh-session review `5104488263`: **0 Critical / 0 Important unresolved**. It re-reviewed normalization semantics and exact-head GitHub evidence from repository state rather than relying on conversational state.
-- Fresh documentation-head CI observed during that review: `33775697649` on `8493eec0843b3b85058ffa73f3300fee770eb1c5`, all permanent jobs green; artifact `9901483331`, digest `sha256:b8ea69a97149a7554809f4d83e1df8bc4ffb8d5b8fee88546d7b042067a5aabe`.
+Task 1 introduces only `ContentNormalizer`, a WordPress-independent canonical whitespace normalizer. It converts CRLF/lone CR to LF, removes only a leading UTF-8 BOM, strips trailing horizontal spaces/tabs per line, collapses runs of three or more line feeds to two, trims document-edge whitespace, and otherwise preserves literal untrusted text.
 
 ## Task 2 durable evidence
-Task 2 introduces provider-independent chunk-budget contracts only:
-- `TokenCounter` exposes deterministic `count(string): int` behavior.
-- `LexicalTokenCounter` counts Unicode letter/number runs plus individual non-whitespace punctuation/symbol units and fails closed on invalid UTF-8.
-- immutable `ChunkingConfig` validates `maxTokens` 32..4096, overlap >=0 and <=25% of max, non-blank chunking version, and a null-or-non-blank embedding compatibility key.
-- `ChunkingConfig::fingerprint()` reuses canonical `DocumentHasher` SHA-256 hashing and includes every compatibility input.
+- RED `220bffa181cb4a32490f6fa35b3be6904ae790d6`; CI `33780572899`: PHPStan clean; PHPUnit 272 tests / 1261 assertions / 9 intended missing-contract failures.
+- GREEN `f802bed14cc1887c219b4ac1058236ded114224c`; CI `33780799386`: all permanent jobs passed; PHPUnit 272 / 1276; Composer audit clean.
+- Artifact `9903483875`, digest `sha256:f06d0f169bf7fa74718f976a3d63f05b3285347e2a45c24245c74c5a6138d388`.
+- Independent fresh-session review `5105069991`: **0 Critical / 0 Important unresolved**.
 
-### Task 2 RED
-- Test-only commit: `220bffa181cb4a32490f6fa35b3be6904ae790d6` — `test: define M07 token budget contracts`.
-- PR CI: `33780572899`.
-- PHPStan: **clean** before PHPUnit.
-- PHPUnit: **272 tests / 1261 assertions / 9 expected failures**.
-- Five failures were exactly `ChunkingConfig class does not exist yet.` and four were exactly `TokenCounter/LexicalTokenCounter contracts do not exist yet.`
-- No Task 2 production file existed in the RED commit.
+Task 2 adds provider-independent `TokenCounter`, deterministic Unicode `LexicalTokenCounter`, and immutable validated `ChunkingConfig`. It introduces no provider, network, persistence, embedding, vector, queue, hook, REST, or WordPress execution behavior.
 
-### Task 2 GREEN
-- Minimal production commit: `f802bed14cc1887c219b4ac1058236ded114224c` — `feat: add M07 token budget contracts`.
-- Exact-code-head PR CI: `33780799386` — **all permanent jobs passed**.
-- PHPStan: clean across 106 analyzed files.
-- PHPUnit: **272 / 272 tests, 1276 assertions**, all passed.
-- Composer audit: no security vulnerability advisories.
-- `php-quality`, `js-quality`, `package`, and `wordpress-smoke`: all passed, including activation, database, providers, knowledge, file-ingestion, and WooCommerce knowledge smoke coverage.
-- Artifact: `9903483875`, 714589 bytes, digest `sha256:f06d0f169bf7fa74718f976a3d63f05b3285347e2a45c24245c74c5a6138d388`.
-- Same-session Task 2 review `5104539329`: **0 Critical / 0 Important unresolved**, explicitly **not independent**.
+## Task 3 durable evidence
+### Corrected RED
+The first Task 3 test attempt is deliberately not counted as valid RED because PHPCS stopped before PHPUnit. All prematurely added Task 3 production files were removed before the corrected test-only RED.
 
-## Active quality gate
-Task 2 is **not complete** until a genuinely independent fresh-session review reports **0 Critical / 0 Important unresolved**. Task 3 must not begin before that gate.
+- Valid corrected RED: `7dc00a29dfa4db8a7f7f627cdd6fa9c1c587b442` — `test: make M07 Task 3 RED fixtures quality-clean`.
+- RED CI `33793246971`: PHPCS clean; PHPStan clean; PHPUnit **277 tests / 1281 assertions / 5 intended failures**, solely because `ChunkRecord` / `StructureAwareChunker` did not exist.
+
+### GREEN lineage
+- `6cb199122e788d574e2014d7e8d00b1166694ea1` — immutable `ChunkRecord`.
+- `6e8ba2a82248519d4fc4fbe0aa1ca36d9f52d622` — `ChunkingException`.
+- `068f16a54b75d52835a6d7ab334ab00d1b4ea083` — `StructureAwareChunker`.
+- `e1dba40c194a4f7204cbaec7042ca4896b42b755` — PHPCS-only alignment correction.
+- `ea025c5038857a1c43ff549fe0b5980fa79243b2` — statically explicit paragraph parser after PHPStan identified the by-reference closure dataflow problem.
+- Final Task 3-only code head: `3b223cc22c41e35bbc3599f717606232ea976587`.
+
+A same-session review briefly explored configured overlap. Re-reading the approved plan confirmed overlap belongs to Task 4 and Task 4 may not begin before Task 3 independent review. That exploratory overlap test/implementation was fully reverted; current Task 3 behavior contains no Task 4 overlap implementation.
+
+### Verification / review
+- Pre-review documentation head: `d227e804971e6a5cc40e5fdba8174e0d6a463614`.
+- Exact-head CI `33794954967`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed.
+- Same-session review `5105805077`: **0 Critical / 0 Important unresolved**, explicitly not independent.
+- Independent fresh-session review `5105859046`: **0 Critical / 0 Important unresolved**.
+
+The independent review covered readonly chunk state, exact source/document lineage fields, empty/tiny inputs, ATX heading lineage, blank-line paragraphs, sentence fallback, Unicode lexical fallback, code-point-safe final fallback, deterministic zero-based sequence, deterministic parent/chunk/content hashing via `DocumentHasher`, copied source metadata/language/visibility/URL/version/content lineage, configured token bounds, repeated-call determinism, untrusted-content non-execution, and absence of M08/M09/provider/network/persistence scope leakage.
 
 ## Security Review
-Tasks 1-2 remain pure PHP and WordPress-independent. They do not parse or execute retrieved content, make provider/network calls, touch credentials, fetch URLs, persist data, write vectors, alter visibility, or add queue/REST/hook execution paths. Invalid UTF-8 token input fails closed with `DomainException`.
+Tasks 1-3 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, alter visibility, or add queue/REST/hook execution paths. Invalid UTF-8 token input fails closed through the token-counting contract.
 
 ## Performance Review
-Task 1 performs bounded linear normalization passes. Task 2 token counting performs one Unicode regex pass. Configuration validation and fingerprinting are bounded constant-size operations. No network/runtime dependency is introduced.
+Task 1 performs bounded linear normalization passes. Task 2 token counting performs deterministic Unicode regex scanning. Task 3 parses lines and bounded recursive fallbacks without whole-document search or external calls. Large-document integration/performance evidence remains a Task 7 requirement.
 
 ## Code Review Findings
-- Task 1 independent review `5104488263`: **0 Critical / 0 Important unresolved** — Task 1 complete.
-- Task 2 same-session review `5104539329`: **0 Critical / 0 Important unresolved**, but independent review remains pending by policy.
+- Task 1 independent review `5104488263`: **0 Critical / 0 Important unresolved**.
+- Task 2 independent review `5105069991`: **0 Critical / 0 Important unresolved**.
+- Task 3 independent review `5105859046`: **0 Critical / 0 Important unresolved**.
 
-## Fresh Verification Results
-- Task 1 RED CI `33775003445`; GREEN CI `33775193798`; independent-review documentation-head CI `33775697649` green.
-- Task 2 RED CI `33780572899`: intended nine missing-contract behavior failures after clean PHPStan.
-- Task 2 GREEN CI `33780799386`: all four permanent jobs passed; PHPUnit 272/272 and Composer audit clean.
+## Active quality gate
+Tasks 1-3 are complete. Task 4 may begin only with a genuine test-only RED on the active branch.
 
-## Commits
-- `3f74b5564303b08caedb112a5c275614ce2413bd` — M07 design/spec.
-- `6e9cc106bc26963073ba7b02867bda4f5e1af231` — M07 implementation plan.
-- `3e34a6d1125592a256463c3e75ee9406fa3e5e3a` — Task 1 behavioral RED tests.
-- `de41fd281d95f2a367df163ea66d8713357b8a14` — Task 1 minimal GREEN implementation.
-- `220bffa181cb4a32490f6fa35b3be6904ae790d6` — Task 2 behavioral RED tests.
-- `f802bed14cc1887c219b4ac1058236ded114224c` — Task 2 minimal GREEN implementation.
+Task 4 RED must prove:
+- configured overlap is bounded by `overlapTokens`;
+- total output remains within `maxTokens`;
+- overlap occurs only between adjacent chunks sharing the same structural parent;
+- overlap never crosses section/document boundaries;
+- every overlapped chunk contains new content and the algorithm terminates deterministically.
 
-## Files Changed so far
-- `docs/superpowers/specs/2026-09-03-m07-chunking-dedup-indexing-design.md`
-- `docs/superpowers/plans/2026-09-03-m07-chunking-dedup-indexing.md`
-- `tests/Unit/Indexing/Normalization/ContentNormalizerTest.php`
-- `src/Indexing/Normalization/ContentNormalizer.php`
-- `tests/Unit/Indexing/Chunking/LexicalTokenCounterTest.php`
-- `tests/Unit/Indexing/Chunking/ChunkingConfigTest.php`
-- `src/Indexing/Chunking/TokenCounter.php`
-- `src/Indexing/Chunking/LexicalTokenCounter.php`
-- `src/Indexing/Chunking/ChunkingConfig.php`
+Only after the test-only SHA reaches intended PHPUnit failures after clean style/static-analysis gates may `StructureAwareChunker` be modified for overlap.
 
 ## Known Limitations
 - Provider/model-exact tokenization remains intentionally deferred/injectable for M08.
-- Tasks 3-7 are not implemented.
+- Overlap, deduplication, incremental planning, and end-to-end pipeline composition remain Tasks 4-7.
 
 ## Documentation Updated
-This ledger and `docs/progress/STATUS.md` carry the durable fresh-session handoff. Draft PR #9 tracks the active milestone branch.
+This milestone ledger and `docs/progress/STATUS.md` carry the durable fresh-session handoff. Draft PR #9 tracks the active milestone branch.
 
 ## Exact next unfinished action
-Independently review Task 2 from RED `220bffa181cb4a32490f6fa35b3be6904ae790d6` through GREEN `f802bed14cc1887c219b4ac1058236ded114224c` and the following documentation head. Focus on Unicode lexical-unit semantics, invalid-UTF-8 failure behavior, config bounds, exact 25% overlap edge behavior, immutability, deterministic/canonical fingerprinting, embedding compatibility identity, and absence of M08/M09/provider/network/persistence leakage. Route any Critical/Important behavioral finding through regression TDD and exact-head GREEN CI. Only after a clean independent review may Task 2 be checked complete and Task 3 begin with a genuine test-only RED commit.
+Begin **Task 4 — Deliberate bounded overlap** by adding only the approved overlap regression fixtures to `tests/Unit/Indexing/Chunking/StructureAwareChunkerTest.php`, commit that test-only state, and verify exact-SHA RED. Do not modify production chunker behavior before that RED evidence exists.
 
 ## Completion Checklist
-All mandatory gates remain required before M07 completion: every task TDD, independent review, full exact-final-SHA CI, durable docs, PR merge, and fresh post-merge `main` CI.
+All remaining mandatory gates remain required before M07 completion: Tasks 4-7 genuine TDD, independent review after each behavior task, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
 
 ## Next Milestone
 M08 — Embeddings & Vector Stores.
