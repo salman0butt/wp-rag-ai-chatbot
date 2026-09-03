@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Documents\Extraction;
 
 use InvalidArgumentException;
+use Smalot\PdfParser\Config;
 use Smalot\PdfParser\Parser;
 use Throwable;
 
@@ -17,8 +18,9 @@ use Throwable;
  * Extracts visible text from validated PDF files through a stable boundary.
  */
 final readonly class PdfDocumentExtractor implements DocumentExtractor {
-	private const DEFAULT_MAX_PAGES      = 200;
-	private const DEFAULT_MAX_TEXT_BYTES = 2097152;
+	private const DEFAULT_MAX_PAGES        = 200;
+	private const DEFAULT_MAX_TEXT_BYTES   = 2097152;
+	private const DEFAULT_MAX_DECODE_BYTES = 8388608;
 
 	/**
 	 * Maximum parsed pages.
@@ -34,24 +36,34 @@ final readonly class PdfDocumentExtractor implements DocumentExtractor {
 	 */
 	private int $max_text_bytes;
 
+	/**
+	 * Maximum bytes used while decoding compressed PDF streams.
+	 *
+	 * @var int
+	 */
+	private int $max_decode_bytes;
+
 	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Public argument names are fixed by the Task 4 regression contract and PHP named-argument compatibility.
 	/**
 	 * Configure bounded PDF extraction.
 	 *
 	 * @param int $maxPages Maximum parsed pages.
 	 * @param int $maxTextBytes Maximum normalized extracted-text bytes.
+	 * @param int $maxDecodeBytes Maximum bytes used while decoding compressed PDF streams.
 	 * @throws InvalidArgumentException When limits are not positive.
 	 */
 	public function __construct(
 		int $maxPages = self::DEFAULT_MAX_PAGES,
-		int $maxTextBytes = self::DEFAULT_MAX_TEXT_BYTES
+		int $maxTextBytes = self::DEFAULT_MAX_TEXT_BYTES,
+		int $maxDecodeBytes = self::DEFAULT_MAX_DECODE_BYTES
 	) {
-		if ( $maxPages <= 0 || $maxTextBytes <= 0 ) {
+		if ( $maxPages <= 0 || $maxTextBytes <= 0 || $maxDecodeBytes <= 0 ) {
 			throw new InvalidArgumentException( 'PDF extraction limits must be positive.' );
 		}
 
-		$this->max_pages      = $maxPages;
-		$this->max_text_bytes = $maxTextBytes;
+		$this->max_pages        = $maxPages;
+		$this->max_text_bytes   = $maxTextBytes;
+		$this->max_decode_bytes = $maxDecodeBytes;
 	}
 	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
 
@@ -78,7 +90,11 @@ final readonly class PdfDocumentExtractor implements DocumentExtractor {
 				throw new ExtractionException( 'PDF extraction failed.' );
 			}
 
-			$document = ( new Parser() )->parseFile( $file->path );
+			$config = new Config();
+			$config->setDecodeMemoryLimit( $this->max_decode_bytes );
+			$config->setRetainImageContent( false );
+
+			$document = ( new Parser( array(), $config ) )->parseFile( $file->path );
 			if ( count( $document->getPages() ) > $this->max_pages ) {
 				throw new ExtractionException( 'PDF extraction failed.' );
 			}
