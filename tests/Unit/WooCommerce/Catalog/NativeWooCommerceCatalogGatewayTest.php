@@ -206,7 +206,7 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 			array( 103, 101 ),
 			'2026-09-03T09:00:00+00:00'
 		);
-		$blue = new NativeGatewayProductStub(
+		$blue   = new NativeGatewayProductStub(
 			'publish',
 			'variation',
 			'visible',
@@ -220,9 +220,12 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 			array(),
 			array(),
 			'2026-09-03T09:00:00+00:00',
-			array( 'Color' => 'Blue', 'Size' => 'M' )
+			array(
+				'Color' => 'Blue',
+				'Size'  => 'M',
+			)
 		);
-		$red = new NativeGatewayProductStub(
+		$red    = new NativeGatewayProductStub(
 			'publish',
 			'variation',
 			'visible',
@@ -236,7 +239,10 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 			array(),
 			array(),
 			'2026-09-03T09:00:00+00:00',
-			array( 'Color' => 'Red', 'Size' => 'L' )
+			array(
+				'Color' => 'Red',
+				'Size'  => 'L',
+			)
 		);
 
 		Functions\when( 'wc_get_products' )->justReturn( array() );
@@ -256,10 +262,22 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		self::assertCount( 2, $snapshot->variations );
 		self::assertSame( 101, $snapshot->variations[0]->id );
 		self::assertSame( 'SHIRT-BLUE', $snapshot->variations[0]->sku );
-		self::assertSame( array( 'Color' => 'Blue', 'Size' => 'M' ), $snapshot->variations[0]->attributes );
+		self::assertSame(
+			array(
+				'Color' => 'Blue',
+				'Size'  => 'M',
+			),
+			$snapshot->variations[0]->attributes
+		);
 		self::assertSame( 103, $snapshot->variations[1]->id );
 		self::assertSame( 'SHIRT-RED', $snapshot->variations[1]->sku );
-		self::assertSame( array( 'Color' => 'Red', 'Size' => 'L' ), $snapshot->variations[1]->attributes );
+		self::assertSame(
+			array(
+				'Color' => 'Red',
+				'Size'  => 'L',
+			),
+			$snapshot->variations[1]->attributes
+		);
 		self::assertFalse( property_exists( $snapshot->variations[0], 'price' ) );
 		self::assertFalse( property_exists( $snapshot->variations[0], 'stockStatus' ) );
 	}
