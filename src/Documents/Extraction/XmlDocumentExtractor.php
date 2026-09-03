@@ -11,8 +11,7 @@ namespace WpRagAiChatbot\Documents\Extraction;
 
 use DOMDocument;
 use DOMElement;
-use DOMNode;
-use DOMXPath;
+use DOMText;
 
 /**
  * Extracts bounded XML text without entity or network expansion.
@@ -32,7 +31,7 @@ final class XmlDocumentExtractor implements DocumentExtractor {
 	// phpcs:enable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
 
 	/**
-	 * Extract deterministic XML leaf text.
+	 * Extract deterministic XML text.
 	 *
 	 * @param ValidatedFile $file Validated local file.
 	 * @throws ExtractionException When the validated file cannot be safely extracted.
@@ -65,19 +64,14 @@ final class XmlDocumentExtractor implements DocumentExtractor {
 		}
 		$this->assertDepth( $root, 1 );
 
-		$xpath = new DOMXPath( $document );
-		$nodes = $xpath->query( '//*[not(*)]' );
-		if ( false === $nodes ) {
-			throw new ExtractionException( 'Unable to extract XML document.' );
-		}
-
 		$lines = array();
-		foreach ( $nodes as $node ) {
-			if ( ! $node instanceof DOMNode ) {
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
+		foreach ( $root->childNodes as $child ) {
+			if ( ! $child instanceof DOMElement && ! $child instanceof DOMText ) {
 				continue;
 			}
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
-			$text = preg_replace( '/\s+/u', ' ', trim( $node->textContent ) );
+			$text = preg_replace( '/\s+/u', ' ', trim( $child->textContent ) );
 			if ( is_string( $text ) && '' !== $text ) {
 				$lines[] = $text;
 			}
