@@ -52,7 +52,7 @@ final class JsonDocumentExtractor implements DocumentExtractor {
 			throw new ExtractionException( 'Unable to extract JSON document.' );
 		}
 
-		if ( ! is_string( $text ) || '' === trim( $text ) ) {
+		if ( '' === trim( $text ) ) {
 			throw new ExtractionException( 'JSON document contains no extractable text.' );
 		}
 

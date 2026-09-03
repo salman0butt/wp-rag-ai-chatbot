@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Documents\Extraction;
 
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 
 /**
@@ -72,6 +73,9 @@ final class XmlDocumentExtractor implements DocumentExtractor {
 
 		$lines = array();
 		foreach ( $nodes as $node ) {
+			if ( ! $node instanceof DOMNode ) {
+				continue;
+			}
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 			$text = preg_replace( '/\s+/u', ' ', trim( $node->textContent ) );
 			if ( is_string( $text ) && '' !== $text ) {

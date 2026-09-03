@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Documents\Extraction;
 
 use DOMDocument;
+use DOMNode;
 use DOMXPath;
 
 /**
@@ -62,7 +63,7 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 		}
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 		foreach ( $ignored as $node ) {
-			if ( null !== $node->parentNode ) {
+			if ( $node instanceof DOMNode && null !== $node->parentNode ) {
 				$node->parentNode->removeChild( $node );
 			}
 		}
@@ -75,6 +76,9 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 
 		$lines = array();
 		foreach ( $nodes as $node ) {
+			if ( ! $node instanceof DOMNode ) {
+				continue;
+			}
 			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 			$text = preg_replace( '/\s+/u', ' ', trim( $node->textContent ) );
 			if ( is_string( $text ) && '' !== $text ) {
