@@ -17,6 +17,7 @@ use WpRagAiChatbot\Indexing\Chunking\ChunkingConfig;
 use WpRagAiChatbot\Indexing\Chunking\LexicalTokenCounter;
 use WpRagAiChatbot\Indexing\Chunking\StructureAwareChunker;
 
+// phpcs:disable WordPress.NamingConventions -- Domain record properties intentionally use the approved camelCase contract.
 /**
  * Verifies deterministic section-aware bounded chunks and source lineage.
  */
@@ -100,20 +101,34 @@ final class StructureAwareChunkerTest extends TestCase {
 		}
 	}
 
+	/**
+	 * Require the production chunker while preserving assertion-style RED.
+	 */
 	private function requireChunker(): void {
 		if ( ! class_exists( StructureAwareChunker::class ) ) {
 			self::fail( 'StructureAwareChunker class does not exist yet.' );
 		}
 	}
 
+	/**
+	 * Create the wished-for chunker API.
+	 */
 	private function chunker(): StructureAwareChunker {
 		return new StructureAwareChunker( new LexicalTokenCounter(), $this->chunkerConfig() );
 	}
 
+	/**
+	 * Create a small deterministic budget for chunking fixtures.
+	 */
 	private function chunkerConfig(): ChunkingConfig {
 		return new ChunkingConfig( 32, 0, 'm07-v1', null );
 	}
 
+	/**
+	 * Create one canonical document fixture.
+	 *
+	 * @param string $content Canonical content.
+	 */
 	private function document( string $content ): DocumentRecord {
 		return new DocumentRecord(
 			null,
@@ -134,3 +149,4 @@ final class StructureAwareChunkerTest extends TestCase {
 		);
 	}
 }
+// phpcs:enable WordPress.NamingConventions
