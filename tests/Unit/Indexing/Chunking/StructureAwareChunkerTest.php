@@ -82,6 +82,60 @@ final class StructureAwareChunkerTest extends TestCase {
 	}
 
 	/**
+	 * Adjacent chunks in one structural parent receive configured trailing-unit overlap.
+	 */
+	public function test_overlap_applies_only_between_adjacent_chunks_with_same_parent(): void {
+		$this->requireChunker();
+		$chunker = new StructureAwareChunker(
+			new LexicalTokenCounter(),
+			new ChunkingConfig( 32, 4, 'm07-v1', null )
+		);
+		$content = "# Same\n\nalpha beta gamma delta.\n\none two three four five.";
+		$chunks  = $chunker->chunks( $this->document( $content ) );
+
+		self::assertCount( 2, $chunks );
+		self::assertSame( $chunks[0]->parentChunkKey, $chunks[1]->parentChunkKey );
+		self::assertSame( 'beta gamma delta. one two three four five.', $chunks[1]->content );
+		self::assertSame( 10, $chunks[1]->tokenCount );
+	}
+
+	/**
+	 * Overlap never crosses a heading-section parent boundary.
+	 */
+	public function test_overlap_does_not_cross_structural_parent_boundaries(): void {
+		$this->requireChunker();
+		$chunker = new StructureAwareChunker(
+			new LexicalTokenCounter(),
+			new ChunkingConfig( 32, 4, 'm07-v1', null )
+		);
+		$content = "# Alpha\n\nalpha beta gamma delta.\n\n# Beta\n\none two three four five.";
+		$chunks  = $chunker->chunks( $this->document( $content ) );
+
+		self::assertCount( 2, $chunks );
+		self::assertNotSame( $chunks[0]->parentChunkKey, $chunks[1]->parentChunkKey );
+		self::assertSame( 'one two three four five.', $chunks[1]->content );
+	}
+
+	/**
+	 * Bounded overlap leaves every original new-content unit intact within maxTokens.
+	 */
+	public function test_overlap_is_reduced_when_needed_to_preserve_new_content_budget(): void {
+		$this->requireChunker();
+		$chunker = new StructureAwareChunker(
+			new LexicalTokenCounter(),
+			new ChunkingConfig( 32, 4, 'm07-v1', null )
+		);
+		$new_content = implode( ' ', array_fill( 0, 31, 'new' ) );
+		$content     = "# Same\n\nalpha beta gamma delta\n\n" . $new_content;
+		$chunks      = $chunker->chunks( $this->document( $content ) );
+
+		self::assertCount( 2, $chunks );
+		self::assertSame( 32, $chunks[1]->tokenCount );
+		self::assertStringStartsWith( 'delta ', $chunks[1]->content );
+		self::assertStringEndsWith( $new_content, $chunks[1]->content );
+	}
+
+	/**
 	 * Repeated calls produce byte-stable keys, hashes and lineage.
 	 */
 	public function test_repeated_calls_are_deterministic(): void {
