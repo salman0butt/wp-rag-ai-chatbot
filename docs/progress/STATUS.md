@@ -2,7 +2,7 @@
 
 - Completed milestones on `main`: **M00-M05**.
 - Latest integrated milestone: **M05 — File/Document Ingestion**.
-- Current milestone: **M06 — WooCommerce Knowledge Ingestion — IN PROGRESS (Tasks 1–3 complete; Task 4 code/CI green, independent review pending)**.
+- Current milestone: **M06 — WooCommerce Knowledge Ingestion — IN PROGRESS (Tasks 1–4 complete; Task 5 code/CI green, independent review pending)**.
 - M05 merge: `dd29d3bc1dc62dbfcccf1f87272a75c4e145afa6` via PR #6.
 - Current recovered `main`: `d8a087f7a90badcc6eca8fe486f5c06d5c8cc66e`.
 - Latest verified `main` CI: `33721644922` — all permanent jobs passed.
@@ -11,12 +11,13 @@
 - Feature branch: `feat/m06-woocommerce-knowledge-ingestion`.
 - Draft PR: #8 — `feat: build M06 WooCommerce knowledge ingestion`.
 - Design/spec: `docs/superpowers/specs/2026-09-03-m06-woocommerce-knowledge-ingestion-design.md` — `AUTO-APPROVED — SCHEDULED MODE`; Task 4 clarification reconciles generic modified-marker churn with the stronger stable/live exclusion requirement.
-- Plan: `docs/superpowers/plans/2026-09-03-m06-woocommerce-knowledge-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`.
+- Plan: `docs/superpowers/plans/2026-09-03-m06-woocommerce-knowledge-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`; Task 4 source-version wording aligned at `fd1a68cdb25437a8c20bd223f6e56d571b8c1c0a`.
 - Task 1 — WooCommerce catalog contracts and immutable snapshots: **COMPLETE**.
 - Task 2 — Optional-safe native WooCommerce catalog gateway: **COMPLETE**.
 - Task 3 — WooCommerce product source canonical mapping: **COMPLETE**.
-- Task 4 — Stable source version and live-state exclusion regressions: **IMPLEMENTED + EXACT-SHA GREEN; INDEPENDENT REVIEW PENDING**.
-- Tasks 5–7 remain and must not start until Task 4 review closes at 0 Critical / 0 Important unresolved.
+- Task 4 — Stable source version and live-state exclusion regressions: **COMPLETE**.
+- Task 5 — Knowledge bootstrap registration and disabled-WooCommerce safety: **IMPLEMENTED + EXACT-SHA GREEN; INDEPENDENT REVIEW PENDING**.
+- Tasks 6–7 remain and must not start until Task 5 review closes at 0 Critical / 0 Important unresolved.
 - Architecture: optional-safe WooCommerce catalog gateway -> immutable allowlisted stable product snapshots -> `WooCommerceProductSource` -> canonical `DocumentRecord`.
 - Stable catalog facts only: status/visibility/title/descriptions/SKU/product URL/categories/tags/descriptive attributes/stable variation ID/SKU/options. The gateway snapshot retains a generic WooCommerce modified marker for observability, but that marker is excluded from M06 source version/hash because it cannot identify whether a change was stable knowledge or excluded live state.
 - Explicitly excluded: current price, sale state, stock/availability, cart/order state, discounts, customer-specific values, arbitrary product/post metadata, and generic modified-marker-only churn.
@@ -52,29 +53,37 @@
 - Artifact: `9890174635`, 711932 bytes, digest `sha256:ab851a0f6b7f3c7a573efd2ce099061b755eab883bbfd0d8dc1d8784a95ee6b6`.
 - Final fresh-session review `5101080712`: **0 Critical / 0 Important unresolved**.
 
-### Task 4 evidence — review gate still open
+### Task 4 evidence — COMPLETE
 - Initial test-only commit `ef70acd32d9bfca35aa0e4e287fdf39c2f1597ea`, CI `33749041729`, failed PHPCS before PHPUnit and is **not** counted as behavioral RED.
 - Executable standards-clean behavioral RED: `f145303afee722c9c333408c2947059ac1b83246`, CI `33749130132` — PHPStan clean; PHPUnit **255 tests / 1227 assertions / 1 expected failure** because stable descriptive catalog changes with fixed `modifiedGmt` did not alter the legacy `modifiedGmt:id` source version.
 - Initial stable-snapshot hash implementation: `7a0d6a5681e8b3baa4187de277984b2f07569173`; its CI `33749325652` was blocked only by a PHPCS assignment-alignment warning. Formatting-only correction: `f62d4963a18c0687bf0ebac5a668cdb094c327d4`.
-- Same-session acceptance review identified a design contradiction: generic `get_date_modified()` churn cannot safely participate in the version while price/stock-only changes are required not to alter the version/hash.
 - Second genuine behavioral RED: `73cf87f085682dc1ee843cc0548915ee7b83b9c3`, CI `33749715650` — PHPStan clean; PHPUnit **256 / 1243 / 1 expected failure**, exactly `test_modified_time_alone_does_not_affect_source_version_or_content_hash`.
 - Minimal correction: `595c9e7c483e42914c901e08afec9b8db935d9d1` removes only generic `modifiedGmt` from the canonical source-version hash while retaining canonical URL/content/allowlisted metadata stable facts.
 - Exact-code-head GREEN CI: `33749868280` — PHPStan clean; PHPUnit **256 tests / 1244 assertions**, all passed; Composer audit clean; php-quality, js-quality, package, and wordpress-smoke all passed.
 - Artifact: `9891098806`, 711932 bytes, digest `sha256:8cb875edfe65f2a7e10f70d40d37d7d17efd5b394efdce04579e6a6429581a74`.
-- Design clarification commit: `2c4f75d1f088d29652cca147ebe66f8812e58e8a` (`AUTO-APPROVED — SCHEDULED MODE`) reconciles the modified-marker wording with the stronger stable/live acceptance rule.
-- Same-session self-review #`5101332920`: **0 Critical / 0 Important unresolved in code/test**, explicitly recorded as **not independent**.
-- Required independent Task 4 review: **PENDING**. This gate blocks Task 4 completion and Task 5 start.
+- Design clarification commit: `2c4f75d1f088d29652cca147ebe66f8812e58e8a` (`AUTO-APPROVED — SCHEDULED MODE`).
+- Independent fresh-session review `5101591315`: **0 Critical / 1 Important** — executable Task 4 plan still allowed generic modified timestamp participation and contradicted the corrected spec/code.
+- Documentation fix `fd1a68cdb25437a8c20bd223f6e56d571b8c1c0a` aligns the executable plan with tested stable/live semantics; exact-head CI `33752938100` passed all permanent jobs.
+- Final independent re-review `5101636297`: **0 Critical / 0 Important unresolved**. Task 4 is complete.
+
+### Task 5 evidence — independent review pending
+- Genuine behavioral RED: `f3db0af57bb108b80872c5ec65852d393d9036d1`, CI `33753332250` — PHPStan clean; PHPUnit **256 tests / 1243 assertions / 1 expected failure**, exactly because `woocommerce_product` was absent from the native registry.
+- Minimal implementation: `50c3ea2292a9bc5d768416ab3c9793f6e59b1ab9` registers `WooCommerceProductSource( NativeWooCommerceCatalogGateway )` without invoking WooCommerce APIs during bootstrap.
+- Exact-code-head GREEN CI: `33753477407` — PHPStan clean; PHPUnit **256 tests / 1245 assertions**, all passed; Composer audit clean; php-quality, js-quality, package, and wordpress-smoke all passed.
+- Artifact: `9892483643`, 711954 bytes, digest `sha256:a93ae167ca7db67ef43007ef7b754633708567cfc6c72bc2788a6c1e689a8f4c`.
+- Same-session review `5101700445`: **0 Critical / 0 Important unresolved in code/test**, explicitly **not independent**.
+- Required independent Task 5 review: **PENDING**. This gate blocks Task 5 completion and Task 6 start.
 
 ## Current gates
 - `main` remains healthy at the recovered SHA.
-- PR #8 remains draft because M06 Tasks 4–7 are unfinished.
-- M06 Tasks 1–3 are complete, independently reviewed, and backed by exact-head GREEN CI.
-- Task 4 implementation has strict RED/GREEN evidence and exact-code-head GREEN CI, but cannot be marked complete until a genuinely independent review reports **0 Critical / 0 Important unresolved**.
+- PR #8 remains draft because M06 Tasks 5–7 are unfinished.
+- M06 Tasks 1–4 are complete, independently reviewed, and backed by exact-head GREEN CI evidence.
+- Task 5 implementation has genuine RED/GREEN evidence and exact-code-head GREEN CI, but cannot be marked complete until a genuinely independent review reports **0 Critical / 0 Important unresolved**.
 - WooCommerce remains optional; real enabled/disabled WooCommerce integration smoke is still Task 6.
 - No merge is permitted until the entire milestone satisfies exact-final-SHA CI/review/documentation gates.
 
 ## Exact next unfinished action
-Obtain a **genuinely independent review of M06 Task 4** from baseline `140b8e111cc1d57dee464dd89cbe73ca7b0c9a2a` through the final Task 4 code/docs head, focused on stable source-version determinism, live-state and generic modified-marker exclusion, canonical hashing, privacy boundaries, and Task 5 scope. Fix any Critical/Important finding through regression TDD, then require exact-head GREEN CI and record the review. Only after **0 Critical / 0 Important unresolved** may Task 4 be marked complete and Task 5 begin.
+Perform a **genuinely independent fresh-session review of M06 Task 5** from predecessor `fd1a68cdb25437a8c20bd223f6e56d571b8c1c0a` through the final Task 5 code/docs head, focused on optional-WooCommerce bootstrap safety, native registry type stability, extension hook ordering/collision behavior, preservation of existing sources, and Task 6 scope. Fix any Critical/Important finding through strict regression TDD when behavioral, require exact-head GREEN CI, and record the final 0 Critical / 0 Important review. Only then mark Task 5 complete and begin Task 6.
 
 ## Previous milestone closeout
 - M05 final feature head: `7b360ec11eeeafe5ccbd9b3036695e489b038178`.
