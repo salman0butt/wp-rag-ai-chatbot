@@ -11,7 +11,6 @@ namespace WpRagAiChatbot\Documents\Extraction;
 
 use PhpOffice\PhpWord\Element\AbstractContainer;
 use PhpOffice\PhpWord\Element\Text;
-use PhpOffice\PhpWord\Element\TextRun;
 use PhpOffice\PhpWord\IOFactory;
 use Throwable;
 
@@ -22,9 +21,9 @@ final readonly class DocxDocumentExtractor implements DocumentExtractor {
 	/**
 	 * Create the DOCX extractor.
 	 *
-	 * @param DocxArchiveInspector $archiveInspector Pre-parser ZIP resource guard.
+	 * @param DocxArchiveInspector $archive_inspector Pre-parser ZIP resource guard.
 	 */
-	public function __construct( private DocxArchiveInspector $archiveInspector ) {
+	public function __construct( private DocxArchiveInspector $archive_inspector ) {
 	}
 
 	/**
@@ -44,7 +43,7 @@ final readonly class DocxDocumentExtractor implements DocumentExtractor {
 	 */
 	public function extract( ValidatedFile $file ): ExtractedDocument {
 		try {
-			$this->archiveInspector->inspect( $file->path );
+			$this->archive_inspector->inspect( $file->path );
 			$document = IOFactory::load( $file->path, 'Word2007' );
 			$lines    = array();
 
@@ -63,8 +62,8 @@ final readonly class DocxDocumentExtractor implements DocumentExtractor {
 			);
 		} catch ( ExtractionException $exception ) {
 			throw $exception;
-		} catch ( Throwable $exception ) {
-			throw new ExtractionException( 'DOCX extraction failed.', 0, $exception );
+		} catch ( Throwable ) {
+			throw new ExtractionException( 'DOCX extraction failed.' );
 		}
 	}
 
@@ -72,7 +71,7 @@ final readonly class DocxDocumentExtractor implements DocumentExtractor {
 	 * Collect visible text recursively from one PHPWord container.
 	 *
 	 * @param AbstractContainer $container PHPWord element container.
-	 * @param list<string>      $lines Collected output lines.
+	 * @param array<string>     $lines Collected output lines.
 	 */
 	private function collectContainerText( AbstractContainer $container, array &$lines ): void {
 		foreach ( $container->getElements() as $element ) {
@@ -84,7 +83,7 @@ final readonly class DocxDocumentExtractor implements DocumentExtractor {
 				continue;
 			}
 
-			if ( $element instanceof TextRun || $element instanceof AbstractContainer ) {
+			if ( $element instanceof AbstractContainer ) {
 				$this->collectContainerText( $element, $lines );
 			}
 		}
