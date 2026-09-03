@@ -17,13 +17,21 @@ use Throwable;
  * Extracts visible text from validated PDF files through a stable boundary.
  */
 final readonly class PdfDocumentExtractor implements DocumentExtractor {
-	private const DEFAULT_MAX_PAGES = 200;
+	private const DEFAULT_MAX_PAGES      = 200;
 	private const DEFAULT_MAX_TEXT_BYTES = 2097152;
 
-	/** Maximum parsed pages. */
+	/**
+	 * Maximum parsed pages.
+	 *
+	 * @var int
+	 */
 	private int $max_pages;
 
-	/** Maximum normalized extracted-text bytes. */
+	/**
+	 * Maximum normalized extracted-text bytes.
+	 *
+	 * @var int
+	 */
 	private int $max_text_bytes;
 
 	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Public argument names are fixed by the Task 4 regression contract and PHP named-argument compatibility.
@@ -32,6 +40,7 @@ final readonly class PdfDocumentExtractor implements DocumentExtractor {
 	 *
 	 * @param int $maxPages Maximum parsed pages.
 	 * @param int $maxTextBytes Maximum normalized extracted-text bytes.
+	 * @throws InvalidArgumentException When limits are not positive.
 	 */
 	public function __construct(
 		int $maxPages = self::DEFAULT_MAX_PAGES,
