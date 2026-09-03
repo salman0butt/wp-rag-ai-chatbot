@@ -181,7 +181,7 @@ final class WooCommerceProductSource implements KnowledgeSource {
 					'modified_gmt'  => $product->modifiedGmt,
 				)
 			);
-			$content_hash = DocumentHasher::hash(
+			$content_hash   = DocumentHasher::hash(
 				array(
 					'document_key'   => $document_key,
 					'external_id'    => $external_id,
