@@ -141,8 +141,8 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$objects[ $font_id ] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
 		ksort( $objects );
 
-		$pdf          = "%PDF-1.4\n";
-		$offsets      = array( 0 );
+		$pdf     = "%PDF-1.4\n";
+		$offsets = array( 0 );
 		foreach ( $objects as $id => $body ) {
 			$offsets[ $id ] = strlen( $pdf );
 
