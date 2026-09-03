@@ -5,7 +5,7 @@
 - Completed milestones: **M00-M04** are integrated on `main`.
 - M05 design/spec: `docs/superpowers/specs/2026-09-03-m05-file-document-ingestion-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - M05 implementation plan: `docs/superpowers/plans/2026-09-03-m05-file-document-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`.
-- M05 Tasks **1–3 are COMPLETE**; Tasks 4–7 remain.
+- M05 Tasks **1–5 are COMPLETE**; Tasks 6–7 remain.
 
 ## M05 Task 1 — Extraction contracts and registry
 - Added `ValidatedFile`, `ExtractedDocument`, `DocumentExtractor`, `DocumentExtractorRegistry`, and `ExtractionException`.
@@ -26,24 +26,41 @@
 ## M05 Task 3 — Core text extractors
 - Added bounded deterministic TXT, Markdown, HTML, CSV, JSON, and XML extractors and MIME ownership through the existing registry.
 - TXT/Markdown normalize UTF-8 text and reject null-byte/binary content. HTML strips scripts/styles/comments, retains visible generic-container content and caps DOM elements at 5,000. CSV streams with limits of 1,000 rows/100 columns. JSON caps depth at 64. XML rejects `DOCTYPE`, uses `LIBXML_NONET`, caps depth at 64, and preserves mixed visible content.
-- Initial test SHA `c8af88a5...` stopped at WPCS and is **not** behavioral RED.
 - Valid primary RED: `5379d8b40341bbccbfbb2016d1e7386c0089bd77`, CI `33697098324`; PHPStan no errors; PHPUnit **201 / 950 / 17 failures**, all exactly from the six absent Task 3 extractor contracts.
-- Initial implementation needed only WPCS/static-analysis corrections. At `87dd33bec3a319504c31749509c6edcf12b240e4`, CI `33697603796` reached PHP GREEN: PHPStan no errors; PHPUnit **201 / 1001**; Composer audit clean; package passed.
-- Independent requirements/security review found **0 Critical / 2 Important** issues: generic visible HTML container text was discarded and Markdown failure behavior lacked focused regression coverage.
-- Review RED: `cd41be2cebe6e810f139aceefca12b568d5d6b12`, CI `33697784766`; PHPStan no errors; PHPUnit **203 / 1006 / 1 error**, exactly the HTML visible-text loss. Markdown binary rejection regression passed.
-- HTML review fix converged at `383a5a25045bb6e25c50aac30383254c69766877`, CI `33698148849`; PHPStan no errors; PHPUnit **203 / 1007**; Composer audit clean.
-- Final bounded second pass found **0 Critical / 1 Important** XML mixed-content issue. First test SHA `4f0adcd9...` stopped at WPCS and is not RED. Valid XML review RED: `89d0eaf4864a8b07fb00fa6de9165d6b3dbef98c`, CI `33698299866`; PHPStan no errors; PHPUnit **204 / 1009 / 1 failure**, exactly expected `Hello world!` vs actual `world`.
-- XML review-fix GREEN: `442063e463885cde958ceec47cd991c01ac4d917`, CI `33698452380`; PHPStan no errors; PHPUnit **204 / 1009**; Composer audit clean.
-- Final Task 3 review after fixes: **0 Critical / 0 Important** remaining.
+- Initial PHP GREEN: `87dd33bec3a319504c31749509c6edcf12b240e4`, CI `33697603796`; PHPStan no errors; PHPUnit **201 / 1001**; Composer audit clean; package passed.
+- Requirements/security review found generic visible HTML loss and a Markdown failure-coverage gap. Review RED `cd41be2cebe6e810f139aceefca12b568d5d6b12`, CI `33697784766`, reproduced the HTML defect; HTML fix converged at `383a5a25045bb6e25c50aac30383254c69766877`, CI `33698148849`, with **203 / 1007** passing.
+- Final bounded second pass found XML mixed-content loss. Valid XML review RED `89d0eaf4864a8b07fb00fa6de9165d6b3dbef98c`, CI `33698299866`; review-fix GREEN `442063e463885cde958ceec47cd991c01ac4d917`, CI `33698452380`; PHPUnit **204 / 1009**, Composer audit clean.
+- Final Task 3 review: **0 Critical / 0 Important** remaining.
+
+## M05 Task 4 — PDF and DOCX parser adapters
+- Added isolated `smalot/pdfparser` and `phpoffice/phpword` adapters, `DocxArchiveInspector`, package/runtime assertions, and parser-specific resource ceilings.
+- PDF defaults: <=200 pages, <=2 MiB normalized text, <=8 MiB compressed-stream decode memory, image retention disabled. DOCX defaults: <=1,000 ZIP entries and <=20 MiB aggregate uncompressed bytes before PHPWord parsing.
+- Independent Task 4 review found **0 Critical / 1 Important** parser-side decode-memory gap.
+- Review-fix RED: `15863a76e7d9358a486e310a6f60ef06a921467c`, CI `33708944268`; PHPStan no errors; PHPUnit **216 / 1050 / 4 failures**, all caused by missing `maxDecodeBytes` behavior.
+- Review-fix GREEN: `0b5f99da94316a091e7e33711808bc774a7ad25f`, CI `33709090219`; PHPStan no errors; PHPUnit **216 / 1053**; Composer audit clean; all permanent jobs green.
+- Artifact `9876293491`, 700,875 bytes, digest `sha256:4288efcad7b7bbaffbcc5a0f5731734992cee6437c3bc8e47cca08dd0f8957cf`.
+- Dependency review: `phpoffice/phpword 1.4.0` LGPL-3.0-only; `smalot/pdfparser v2.12.5` LGPL-3.0; transitive `phpoffice/math 0.3.0` MIT.
+- Final Task 4 review: **0 Critical / 0 Important** remaining.
+
+## M05 Task 5 — File knowledge source and bootstrap
+- Added `FileDocumentSource` and registered native stable source type `file` in `KnowledgeBootstrap` while preserving the M04 `wp_rag_ai_chatbot_knowledge_sources` extension semantics.
+- File sources validate before parser dispatch, normalize to stable key `file:{sourceKey}`, derive source version from file SHA-256 plus size, hash canonical content with `DocumentHasher`, preserve language/visibility, and emit traceable file/parser metadata.
+- Valid primary RED: `4ef502da17ccfc687348487c0864ae55e5b08470`, CI `33713028193`; PHPStan clean; PHPUnit **220 / 1056 / 5 failures**, exactly for absent file-source/bootstrap behavior.
+- Initial behavioral GREEN: `7a923d7bc9788e66cb8b7de7e6c9351659e05d45`, CI `33713283997`; PHPStan clean; PHPUnit **220 / 1092**; Composer audit clean.
+- Independent review found **0 Critical / 1 Important** structured text fallback-dispatch issue: approved `text/plain` fallback for JSON/CSV/Markdown could route through the generic text parser and bypass format-specific validation/resource controls.
+- Review RED: `3b98b20df2ba64b5a4f24485265034086c8b2198`, CI `33713400467`; PHPStan clean; PHPUnit **221 / 1096 / 1 failure**, exactly generic text output instead of JSON parser output.
+- Review-fix GREEN: `c5de4345bad914786f2ed3ddd64651f8a5c2ec56`, CI `33713508805`; PHPStan clean; PHPUnit **221 / 1097**; Composer audit clean; all permanent jobs passed.
+- Plan-required unsupported-file source coverage was added; the first coverage SHA `264a13c1...` found only an assertion-message mismatch against the already-fail-closed validator. Corrected coverage head `00b3b88ac6a9b57d964ba2ee33035a45439f6d69`, CI `33713788205`: PHPStan clean; PHPUnit **222 / 1102**; Composer audit clean; `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed.
+- Artifact `9877799511`, 702,888 bytes, digest `sha256:f8d00eeffd5c1a828e3763508973c5bef5a9e9bbe777d3984340f34498f89983`.
+- Final Task 5 review: **0 Critical / 0 Important** remaining. PR #6 has no submitted reviews or unresolved review threads at Task 5 closeout.
 
 ## Current gates
-- M05 is **not merge-ready**: Tasks 4–7 remain. Do not merge the branch or advance to M06.
-- No known blockers.
+- M05 is **not merge-ready**: Tasks 6–7 remain. Do not merge the branch or advance to M06.
+- No known technical blocker.
 - Draft feature PR: **#6 — `feat: build M05 file/document ingestion`**.
-- Exact next unfinished action: execute **M05 Task 4 — PDF and DOCX parser adapters**. Add test fixtures first for valid extraction, malformed failure normalization, unsupported/password-protected PDF behavior, and DOCX archive entry/uncompressed-size resource limits; capture genuine behavioral RED before dependencies/adapters exist; then add PHP 8.2-compatible `smalot/pdfparser` and `phpoffice/phpword`, keep parser libraries behind adapters, inspect DOCX ZIP resource limits before PHPWord parsing, normalize parser exceptions without leaking paths, run Composer audit/full verification/package/permanent CI, and record dependency license/security evidence.
+- Exact next unfinished action: execute **M05 Task 6 — Real WordPress file-ingestion smoke coverage**. Create `scripts/test-wp-file-ingestion.php` and `.sh`; add `npm run test:wp:file-ingestion`; wire it into `wordpress-smoke`; create representative supported files/media through WordPress APIs; verify validation, extraction, stable hash/version, malformed/spoofed rejection, and cleanup; route any discovered production defect through dedicated unit RED/GREEN; require all permanent CI jobs green on the exact Task 6 SHA before Task 7.
 
 ## Previous milestone closeout
-
 - M04 feature PR: #4 `feat: build M04 WordPress knowledge source framework`.
 - M04 feature merge: `666bb02dc6780f2fb3c818bbbf4d3fe1a0778555`.
 - M04 final reconciled feature head: `f09f293c913203bdc498e76a28413e3ab2614f5c`; exact-head CI `33687964210` passed `php-quality`, `js-quality`, `package`, and `wordpress-smoke`, including activation/database/provider/knowledge smoke. Artifact `9868887017`, 75,694 bytes, digest `sha256:0bb2f525d4ae4c37a0d69d7f9d02716b94868e5db9f07a0d8362918b6c47904e`.

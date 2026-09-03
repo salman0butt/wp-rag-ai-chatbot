@@ -1,6 +1,6 @@
 # M05 — File/Document Ingestion
 
-Status: IN PROGRESS — Tasks 1–4 complete; Tasks 5–7 remain.
+Status: IN PROGRESS — Tasks 1–5 complete; Tasks 6–7 remain.
 
 ## Goal
 Safely extract and normalize supported document/file formats into canonical Documents.
@@ -20,7 +20,7 @@ PDF, DOCX, TXT, Markdown, HTML, CSV, JSON, XML extractors where reliable PHP lib
 OCR-heavy image extraction unless explicitly justified later; embeddings/vector storage.
 
 ## Architecture
-Extractor registry isolates parser libraries from knowledge/indexing domains; uploads are untrusted until validated. M05 uses an immutable validated-file boundary, deterministic MIME-to-extractor registry, validation before parser dispatch, and canonical `DocumentRecord` normalization. PDF/DOCX parser libraries remain isolated behind adapters.
+Extractor registry isolates parser libraries from knowledge/indexing domains; uploads are untrusted until validated. M05 uses an immutable validated-file boundary, deterministic MIME-to-extractor registry, validation before parser dispatch, and canonical `DocumentRecord` normalization. PDF/DOCX parser libraries remain isolated behind adapters. `FileDocumentSource` composes the validator and extractor registry without moving parser logic into the knowledge-source domain.
 
 ## Acceptance Criteria
 Each supported format has success/failure fixtures; spoofed/oversized/malformed cases fail safely; extraction preserves useful structure where possible; resource limits documented.
@@ -30,7 +30,7 @@ Each supported format has success/failure fixtures; spoofed/oversized/malformed 
 - [x] Task 2 — File validation policy.
 - [x] Task 3 — Core text extractors.
 - [x] Task 4 — PDF and DOCX parser adapters.
-- [ ] Task 5 — File knowledge source and bootstrap.
+- [x] Task 5 — File knowledge source and bootstrap.
 - [ ] Task 6 — Real WordPress file-ingestion smoke coverage.
 - [ ] Task 7 — Integration, security review, documentation, and merge.
 
@@ -109,19 +109,45 @@ Task 4 adds isolated `smalot/pdfparser` and `phpoffice/phpword` adapters plus pa
 - Review-fix GREEN: `0b5f99da94316a091e7e33711808bc774a7ad25f`, CI `33709090219`; PHPStan no errors; PHPUnit **216 / 1053**, Composer audit reported no security advisories, JS quality passed, package/assertion/artifact upload passed, and WordPress activation/database/provider/knowledge smoke passed.
 - Green artifact: `9876293491`, **700,875 bytes**, digest `sha256:4288efcad7b7bbaffbcc5a0f5731734992cee6437c3bc8e47cca08dd0f8957cf`.
 - Dependency review from the committed lock file: `phpoffice/phpword 1.4.0` is `LGPL-3.0-only`; `smalot/pdfparser v2.12.5` is `LGPL-3.0`; transitive `phpoffice/math 0.3.0` is MIT. Composer audit is clean at the Task 4 GREEN SHA.
-- Final Task 4 second pass after the decode-memory fix: **0 Critical / 0 Important** remaining findings. PR #6 has no submitted reviews or unresolved review threads at closeout.
+- Final Task 4 second pass after the decode-memory fix: **0 Critical / 0 Important** remaining findings.
+
+## Task 5 Implementation
+Task 5 added `FileDocumentSource` and wired it into `KnowledgeBootstrap` without changing the M04 third-party source-extension filter contract. The native bootstrap now composes all eight M05 extractors behind `DocumentExtractorRegistry` and registers stable source type `file`.
+
+`FileDocumentSource`:
+- requires a persisted `file` source and validates its configured local path before parser dispatch;
+- uses `FileValidationPolicy` plus `DocumentExtractorRegistry` rather than duplicating validation/parser logic;
+- emits stable document key `file:{sourceKey}`;
+- derives `sourceVersion` from validated lowercase SHA-256 plus file size;
+- uses the existing `DocumentHasher` for deterministic canonical content hashes;
+- records traceable filename, extension, detected MIME, size, file SHA-256, parser metadata, language, and visibility;
+- fails closed for invalid/unsupported files and propagates extraction-domain failures;
+- preserves format-aware JSON/CSV/Markdown parsing when `finfo` legitimately reports approved `text/plain` fallback MIME, so structured parser validation/resource limits cannot be bypassed by generic text dispatch.
+
+### Task 5 TDD / Review Evidence
+- Initial test-only SHA `2980f97f8e90b338b45ac10de47c94efb43c4363`, CI `33712943957`, stopped in PHPCS and is explicitly **not** behavioral RED.
+- Valid primary RED: `4ef502da17ccfc687348487c0864ae55e5b08470`, CI `33713028193`; PHPCS and PHPStan passed, then PHPUnit executed **220 tests / 1056 assertions / 5 failures**, exactly for the absent `FileDocumentSource` contract and missing bootstrap registration.
+- Initial implementation SHA `8d6bdac20e6d59417ecd62d5313ae2af0f56f4cb`, CI `33713219503`, stopped at one WPCS assignment-alignment warning before PHPUnit and is explicitly not GREEN.
+- Initial behavioral GREEN: `7a923d7bc9788e66cb8b7de7e6c9351659e05d45`, CI `33713283997`; PHPStan no errors; PHPUnit **220 / 1092**, all passing; Composer audit clean.
+- Independent requirements/security review found **0 Critical / 1 Important** issue: validated `.json`, `.csv`, and Markdown files may legitimately use approved `text/plain` MIME fallback, but MIME-only registry lookup routed them through generic text extraction and bypassed the format-specific validation/resource boundary.
+- Review-fix RED: `3b98b20df2ba64b5a4f24485265034086c8b2198`, CI `33713400467`; PHPStan no errors; PHPUnit **221 / 1096 / 1 failure**, exactly expected structured JSON parser output versus actual generic text output.
+- Review-fix GREEN: `c5de4345bad914786f2ed3ddd64651f8a5c2ec56`, CI `33713508805`; PHPStan no errors; PHPUnit **221 / 1097**, Composer audit clean; `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed.
+- Final plan-required unsupported-file coverage first landed at `264a13c1d603cf78d39f1159653ea7a5cb5a4f84`; CI `33713639102` correctly exposed only an assertion-message mismatch against the already-fail-closed validator and did not identify a runtime defect.
+- Coverage expectation correction: `00b3b88ac6a9b57d964ba2ee33035a45439f6d69`, CI `33713788205`; PHPStan no errors; PHPUnit **222 / 1102**, Composer audit clean; all four permanent jobs passed, including WordPress activation/database/provider/knowledge smoke and package artifact upload.
+- Exact Task 5 artifact at `00b3b88a...`: `9877799511`, **702,888 bytes**, digest `sha256:f8d00eeffd5c1a828e3763508973c5bef5a9e9bbe777d3984340f34498f89983`.
+- Final Task 5 independent second pass after the structured-fallback fix and unsupported-input coverage: **0 Critical / 0 Important** remaining findings. PR #6 has no submitted reviews and no unresolved review threads at this closeout point.
 
 ## Integration Test Evidence
-Tasks 1–4 are PHP-domain/filesystem/parser boundaries. Existing WordPress activation/database/provider/knowledge smoke remains the permanent regression gate and is green on Task 4 implementation SHA `0b5f99da...`. Dedicated real WordPress file-ingestion smoke is Task 6 after source/bootstrap wiring exists.
+Tasks 1–5 remain primarily PHP-domain/filesystem/parser/knowledge-source boundaries. Existing WordPress activation/database/provider/knowledge smoke is green on the exact Task 5 closeout SHA `00b3b88a...`. Dedicated real WordPress file-ingestion smoke is Task 6.
 
 ## E2E / Visual Verification
-No M05 upload UI exists through Task 4; visual verification is not applicable.
+No M05 upload UI exists through Task 5; visual verification is not applicable.
 
 ## Security Review
-Through Task 4, the boundary fails closed for nonexistent/non-regular/unreadable candidates, empty files, files over the configured/default 10 MiB ceiling, unsupported extensions, extension/MIME disagreement, invalid allowed roots, canonical path/symlink escape, failed MIME detection/hashing, binary/null-byte text, malformed/deep JSON, malformed/deep XML, XML `DOCTYPE`/external entity declarations, excessive HTML/CSV structure, malformed/encrypted PDF, excessive PDF page/text/decode-memory use, malformed DOCX, and excessive DOCX ZIP entry/uncompressed-byte counts. HTML/XML use libxml network-disabled parsing. No shell execution, remote fetch, OCR, macro execution, or arbitrary archive extraction is introduced.
+Through Task 5, the boundary fails closed for nonexistent/non-regular/unreadable candidates, empty files, files over the configured/default 10 MiB ceiling, unsupported extensions, extension/MIME disagreement, invalid allowed roots, canonical path/symlink escape, failed MIME detection/hashing, binary/null-byte text, malformed/deep JSON, malformed/deep XML, XML `DOCTYPE`/external entity declarations, excessive HTML/CSV structure, malformed/encrypted PDF, excessive PDF page/text/decode-memory use, malformed DOCX, and excessive DOCX ZIP entry/uncompressed-byte counts. File-source wiring preserves validation before parser dispatch and now preserves structured parsing for approved text/plain fallback cases. HTML/XML use libxml network-disabled parsing. No shell execution, remote fetch, OCR, macro execution, or arbitrary archive extraction is introduced.
 
 ## Accessibility Review where UI exists
-No UI exists in Tasks 1–4; not applicable.
+No UI exists in Tasks 1–5; not applicable.
 
 ## Performance Review where relevant
 Validation constrains files to <=10 MiB by default before parser dispatch. Core parser ceilings remain HTML <=5,000 elements, CSV <=1,000 rows and <=100 columns, JSON depth <=64, XML depth <=64. PDF adds <=200 pages, <=2 MiB normalized text, and <=8 MiB compressed-stream decode memory by default with image-content retention disabled. DOCX adds <=1,000 ZIP entries and <=20 MiB aggregate uncompressed bytes before PHPWord parsing.
@@ -137,17 +163,18 @@ Authoritative CI executes:
 - package build/assertion/artifact upload
 - WordPress activation/database/provider/knowledge smoke
 
-## Commits Added for Task 4 Closeout
-Task 4 spans the recovered adapter/dependency/package sequence plus the final review-fix pair. Key closeout commits are:
-- `12a1c571...` — PDF page/text resource regression tests.
-- `070dd5dc...`, `bcc4417b...` — bounded PDF implementation iterations.
-- `b23cca26...`, `b8bd4ed3...`, `b16800c5...` — parser-runtime package assertions and package pruning corrections.
-- `017a3a43...` — prior exact-head standards correction with green CI.
-- `15863a76...` — decode-memory review regression / valid behavioral RED.
-- `0b5f99da...` — decode-memory implementation / Task 4 review-fix GREEN.
+## Key Task 5 Commits
+- `2980f97f...` — initial test-only iteration; WPCS stop, not RED.
+- `4ef502da...` — valid Task 5 behavioral RED.
+- `8d6bdac2...` — source/bootstrap implementation; WPCS stop, not GREEN.
+- `7a923d7b...` — initial Task 5 GREEN.
+- `3b98b20d...` — structured text fallback review RED.
+- `c5de4345...` — structured fallback review-fix GREEN.
+- `264a13c1...` — unsupported-input coverage with expectation mismatch.
+- `00b3b88a...` — corrected coverage and exact Task 5 code/test closeout.
 
 ## Known Limitations
-Tasks 1–4 intentionally do not yet register a `file` knowledge source or provide real WordPress file-ingestion smoke. Source/bootstrap and smoke are Tasks 5–6; whole-milestone reconciliation/security/review/merge is Task 7. These remain mandatory before M05 can merge.
+Tasks 1–5 intentionally do not yet provide real WordPress file-ingestion smoke coverage. Task 6 owns representative media/upload fixtures through WordPress APIs and CI wiring; Task 7 owns whole-milestone reconciliation/security/performance/review/documentation/merge. These remain mandatory before M05 can merge.
 
 ## Documentation Updated
 - `docs/superpowers/specs/2026-09-03-m05-file-document-ingestion-design.md`
@@ -156,10 +183,10 @@ Tasks 1–4 intentionally do not yet register a `file` knowledge source or provi
 - `docs/progress/STATUS.md` is the global handoff ledger.
 
 ## Completion Checklist
-M05 is not complete. Tasks 1–4 are complete once this documentation-head CI is green; Tasks 5–7 and final milestone review/integration gates remain.
+M05 is not complete. Tasks 1–5 are complete; Tasks 6–7 and final milestone review/integration gates remain.
 
 ## Exact Next Unfinished Action
-Execute **Task 5 — File knowledge source and bootstrap** with strict TDD. Add tests first for the file-source contract, validation → extractor-registry dispatch → canonical `DocumentRecord` normalization, deterministic source keys/version/hash/metadata, unsupported or invalid input failures, and bootstrap registration; capture genuine behavioral RED before production wiring, then implement the minimum source/bootstrap integration, run focused/full GREEN plus independent review, update durable evidence, and require all permanent CI jobs green on the exact final SHA before Task 6.
+Execute **Task 6 — Real WordPress file-ingestion smoke coverage**. Add `scripts/test-wp-file-ingestion.php` and `.sh`, wire `npm run test:wp:file-ingestion` into `package.json` and the `wordpress-smoke` CI job, create representative small supported file/media fixtures through WordPress APIs, verify server-side validation/extraction/stable hash-version plus malformed/spoofed rejection and cleanup, route any production defect through dedicated unit RED/GREEN before its fix, and require all permanent jobs green on the exact Task 6 SHA before Task 7.
 
 ## Next Milestone
 M06 — WooCommerce Knowledge Ingestion, only after genuine M05 completion and post-merge `main` verification.
