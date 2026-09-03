@@ -167,13 +167,20 @@ final class WooCommerceProductSource implements KnowledgeSource {
 	 */
 	private function document( KnowledgeSourceRecord $source, WooCommerceProduct $product ): DocumentRecord {
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Approved domain records intentionally use camelCase public properties.
-		$document_key   = 'woocommerce_product:' . $product->id;
-		$external_id    = (string) $product->id;
-		$content        = $this->content( $product );
-		$metadata       = $this->metadata( $product );
-		$source_version = $product->modifiedGmt . ':' . $product->id;
+		$document_key = 'woocommerce_product:' . $product->id;
+		$external_id  = (string) $product->id;
+		$content      = $this->content( $product );
+		$metadata     = $this->metadata( $product );
 
 		try {
+			$source_version = DocumentHasher::hash(
+				array(
+					'canonical_url' => $product->canonicalUrl,
+					'content'       => $content,
+					'metadata'      => $metadata,
+					'modified_gmt'  => $product->modifiedGmt,
+				)
+			);
 			$content_hash = DocumentHasher::hash(
 				array(
 					'document_key'   => $document_key,
