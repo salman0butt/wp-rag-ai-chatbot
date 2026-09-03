@@ -91,9 +91,9 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 	/**
 	 * Collect visible text while retaining deterministic block boundaries.
 	 *
-	 * @param DOMNode      $node Current DOM node.
-	 * @param list<string> $lines Extracted lines.
-	 * @param string       $current Current line buffer.
+	 * @param DOMNode $node Current DOM node.
+	 * @param array   $lines Extracted lines.
+	 * @param string  $current Current line buffer.
 	 */
 	private function collectVisibleText( DOMNode $node, array &$lines, string &$current ): void {
 		if ( $node instanceof DOMText ) {
@@ -110,13 +110,13 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 		}
 
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
-		$tag       = strtolower( $node->tagName );
-		$is_block  = in_array(
+		$tag      = strtolower( $node->tagName );
+		$is_block = in_array(
 			$tag,
 			array( 'body', 'article', 'aside', 'blockquote', 'div', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'li', 'main', 'p', 'pre', 'section', 'tr' ),
 			true
 		);
-		$is_break  = 'br' === $tag;
+		$is_break = 'br' === $tag;
 
 		if ( $is_block || $is_break ) {
 			$this->flushLine( $lines, $current );
@@ -137,8 +137,8 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 	/**
 	 * Flush one normalized non-empty line.
 	 *
-	 * @param list<string> $lines Extracted lines.
-	 * @param string       $current Current line buffer.
+	 * @param array  $lines Extracted lines.
+	 * @param string $current Current line buffer.
 	 */
 	private function flushLine( array &$lines, string &$current ): void {
 		$line    = preg_replace( '/\s+/u', ' ', trim( $current ) );
