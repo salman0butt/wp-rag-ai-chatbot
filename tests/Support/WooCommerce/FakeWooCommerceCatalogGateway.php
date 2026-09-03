@@ -12,7 +12,7 @@ namespace WpRagAiChatbot\Tests\Support\WooCommerce;
 use WpRagAiChatbot\WooCommerce\Catalog\WooCommerceCatalogGateway;
 use WpRagAiChatbot\WooCommerce\Catalog\WooCommerceProduct;
 
-// phpcs:disable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Methods implement the approved application contract.
+// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Method parameters follow the approved application contract.
 /**
  * Deterministic in-memory WooCommerce catalog gateway with observable calls.
  */
@@ -22,21 +22,21 @@ final class FakeWooCommerceCatalogGateway implements WooCommerceCatalogGateway {
 	 *
 	 * @var array<int, array{page:int,perPage:int}>
 	 */
-	public array $productIdCalls = array();
+	public array $product_id_calls = array();
 
 	/**
 	 * Product lookup calls.
 	 *
 	 * @var array<int, int>
 	 */
-	public array $productCalls = array();
+	public array $product_calls = array();
 
 	/**
 	 * Create the fake gateway.
 	 *
-	 * @param bool                                   $available Whether the gateway is available.
-	 * @param array<int, array<int, int>>             $pages Product IDs keyed by one-based page.
-	 * @param array<int, WooCommerceProduct>           $products Product snapshots keyed by product ID.
+	 * @param bool                               $available Whether the gateway is available.
+	 * @param array<int, array<int, int>>        $pages Product IDs keyed by one-based page.
+	 * @param array<int, WooCommerceProduct>     $products Product snapshots keyed by product ID.
 	 */
 	public function __construct(
 		private bool $available,
@@ -56,7 +56,7 @@ final class FakeWooCommerceCatalogGateway implements WooCommerceCatalogGateway {
 	 * @param int $productId Product ID.
 	 */
 	public function product( int $productId ): ?WooCommerceProduct {
-		$this->productCalls[] = $productId;
+		$this->product_calls[] = $productId;
 		return $this->products[ $productId ] ?? null;
 	}
 
@@ -68,7 +68,7 @@ final class FakeWooCommerceCatalogGateway implements WooCommerceCatalogGateway {
 	 * @return array<int, int>
 	 */
 	public function productIds( int $page, int $perPage ): array {
-		$this->productIdCalls[] = array(
+		$this->product_id_calls[] = array(
 			'page'    => $page,
 			'perPage' => $perPage,
 		);
@@ -76,4 +76,4 @@ final class FakeWooCommerceCatalogGateway implements WooCommerceCatalogGateway {
 		return $this->pages[ $page ] ?? array();
 	}
 }
-// phpcs:enable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
+// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
