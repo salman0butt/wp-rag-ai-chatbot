@@ -16,10 +16,18 @@ use ZipArchive;
  * Enforces bounded ZIP structure before a DOCX parser sees archive contents.
  */
 final readonly class DocxArchiveInspector {
-	/** Maximum archive-entry count. */
+	/**
+	 * Maximum archive-entry count.
+	 *
+	 * @var int
+	 */
 	private int $max_entries;
 
-	/** Maximum aggregate uncompressed bytes. */
+	/**
+	 * Maximum aggregate uncompressed bytes.
+	 *
+	 * @var int
+	 */
 	private int $max_uncompressed_bytes;
 
 	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Public argument names are fixed by the approved M05 domain contract and PHP named-argument compatibility.
