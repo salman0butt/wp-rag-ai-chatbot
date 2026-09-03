@@ -160,7 +160,6 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			}
 		}
 
-		$product_ids = array_values( array_unique( $product_ids ) );
 		sort( $product_ids, SORT_NUMERIC );
 		return $product_ids;
 	}
