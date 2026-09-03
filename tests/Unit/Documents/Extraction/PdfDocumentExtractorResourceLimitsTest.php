@@ -155,8 +155,8 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$objects[2] = '<< /Type /Pages /Kids [' . $kids . '] /Count ' . count( $pages ) . ' >>';
 
 		foreach ( $pages as $index => $text ) {
-			$stream = 'BT /F1 12 Tf 72 720 Td (' . $text . ') Tj ET';
-			$objects[ $page_ids[ $index ] ] = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
+			$stream                             = 'BT /F1 12 Tf 72 720 Td (' . $text . ') Tj ET';
+			$objects[ $page_ids[ $index ] ]    = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
 				. '/Resources << /Font << /F1 ' . $font_id . ' 0 R >> >> /Contents ' . $content_ids[ $index ] . ' 0 R >>';
 			$objects[ $content_ids[ $index ] ] = '<< /Length ' . strlen( $stream ) . ">>\nstream\n" . $stream . "\nendstream";
 		}
@@ -172,7 +172,7 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		}
 
 		$xref_offset = strlen( $pdf );
-		$pdf         .= "xref\n0 " . ( $font_id + 1 ) . "\n0000000000 65535 f \n";
+		$pdf        .= "xref\n0 " . ( $font_id + 1 ) . "\n0000000000 65535 f \n";
 		for ( $id = 1; $id <= $font_id; ++$id ) {
 			$pdf .= sprintf( '%010d 00000 n ', $offsets[ $id ] ) . "\n";
 		}
