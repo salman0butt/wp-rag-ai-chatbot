@@ -28,10 +28,10 @@ final readonly class WooCommerceProduct {
 	 * @param string                            $description Stable full description.
 	 * @param string|null                       $sku Product SKU.
 	 * @param string                            $canonicalUrl Public product URL.
-	 * @param list<string>                      $categories Category labels.
-	 * @param list<string>                      $tags Tag labels.
-	 * @param array<string,list<string>>        $attributes Descriptive attributes.
-	 * @param list<WooCommerceVariation>        $variations Stable variation descriptors.
+	 * @param array<int, string>                $categories Category labels.
+	 * @param array<int, string>                $tags Tag labels.
+	 * @param array<string, array<int, string>> $attributes Descriptive attributes.
+	 * @param array<int, WooCommerceVariation>  $variations Stable variation descriptors.
 	 * @param string                            $modifiedGmt Stable modified marker.
 	 * @throws InvalidArgumentException When product data is invalid.
 	 */
@@ -85,19 +85,19 @@ final readonly class WooCommerceProduct {
 			throw new InvalidArgumentException( 'WooCommerce product modified marker must not be blank.' );
 		}
 
-		$this->type             = $type;
-		$this->status           = $status;
+		$this->type              = $type;
+		$this->status            = $status;
 		$this->catalogVisibility = $catalogVisibility;
-		$this->name             = $name;
-		$this->shortDescription = trim( $shortDescription );
-		$this->description      = trim( $description );
-		$this->sku              = self::normalizeOptionalString( $sku );
-		$this->canonicalUrl     = $canonicalUrl;
-		$this->categories       = self::normalizeLabels( $categories, 'category' );
-		$this->tags             = self::normalizeLabels( $tags, 'tag' );
-		$this->attributes       = self::normalizeAttributes( $attributes );
-		$this->variations       = self::normalizeVariations( $variations );
-		$this->modifiedGmt      = $modifiedGmt;
+		$this->name              = $name;
+		$this->shortDescription  = trim( $shortDescription );
+		$this->description       = trim( $description );
+		$this->sku               = self::normalizeOptionalString( $sku );
+		$this->canonicalUrl      = $canonicalUrl;
+		$this->categories        = self::normalizeLabels( $categories );
+		$this->tags              = self::normalizeLabels( $tags );
+		$this->attributes        = self::normalizeAttributes( $attributes );
+		$this->variations        = self::normalizeVariations( $variations );
+		$this->modifiedGmt       = $modifiedGmt;
 	}
 
 	/**
@@ -115,18 +115,18 @@ final readonly class WooCommerceProduct {
 	}
 
 	/**
-	 * Normalize taxonomy labels deterministically.
+	 * Normalize labels deterministically.
 	 *
-	 * @param list<string> $labels Raw labels.
-	 * @param string       $kind Label kind for errors.
-	 * @return list<string>
+	 * @param array<int, string> $labels Raw labels.
+	 * @return array<int, string>
+	 * @throws InvalidArgumentException When a label is blank.
 	 */
-	private static function normalizeLabels( array $labels, string $kind ): array {
+	private static function normalizeLabels( array $labels ): array {
 		$normalized = array();
 		foreach ( $labels as $label ) {
 			$label = trim( $label );
 			if ( '' === $label ) {
-				throw new InvalidArgumentException( 'WooCommerce product ' . $kind . ' labels must not be blank.' );
+				throw new InvalidArgumentException( 'WooCommerce product labels must not be blank.' );
 			}
 			$normalized[] = $label;
 		}
@@ -139,8 +139,9 @@ final readonly class WooCommerceProduct {
 	/**
 	 * Normalize descriptive attributes deterministically.
 	 *
-	 * @param array<string,list<string>> $attributes Raw attributes.
-	 * @return array<string,list<string>>
+	 * @param array<string, array<int, string>> $attributes Raw attributes.
+	 * @return array<string, array<int, string>>
+	 * @throws InvalidArgumentException When an attribute name or value is invalid.
 	 */
 	private static function normalizeAttributes( array $attributes ): array {
 		$normalized = array();
@@ -150,11 +151,11 @@ final readonly class WooCommerceProduct {
 				throw new InvalidArgumentException( 'WooCommerce product attribute names must not be blank.' );
 			}
 
-			$normalizedValues = self::normalizeLabels( $values, 'attribute' );
-			if ( array() === $normalizedValues ) {
+			$normalized_values = self::normalizeLabels( $values );
+			if ( array() === $normalized_values ) {
 				throw new InvalidArgumentException( 'WooCommerce product attributes must contain at least one value.' );
 			}
-			$normalized[ $name ] = $normalizedValues;
+			$normalized[ $name ] = $normalized_values;
 		}
 
 		ksort( $normalized, SORT_STRING );
@@ -164,8 +165,8 @@ final readonly class WooCommerceProduct {
 	/**
 	 * Normalize variation order deterministically.
 	 *
-	 * @param list<WooCommerceVariation> $variations Raw variations.
-	 * @return list<WooCommerceVariation>
+	 * @param array<int, WooCommerceVariation> $variations Raw variations.
+	 * @return array<int, WooCommerceVariation>
 	 */
 	private static function normalizeVariations( array $variations ): array {
 		usort(

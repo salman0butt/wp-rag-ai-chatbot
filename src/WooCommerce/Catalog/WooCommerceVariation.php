@@ -56,6 +56,7 @@ final readonly class WooCommerceVariation {
 	 *
 	 * @param array<string,string> $attributes Raw attributes.
 	 * @return array<string,string>
+	 * @throws InvalidArgumentException When an attribute name or value is blank.
 	 */
 	private static function normalizeAttributes( array $attributes ): array {
 		$normalized = array();

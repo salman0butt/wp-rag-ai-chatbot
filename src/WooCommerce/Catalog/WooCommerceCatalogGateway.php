@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\WooCommerce\Catalog;
 
+// phpcs:disable WordPress.NamingConventions -- Public application contract follows the approved camelCase API.
 /**
  * Application-facing boundary for optional WooCommerce catalog access.
  */
@@ -30,7 +31,8 @@ interface WooCommerceCatalogGateway {
 	 *
 	 * @param int $page One-based page number.
 	 * @param int $perPage Products per page.
-	 * @return list<int>
+	 * @return array<int, int>
 	 */
 	public function productIds( int $page, int $perPage ): array;
 }
+// phpcs:enable WordPress.NamingConventions
