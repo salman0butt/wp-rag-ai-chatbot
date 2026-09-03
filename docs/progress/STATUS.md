@@ -2,7 +2,7 @@
 
 - Completed milestones on `main`: **M00-M06**.
 - Latest integrated milestone: **M06 — WooCommerce Knowledge Ingestion**.
-- Current milestone: **M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing — IN PROGRESS (Task 1 complete; Task 2 code/CI green; independent review pending)**.
+- Current milestone: **M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing — IN PROGRESS (Tasks 1-2 complete; Task 3 next)**.
 - Current verified `main`: `747733a92c23d411ccba2592d5cb8c7858b95a03`.
 - Latest verified `main` CI: `33770388757` — all permanent jobs passed.
 - M06 integration merge: `356f419ea6df23e68d89a13ee322ca50585ed74b` via PR #8.
@@ -28,8 +28,8 @@
 - Selected architecture: canonical `DocumentRecord` -> meaning-preserving deterministic normalization -> structure-aware bounded chunking -> stable chunk hashes/lineage -> compatibility-safe dedup -> pure incremental index plan.
 - M08 owns embedding generation/vector stores and provider-exact compatibility; M09 owns queue/synchronization execution.
 - Task 1 — Deterministic content normalization: **COMPLETE** after strict RED/GREEN, exact-head CI, and independent fresh-session review `5104488263` with 0 Critical / 0 Important unresolved.
-- Task 2 — Token budget/configuration contracts: **IMPLEMENTED + EXACT-CODE-HEAD GREEN; INDEPENDENT FRESH-SESSION REVIEW PENDING**.
-- Tasks 3–7 remain and must not start until Task 2 independent review closes at 0 Critical / 0 Important unresolved.
+- Task 2 — Token budget/configuration contracts: **COMPLETE** after strict RED/GREEN, exact-code-head CI, documentation-head CI, and independent fresh-session review `5105069991` with 0 Critical / 0 Important unresolved.
+- Tasks 3–7 remain. Task 3 is now the first legitimate unfinished task.
 
 ### M07 Task 1 evidence
 - RED test commit: `3e34a6d1125592a256463c3e75ee9406fa3e5e3a`.
@@ -50,6 +50,8 @@
 - Real WordPress smoke: activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge all passed.
 - Artifact `9903483875`, 714589 bytes, digest `sha256:f06d0f169bf7fa74718f976a3d63f05b3285347e2a45c24245c74c5a6138d388`.
 - Same-session review `5104539329`: **0 Critical / 0 Important unresolved**, explicitly not independent.
+- Documentation head `5eed132f33ac227cc0102b4b915b9dbe7de94768`, exact-head CI `33781239556`: **all permanent jobs passed**.
+- Independent fresh-session review `5105069991`: **0 Critical / 0 Important unresolved**. Review covered Unicode lexical-unit semantics, invalid-UTF-8 fail-closed behavior, max/overlap bounds including exact 25%, readonly immutability, deterministic canonical fingerprinting, embedding compatibility identity, and absence of M08/M09/provider/network/persistence leakage.
 
 ### M07 Task 2 behavior
 `TokenCounter`, `LexicalTokenCounter`, and immutable `ChunkingConfig` are pure PHP/WordPress-independent contracts. The lexical counter counts Unicode letter/number runs plus individual non-whitespace punctuation/symbols and throws `DomainException` on invalid UTF-8. Config validation enforces max-token bounds 32..4096, overlap from 0 through exactly 25% of max, a non-blank chunking version, and a null-or-non-blank embedding compatibility key. The SHA-256 fingerprint uses the existing canonical `DocumentHasher` and incorporates all compatibility inputs.
@@ -57,7 +59,7 @@
 No Task 2 code performs provider calls, provider-exact tokenization, persistence, embeddings, vector writes, URL fetching, WordPress execution, or queue behavior.
 
 ## Exact next unfinished action
-Freshly recover PR #9 and independently review M07 Task 2 from RED `220bffa181cb4a32490f6fa35b3be6904ae790d6` through GREEN `f802bed14cc1887c219b4ac1058236ded114224c` and the current documentation head. Focus on Unicode lexical-unit semantics, invalid-UTF-8 fail-closed behavior, config max/overlap bounds including exact 25%, immutability, canonical deterministic fingerprinting, embedding-compatibility identity, and absence of M08/M09/provider/network/persistence leakage. Fix any Critical/Important behavior issue via regression RED/GREEN and exact-head CI. If review is 0 Critical / 0 Important unresolved, mark Task 2 complete and begin Task 3 immutable chunk records and structure-aware splitting with a genuine test-only RED commit.
+Begin M07 Task 3 — immutable chunk records and structure-aware splitting — with a genuine test-only RED commit. Cover headings, paragraphs, sentence fallback, one oversized sentence/code-point-safe lexical fallback, zero/tiny content, stable order/keys/hashes, copied metadata/language/visibility/canonical URL/source lineage, heading paths, structural parent keys, token counts, and deterministic repeated calls. Verify RED on the exact test-only SHA before adding any Task 3 production implementation.
 
 ## Previous milestone closeout
 - M05 merge `dd29d3bc1dc62dbfcccf1f87272a75c4e145afa6` via PR #6.
