@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Documents\Extraction;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use RuntimeException;
 use WpRagAiChatbot\Documents\Extraction\ExtractionException;
 use WpRagAiChatbot\Documents\Extraction\PdfDocumentExtractor;
@@ -42,7 +43,7 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$file = $this->validatedPdf( $this->twoPagePdf() );
 
 		$this->expectException( ExtractionException::class );
-		( new PdfDocumentExtractor( maxPages: 1, maxTextBytes: 1024 ) )->extract( $file );
+		$this->extractorWithLimits( 1, 1024 )->extract( $file );
 	}
 
 	/**
@@ -52,7 +53,7 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$file = $this->validatedPdf( $this->onePagePdf( 'Hello PDF' ) );
 
 		$this->expectException( ExtractionException::class );
-		( new PdfDocumentExtractor( maxPages: 10, maxTextBytes: 4 ) )->extract( $file );
+		$this->extractorWithLimits( 10, 4 )->extract( $file );
 	}
 
 	/**
@@ -60,7 +61,28 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 	 */
 	public function test_pdf_extractor_rejects_non_positive_limits(): void {
 		$this->expectException( InvalidArgumentException::class );
-		new PdfDocumentExtractor( maxPages: 0, maxTextBytes: 1024 );
+		$this->extractorWithLimits( 0, 1024 );
+	}
+
+	/**
+	 * Construct the extractor through its public named-argument contract.
+	 *
+	 * Reflection keeps the intentionally missing constructor a runtime RED rather than a static-analysis failure.
+	 *
+	 * @param int $max_pages Maximum PDF pages.
+	 * @param int $max_text_bytes Maximum extracted-text bytes.
+	 */
+	private function extractorWithLimits( int $max_pages, int $max_text_bytes ): PdfDocumentExtractor {
+		$reflection = new ReflectionClass( PdfDocumentExtractor::class );
+		$extractor  = $reflection->newInstanceArgs(
+			array(
+				'maxPages'     => $max_pages,
+				'maxTextBytes' => $max_text_bytes,
+			)
+		);
+
+		self::assertInstanceOf( PdfDocumentExtractor::class, $extractor );
+		return $extractor;
 	}
 
 	/**
