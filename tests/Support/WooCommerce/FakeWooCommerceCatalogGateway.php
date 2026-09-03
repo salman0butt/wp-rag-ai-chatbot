@@ -34,9 +34,9 @@ final class FakeWooCommerceCatalogGateway implements WooCommerceCatalogGateway {
 	/**
 	 * Create the fake gateway.
 	 *
-	 * @param bool                               $available Whether the gateway is available.
-	 * @param array<int, array<int, int>>        $pages Product IDs keyed by one-based page.
-	 * @param array<int, WooCommerceProduct>     $products Product snapshots keyed by product ID.
+	 * @param bool                           $available Whether the gateway is available.
+	 * @param array<int, array<int, int>>    $pages Product IDs keyed by one-based page.
+	 * @param array<int, WooCommerceProduct> $products Product snapshots keyed by product ID.
 	 */
 	public function __construct(
 		private bool $available,
