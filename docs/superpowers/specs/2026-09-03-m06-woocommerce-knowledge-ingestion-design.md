@@ -40,7 +40,7 @@ Responsibilities:
 
 - `isAvailable(): bool` reports whether supported WooCommerce public APIs are available.
 - `product(int $productId): ?WooCommerceProduct` returns one eligible normalized product snapshot or `null` when no eligible catalog product exists.
-- `productIds(int $page, int $perPage): array` returns deterministic ascending eligible product IDs in bounded pages.
+- `productIds(int $page, int $perPage): array` returns deterministic ascending published candidate product IDs in bounded pages; final public eligibility is enforced by `product()` so filtering cannot falsify page-exhaustion semantics.
 
 The gateway never returns raw `WC_Product` objects to the Knowledge domain.
 
@@ -54,7 +54,7 @@ When available, the adapter uses supported public WooCommerce APIs to load produ
 
 ### `WooCommerceProduct`
 
-Create an immutable `src/WooCommerce/Catalog/WooCommerceProduct.php` snapshot containing only stable, index-approved catalog facts:
+Create an immutable `src/WooCommerce/Catalog/WooCommerceProduct.php` snapshot containing only stable, index-approved catalog facts plus a generic WooCommerce modification marker retained for adapter/reconciliation observability:
 
 - product ID;
 - product type (`simple`, `variable`, or another explicitly supported descriptive type);
@@ -68,7 +68,9 @@ Create an immutable `src/WooCommerce/Catalog/WooCommerceProduct.php` snapshot co
 - tag names/slugs;
 - global/custom descriptive attributes;
 - variation descriptors for variable products;
-- modified timestamp/version input.
+- generic WooCommerce modified timestamp.
+
+The generic modified timestamp is not by itself a stable-knowledge version input because WooCommerce can update that marker for changes whose cause is outside the indexed allowlist. M06 source versioning therefore derives from the canonical stable facts themselves, not from timestamp churn.
 
 The snapshot excludes price, regular/sale price, stock quantity/status, backorder state, purchasability, sale dates, coupons/discounts, cart state, customer IDs, order data, downloads/customer entitlements, billing/shipping data, sessions, and arbitrary product/post meta.
 
@@ -109,10 +111,10 @@ Each eligible product emits one `DocumentRecord` in M06.
 - `visibility`: `public`.
 - `content`: deterministic readable catalog text assembled from name, descriptions, SKU, taxonomies, attributes, and variation descriptors.
 - `metadata`: allowlisted structured catalog facts only, including product ID/type/SKU/category/tag/attribute/variation identity data.
-- `sourceVersion`: deterministic SHA-256 over the canonical stable snapshot inputs, including modified marker and allowlisted catalog fields; live price/stock state never affects it.
+- `sourceVersion`: deterministic SHA-256 over canonical stable allowlisted catalog facts. The generic WooCommerce modified marker is deliberately excluded so price/stock-only or other non-allowlisted updates cannot create false knowledge-version changes.
 - `contentHash`: existing `DocumentHasher` over canonical document fields.
 
-A descriptive catalog update changes source version/content hash as appropriate. A price-only or stock-only change must not change the M06 source version or document hash.
+A descriptive catalog update changes source version/content hash as appropriate. A price-only or stock-only change, including any accompanying generic modified-marker churn, must not change the M06 source version or document hash.
 
 Product deletion/unpublishing causes subsequent enumeration/lookup to omit the product, allowing later incremental-index reconciliation to delete stale documents in M07. M06 does not implement the index deletion engine itself.
 
@@ -157,7 +159,7 @@ Required behavior coverage includes:
 - publish/visibility filtering;
 - deterministic source version/content hash;
 - descriptive changes alter version/hash;
-- price/stock-only changes do not alter version/hash;
+- price/stock-only changes and generic modified-marker-only churn do not alter version/hash;
 - removed/unpublished products disappear from source output;
 - malformed source configuration fails closed.
 
@@ -172,8 +174,12 @@ Out of scope: embeddings/vector runtime (M08), chunking/dedup/incremental index 
 - Placeholder scan: no TODO/TBD placeholders.
 - Architecture: WooCommerce APIs are isolated behind a gateway; canonical mapping reuses M04 contracts.
 - Security/privacy: arbitrary/customer/private metadata is excluded by allowlist and visibility fails closed.
-- Stable/live separation: price, stock, sale, cart, order, discount, and identity-dependent state are explicitly outside indexed documents and source versioning.
+- Stable/live separation: price, stock, sale, cart, order, discount, identity-dependent state, and generic modified-marker-only churn are explicitly outside indexed documents and source versioning.
 - Compatibility: inactive WooCommerce is a supported state and cannot break bootstrap.
 - Performance: bounded deterministic paging avoids unbounded catalog loads; background orchestration remains later scope.
 - Testability: source behavior is testable without WooCommerce; native behavior receives real WooCommerce smoke coverage.
 - YAGNI: one document per product; variations remain structured product metadata until retrieval evidence proves separate documents are needed.
+
+## Task 4 clarification — auto-approved scheduled mode
+
+Task 4 exposed an inconsistency in the original wording: a generic WooCommerce modified marker cannot both participate in `sourceVersion` and guarantee that price/stock-only updates never change that version, because the adapter receives no cause-specific modification signal. The stronger product requirement is the stable/live separation. Therefore this clarification supersedes the earlier modified-marker-as-version-input wording: the marker may remain in the immutable gateway snapshot for observability, but M06 `sourceVersion` and `contentHash` are functions only of canonical allowlisted stable knowledge facts. This clarification was routed through regression TDD rather than treated as a documentation-only assumption.
