@@ -48,12 +48,26 @@ final class WooCommerceProductTest extends TestCase {
 			categories: array( 'Outdoor', 'Shoes', 'Outdoor' ),
 			tags: array( 'Trail', 'Lightweight', 'Trail' ),
 			attributes: array(
-				'Size'  => array( '44', '42', '44' ),
+				'Size' => array( '44', '42', '44' ),
 				'Color' => array( 'Red', 'Blue' ),
 			),
 			variations: array(
-				new WooCommerceVariation( 84, 'TRAIL-42-RED', array( 'Color' => 'Red', 'Size' => '42' ) ),
-				new WooCommerceVariation( 81, 'TRAIL-42-BLUE', array( 'Size' => '42', 'Color' => 'Blue' ) ),
+				new WooCommerceVariation(
+					84,
+					'TRAIL-42-RED',
+					array(
+						'Color' => 'Red',
+						'Size'  => '42',
+					)
+				),
+				new WooCommerceVariation(
+					81,
+					'TRAIL-42-BLUE',
+					array(
+						'Size'  => '42',
+						'Color' => 'Blue',
+					)
+				),
 			),
 			modifiedGmt: '2026-09-03T00:00:00+00:00'
 		);
@@ -137,7 +151,10 @@ final class WooCommerceProductTest extends TestCase {
 		$variation = new WooCommerceVariation(
 			81,
 			'TRAIL-42-BLUE',
-			array( 'Size' => '42', 'Color' => 'Blue' )
+			array(
+				'Size'  => '42',
+				'Color' => 'Blue',
+			)
 		);
 
 		self::assertSame( array( 'Color' => 'Blue', 'Size' => '42' ), $variation->attributes );
@@ -148,6 +165,10 @@ final class WooCommerceProductTest extends TestCase {
 
 	/**
 	 * Build a valid product snapshot with selected overrides.
+	 *
+	 * @param int    $id Product ID override.
+	 * @param string $type Product type override.
+	 * @param string $name Product name override.
 	 */
 	private function product(
 		int $id = 42,
