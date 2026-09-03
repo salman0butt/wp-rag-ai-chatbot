@@ -50,6 +50,20 @@ final class ChunkDeduplicatorTest extends TestCase {
 	}
 
 	/**
+	 * Canonical output ordering follows deterministic sequence, not fingerprint encounter order.
+	 */
+	public function test_canonical_chunks_are_ordered_by_sequence_when_distinct_groups_are_reversed(): void {
+		$this->requireDeduplicator();
+		$earlier = $this->chunk( 'earlier-group', 1, 'Alpha', 'en', 'public', 'embed-v1' );
+		$later   = $this->chunk( 'later-group', 8, 'Beta', 'en', 'public', 'embed-v1' );
+
+		$result = ( new ChunkDeduplicator() )->deduplicate( array( $later, $earlier ) );
+
+		self::assertSame( array( $earlier, $later ), $result->canonicalChunks );
+		self::assertSame( array(), $result->duplicateAliases );
+	}
+
+	/**
 	 * Canonical content normalization prevents formatting-only duplicate embeddings.
 	 */
 	public function test_content_is_normalized_before_deduplication(): void {
