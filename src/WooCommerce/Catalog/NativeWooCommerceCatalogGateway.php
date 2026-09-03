@@ -17,9 +17,7 @@ use InvalidArgumentException;
 final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway {
 	private const MAX_PAGE_SIZE = 250;
 
-	/**
-	 * Report whether the required public WooCommerce APIs are available.
-	 */
+	/** Report whether the required public WooCommerce APIs are available. */
 	public function isAvailable(): bool {
 		return function_exists( 'wc_get_products' ) && function_exists( 'wc_get_product' );
 	}
@@ -27,8 +25,6 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Interface parameter name follows the approved application contract.
 	/**
 	 * Load one eligible stable product snapshot.
-	 *
-	 * Product normalization is added by the next Task 2 TDD subcycle.
 	 *
 	 * @param int $productId Product ID.
 	 * @throws InvalidArgumentException When the product ID is invalid.
@@ -42,7 +38,68 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return null;
 		}
 
-		return null;
+		$get_product = $this->resolveCallable( 'wc_get_product' );
+		if ( null === $get_product ) {
+			return null;
+		}
+
+		$product = $get_product( $productId );
+		if ( ! $this->isEligibleProduct( $product, $productId ) || ! is_object( $product ) ) {
+			return null;
+		}
+
+		$required_methods = array(
+			'get_status',
+			'get_type',
+			'get_catalog_visibility',
+			'get_name',
+			'get_short_description',
+			'get_description',
+			'get_sku',
+			'get_permalink',
+			'get_category_ids',
+			'get_tag_ids',
+			'get_attributes',
+			'get_date_modified',
+		);
+		foreach ( $required_methods as $method ) {
+			if ( ! method_exists( $product, $method ) ) {
+				return null;
+			}
+		}
+
+		$modified = call_user_func( array( $product, 'get_date_modified' ) );
+		if ( ! is_object( $modified ) || ! method_exists( $modified, 'date' ) ) {
+			return null;
+		}
+		$modified_gmt = trim( (string) call_user_func( array( $modified, 'date' ), 'c' ) );
+		if ( '' === $modified_gmt ) {
+			return null;
+		}
+
+		$categories = $this->termNames( call_user_func( array( $product, 'get_category_ids' ) ), 'product_cat' );
+		$tags       = $this->termNames( call_user_func( array( $product, 'get_tag_ids' ) ), 'product_tag' );
+		$attributes = $this->normalizeAttributes( call_user_func( array( $product, 'get_attributes' ) ), $productId );
+		if ( null === $categories || null === $tags || null === $attributes ) {
+			return null;
+		}
+
+		return new WooCommerceProduct(
+			$productId,
+			(string) call_user_func( array( $product, 'get_type' ) ),
+			(string) call_user_func( array( $product, 'get_status' ) ),
+			(string) call_user_func( array( $product, 'get_catalog_visibility' ) ),
+			(string) call_user_func( array( $product, 'get_name' ) ),
+			(string) call_user_func( array( $product, 'get_short_description' ) ),
+			(string) call_user_func( array( $product, 'get_description' ) ),
+			(string) call_user_func( array( $product, 'get_sku' ) ),
+			(string) call_user_func( array( $product, 'get_permalink' ) ),
+			$categories,
+			$tags,
+			$attributes,
+			array(),
+			$modified_gmt
+		);
 	}
 	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
 
@@ -103,6 +160,108 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 		return $eligible_ids;
 	}
 	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
+
+	/**
+	 * Resolve taxonomy term names through public WordPress APIs.
+	 *
+	 * @param mixed  $raw_ids Raw term IDs.
+	 * @param string $taxonomy Taxonomy name.
+	 * @return list<string>|null
+	 */
+	private function termNames( mixed $raw_ids, string $taxonomy ): ?array {
+		if ( ! is_array( $raw_ids ) ) {
+			return null;
+		}
+
+		$get_term = $this->resolveCallable( 'get_term' );
+		if ( null === $get_term && array() !== $raw_ids ) {
+			return null;
+		}
+
+		$names = array();
+		foreach ( $raw_ids as $raw_id ) {
+			$id = $this->normalizeProductId( $raw_id );
+			if ( null === $id || null === $get_term ) {
+				return null;
+			}
+
+			$term = $get_term( $id, $taxonomy );
+			if ( ! is_object( $term ) || ! property_exists( $term, 'name' ) ) {
+				return null;
+			}
+
+			$name = trim( (string) $term->name );
+			if ( '' === $name ) {
+				return null;
+			}
+			$names[] = $name;
+		}
+
+		return $names;
+	}
+
+	/**
+	 * Normalize public WooCommerce product attributes without reading arbitrary meta.
+	 *
+	 * @param mixed $raw_attributes Raw product attributes.
+	 * @param int   $product_id Product ID.
+	 * @return array<string,list<string>>|null
+	 */
+	private function normalizeAttributes( mixed $raw_attributes, int $product_id ): ?array {
+		if ( ! is_array( $raw_attributes ) ) {
+			return null;
+		}
+
+		$normalized = array();
+		foreach ( $raw_attributes as $name => $attribute ) {
+			if ( is_array( $attribute ) && is_string( $name ) ) {
+				$values = array();
+				foreach ( $attribute as $value ) {
+					if ( ! is_scalar( $value ) ) {
+						return null;
+					}
+					$values[] = (string) $value;
+				}
+				$normalized[ $name ] = $values;
+				continue;
+			}
+
+			if ( ! is_object( $attribute ) || ! method_exists( $attribute, 'get_name' ) || ! method_exists( $attribute, 'get_options' ) ) {
+				return null;
+			}
+
+			$attribute_name = trim( (string) call_user_func( array( $attribute, 'get_name' ) ) );
+			$options        = call_user_func( array( $attribute, 'get_options' ) );
+			if ( '' === $attribute_name || ! is_array( $options ) ) {
+				return null;
+			}
+
+			$values = array();
+			foreach ( $options as $option ) {
+				if ( is_scalar( $option ) ) {
+					$values[] = (string) $option;
+				} else {
+					return null;
+				}
+			}
+
+			if ( method_exists( $attribute, 'is_taxonomy' ) && (bool) call_user_func( array( $attribute, 'is_taxonomy' ) ) ) {
+				$get_terms = $this->resolveCallable( 'wc_get_product_terms' );
+				if ( null === $get_terms ) {
+					return null;
+				}
+				$term_names = $get_terms( $product_id, $attribute_name, array( 'fields' => 'names' ) );
+				if ( ! is_array( $term_names ) ) {
+					return null;
+				}
+				$values = array_map( 'strval', $term_names );
+			}
+
+			$normalized[ $attribute_name ] = $values;
+		}
+
+		return $normalized;
+	}
 
 	/**
 	 * Resolve an optional runtime function without making it a static dependency.
