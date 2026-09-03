@@ -16,6 +16,10 @@ use ZipArchive;
  * Enforces bounded ZIP structure before a DOCX parser sees archive contents.
  */
 final readonly class DocxArchiveInspector {
+	private int $max_entries;
+	private int $max_uncompressed_bytes;
+
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Public argument names are fixed by the approved M05 domain contract and PHP named-argument compatibility.
 	/**
 	 * Create the archive inspector.
 	 *
@@ -23,14 +27,15 @@ final readonly class DocxArchiveInspector {
 	 * @param int $maxUncompressedBytes Maximum aggregate uncompressed bytes.
 	 * @throws InvalidArgumentException When limits are not positive.
 	 */
-	public function __construct(
-		private int $maxEntries = 1000,
-		private int $maxUncompressedBytes = 20971520
-	) {
+	public function __construct( int $maxEntries = 1000, int $maxUncompressedBytes = 20971520 ) {
 		if ( $maxEntries < 1 || $maxUncompressedBytes < 1 ) {
 			throw new InvalidArgumentException( 'DOCX archive limits must be positive.' );
 		}
+
+		$this->max_entries            = $maxEntries;
+		$this->max_uncompressed_bytes = $maxUncompressedBytes;
 	}
+	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
 
 	/**
 	 * Verify that a DOCX archive is readable and within resource limits.
@@ -45,19 +50,20 @@ final readonly class DocxArchiveInspector {
 		}
 
 		try {
-			if ( $archive->numFiles > $this->maxEntries ) {
+			$entry_count = count( $archive );
+			if ( $entry_count > $this->max_entries ) {
 				throw new ExtractionException( 'DOCX extraction failed.' );
 			}
 
 			$total_bytes = 0;
-			for ( $index = 0; $index < $archive->numFiles; ++$index ) {
+			for ( $index = 0; $index < $entry_count; ++$index ) {
 				$entry = $archive->statIndex( $index );
 				if ( false === $entry || ! isset( $entry['size'] ) || ! is_int( $entry['size'] ) || $entry['size'] < 0 ) {
 					throw new ExtractionException( 'DOCX extraction failed.' );
 				}
 
 				$total_bytes += $entry['size'];
-				if ( $total_bytes > $this->maxUncompressedBytes ) {
+				if ( $total_bytes > $this->max_uncompressed_bytes ) {
 					throw new ExtractionException( 'DOCX extraction failed.' );
 				}
 			}
