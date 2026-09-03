@@ -129,6 +129,14 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		self::assertSame( array( 3, 9 ), $gateway->productIds( 2, 25 ) );
 	}
 
+	/** A missing or deleted product resolves to no catalog snapshot. */
+	public function test_product_returns_null_for_missing_product(): void {
+		Functions\when( 'wc_get_products' )->justReturn( array() );
+		Functions\when( 'wc_get_product' )->justReturn( false );
+
+		self::assertNull( ( new NativeWooCommerceCatalogGateway() )->product( 404 ) );
+	}
+
 	/** A public simple product maps only stable allowlisted catalog facts. */
 	public function test_product_normalizes_public_simple_product(): void {
 		$product = new NativeGatewayProductStub(
@@ -171,8 +179,16 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		self::assertNotNull( $snapshot );
 		self::assertSame( 42, $snapshot->id );
 		self::assertSame( 'simple', $snapshot->type );
+		self::assertSame( 'publish', $snapshot->status );
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain record property follows the approved contract.
+		self::assertSame( 'visible', $snapshot->catalogVisibility );
 		self::assertSame( 'Trail Shoe', $snapshot->name );
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain record property follows the approved contract.
+		self::assertSame( 'Light trail shoe.', $snapshot->shortDescription );
+		self::assertSame( 'Stable descriptive copy.', $snapshot->description );
 		self::assertSame( 'TRAIL-42', $snapshot->sku );
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain record property follows the approved contract.
+		self::assertSame( 'https://example.test/product/trail-shoe/', $snapshot->canonicalUrl );
 		self::assertSame( array( 'Shoes', 'Trail Gear' ), $snapshot->categories );
 		self::assertSame( array( 'Lightweight', 'Trail' ), $snapshot->tags );
 		self::assertSame(
