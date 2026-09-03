@@ -19,6 +19,7 @@ use WpRagAiChatbot\Knowledge\KnowledgeBootstrap;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\Sources\KnowledgeSource;
 use WpRagAiChatbot\Knowledge\Sources\KnowledgeSourceException;
+use WpRagAiChatbot\Knowledge\Sources\WooCommerceProductSource;
 
 /**
  * Verifies knowledge-source runtime composition.
@@ -81,7 +82,8 @@ final class KnowledgeBootstrapTest extends TestCase {
 
 		$registry = KnowledgeBootstrap::registry();
 
-		self::assertSame( array( 'faq', 'file', 'manual_text', 'third_party', 'wordpress_posts' ), $registry->types() );
+		self::assertSame( array( 'faq', 'file', 'manual_text', 'third_party', 'woocommerce_product', 'wordpress_posts' ), $registry->types() );
+		self::assertInstanceOf( WooCommerceProductSource::class, $registry->get( 'woocommerce_product' ) );
 		self::assertSame( $extension, $registry->get( 'third_party' ) );
 	}
 
