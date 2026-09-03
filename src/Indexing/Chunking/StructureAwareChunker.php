@@ -136,10 +136,10 @@ final class StructureAwareChunker {
 
 			$payload_budget = $this->config->maxTokens - $this->config->overlapTokens;
 			foreach ( $this->split_to_budget( $descriptor['content'], $payload_budget ) as $piece ) {
-				$previous      = $result[ array_key_last( $result ) ];
-				$overlap       = $this->trailing_lexical_units( $previous['content'], $this->config->overlapTokens );
-				$combined      = '' === $overlap ? $piece : $overlap . ' ' . $piece;
-				$combined      = trim( $combined );
+				$previous       = $result[ array_key_last( $result ) ];
+				$overlap        = $this->trailing_lexical_units( $previous['content'], $this->config->overlapTokens );
+				$combined       = '' === $overlap ? $piece : $overlap . ' ' . $piece;
+				$combined       = trim( $combined );
 				$combined_count = $this->counter->count( $combined );
 
 				if ( $combined_count > $this->config->maxTokens ) {
