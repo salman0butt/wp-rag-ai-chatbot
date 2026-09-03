@@ -9,7 +9,7 @@ Legend: PLANNED = approved product target, IMPLEMENTED = verified implementation
 | WordPress AI Client | WP 7.0+ adapter/Connectors compatibility | PLANNED | M03 |
 | WordPress knowledge | posts/pages/CPT/taxonomy/manual/FAQ/URLs/sitemaps | PLANNED | M04 |
 | Files | PDF/DOCX/TXT/MD/HTML/CSV/JSON/XML | PLANNED | M05 |
-| WooCommerce knowledge | product/SKU/category/attributes/variations metadata | PLANNED | M06 |
+| WooCommerce knowledge | product/SKU/category/attributes/variations metadata | IMPLEMENTED | M06 |
 | Structure-aware chunking | heading/paragraph/token/overlap/parent-child metadata | PLANNED | M07 |
 | Incremental indexing | hashes/dedup/versioning/idempotency | PLANNED | M07/M09 |
 | Local vector store | modest-installation WordPress storage | PLANNED | M08 |
