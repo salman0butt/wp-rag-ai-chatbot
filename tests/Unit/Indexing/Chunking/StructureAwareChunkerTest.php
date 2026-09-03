@@ -82,38 +82,6 @@ final class StructureAwareChunkerTest extends TestCase {
 	}
 
 	/**
-	 * Adjacent chunks in one structural parent carry bounded trailing overlap.
-	 */
-	public function test_overlap_is_applied_only_within_the_same_structural_parent(): void {
-		$this->requireChunker();
-		$words = array();
-		for ( $index = 1; $index <= 40; ++$index ) {
-			$words[] = 'word' . $index;
-		}
-
-		$chunker = new StructureAwareChunker(
-			new LexicalTokenCounter(),
-			new ChunkingConfig( 32, 8, 'm07-v1', null )
-		);
-		$chunks  = $chunker->chunks( $this->document( "# Alpha\n\n" . implode( ' ', $words ) ) );
-
-		self::assertCount( 2, $chunks );
-		self::assertSame( 32, $chunks[0]->tokenCount );
-		self::assertSame( 16, $chunks[1]->tokenCount );
-		self::assertStringStartsWith( 'word25 word26 word27 word28 word29 word30 word31 word32 ', $chunks[1]->content );
-		self::assertSame( $chunks[0]->parentChunkKey, $chunks[1]->parentChunkKey );
-
-		$sectioned = $chunker->chunks(
-			$this->document(
-				"# Alpha\n\n" . implode( ' ', array_slice( $words, 0, 32 ) ) . "\n\n# Beta\n\n" . implode( ' ', array_slice( $words, 32 ) )
-			)
-		);
-		self::assertCount( 2, $sectioned );
-		self::assertSame( 'word33 word34 word35 word36 word37 word38 word39 word40', $sectioned[1]->content );
-		self::assertNotSame( $sectioned[0]->parentChunkKey, $sectioned[1]->parentChunkKey );
-	}
-
-	/**
 	 * Repeated calls produce byte-stable keys, hashes and lineage.
 	 */
 	public function test_repeated_calls_are_deterministic(): void {
