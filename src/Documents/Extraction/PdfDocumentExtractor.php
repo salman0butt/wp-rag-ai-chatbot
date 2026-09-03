@@ -16,10 +16,17 @@ use Throwable;
 /**
  * Extracts visible text from validated PDF files through a stable boundary.
  */
-final class PdfDocumentExtractor implements DocumentExtractor {
+final readonly class PdfDocumentExtractor implements DocumentExtractor {
 	private const DEFAULT_MAX_PAGES = 200;
 	private const DEFAULT_MAX_TEXT_BYTES = 2097152;
 
+	/** Maximum parsed pages. */
+	private int $max_pages;
+
+	/** Maximum normalized extracted-text bytes. */
+	private int $max_text_bytes;
+
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Public argument names are fixed by the Task 4 regression contract and PHP named-argument compatibility.
 	/**
 	 * Configure bounded PDF extraction.
 	 *
@@ -27,13 +34,17 @@ final class PdfDocumentExtractor implements DocumentExtractor {
 	 * @param int $maxTextBytes Maximum normalized extracted-text bytes.
 	 */
 	public function __construct(
-		private readonly int $maxPages = self::DEFAULT_MAX_PAGES,
-		private readonly int $maxTextBytes = self::DEFAULT_MAX_TEXT_BYTES
+		int $maxPages = self::DEFAULT_MAX_PAGES,
+		int $maxTextBytes = self::DEFAULT_MAX_TEXT_BYTES
 	) {
-		if ( $this->maxPages <= 0 || $this->maxTextBytes <= 0 ) {
+		if ( $maxPages <= 0 || $maxTextBytes <= 0 ) {
 			throw new InvalidArgumentException( 'PDF extraction limits must be positive.' );
 		}
+
+		$this->max_pages      = $maxPages;
+		$this->max_text_bytes = $maxTextBytes;
 	}
+	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
 
 	/**
 	 * Return owned MIME types.
@@ -59,13 +70,13 @@ final class PdfDocumentExtractor implements DocumentExtractor {
 			}
 
 			$document = ( new Parser() )->parseFile( $file->path );
-			if ( count( $document->getPages() ) > $this->maxPages ) {
+			if ( count( $document->getPages() ) > $this->max_pages ) {
 				throw new ExtractionException( 'PDF extraction failed.' );
 			}
 
 			$text = $document->getText();
 			$text = trim( str_replace( array( "\r\n", "\r" ), "\n", $text ) );
-			if ( '' === $text || strlen( $text ) > $this->maxTextBytes ) {
+			if ( '' === $text || strlen( $text ) > $this->max_text_bytes ) {
 				throw new ExtractionException( 'PDF extraction failed.' );
 			}
 
