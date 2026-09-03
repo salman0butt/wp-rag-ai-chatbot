@@ -19,6 +19,8 @@ use WpRagAiChatbot\Documents\Extraction\XmlDocumentExtractor;
 final class XmlDocumentExtractorReviewTest extends TestCase {
 	/**
 	 * Temporary fixture path.
+	 *
+	 * @var string|null
 	 */
 	private ?string $temporary_path = null;
 
