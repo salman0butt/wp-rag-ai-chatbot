@@ -130,24 +130,14 @@ final class StructureAwareChunker {
 		$result       = array();
 		$heading_path = array();
 		$paragraph    = array();
-		$flush        = static function () use ( &$result, &$paragraph, &$heading_path ): void {
-			if ( array() === $paragraph ) {
-				return;
-			}
-
-			$text = trim( implode( "\n", $paragraph ) );
-			if ( '' !== $text ) {
-				$result[] = array(
-					'content'      => $text,
-					'heading_path' => array_values( $heading_path ),
-				);
-			}
-			$paragraph = array();
-		};
 
 		foreach ( $lines as $line ) {
 			if ( 1 === preg_match( '/^(#{1,6})[ \t]+(.+?)\s*$/u', $line, $matches ) ) {
-				$flush();
+				$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path );
+				if ( null !== $descriptor ) {
+					$result[] = $descriptor;
+				}
+				$paragraph      = array();
 				$level          = strlen( $matches[1] );
 				$heading_path   = array_slice( $heading_path, 0, $level - 1 );
 				$heading_path[] = trim( $matches[2] );
@@ -155,15 +145,46 @@ final class StructureAwareChunker {
 			}
 
 			if ( '' === trim( $line ) ) {
-				$flush();
+				$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path );
+				if ( null !== $descriptor ) {
+					$result[] = $descriptor;
+				}
+				$paragraph = array();
 				continue;
 			}
 
 			$paragraph[] = $line;
 		}
-		$flush();
+
+		$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path );
+		if ( null !== $descriptor ) {
+			$result[] = $descriptor;
+		}
 
 		return $result;
+	}
+
+	/**
+	 * Build one paragraph descriptor if the pending paragraph has content.
+	 *
+	 * @param array<int, string> $paragraph Pending paragraph lines.
+	 * @param array<int, string> $heading_path Current heading lineage.
+	 * @return array{content:string, heading_path:array<int, string>}|null
+	 */
+	private function paragraph_descriptor( array $paragraph, array $heading_path ): ?array {
+		if ( array() === $paragraph ) {
+			return null;
+		}
+
+		$text = trim( implode( "\n", $paragraph ) );
+		if ( '' === $text ) {
+			return null;
+		}
+
+		return array(
+			'content'      => $text,
+			'heading_path' => array_values( $heading_path ),
+		);
 	}
 
 	/**
