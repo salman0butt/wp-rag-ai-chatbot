@@ -188,4 +188,79 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		self::assertFalse( property_exists( $snapshot, 'price' ) );
 		self::assertFalse( property_exists( $snapshot, 'stockStatus' ) );
 	}
+
+	/** A public variable product maps stable variation identity, SKU, and choices only. */
+	public function test_product_normalizes_variable_product_variations(): void {
+		$parent = new NativeGatewayProductStub(
+			'publish',
+			'variable',
+			'visible',
+			'Trail Shirt',
+			'',
+			'Variable trail shirt.',
+			null === null ? '' : '',
+			'https://example.test/product/trail-shirt/',
+			array(),
+			array(),
+			array( 'Color' => array( 'Blue', 'Red' ) ),
+			array( 103, 101 ),
+			'2026-09-03T09:00:00+00:00'
+		);
+		$blue = new NativeGatewayProductStub(
+			'publish',
+			'variation',
+			'visible',
+			'Trail Shirt - Blue',
+			'',
+			'',
+			'SHIRT-BLUE',
+			'https://example.test/product/trail-shirt/',
+			array(),
+			array(),
+			array(),
+			array(),
+			'2026-09-03T09:00:00+00:00',
+			array( 'Color' => 'Blue', 'Size' => 'M' )
+		);
+		$red = new NativeGatewayProductStub(
+			'publish',
+			'variation',
+			'visible',
+			'Trail Shirt - Red',
+			'',
+			'',
+			'SHIRT-RED',
+			'https://example.test/product/trail-shirt/',
+			array(),
+			array(),
+			array(),
+			array(),
+			'2026-09-03T09:00:00+00:00',
+			array( 'Color' => 'Red', 'Size' => 'L' )
+		);
+
+		Functions\when( 'wc_get_products' )->justReturn( array() );
+		Functions\when( 'wc_get_product' )->alias(
+			static fn ( int $product_id ): NativeGatewayProductStub|false => match ( $product_id ) {
+				50      => $parent,
+				101     => $blue,
+				103     => $red,
+				default => false,
+			}
+		);
+		Functions\when( 'get_post_field' )->justReturn( '' );
+
+		$snapshot = ( new NativeWooCommerceCatalogGateway() )->product( 50 );
+
+		self::assertNotNull( $snapshot );
+		self::assertCount( 2, $snapshot->variations );
+		self::assertSame( 101, $snapshot->variations[0]->id );
+		self::assertSame( 'SHIRT-BLUE', $snapshot->variations[0]->sku );
+		self::assertSame( array( 'Color' => 'Blue', 'Size' => 'M' ), $snapshot->variations[0]->attributes );
+		self::assertSame( 103, $snapshot->variations[1]->id );
+		self::assertSame( 'SHIRT-RED', $snapshot->variations[1]->sku );
+		self::assertSame( array( 'Color' => 'Red', 'Size' => 'L' ), $snapshot->variations[1]->attributes );
+		self::assertFalse( property_exists( $snapshot->variations[0], 'price' ) );
+		self::assertFalse( property_exists( $snapshot->variations[0], 'stockStatus' ) );
+	}
 }
