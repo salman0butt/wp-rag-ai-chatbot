@@ -69,7 +69,7 @@ final readonly class DocxArchiveInspector {
 			$total_bytes = 0;
 			for ( $index = 0; $index < $entry_count; ++$index ) {
 				$entry = $archive->statIndex( $index );
-				if ( false === $entry || ! isset( $entry['size'] ) || ! is_int( $entry['size'] ) || $entry['size'] < 0 ) {
+				if ( false === $entry || $entry['size'] < 0 ) {
 					throw new ExtractionException( 'DOCX extraction failed.' );
 				}
 
