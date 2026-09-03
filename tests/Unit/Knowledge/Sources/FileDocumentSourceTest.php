@@ -119,6 +119,63 @@ final class FileDocumentSourceTest extends TestCase {
 	}
 
 	/**
+	 * Text/plain fallback for a JSON file must still use JSON structural parsing.
+	 */
+	public function test_documents_dispatches_json_text_fallback_to_json_extractor(): void {
+		$this->requireTask5Contract();
+		$path     = $this->createFile( 'guide.json', '{"answer":42}' );
+		$registry = new DocumentExtractorRegistry();
+		$registry->register(
+			new class() implements DocumentExtractor {
+				/**
+				 * {@inheritDoc}
+				 */
+				public function supportedMimeTypes(): array {
+					return array( 'text/plain' );
+				}
+
+				/**
+				 * Extract generic text.
+				 *
+				 * @param ValidatedFile $file Validated file.
+				 */
+				public function extract( ValidatedFile $file ): ExtractedDocument {
+					unset( $file );
+					return new ExtractedDocument( 'generic text', array( 'parser' => 'text' ) );
+				}
+			}
+		);
+		$registry->register(
+			new class() implements DocumentExtractor {
+				/**
+				 * {@inheritDoc}
+				 */
+				public function supportedMimeTypes(): array {
+					return array( 'application/json' );
+				}
+
+				/**
+				 * Extract structured JSON.
+				 *
+				 * @param ValidatedFile $file Validated file.
+				 */
+				public function extract( ValidatedFile $file ): ExtractedDocument {
+					unset( $file );
+					return new ExtractedDocument( 'json parsed', array( 'parser' => 'json' ) );
+				}
+			}
+		);
+
+		$document = iterator_to_array(
+			$this->source( $registry )->documents( $this->record( $path, dirname( $path ) ) ),
+			false
+		)[0];
+
+		self::assertSame( 'json parsed', $document->content );
+		self::assertSame( 'json', $document->metadata['parser'] );
+	}
+
+	/**
 	 * Extractor-domain failures remain fail-closed and visible to callers.
 	 */
 	public function test_documents_propagates_extractor_failure(): void {
