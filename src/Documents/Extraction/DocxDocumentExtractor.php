@@ -76,7 +76,8 @@ final readonly class DocxDocumentExtractor implements DocumentExtractor {
 	private function collectContainerText( AbstractContainer $container, array &$lines ): void {
 		foreach ( $container->getElements() as $element ) {
 			if ( $element instanceof Text ) {
-				$text = trim( $element->getText() );
+				$value = $element->getText();
+				$text  = null === $value ? '' : trim( $value );
 				if ( '' !== $text ) {
 					$lines[] = $text;
 				}
