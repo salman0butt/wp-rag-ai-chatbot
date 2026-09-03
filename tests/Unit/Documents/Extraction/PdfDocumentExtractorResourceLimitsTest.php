@@ -36,9 +36,7 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		}
 	}
 
-	/**
-	 * Page count exceeding the configured bound fails closed.
-	 */
+	/** Page count exceeding the configured bound fails closed. */
 	public function test_pdf_extractor_rejects_page_count_above_limit(): void {
 		$file = $this->validatedPdf( $this->twoPagePdf() );
 
@@ -46,9 +44,7 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$this->extractorWithLimits( 1, 1024 )->extract( $file );
 	}
 
-	/**
-	 * Extracted text exceeding the configured byte bound fails closed.
-	 */
+	/** Extracted text exceeding the configured byte bound fails closed. */
 	public function test_pdf_extractor_rejects_text_above_limit(): void {
 		$file = $this->validatedPdf( $this->onePagePdf( 'Hello PDF' ) );
 
@@ -56,9 +52,7 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$this->extractorWithLimits( 10, 4 )->extract( $file );
 	}
 
-	/**
-	 * Non-positive resource limits are invalid configuration.
-	 */
+	/** Non-positive resource limits are invalid configuration. */
 	public function test_pdf_extractor_rejects_non_positive_limits(): void {
 		$this->expectException( InvalidArgumentException::class );
 		$this->extractorWithLimits( 0, 1024 );
@@ -155,7 +149,7 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$objects[2] = '<< /Type /Pages /Kids [' . $kids . '] /Count ' . count( $pages ) . ' >>';
 
 		foreach ( $pages as $index => $text ) {
-			$stream                             = 'BT /F1 12 Tf 72 720 Td (' . $text . ') Tj ET';
+			$stream                            = 'BT /F1 12 Tf 72 720 Td (' . $text . ') Tj ET';
 			$objects[ $page_ids[ $index ] ]    = '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
 				. '/Resources << /Font << /F1 ' . $font_id . ' 0 R >> >> /Contents ' . $content_ids[ $index ] . ' 0 R >>';
 			$objects[ $content_ids[ $index ] ] = '<< /Length ' . strlen( $stream ) . ">>\nstream\n" . $stream . "\nendstream";
