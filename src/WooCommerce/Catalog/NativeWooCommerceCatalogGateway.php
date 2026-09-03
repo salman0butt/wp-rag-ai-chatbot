@@ -62,8 +62,9 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return array();
 		}
 
-		$ids = call_user_func(
-			'wc_get_products',
+		/** @var callable(array<string, mixed>): mixed $get_products */
+		$get_products = 'wc_get_products';
+		$ids          = $get_products(
 			array(
 				'status'  => 'publish',
 				'limit'   => $perPage,
@@ -78,6 +79,8 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return array();
 		}
 
+		/** @var callable(int): mixed $get_product */
+		$get_product  = 'wc_get_product';
 		$eligible_ids = array();
 		foreach ( $ids as $raw_id ) {
 			$product_id = $this->normalizeProductId( $raw_id );
@@ -85,7 +88,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 				continue;
 			}
 
-			$product = call_user_func( 'wc_get_product', $product_id );
+			$product = $get_product( $product_id );
 			if ( ! $this->isEligibleProduct( $product, $product_id ) ) {
 				continue;
 			}
