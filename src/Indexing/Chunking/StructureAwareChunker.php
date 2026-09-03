@@ -44,14 +44,13 @@ final class StructureAwareChunker {
 
 		$descriptors = array();
 		foreach ( $this->structured_paragraphs( $content ) as $paragraph ) {
-			foreach ( $this->split_to_budget( $paragraph['content'], $this->config->maxTokens ) as $piece ) {
+			foreach ( $this->split_to_budget( $paragraph['content'] ) as $piece ) {
 				$descriptors[] = array(
 					'content'      => $piece,
 					'heading_path' => $paragraph['heading_path'],
 				);
 			}
 		}
-		$descriptors = $this->apply_overlap( $descriptors );
 
 		$chunks      = array();
 		$fingerprint = $this->config->fingerprint();
@@ -113,100 +112,6 @@ final class StructureAwareChunker {
 		}
 
 		return $chunks;
-	}
-
-	/**
-	 * Apply configured trailing lexical overlap without crossing structural parents.
-	 *
-	 * @param array<int, array{content:string, heading_path:array<int, string>}> $descriptors Base chunk descriptors.
-	 * @return array<int, array{content:string, heading_path:array<int, string>}>
-	 */
-	private function apply_overlap( array $descriptors ): array {
-		if ( 0 === $this->config->overlapTokens || count( $descriptors ) < 2 ) {
-			return $descriptors;
-		}
-
-		$result = array();
-		foreach ( $descriptors as $descriptor ) {
-			$previous = array() === $result ? null : $result[ array_key_last( $result ) ];
-			if ( null === $previous || $previous['heading_path'] !== $descriptor['heading_path'] ) {
-				$result[] = $descriptor;
-				continue;
-			}
-
-			$payload_budget = $this->config->maxTokens - $this->config->overlapTokens;
-			foreach ( $this->split_to_budget( $descriptor['content'], $payload_budget ) as $piece ) {
-				$previous       = $result[ array_key_last( $result ) ];
-				$overlap        = $this->trailing_lexical_units( $previous['content'], $this->config->overlapTokens );
-				$combined       = '' === $overlap ? $piece : $overlap . ' ' . $piece;
-				$combined       = trim( $combined );
-				$combined_count = $this->counter->count( $combined );
-
-				if ( $combined_count > $this->config->maxTokens ) {
-					$combined = $this->fit_overlap_to_budget( $previous['content'], $piece );
-				}
-
-				$result[] = array(
-					'content'      => $combined,
-					'heading_path' => $descriptor['heading_path'],
-				);
-			}
-		}
-
-		return $result;
-	}
-
-	/**
-	 * Reduce overlap deterministically for injected counters whose units differ from lexical units.
-	 *
-	 * @param string $previous Previous final chunk content.
-	 * @param string $piece New payload content.
-	 * @return string Bounded overlapped content.
-	 * @throws ChunkingException When the new payload itself violates the budget.
-	 */
-	private function fit_overlap_to_budget( string $previous, string $piece ): string {
-		if ( $this->counter->count( $piece ) > $this->config->maxTokens ) {
-			throw new ChunkingException( 'Chunk payload violates the configured token budget.' );
-		}
-
-		for ( $count = $this->config->overlapTokens - 1; $count > 0; --$count ) {
-			$overlap  = $this->trailing_lexical_units( $previous, $count );
-			$combined = trim( $overlap . ' ' . $piece );
-			if ( $this->counter->count( $combined ) <= $this->config->maxTokens ) {
-				return $combined;
-			}
-		}
-
-		return $piece;
-	}
-
-	/**
-	 * Copy the requested trailing lexical units while retaining their original text.
-	 *
-	 * @param string $text Source chunk content.
-	 * @param int    $count Maximum lexical units to copy.
-	 * @return string Trailing overlap text.
-	 * @throws ChunkingException When content is invalid UTF-8.
-	 */
-	private function trailing_lexical_units( string $text, int $count ): string {
-		$matched = preg_match_all(
-			'/[\p{L}\p{N}]+|[^\s\p{L}\p{N}]/u',
-			$text,
-			$matches,
-			PREG_OFFSET_CAPTURE
-		);
-		if ( false === $matched ) {
-			throw new ChunkingException( 'Chunk content is not valid UTF-8.' );
-		}
-		if ( 0 === $matched || $count < 1 ) {
-			return '';
-		}
-
-		$tokens      = $matches[0];
-		$start_index = max( 0, count( $tokens ) - $count );
-		$start_byte  = $tokens[ $start_index ][1];
-
-		return trim( substr( $text, $start_byte ) );
 	}
 
 	/**
@@ -283,18 +188,14 @@ final class StructureAwareChunker {
 	}
 
 	/**
-	 * Split one block until every piece fits the supplied budget.
+	 * Split one paragraph until every piece fits the configured budget.
 	 *
-	 * @param string $text Block text.
-	 * @param int    $budget Maximum token count for each returned payload.
+	 * @param string $text Paragraph text.
 	 * @return array<int, string>
 	 * @throws ChunkingException When content is not valid UTF-8 or cannot fit the budget.
 	 */
-	private function split_to_budget( string $text, int $budget ): array {
-		if ( $budget < 1 ) {
-			throw new ChunkingException( 'Chunk payload budget must be positive.' );
-		}
-		if ( $this->counter->count( $text ) <= $budget ) {
+	private function split_to_budget( string $text ): array {
+		if ( $this->counter->count( $text ) <= $this->config->maxTokens ) {
 			return array( $text );
 		}
 
@@ -304,23 +205,23 @@ final class StructureAwareChunker {
 		}
 
 		if ( count( $sentences ) < 2 ) {
-			return $this->split_lexically( $text, $budget );
+			return $this->split_lexically( $text );
 		}
 
 		$result  = array();
 		$current = '';
 		foreach ( $sentences as $sentence ) {
-			if ( $this->counter->count( $sentence ) > $budget ) {
+			if ( $this->counter->count( $sentence ) > $this->config->maxTokens ) {
 				if ( '' !== $current ) {
 					$result[] = $current;
 					$current  = '';
 				}
-				array_push( $result, ...$this->split_lexically( $sentence, $budget ) );
+				array_push( $result, ...$this->split_lexically( $sentence ) );
 				continue;
 			}
 
 			$candidate = '' === $current ? $sentence : $current . ' ' . $sentence;
-			if ( $this->counter->count( $candidate ) <= $budget ) {
+			if ( $this->counter->count( $candidate ) <= $this->config->maxTokens ) {
 				$current = $candidate;
 				continue;
 			}
@@ -340,11 +241,10 @@ final class StructureAwareChunker {
 	 * Split an oversized sentence/block on Unicode lexical-unit boundaries.
 	 *
 	 * @param string $text Oversized text.
-	 * @param int    $budget Maximum token count for each returned payload.
 	 * @return array<int, string>
 	 * @throws ChunkingException When content is not valid UTF-8 or cannot fit the budget.
 	 */
-	private function split_lexically( string $text, int $budget ): array {
+	private function split_lexically( string $text ): array {
 		$matched = preg_match_all(
 			'/[\p{L}\p{N}]+|[^\s\p{L}\p{N}]/u',
 			$text,
@@ -361,8 +261,8 @@ final class StructureAwareChunker {
 		$tokens = $matches[0];
 		$result = array();
 		$count  = count( $tokens );
-		for ( $start = 0; $start < $count; $start += $budget ) {
-			$end_index  = min( $start + $budget, $count );
+		for ( $start = 0; $start < $count; $start += $this->config->maxTokens ) {
+			$end_index  = min( $start + $this->config->maxTokens, $count );
 			$start_byte = $tokens[ $start ][1];
 			$end_byte   = $end_index < $count ? $tokens[ $end_index ][1] : strlen( $text );
 			$piece      = trim( substr( $text, $start_byte, $end_byte - $start_byte ) );
@@ -370,8 +270,8 @@ final class StructureAwareChunker {
 			if ( '' === $piece ) {
 				continue;
 			}
-			if ( $this->counter->count( $piece ) > $budget ) {
-				array_push( $result, ...$this->split_code_point_safe( $piece, $budget ) );
+			if ( $this->counter->count( $piece ) > $this->config->maxTokens ) {
+				array_push( $result, ...$this->split_code_point_safe( $piece ) );
 				continue;
 			}
 			$result[] = $piece;
@@ -384,11 +284,10 @@ final class StructureAwareChunker {
 	 * Last-resort code-point-safe fallback for an injected counter with larger units.
 	 *
 	 * @param string $text Oversized lexical piece.
-	 * @param int    $budget Maximum token count for each returned payload.
 	 * @return array<int, string>
 	 * @throws ChunkingException When content is not valid UTF-8 or a code point exceeds the budget.
 	 */
-	private function split_code_point_safe( string $text, int $budget ): array {
+	private function split_code_point_safe( string $text ): array {
 		$characters = preg_split( '//u', $text, -1, PREG_SPLIT_NO_EMPTY );
 		if ( false === $characters ) {
 			throw new ChunkingException( 'Document content is not valid UTF-8.' );
@@ -398,7 +297,7 @@ final class StructureAwareChunker {
 		$current = '';
 		foreach ( $characters as $character ) {
 			$candidate = $current . $character;
-			if ( $this->counter->count( $candidate ) <= $budget ) {
+			if ( $this->counter->count( $candidate ) <= $this->config->maxTokens ) {
 				$current = $candidate;
 				continue;
 			}
