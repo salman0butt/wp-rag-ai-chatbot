@@ -57,6 +57,9 @@ final class ChunkDeduplicator {
 			}
 		}
 
+		usort( $canonical_chunks, array( $this, 'compareChunks' ) );
+		ksort( $duplicate_aliases, SORT_STRING );
+
 		return new ChunkDeduplicationResult( $canonical_chunks, $duplicate_aliases );
 	}
 
@@ -83,11 +86,21 @@ final class ChunkDeduplicator {
 	 * @param ChunkRecord $canonical Current canonical record.
 	 */
 	private function comesBefore( ChunkRecord $candidate, ChunkRecord $canonical ): bool {
-		if ( $candidate->sequence !== $canonical->sequence ) {
-			return $candidate->sequence < $canonical->sequence;
+		return $this->compareChunks( $candidate, $canonical ) < 0;
+	}
+
+	/**
+	 * Compare chunks by deterministic sequence and stable chunk key.
+	 *
+	 * @param ChunkRecord $left Left record.
+	 * @param ChunkRecord $right Right record.
+	 */
+	private function compareChunks( ChunkRecord $left, ChunkRecord $right ): int {
+		if ( $left->sequence !== $right->sequence ) {
+			return $left->sequence <=> $right->sequence;
 		}
 
-		return strcmp( $candidate->chunkKey, $canonical->chunkKey ) < 0;
+		return strcmp( $left->chunkKey, $right->chunkKey );
 	}
 }
 // phpcs:enable WordPress.NamingConventions
