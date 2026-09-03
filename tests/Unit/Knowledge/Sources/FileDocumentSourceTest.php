@@ -119,6 +119,19 @@ final class FileDocumentSourceTest extends TestCase {
 	}
 
 	/**
+	 * Unsupported file extensions fail at the validation boundary.
+	 */
+	public function test_documents_rejects_unsupported_file_extension(): void {
+		$this->requireTask5Contract();
+		$path = $this->createFile( 'guide.exe', 'Hello file' );
+
+		$this->expectException( ExtractionException::class );
+		$this->expectExceptionMessage( 'Unsupported file extension.' );
+
+		iterator_to_array( $this->source()->documents( $this->record( $path, dirname( $path ) ) ), false );
+	}
+
+	/**
 	 * Text/plain fallback for a JSON file must still use JSON structural parsing.
 	 */
 	public function test_documents_dispatches_json_text_fallback_to_json_extractor(): void {
