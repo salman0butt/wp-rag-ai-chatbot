@@ -74,7 +74,7 @@ final class WooCommerceProductSource implements KnowledgeSource {
 			$product_ids = $this->gateway->productIds( $page, $selection['page_size'] );
 			$page_count  = count( $product_ids );
 			foreach ( $product_ids as $product_id ) {
-				if ( ! is_int( $product_id ) || $product_id < 1 ) {
+				if ( $product_id < 1 ) {
 					throw new KnowledgeSourceException( 'WooCommerce catalog returned an invalid product ID.' );
 				}
 				if ( isset( $seen[ $product_id ] ) ) {
