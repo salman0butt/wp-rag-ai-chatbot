@@ -1,13 +1,45 @@
 # Global Status
 
-- Current milestone: **M05 — File/Document Ingestion** is the next unfinished milestone.
-- Current phase: **M04 COMPLETE AND INTEGRATED**; M00-M04 are complete on `main`.
-- M04 feature PR: #4 `feat: build M04 WordPress knowledge source framework`.
+- Current milestone: **M05 — File/Document Ingestion — COMPLETE ON FEATURE BRANCH; pending exact-head merge/post-merge verification**.
+- Current branch: `feat/m05-file-document-ingestion`.
+- Completed milestones on `main`: **M00-M04**.
+- M05 design/spec: `docs/superpowers/specs/2026-09-03-m05-file-document-ingestion-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
+- M05 implementation plan: `docs/superpowers/plans/2026-09-03-m05-file-document-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`.
+- M05 Tasks **1–7 are complete on the feature branch**; merge/post-merge CI is the remaining integration gate.
+
+## M05 delivered scope
+- Deterministic extraction contracts/registry and immutable validated/extracted values.
+- File validation boundary: readable regular non-empty files, default 10 MiB limit, server-side `finfo`, extension/MIME agreement, canonical allowed-root/symlink containment, SHA-256 metadata.
+- Bounded TXT/Markdown/HTML/CSV/JSON/XML/PDF/DOCX extractors.
+- PDF decode/page/text ceilings and DOCX ZIP entry/uncompressed-byte ceilings.
+- Native `file` knowledge source through `KnowledgeBootstrap` with stable key/version/hash and traceable metadata.
+- Permanent real WordPress file-ingestion smoke in CI.
+
+## TDD and review summary
+- Task 1 RED `71bcc9dc...` / GREEN `73a442de...`; review coverage fix `7a1d1fc...`.
+- Task 2 RED `874a2e5d...` / GREEN `0c844673...`; named-argument review RED `6c2fe061...` / GREEN `1263be3a...`.
+- Task 3 RED `5379d8b4...` / GREEN `87dd33be...`; HTML and XML review regressions fixed through `383a5a25...` and `442063e4...`.
+- Task 4 PDF decode-memory review RED `15863a76...` / GREEN `0b5f99da...`.
+- Task 5 RED `4ef502da...` / GREEN `7a923d7b...`; structured fallback review RED `3b98b20d...` / GREEN `c5de4345...`; final unsupported-file coverage `00b3b88a...`.
+- Task 6 wiring RED `cfe94249...` / GREEN `903de635...` with real WordPress file-ingestion smoke.
+- Task 7 whole-milestone security/performance/review second pass: **0 Critical / 0 Important** unresolved findings; no production behavior defect found, so no new Task 7 behavioral RED/GREEN cycle was required.
+
+## Pre-merge evidence
+Pre-documentation candidate `0dda3fc090248f16d012361298266a1584648789`, CI `33717095588`:
+- PHPStan: **0 errors**.
+- PHPUnit: **222 tests / 1102 assertions**.
+- Composer audit: **no advisories**.
+- Permanent jobs: `php-quality`, `js-quality`, `package`, `wordpress-smoke` all passed.
+- WordPress smoke includes activation, database, providers, knowledge, and file ingestion.
+
+Detailed milestone evidence: `docs/milestones/M05-file-document-ingestion.md`.
+Final integration evidence: `docs/progress/M05-CLOSEOUT.md`.
+
+## Current gates
+- PR #6 — `feat: build M05 file/document ingestion`.
+- Exact remaining action: require all permanent jobs green on the new documentation head, inspect its package artifact, merge only that exact tested SHA, then verify fresh post-merge `main` CI. After successful post-merge verification, mark M05 integrated and begin M06 in a later coherent unit.
+
+## Previous milestone closeout
 - M04 feature merge: `666bb02dc6780f2fb3c818bbbf4d3fe1a0778555`.
-- M04 final reconciled feature head: `f09f293c913203bdc498e76a28413e3ab2614f5c`; exact-head CI `33687964210` passed `php-quality`, `js-quality`, `package`, and `wordpress-smoke`, including activation/database/provider/knowledge smoke. Artifact `9868887017`, 75,694 bytes, digest `sha256:0bb2f525d4ae4c37a0d69d7f9d02716b94868e5db9f07a0d8362918b6c47904e`.
-- M04 post-merge `main` CI: run `33688297306` on `666bb02dc6780f2fb3c818bbbf4d3fe1a0778555`; all four permanent jobs passed, including `npm run test:wp:knowledge` in real WordPress. Post-merge artifact `9869009969`, 75,695 bytes, digest `sha256:5d5e69b131b33a87614dfb86ef228e5fd3c168065b077e1bfbaf2af16ec82590`.
-- M04 review result: Critical none; Important unresolved none. Important FAQ partial-yield integrity and WordPress adapter sanitization findings were fixed with dedicated RED/GREEN regressions before integration.
-- M04 design/spec and implementation plan remain `AUTO-APPROVED — SCHEDULED MODE` under repository policy.
-- M04 durable closeout details: `docs/progress/M04-CLOSEOUT.md`; the earlier M04 milestone ledger contains the full task-by-task TDD history and pre-merge gate evidence.
-- Blocked items: none.
-- Exact next unfinished action: start a fresh recovery from latest `main`, read mandatory repo/Superpowers instructions, inspect M05 milestone plus existing specs/plans/code/CI/PRs for concurrency, then auto-approve the M05 design/spec/plan under scheduled policy and begin the first M05 implementation task with strict behavioral RED/GREEN evidence. Do not redo M04 unless fresh evidence shows a defect.
+- M04 post-merge CI: `33688297306`, all permanent jobs passed.
+- M04 durable closeout: `docs/progress/M04-CLOSEOUT.md`.

@@ -49,6 +49,7 @@
     "test:provider:live-gating": "bash scripts/test-live-provider-smoke-gating.sh",
     "test:wp:activation": "bash scripts/test-wp-activation.sh",
     "test:wp:database": "bash scripts/test-wp-database.sh",
+    "test:wp:file-ingestion": "bash scripts/test-wp-file-ingestion.sh",
     "test:wp:knowledge": "bash scripts/test-wp-knowledge.sh",
     "test:wp:providers": "bash scripts/test-wp-providers.sh",
     "typecheck": "tsc --noEmit",

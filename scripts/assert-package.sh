@@ -17,6 +17,8 @@ required=(
     "wp-rag-ai-chatbot/src/Core/Bootstrap.php"
     "wp-rag-ai-chatbot/src/Database/DatabaseUninstaller.php"
     "wp-rag-ai-chatbot/vendor/autoload.php"
+    "wp-rag-ai-chatbot/vendor/smalot/pdfparser/src/Smalot/PdfParser/Parser.php"
+    "wp-rag-ai-chatbot/vendor/phpoffice/phpword/src/PhpWord/IOFactory.php"
 )
 
 for path in "${required[@]}"; do

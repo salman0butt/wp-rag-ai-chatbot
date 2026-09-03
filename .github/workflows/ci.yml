@@ -57,6 +57,7 @@ jobs:
       - run: npm run test:wp:database
       - run: npm run test:wp:providers
       - run: npm run test:wp:knowledge
+      - run: npm run test:wp:file-ingestion
       - if: always()
         run: npm run env:stop
 

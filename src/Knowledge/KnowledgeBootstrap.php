@@ -10,7 +10,20 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Knowledge;
 
 use LogicException;
+use WpRagAiChatbot\Documents\Extraction\CsvDocumentExtractor;
+use WpRagAiChatbot\Documents\Extraction\DocxArchiveInspector;
+use WpRagAiChatbot\Documents\Extraction\DocxDocumentExtractor;
+use WpRagAiChatbot\Documents\Extraction\DocumentExtractorRegistry;
+use WpRagAiChatbot\Documents\Extraction\FileValidationPolicy;
+use WpRagAiChatbot\Documents\Extraction\HtmlDocumentExtractor;
+use WpRagAiChatbot\Documents\Extraction\JsonDocumentExtractor;
+use WpRagAiChatbot\Documents\Extraction\MarkdownDocumentExtractor;
+use WpRagAiChatbot\Documents\Extraction\NativeMimeTypeDetector;
+use WpRagAiChatbot\Documents\Extraction\PdfDocumentExtractor;
+use WpRagAiChatbot\Documents\Extraction\TextDocumentExtractor;
+use WpRagAiChatbot\Documents\Extraction\XmlDocumentExtractor;
 use WpRagAiChatbot\Knowledge\Sources\FaqSource;
+use WpRagAiChatbot\Knowledge\Sources\FileDocumentSource;
 use WpRagAiChatbot\Knowledge\Sources\KnowledgeSource;
 use WpRagAiChatbot\Knowledge\Sources\KnowledgeSourceException;
 use WpRagAiChatbot\Knowledge\Sources\KnowledgeSourceRegistry;
@@ -44,10 +57,26 @@ final class KnowledgeBootstrap {
 			throw new KnowledgeSourceException( 'Knowledge source extensions must be provided as an array.' );
 		}
 
+		$extractors = new DocumentExtractorRegistry();
+		$extractors->register( new TextDocumentExtractor() );
+		$extractors->register( new MarkdownDocumentExtractor() );
+		$extractors->register( new HtmlDocumentExtractor() );
+		$extractors->register( new CsvDocumentExtractor() );
+		$extractors->register( new JsonDocumentExtractor() );
+		$extractors->register( new XmlDocumentExtractor() );
+		$extractors->register( new PdfDocumentExtractor() );
+		$extractors->register( new DocxDocumentExtractor( new DocxArchiveInspector() ) );
+
 		$registry = new KnowledgeSourceRegistry();
 		$registry->register( new ManualTextSource() );
 		$registry->register( new FaqSource() );
 		$registry->register( new WordPressPostSource( new NativeWordPressContentGateway() ) );
+		$registry->register(
+			new FileDocumentSource(
+				new FileValidationPolicy( new NativeMimeTypeDetector() ),
+				$extractors
+			)
+		);
 
 		foreach ( $extensions as $extension ) {
 			if ( ! $extension instanceof KnowledgeSource ) {

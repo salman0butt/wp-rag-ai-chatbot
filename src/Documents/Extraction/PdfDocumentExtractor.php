@@ -1,0 +1,118 @@
+<?php
+/**
+ * PDF document extractor.
+ *
+ * @package WpRagAiChatbot
+ */
+
+declare(strict_types=1);
+
+namespace WpRagAiChatbot\Documents\Extraction;
+
+use InvalidArgumentException;
+use Smalot\PdfParser\Config;
+use Smalot\PdfParser\Parser;
+use Throwable;
+
+/**
+ * Extracts visible text from validated PDF files through a stable boundary.
+ */
+final readonly class PdfDocumentExtractor implements DocumentExtractor {
+	private const DEFAULT_MAX_PAGES        = 200;
+	private const DEFAULT_MAX_TEXT_BYTES   = 2097152;
+	private const DEFAULT_MAX_DECODE_BYTES = 8388608;
+
+	/**
+	 * Maximum parsed pages.
+	 *
+	 * @var int
+	 */
+	private int $max_pages;
+
+	/**
+	 * Maximum normalized extracted-text bytes.
+	 *
+	 * @var int
+	 */
+	private int $max_text_bytes;
+
+	/**
+	 * Maximum bytes used while decoding compressed PDF streams.
+	 *
+	 * @var int
+	 */
+	private int $max_decode_bytes;
+
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Public argument names are fixed by the Task 4 regression contract and PHP named-argument compatibility.
+	/**
+	 * Configure bounded PDF extraction.
+	 *
+	 * @param int $maxPages Maximum parsed pages.
+	 * @param int $maxTextBytes Maximum normalized extracted-text bytes.
+	 * @param int $maxDecodeBytes Maximum bytes used while decoding compressed PDF streams.
+	 * @throws InvalidArgumentException When limits are not positive.
+	 */
+	public function __construct(
+		int $maxPages = self::DEFAULT_MAX_PAGES,
+		int $maxTextBytes = self::DEFAULT_MAX_TEXT_BYTES,
+		int $maxDecodeBytes = self::DEFAULT_MAX_DECODE_BYTES
+	) {
+		if ( $maxPages <= 0 || $maxTextBytes <= 0 || $maxDecodeBytes <= 0 ) {
+			throw new InvalidArgumentException( 'PDF extraction limits must be positive.' );
+		}
+
+		$this->max_pages        = $maxPages;
+		$this->max_text_bytes   = $maxTextBytes;
+		$this->max_decode_bytes = $maxDecodeBytes;
+	}
+	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
+
+	/**
+	 * Return owned MIME types.
+	 *
+	 * @return list<string>
+	 */
+	public function supportedMimeTypes(): array {
+		return array( 'application/pdf' );
+	}
+
+	/**
+	 * Extract normalized PDF text.
+	 *
+	 * @param ValidatedFile $file Validated PDF file.
+	 * @throws ExtractionException When PDF parsing cannot be completed safely.
+	 */
+	public function extract( ValidatedFile $file ): ExtractedDocument {
+		try {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Validated local file; WordPress filesystem abstraction is not appropriate for parser input.
+			$raw_pdf = file_get_contents( $file->path );
+			if ( false === $raw_pdf || false !== strpos( $raw_pdf, '/Encrypt' ) ) {
+				throw new ExtractionException( 'PDF extraction failed.' );
+			}
+
+			$config = new Config();
+			$config->setDecodeMemoryLimit( $this->max_decode_bytes );
+			$config->setRetainImageContent( false );
+
+			$document = ( new Parser( array(), $config ) )->parseFile( $file->path );
+			if ( count( $document->getPages() ) > $this->max_pages ) {
+				throw new ExtractionException( 'PDF extraction failed.' );
+			}
+
+			$text = $document->getText();
+			$text = trim( str_replace( array( "\r\n", "\r" ), "\n", $text ) );
+			if ( '' === $text || strlen( $text ) > $this->max_text_bytes ) {
+				throw new ExtractionException( 'PDF extraction failed.' );
+			}
+
+			return new ExtractedDocument(
+				text: $text,
+				metadata: array( 'format' => 'pdf' )
+			);
+		} catch ( ExtractionException $exception ) {
+			throw $exception;
+		} catch ( Throwable ) {
+			throw new ExtractionException( 'PDF extraction failed.' );
+		}
+	}
+}
