@@ -5,7 +5,7 @@
 - Completed milestones: **M00-M04** are integrated on `main`.
 - M05 design/spec: `docs/superpowers/specs/2026-09-03-m05-file-document-ingestion-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - M05 implementation plan: `docs/superpowers/plans/2026-09-03-m05-file-document-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`.
-- M05 Tasks **1–5 are COMPLETE**; Tasks 6–7 remain.
+- M05 Tasks **1–6 are COMPLETE**; Task 7 remains.
 
 ## M05 Task 1 — Extraction contracts and registry
 - Added `ValidatedFile`, `ExtractedDocument`, `DocumentExtractor`, `DocumentExtractorRegistry`, and `ExtractionException`.
@@ -54,11 +54,20 @@
 - Artifact `9877799511`, 702,888 bytes, digest `sha256:f8d00eeffd5c1a828e3763508973c5bef5a9e9bbe777d3984340f34498f89983`.
 - Final Task 5 review: **0 Critical / 0 Important** remaining. PR #6 has no submitted reviews or unresolved review threads at Task 5 closeout.
 
+## M05 Task 6 — Real WordPress file-ingestion smoke coverage
+- Added `scripts/test-wp-file-ingestion.php` and `.sh`, exposed `npm run test:wp:file-ingestion`, and wired it into the permanent `wordpress-smoke` job after the existing activation/database/provider/knowledge smokes.
+- The real WordPress smoke creates TXT/JSON fixtures via `wp_upload_bits`, persists attachment records with `wp_insert_attachment`, resolves the native `file` source from `KnowledgeBootstrap`, and verifies extraction, stable document key/source version/content hash, validated file SHA-256/filename metadata, malformed JSON rejection, server-side MIME spoof rejection, and cleanup.
+- Task-level wiring RED: `cfe94249c313405463019500be37204c95f41a03`, CI `33716566022`; `php-quality`, `js-quality`, and `package` passed, all pre-existing WordPress smokes passed, and `wordpress-smoke` failed only at `npm run test:wp:file-ingestion` with exit 127 because `scripts/test-wp-file-ingestion.sh` was intentionally absent.
+- Smoke GREEN: `903de635dac1c0a57ecd7325c9945f5fdd6abdd7`, CI `33716829864`; `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed, including the new `test:wp:file-ingestion` step.
+- Exact GREEN artifact: `9878819165`, 702,893 bytes, digest `sha256:35f201d0459a1ad35df5babc8c774ea23e93a5136db846b748fc52a9026d6a36`.
+- No production defect was discovered by the real WordPress smoke, so no additional production regression/fix cycle was required.
+- Bounded requirements/security cleanup review found **0 Critical / 0 Important** Task 6 findings.
+
 ## Current gates
-- M05 is **not merge-ready**: Tasks 6–7 remain. Do not merge the branch or advance to M06.
+- M05 is **not merge-ready** until Task 7 integration/security/performance/whole-milestone review and exact-head merge gates are complete. Do not advance to M06 yet.
 - No known technical blocker.
 - Draft feature PR: **#6 — `feat: build M05 file/document ingestion`**.
-- Exact next unfinished action: execute **M05 Task 6 — Real WordPress file-ingestion smoke coverage**. Create `scripts/test-wp-file-ingestion.php` and `.sh`; add `npm run test:wp:file-ingestion`; wire it into `wordpress-smoke`; create representative supported files/media through WordPress APIs; verify validation, extraction, stable hash/version, malformed/spoofed rejection, and cleanup; route any discovered production defect through dedicated unit RED/GREEN; require all permanent CI jobs green on the exact Task 6 SHA before Task 7.
+- Exact next unfinished action: execute **M05 Task 7 — Integration, security review, documentation, and merge**. Reconcile the branch with latest `main`, perform final traversal/symlink/MIME/resource/XML/parser-path/executable-content security review and synchronous extraction performance review, perform an independent whole-milestone review, fix all Critical/Important findings with regression TDD where behavior changes, synchronize milestone/test/security/progress docs and PR #6, require all permanent CI jobs green on the exact final SHA, merge only that tested head, then verify fresh post-merge `main` CI before marking M05 complete.
 
 ## Previous milestone closeout
 - M04 feature PR: #4 `feat: build M04 WordPress knowledge source framework`.
