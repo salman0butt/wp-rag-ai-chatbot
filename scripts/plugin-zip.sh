@@ -18,3 +18,10 @@ for path in "${forced_metadata[@]}"; do
         zip -dq "$zip_file" "$path"
     fi
 done
+
+forbidden='(^|/)(tests|docs|scripts|node_modules|\.github)(/|$)|(^|/)\.env([^/]*$|/)|(^|/)\.wp-env\.json$|(^|/)(composer\.json|composer\.lock|package\.json|package-lock\.json)$'
+
+while IFS= read -r path; do
+    [[ -z "$path" ]] && continue
+    zip -dq "$zip_file" "$path"
+done < <(unzip -Z1 "$zip_file" | grep -E "$forbidden" || true)
