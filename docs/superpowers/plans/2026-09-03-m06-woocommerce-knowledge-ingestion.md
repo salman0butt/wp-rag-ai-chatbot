@@ -185,7 +185,7 @@ Do not add fake live fields to production snapshots merely to test exclusion; te
 
 - [ ] **Step 3: Implement canonical stable snapshot hashing**
 
-Canonicalize ordered scalar/array inputs and SHA-256 hash them. Modified timestamp may participate only alongside canonical stable facts; price/stock events must not be consulted.
+Canonicalize ordered scalar/array inputs and SHA-256 hash them. Source version/hash must derive only from canonical allowlisted stable facts; generic WooCommerce `modifiedGmt` is observational and must not participate because it can advance for excluded live-state changes such as price/stock updates.
 
 - [ ] **Step 4: Verify GREEN/review/commit**
 
