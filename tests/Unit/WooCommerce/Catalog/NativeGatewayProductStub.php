@@ -16,20 +16,20 @@ final class NativeGatewayProductStub {
 	/**
 	 * Create a native-product test seam.
 	 *
-	 * @param string                    $status Product status.
-	 * @param string                    $type Product type.
-	 * @param string                    $catalog_visibility Catalog visibility.
-	 * @param string                    $name Product name.
-	 * @param string                    $short_description Short description.
-	 * @param string                    $description Full description.
-	 * @param string                    $sku Product SKU.
-	 * @param string                    $permalink Product permalink.
-	 * @param array<int, string>        $categories Category labels.
-	 * @param array<int, string>        $tags Tag labels.
+	 * @param string                     $status Product status.
+	 * @param string                     $type Product type.
+	 * @param string                     $catalog_visibility Catalog visibility.
+	 * @param string                     $name Product name.
+	 * @param string                     $short_description Short description.
+	 * @param string                     $description Full description.
+	 * @param string                     $sku Product SKU.
+	 * @param string                     $permalink Product permalink.
+	 * @param array<int, string>         $categories Category labels.
+	 * @param array<int, string>         $tags Tag labels.
 	 * @param array<string,list<string>> $attributes Descriptive attributes.
-	 * @param array<int, int>           $children Variation IDs.
-	 * @param string                    $modified_gmt Modified marker.
-	 * @param array<string,string>      $variation_attributes Variation choices.
+	 * @param array<int, int>            $children Variation IDs.
+	 * @param string                     $modified_gmt Modified marker.
+	 * @param array<string,string>       $variation_attributes Variation choices.
 	 */
 	public function __construct(
 		private readonly string $status,
@@ -89,17 +89,17 @@ final class NativeGatewayProductStub {
 		return $this->permalink;
 	}
 
-	/** Category labels used by the gateway seam. @return array<int,string> */
+	/** Category IDs. @return array<int,int> */
 	public function get_category_ids(): array {
 		return array_keys( $this->categories );
 	}
 
-	/** Tag labels used by the gateway seam. @return array<int,string> */
+	/** Tag IDs. @return array<int,int> */
 	public function get_tag_ids(): array {
 		return array_keys( $this->tags );
 	}
 
-	/** Product attributes used by the gateway seam. @return array<string,list<string>> */
+	/** Product attributes. @return array<string,list<string>> */
 	public function get_attributes(): array {
 		return $this->attributes;
 	}
@@ -118,9 +118,19 @@ final class NativeGatewayProductStub {
 	public function get_date_modified(): object {
 		$value = $this->modified_gmt;
 		return new class( $value ) {
-			public function __construct( private readonly string $value ) {}
+			/**
+			 * Create the date seam.
+			 *
+			 * @param string $value Stable marker.
+			 */
+			public function __construct( private readonly string $value ) {
+			}
 
-			/** Format the test marker as a stable ISO-like value. */
+			/**
+			 * Format the test marker.
+			 *
+			 * @param string $format Requested format.
+			 */
 			public function date( string $format ): string {
 				unset( $format );
 				return $this->value;
@@ -128,13 +138,21 @@ final class NativeGatewayProductStub {
 		};
 	}
 
-	/** Resolve one category label by test ID. */
-	public function categoryName( int $id ): ?string {
+	/**
+	 * Resolve one category label by test ID.
+	 *
+	 * @param int $id Term ID.
+	 */
+	public function category_name( int $id ): ?string {
 		return $this->categories[ $id ] ?? null;
 	}
 
-	/** Resolve one tag label by test ID. */
-	public function tagName( int $id ): ?string {
+	/**
+	 * Resolve one tag label by test ID.
+	 *
+	 * @param int $id Term ID.
+	 */
+	public function tag_name( int $id ): ?string {
 		return $this->tags[ $id ] ?? null;
 	}
 }
