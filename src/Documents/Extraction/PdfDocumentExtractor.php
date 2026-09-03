@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Documents\Extraction;
 
+use InvalidArgumentException;
 use Smalot\PdfParser\Parser;
 use Throwable;
 
@@ -16,6 +17,24 @@ use Throwable;
  * Extracts visible text from validated PDF files through a stable boundary.
  */
 final class PdfDocumentExtractor implements DocumentExtractor {
+	private const DEFAULT_MAX_PAGES = 200;
+	private const DEFAULT_MAX_TEXT_BYTES = 2097152;
+
+	/**
+	 * Configure bounded PDF extraction.
+	 *
+	 * @param int $maxPages Maximum parsed pages.
+	 * @param int $maxTextBytes Maximum normalized extracted-text bytes.
+	 */
+	public function __construct(
+		private readonly int $maxPages = self::DEFAULT_MAX_PAGES,
+		private readonly int $maxTextBytes = self::DEFAULT_MAX_TEXT_BYTES
+	) {
+		if ( $this->maxPages <= 0 || $this->maxTextBytes <= 0 ) {
+			throw new InvalidArgumentException( 'PDF extraction limits must be positive.' );
+		}
+	}
+
 	/**
 	 * Return owned MIME types.
 	 *
@@ -39,9 +58,14 @@ final class PdfDocumentExtractor implements DocumentExtractor {
 				throw new ExtractionException( 'PDF extraction failed.' );
 			}
 
-			$text = ( new Parser() )->parseFile( $file->path )->getText();
+			$document = ( new Parser() )->parseFile( $file->path );
+			if ( count( $document->getPages() ) > $this->maxPages ) {
+				throw new ExtractionException( 'PDF extraction failed.' );
+			}
+
+			$text = $document->getText();
 			$text = trim( str_replace( array( "\r\n", "\r" ), "\n", $text ) );
-			if ( '' === $text ) {
+			if ( '' === $text || strlen( $text ) > $this->maxTextBytes ) {
 				throw new ExtractionException( 'PDF extraction failed.' );
 			}
 
