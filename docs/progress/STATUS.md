@@ -2,7 +2,7 @@
 
 - Completed milestones on `main`: **M00-M06**.
 - Latest integrated milestone: **M06 — WooCommerce Knowledge Ingestion**.
-- Current milestone: **M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing — IN PROGRESS (Tasks 1-2 complete; Task 3 implementation verified with independent review pending)**.
+- Current milestone: **M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing — IN PROGRESS (Tasks 1-3 complete; Task 4 next)**.
 - Current verified `main`: `747733a92c23d411ccba2592d5cb8c7858b95a03`.
 - Latest verified `main` CI: `33770388757` — all permanent jobs passed.
 - M06 integration merge: `356f419ea6df23e68d89a13ee322ca50585ed74b` via PR #8.
@@ -25,8 +25,8 @@
 - M08 owns embedding generation/vector stores and provider-exact compatibility; M09 owns queue/synchronization execution.
 - Task 1 — Deterministic content normalization: **COMPLETE** after strict RED/GREEN, exact-head CI, and independent fresh-session review `5104488263` with 0 Critical / 0 Important unresolved.
 - Task 2 — Token budget/configuration contracts: **COMPLETE** after strict RED/GREEN, exact-head CI, and independent fresh-session review `5105069991` with 0 Critical / 0 Important unresolved.
-- Task 3 — Immutable chunk records and structure-aware splitting: **IMPLEMENTATION + EXACT-CODE-HEAD PHP/JS/PACKAGE VERIFICATION GREEN; same-session review clean; independent fresh-session review pending**.
-- Tasks 4–7 remain untouched. **Task 4 must not start until Task 3 receives a clean independent fresh-session review.**
+- Task 3 — Immutable chunk records and structure-aware splitting: **COMPLETE** after corrected genuine RED/GREEN, exact-head CI, and independent fresh-session review `5105859046` with 0 Critical / 0 Important unresolved.
+- Tasks 4–7 remain unfinished. **Task 4 is now the first legitimate unfinished behavior task.**
 
 ### M07 Task 1 evidence
 - RED `3e34a6d1125592a256463c3e75ee9406fa3e5e3a`; CI `33775003445`: PHPStan clean; PHPUnit 263 tests / 1252 assertions / 7 intended missing-class failures.
@@ -40,7 +40,7 @@
 - Independent fresh-session review `5105069991`: **0 Critical / 0 Important unresolved**.
 
 ### M07 Task 3 TDD evidence
-- Initial test attempt was **not accepted as RED** because PHPCS stopped before PHPUnit. All prematurely added Task 3 production files were removed before the corrected RED so retained implementation followed genuine RED/GREEN order.
+- The first test attempt was **not accepted as RED** because PHPCS stopped before PHPUnit. All prematurely added Task 3 production files were removed before the corrected RED so retained implementation followed genuine RED/GREEN order.
 - Valid corrected RED test-only head: `7dc00a29dfa4db8a7f7f627cdd6fa9c1c587b442` — `test: make M07 Task 3 RED fixtures quality-clean`.
 - RED CI `33793246971`: PHPCS clean; PHPStan clean; PHPUnit **277 tests / 1281 assertions / 5 intended failures**, solely because `ChunkRecord` / `StructureAwareChunker` did not exist.
 - GREEN production lineage:
@@ -50,25 +50,27 @@
   - `e1dba40c194a4f7204cbaec7042ca4896b42b755` — PHPCS-only alignment correction.
   - `ea025c5038857a1c43ff549fe0b5980fa79243b2` — statically explicit paragraph parser after PHPStan identified the by-reference closure dataflow problem.
 - Final Task 3-only code head: `3b223cc22c41e35bbc3599f717606232ea976587`.
-- Exact-code-head CI `33794702078`: `php-quality`, `js-quality`, and `package` passed; PHPStan analyzed 109 files with **0 errors**; PHPUnit **277 / 277 tests, 1326 assertions**; Composer audit found no security advisories. WordPress smoke was still running when this durable update was prepared and must be reconciled before any final completion claim.
-- Package artifact `9908702583`, 718542 bytes, digest `sha256:fcd62ea3b42e6971b13bebec56ed26eb1226c61994aa704fe5d57ec278cc5fe0`.
 - Same-session review `5105805077`: **0 Critical / 0 Important unresolved**, explicitly **not independent**.
+- A same-session overlap exploration was fully reverted because overlap belongs to Task 4; no Task 4 behavior is counted as started.
+- Final pre-review documentation head `d227e804971e6a5cc40e5fdba8174e0d6a463614`; exact-head CI `33794954967`: **all four permanent jobs green**, including `wordpress-smoke`.
+- Independent fresh-session review `5105859046`: **0 Critical / 0 Important unresolved**. It reviewed readonly chunk records, heading/paragraph/sentence/lexical/code-point boundary behavior, deterministic sequence/keys/hashes, copied metadata/language/visibility/URL/version/content lineage, token bounds, untrusted-content handling, and M08/M09/provider/network/persistence scope boundaries.
 
 ### M07 Task 3 behavior
 `ChunkRecord` is immutable and carries deterministic chunk/document/source lineage, citation metadata, heading path, structural parent, sequence, token count, chunking identity, and nullable embedding compatibility identity. `StructureAwareChunker` remains pure PHP and WordPress-independent. It handles empty/tiny documents; recognizes only existing ATX `#`–`######` headings; treats blank-line blocks as paragraphs; falls back through sentence, Unicode lexical-unit, and code-point-safe boundaries; assigns stable zero-based sequence after boundaries settle; and derives parent/chunk/content hashes through canonical `DocumentHasher`. It performs no provider, network, persistence, embedding, vector, queue, hook, REST, or WordPress execution behavior.
 
-### Task-boundary correction
-A same-session review briefly explored configured overlap and created a Task 4 RED/implementation. Re-reading the approved plan confirmed overlap is explicitly **Task 4** and the global plan requires an independent Task 3 review before the next behavior task. The exploratory overlap test and production change were therefore **fully reverted** before the final Task 3 handoff. Current Task 3 source/test hashes are restored to their pre-overlap state; Task 4 is not counted as started.
-
 ## Active quality gate
-Task 3 is **not complete** until:
-1. exact-head CI is fully green including `wordpress-smoke`; and
-2. a genuinely independent fresh-session review reports **0 Critical / 0 Important unresolved**.
+Task 3 is **complete**. Task 4 may now begin under the approved plan.
 
-Task 4 must not begin before both conditions are satisfied.
+Task 4 must preserve strict TDD:
+1. add test-only RED proving overlap is at most configured tokens;
+2. prove overlap applies only between adjacent chunks with the same structural parent;
+3. prove overlap never crosses sections/documents;
+4. prove every overlapped chunk retains room for new content and terminates;
+5. verify RED on its exact SHA before implementing overlap behavior;
+6. implement the smallest trailing-unit overlap change, then exact-head GREEN/full CI and independent review.
 
 ## Exact next unfinished action
-Recover the final Task 3 code/documentation head and independently review Task 3 from valid RED `7dc00a29dfa4db8a7f7f627cdd6fa9c1c587b442` through current GREEN state. Verify immutable record fields, heading/paragraph/sentence/lexical/code-point boundary behavior, deterministic ordering/keys/hashes, copied source metadata/language/visibility/canonical URL/version/content lineage, token bounds, security/scope boundaries, and exact-head CI. Route any Critical/Important behavioral finding through regression TDD. Only after a clean independent review may Task 3 be marked complete and Task 4 begin with a fresh genuine overlap RED.
+Begin **M07 Task 4 — Deliberate bounded overlap** with a fresh genuine test-only RED commit in `tests/Unit/Indexing/Chunking/StructureAwareChunkerTest.php`. Do not modify `StructureAwareChunker` until the test-only SHA reaches the intended PHPUnit failures after clean style/static-analysis gates. Then implement only configured trailing lexical-unit overlap within a single structural parent and keep total chunk token count within `maxTokens`.
 
 ## Previous milestone closeout
 - M05 merge `dd29d3bc1dc62dbfcccf1f87272a75c4e145afa6` via PR #6.
