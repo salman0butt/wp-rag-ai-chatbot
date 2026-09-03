@@ -24,6 +24,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 		return function_exists( 'wc_get_products' ) && function_exists( 'wc_get_product' );
 	}
 
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Interface parameter name follows the approved application contract.
 	/**
 	 * Load one eligible stable product snapshot.
 	 *
@@ -32,7 +33,6 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	 * @param int $productId Product ID.
 	 * @throws InvalidArgumentException When the product ID is invalid.
 	 */
-	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Interface parameter name follows the approved application contract.
 	public function product( int $productId ): ?WooCommerceProduct {
 		if ( $productId < 1 ) {
 			throw new InvalidArgumentException( 'WooCommerce product ID must be positive.' );
@@ -46,6 +46,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	}
 	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
 
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Interface parameter name follows the approved application contract.
 	/**
 	 * Return one deterministic page of eligible product IDs.
 	 *
@@ -54,7 +55,6 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	 * @return list<int>
 	 * @throws InvalidArgumentException When paging values are invalid.
 	 */
-	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Interface parameter name follows the approved application contract.
 	public function productIds( int $page, int $perPage ): array {
 		$this->validatePaging( $page, $perPage );
 
