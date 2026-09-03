@@ -25,21 +25,29 @@ use WpRagAiChatbot\WooCommerce\Catalog\WooCommerceVariation;
 final class WooCommerceProductSourceVersionTest extends TestCase {
 	/** Live transactional fixture state outside the snapshot contract must not affect version/hash. */
 	public function test_live_only_state_does_not_affect_source_version_or_content_hash(): void {
-		$product = $this->product();
-		$live_before = array( 'price' => '99.00', 'stock_status' => 'instock' );
-		$live_after  = array( 'price' => '79.00', 'stock_status' => 'outofstock' );
+		$product     = $this->product();
+		$live_before = array(
+			'price'        => '99.00',
+			'stock_status' => 'instock',
+		);
+		$live_after  = array(
+			'price'        => '79.00',
+			'stock_status' => 'outofstock',
+		);
 
 		self::assertNotSame( $live_before, $live_after );
 		$before = $this->document( $product );
 		$after  = $this->document( $product );
 
+		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain records use the approved camelCase contract.
 		self::assertSame( $before->sourceVersion, $after->sourceVersion );
 		self::assertSame( $before->contentHash, $after->contentHash );
+		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
 	/** Stable descriptive catalog changes must alter both source version and canonical content hash. */
 	public function test_stable_catalog_changes_affect_source_version_and_content_hash(): void {
-		$baseline = $this->document( $this->product() );
+		$baseline         = $this->document( $this->product() );
 		$changed_products = array(
 			$this->product( sku: 'TRAIL-42-UPDATED' ),
 			$this->product( description: 'Updated stable descriptive copy.' ),
@@ -54,12 +62,18 @@ final class WooCommerceProductSourceVersionTest extends TestCase {
 
 		foreach ( $changed_products as $changed_product ) {
 			$changed = $this->document( $changed_product );
+			// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain records use the approved camelCase contract.
 			self::assertNotSame( $baseline->sourceVersion, $changed->sourceVersion );
 			self::assertNotSame( $baseline->contentHash, $changed->contentHash );
+			// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 		}
 	}
 
-	/** Build one canonical document through the public source contract. */
+	/**
+	 * Build one canonical document through the public source contract.
+	 *
+	 * @param WooCommerceProduct $product Stable product snapshot.
+	 */
 	private function document( WooCommerceProduct $product ): DocumentRecord {
 		$gateway = new FakeWooCommerceCatalogGateway( true, array(), array( 42 => $product ) );
 		$source  = new WooCommerceProductSource( $gateway );
