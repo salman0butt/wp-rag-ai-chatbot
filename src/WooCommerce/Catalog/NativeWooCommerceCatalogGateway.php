@@ -62,13 +62,13 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return array();
 		}
 
-		/**
-		 * Optional WooCommerce product-query callable.
-		 *
-		 * @var callable(array<string, mixed>): mixed $get_products
-		 */
 		$get_products = 'wc_get_products';
-		$ids          = $get_products(
+		$get_product  = 'wc_get_product';
+		if ( ! is_callable( $get_products ) || ! is_callable( $get_product ) ) {
+			return array();
+		}
+
+		$ids = $get_products(
 			array(
 				'status'  => 'publish',
 				'limit'   => $perPage,
@@ -83,12 +83,6 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return array();
 		}
 
-		/**
-		 * Optional WooCommerce single-product callable.
-		 *
-		 * @var callable(int): mixed $get_product
-		 */
-		$get_product  = 'wc_get_product';
 		$eligible_ids = array();
 		foreach ( $ids as $raw_id ) {
 			$product_id = $this->normalizeProductId( $raw_id );
