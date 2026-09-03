@@ -173,19 +173,14 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return null;
 		}
 
-		$get_term = $this->resolveCallable( 'get_term' );
-		if ( null === $get_term && array() !== $raw_ids ) {
-			return null;
-		}
-
 		$names = array();
 		foreach ( $raw_ids as $raw_id ) {
 			$id = $this->normalizeProductId( $raw_id );
-			if ( null === $id || null === $get_term ) {
+			if ( null === $id ) {
 				return null;
 			}
 
-			$term = $get_term( $id, $taxonomy );
+			$term = get_term( $id, $taxonomy );
 			if ( ! is_object( $term ) || ! property_exists( $term, 'name' ) ) {
 				return null;
 			}
@@ -254,7 +249,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 				if ( ! is_array( $term_names ) ) {
 					return null;
 				}
-				$values = array_map( 'strval', $term_names );
+				$values = array_values( array_map( 'strval', $term_names ) );
 			}
 
 			$normalized[ $attribute_name ] = $values;
