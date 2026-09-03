@@ -27,7 +27,11 @@ interface WooCommerceCatalogGateway {
 	public function product( int $productId ): ?WooCommerceProduct;
 
 	/**
-	 * Return one deterministic page of eligible product IDs.
+	 * Return one deterministic bounded page of published product candidate IDs.
+	 *
+	 * The page cardinality represents the bounded catalog query so callers can
+	 * detect exhaustion without eligibility filtering shortening the page.
+	 * Eligibility is enforced when each candidate is loaded through product().
 	 *
 	 * @param int $page One-based page number.
 	 * @param int $perPage Products per page.
