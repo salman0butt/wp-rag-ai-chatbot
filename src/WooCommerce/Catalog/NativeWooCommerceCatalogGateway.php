@@ -84,9 +84,22 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return null;
 		}
 
+		$type       = (string) call_user_func( array( $product, 'get_type' ) );
+		$variations = array();
+		if ( 'variable' === $type ) {
+			if ( ! method_exists( $product, 'get_children' ) ) {
+				return null;
+			}
+
+			$variations = $this->normalizeVariations( call_user_func( array( $product, 'get_children' ) ), $get_product );
+			if ( null === $variations ) {
+				return null;
+			}
+		}
+
 		return new WooCommerceProduct(
 			$productId,
-			(string) call_user_func( array( $product, 'get_type' ) ),
+			$type,
 			(string) call_user_func( array( $product, 'get_status' ) ),
 			(string) call_user_func( array( $product, 'get_catalog_visibility' ) ),
 			(string) call_user_func( array( $product, 'get_name' ) ),
@@ -97,7 +110,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			$categories,
 			$tags,
 			$attributes,
-			array(),
+			$variations,
 			$modified_gmt
 		);
 	}
@@ -256,6 +269,56 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 		}
 
 		return $normalized;
+	}
+
+	/**
+	 * Normalize stable variation identity, SKU, and selected options.
+	 *
+	 * @param mixed    $raw_ids Raw variation IDs.
+	 * @param callable $get_product Native WooCommerce product resolver.
+	 * @return list<WooCommerceVariation>|null
+	 */
+	private function normalizeVariations( mixed $raw_ids, callable $get_product ): ?array {
+		if ( ! is_array( $raw_ids ) ) {
+			return null;
+		}
+
+		$variations = array();
+		foreach ( $raw_ids as $raw_id ) {
+			$variation_id = $this->normalizeProductId( $raw_id );
+			if ( null === $variation_id ) {
+				return null;
+			}
+
+			$variation = $get_product( $variation_id );
+			if ( false === $variation || null === $variation ) {
+				continue;
+			}
+			if ( ! is_object( $variation ) || ! method_exists( $variation, 'get_sku' ) || ! method_exists( $variation, 'get_variation_attributes' ) ) {
+				return null;
+			}
+
+			$raw_attributes = call_user_func( array( $variation, 'get_variation_attributes' ) );
+			if ( ! is_array( $raw_attributes ) ) {
+				return null;
+			}
+
+			$attributes = array();
+			foreach ( $raw_attributes as $name => $value ) {
+				if ( ! is_string( $name ) || ! is_scalar( $value ) ) {
+					return null;
+				}
+				$attributes[ $name ] = (string) $value;
+			}
+
+			$variations[] = new WooCommerceVariation(
+				$variation_id,
+				(string) call_user_func( array( $variation, 'get_sku' ) ),
+				$attributes
+			);
+		}
+
+		return $variations;
 	}
 
 	/**
