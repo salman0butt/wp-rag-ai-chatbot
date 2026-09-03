@@ -126,7 +126,7 @@ final class FileDocumentSourceTest extends TestCase {
 		$path = $this->createFile( 'guide.exe', 'Hello file' );
 
 		$this->expectException( ExtractionException::class );
-		$this->expectExceptionMessage( 'Unsupported file extension.' );
+		$this->expectExceptionMessage( 'File extension is not supported.' );
 
 		iterator_to_array( $this->source()->documents( $this->record( $path, dirname( $path ) ) ), false );
 	}
