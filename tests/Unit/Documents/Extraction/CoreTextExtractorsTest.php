@@ -116,6 +116,17 @@ final class CoreTextExtractorsTest extends TestCase {
 	}
 
 	/**
+	 * Markdown binary input fails closed just like plain text.
+	 */
+	public function test_markdown_extractor_rejects_null_byte_content(): void {
+		$this->requireTask3Contracts();
+		$file = $this->validatedFile( 'binary.md', "# Alpha\0Beta", 'text/markdown' );
+
+		$this->expectException( ExtractionException::class );
+		( new MarkdownDocumentExtractor() )->extract( $file );
+	}
+
+	/**
 	 * HTML extraction retains visible structure but strips executable/non-visible content.
 	 */
 	public function test_html_extractor_strips_script_style_and_comments(): void {
@@ -129,6 +140,17 @@ final class CoreTextExtractorsTest extends TestCase {
 		self::assertSame( 'html', $extracted->metadata['format'] );
 		self::assertStringNotContainsString( 'alert', $extracted->text );
 		self::assertStringNotContainsString( 'secret', $extracted->text );
+	}
+
+	/**
+	 * Visible HTML is not lost merely because it is wrapped in generic containers.
+	 */
+	public function test_html_extractor_keeps_visible_text_from_generic_containers(): void {
+		$this->requireTask3Contracts();
+		$file      = $this->validatedFile( 'generic.html', '<html><body><div>Standalone <span>visible</span> text</div></body></html>', 'text/html' );
+		$extracted = ( new HtmlDocumentExtractor() )->extract( $file );
+
+		self::assertSame( 'Standalone visible text', $extracted->text );
 	}
 
 	/**
