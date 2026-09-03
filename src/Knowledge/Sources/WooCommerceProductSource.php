@@ -178,7 +178,6 @@ final class WooCommerceProductSource implements KnowledgeSource {
 					'canonical_url' => $product->canonicalUrl,
 					'content'       => $content,
 					'metadata'      => $metadata,
-					'modified_gmt'  => $product->modifiedGmt,
 				)
 			);
 			$content_hash   = DocumentHasher::hash(
