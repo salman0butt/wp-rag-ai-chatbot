@@ -25,32 +25,52 @@ use WpRagAiChatbot\WooCommerce\Catalog\WooCommerceVariation;
 final class WooCommerceProductSourceTest extends TestCase {
 	/** Disabled WooCommerce must be non-fatal and emit no documents. */
 	public function test_disabled_gateway_yields_no_documents(): void {
-		$gateway    = new FakeWooCommerceCatalogGateway( false );
+		$gateway = new FakeWooCommerceCatalogGateway( false );
+
 		$normalizer = $this->normalizer( $gateway );
-		$documents  = iterator_to_array( $normalizer->documents( $this->source( array( 'product_ids' => array( 42 ) ) ) ) );
+
+		$documents = iterator_to_array( $normalizer->documents( $this->source( array( 'product_ids' => array( 42 ) ) ) ) );
 
 		self::assertSame( 'woocommerce_product', $normalizer->type() );
 		self::assertSame( array(), $documents );
-		self::assertSame( array(), $gateway->productCalls ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Test fake follows application contract terminology.
+		self::assertSame( array(), $gateway->product_calls );
 	}
 
 	/** Explicit product selection must map stable public facts into one canonical document. */
 	public function test_explicit_product_id_maps_to_canonical_document(): void {
-		$product    = $this->product(
+		$product = $this->product(
 			42,
-			'trail Shoe',
+			'Trail Shoe',
 			'variable',
 			array(
 				'Color' => array( 'Red', 'Blue' ),
 				'Size'  => array( '43', '42' ),
 			),
 			array(
-				new WooCommerceVariation( 4202, null, array( 'Size' => '43', 'Color' => 'Red' ) ),
-				new WooCommerceVariation( 4201, 'TRAIL-42-BLUE', array( 'Size' => '42', 'Color' => 'Blue' ) ),
+				new WooCommerceVariation(
+					4202,
+					null,
+					array(
+						'Size'  => '43',
+						'Color' => 'Red',
+					)
+				),
+				new WooCommerceVariation(
+					4201,
+					'TRAIL-42-BLUE',
+					array(
+						'Size'  => '42',
+						'Color' => 'Blue',
+					)
+				),
 			)
 		);
-		$gateway    = new FakeWooCommerceCatalogGateway( true, array(), array( 42 => $product ) );
-		$documents  = iterator_to_array( $this->normalizer( $gateway )->documents( $this->source( array( 'product_ids' => array( 42 ) ) ) ) );
+
+		$gateway = new FakeWooCommerceCatalogGateway( true, array(), array( 42 => $product ) );
+
+		$source = $this->source( array( 'product_ids' => array( 42 ) ) );
+
+		$documents = iterator_to_array( $this->normalizer( $gateway )->documents( $source ) );
 
 		self::assertCount( 1, $documents );
 		$document = $documents[0];
@@ -58,11 +78,11 @@ final class WooCommerceProductSourceTest extends TestCase {
 		self::assertSame( 'woocommerce_product:42', $document->documentKey );
 		self::assertSame( '42', $document->externalId );
 		self::assertSame( 'woocommerce_product', $document->documentType );
-		self::assertSame( 'trail Shoe', $document->title );
+		self::assertSame( 'Trail Shoe', $document->title );
 		self::assertSame( 'https://example.test/product/42/', $document->canonicalUrl );
 		self::assertSame( 'public', $document->visibility );
 		self::assertSame(
-			"trail Shoe\n\nSKU: TRAIL-42\n\nLight trail shoe.\n\nStable descriptive copy.\n\nCategories: Shoes, Trail\nTags: Featured, Outdoor\nAttributes:\nColor: Blue, Red\nSize: 42, 43\nVariations:\n4201 | SKU: TRAIL-42-BLUE | Color: Blue | Size: 42\n4202 | Color: Red | Size: 43",
+			"Trail Shoe\n\nSKU: TRAIL-42\n\nLight trail shoe.\n\nStable descriptive copy.\n\nCategories: Shoes, Trail\nTags: Featured, Outdoor\nAttributes:\nColor: Blue, Red\nSize: 42, 43\nVariations:\n4201 | SKU: TRAIL-42-BLUE | Color: Blue | Size: 42\n4202 | Color: Red | Size: 43",
 			$document->content
 		);
 		self::assertSame(
@@ -83,20 +103,26 @@ final class WooCommerceProductSourceTest extends TestCase {
 					array(
 						'id'         => 4201,
 						'sku'        => 'TRAIL-42-BLUE',
-						'attributes' => array( 'Color' => 'Blue', 'Size' => '42' ),
+						'attributes' => array(
+							'Color' => 'Blue',
+							'Size'  => '42',
+						),
 					),
 					array(
 						'id'         => 4202,
 						'sku'        => null,
-						'attributes' => array( 'Color' => 'Red', 'Size' => '43' ),
+						'attributes' => array(
+							'Color' => 'Red',
+							'Size'  => '43',
+						),
 					),
 				),
 			),
 			$document->metadata
 		);
 		self::assertMatchesRegularExpression( '/^[a-f0-9]{64}$/', $document->contentHash );
-		self::assertSame( $this->source()->updatedAt, $document->createdAt );
-		self::assertSame( $this->source()->updatedAt, $document->updatedAt );
+		self::assertSame( $source->updatedAt, $document->createdAt );
+		self::assertSame( $source->updatedAt, $document->updatedAt );
 		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
@@ -126,19 +152,25 @@ final class WooCommerceProductSourceTest extends TestCase {
 			)
 		);
 
-		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain/test records follow approved camelCase contracts.
+		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain records use the approved camelCase contract.
 		self::assertSame(
 			array( 'woocommerce_product:1', 'woocommerce_product:2', 'woocommerce_product:3' ),
 			array_map( static fn ( $document ): string => $document->documentKey, $documents )
 		);
+		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 		self::assertSame(
 			array(
-				array( 'page' => 1, 'perPage' => 2 ),
-				array( 'page' => 2, 'perPage' => 2 ),
+				array(
+					'page'    => 1,
+					'perPage' => 2,
+				),
+				array(
+					'page'    => 2,
+					'perPage' => 2,
+				),
 			),
-			$gateway->productIdCalls
+			$gateway->product_id_calls
 		);
-		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 
 	/** Ambiguous selection configuration must fail closed instead of broadening scope. */
@@ -186,11 +218,12 @@ final class WooCommerceProductSourceTest extends TestCase {
 
 	/** Missing products selected explicitly must disappear from source output. */
 	public function test_missing_explicit_product_is_omitted(): void {
-		$gateway   = new FakeWooCommerceCatalogGateway( true, array(), array() );
+		$gateway = new FakeWooCommerceCatalogGateway( true, array(), array() );
+
 		$documents = iterator_to_array( $this->normalizer( $gateway )->documents( $this->source( array( 'product_ids' => array( 99 ) ) ) ) );
 
 		self::assertSame( array(), $documents );
-		self::assertSame( array( 99 ), $gateway->productCalls ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Test fake follows application contract terminology.
+		self::assertSame( array( 99 ), $gateway->product_calls );
 	}
 
 	/**
@@ -220,11 +253,11 @@ final class WooCommerceProductSourceTest extends TestCase {
 	/**
 	 * Create one stable product snapshot.
 	 *
-	 * @param int                                  $id Product ID.
-	 * @param string                               $name Product name.
-	 * @param string                               $type Product type.
-	 * @param array<string, array<int, string>>    $attributes Product attributes.
-	 * @param array<int, WooCommerceVariation>     $variations Product variations.
+	 * @param int                               $id Product ID.
+	 * @param string                            $name Product name.
+	 * @param string                            $type Product type.
+	 * @param array<string, array<int, string>> $attributes Product attributes.
+	 * @param array<int, WooCommerceVariation>  $variations Product variations.
 	 */
 	private function product(
 		int $id,
