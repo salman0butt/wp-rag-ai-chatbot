@@ -115,7 +115,10 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 
 	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Interface parameter name follows the approved application contract.
 	/**
-	 * Return one deterministic page of eligible product IDs.
+	 * Return one deterministic bounded page of published product IDs.
+	 *
+	 * Eligibility is enforced by product(); preserving raw page cardinality keeps
+	 * catalog exhaustion semantics truthful after fail-closed filtering.
 	 *
 	 * @param int $page One-based page number.
 	 * @param int $perPage Products per page.
@@ -130,8 +133,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 		}
 
 		$get_products = $this->resolveCallable( 'wc_get_products' );
-		$get_product  = $this->resolveCallable( 'wc_get_product' );
-		if ( null === $get_products || null === $get_product ) {
+		if ( null === $get_products ) {
 			return array();
 		}
 
@@ -150,24 +152,17 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return array();
 		}
 
-		$eligible_ids = array();
+		$product_ids = array();
 		foreach ( $ids as $raw_id ) {
 			$product_id = $this->normalizeProductId( $raw_id );
-			if ( null === $product_id ) {
-				continue;
+			if ( null !== $product_id ) {
+				$product_ids[] = $product_id;
 			}
-
-			$product = $get_product( $product_id );
-			if ( ! $this->isEligibleProduct( $product, $product_id ) ) {
-				continue;
-			}
-
-			$eligible_ids[] = $product_id;
 		}
 
-		$eligible_ids = array_values( array_unique( $eligible_ids ) );
-		sort( $eligible_ids, SORT_NUMERIC );
-		return $eligible_ids;
+		$product_ids = array_values( array_unique( $product_ids ) );
+		sort( $product_ids, SORT_NUMERIC );
+		return $product_ids;
 	}
 	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
 
