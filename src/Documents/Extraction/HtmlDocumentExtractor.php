@@ -94,6 +94,7 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 	 * @param DOMNode $node Current DOM node.
 	 * @param array   $lines Extracted lines.
 	 * @param string  $current Current line buffer.
+	 * @phpstan-param list<string> $lines
 	 */
 	private function collectVisibleText( DOMNode $node, array &$lines, string &$current ): void {
 		if ( $node instanceof DOMText ) {
@@ -124,9 +125,7 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 
 		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- DOM extension exposes camelCase properties.
 		foreach ( $node->childNodes as $child ) {
-			if ( $child instanceof DOMNode ) {
-				$this->collectVisibleText( $child, $lines, $current );
-			}
+			$this->collectVisibleText( $child, $lines, $current );
 		}
 
 		if ( $is_block ) {
@@ -139,6 +138,7 @@ final class HtmlDocumentExtractor implements DocumentExtractor {
 	 *
 	 * @param array  $lines Extracted lines.
 	 * @param string $current Current line buffer.
+	 * @phpstan-param list<string> $lines
 	 */
 	private function flushLine( array &$lines, string &$current ): void {
 		$line    = preg_replace( '/\s+/u', ' ', trim( $current ) );
