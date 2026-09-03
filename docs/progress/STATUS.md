@@ -2,7 +2,7 @@
 
 - Completed milestones on `main`: **M00-M05**.
 - Latest integrated milestone: **M05 — File/Document Ingestion**.
-- Current milestone: **M06 — WooCommerce Knowledge Ingestion — INTEGRATION READY (Tasks 1–6 complete; whole-M06 review complete; Task 7 CI-installer correction exact-SHA green with independent fresh-session review pending)**.
+- Current milestone: **M06 — WooCommerce Knowledge Ingestion — INTEGRATION READY (Tasks 1–6 complete; whole-M06 review complete; Task 7 CI-installer correction independently reviewed; final docs-head CI/merge/post-merge closeout pending)**.
 - Current recovered `main`: `d8a087f7a90badcc6eca8fe486f5c06d5c8cc66e`.
 - Latest verified recovered `main` CI: `33721644922` — all permanent jobs passed.
 
@@ -13,7 +13,7 @@
 - Plan: `docs/superpowers/plans/2026-09-03-m06-woocommerce-knowledge-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - Tasks 1–6: **COMPLETE** with strict TDD evidence and independent reviews.
 - Whole-M06 integration/security/privacy/performance/compatibility review: **COMPLETE — 0 Critical / 0 Important unresolved**.
-- Task 7: **IN PROGRESS** — deterministic CI-installer correction is green; independent fresh-session review, final exact-head CI, merge/post-merge verification, and durable closeout remain.
+- Task 7: **IN PROGRESS** — deterministic CI-installer correction is independently reviewed; final documentation-head exact-SHA CI, merge/post-merge verification, and durable closeout remain.
 
 ### Architecture and boundaries
 - Optional-safe WooCommerce catalog gateway -> immutable allowlisted stable product snapshots -> `WooCommerceProductSource` -> canonical `DocumentRecord`.
@@ -73,15 +73,18 @@
 - CI `33763497982` on `33883de...` exposed a reproducible failure isolated to WooCommerce test dependency acquisition: `wp plugin install woocommerce ...` returned `Error: No plugins installed.` twice (initial attempt plus rerun), while php-quality/js-quality/package and all earlier WordPress smoke checks remained green.
 - Production/plugin behavior did not change between the last known Task 6 green and this failure.
 - Minimal correction `b5b944430764da669afb8ceb68b970008be9a3a6` changes only `scripts/test-wp-woocommerce-knowledge.sh`: install the exact pinned archive `https://downloads.wordpress.org/plugin/woocommerce.11.0.1.zip`, then assert the installed plugin reports version `11.0.1`.
-- Exact-head GREEN CI `33764205102`: all four permanent jobs green, including the WooCommerce smoke.
+- Correction exact-head GREEN CI `33764205102`: all four permanent jobs green, including the WooCommerce smoke.
 - Artifact `9896789959`, digest `sha256:2a9db8580182f825c28830b9207d75504186caa768b832596ece946c7e23cad5`.
 - Same-session review `5102906954`: 0 Critical / 0 Important unresolved, explicitly not independent.
-- Milestone durable-evidence update: `080f1632b991cfd36e9a01d99dca8a30a64c4896`.
-- This status commit is the current documentation head and must receive exact-SHA CI before merge; additionally the `33883de... -> b5b94443...` correction requires genuinely independent fresh-session review.
+- Durable documentation head `8f77b0060daed58627acd4a9c4fff3e92781964e`: exact-SHA CI `33764736888` all permanent jobs green; artifact `9897011343`, digest `sha256:c65b76f46be291a7d7b6cf3a980bc8469cf5a65f29ba9896c1a5d2354377219a`.
+- Independent fresh-session correction review `5103413133`: **0 Critical / 0 Important unresolved**.
+- Review notes: official WordPress.org HTTPS archive + exact installed-version assertion; no production dependency added; failures fail closed under `set -euo pipefail`. Archive content is not checksum-pinned, recorded as a non-blocking supply-chain observation under the current CI trust model.
+- Milestone review-record commit: `998ab75c64d42d6f7d8029cc1ff0c11393c708ee`.
+- This status update creates the final documentation head candidate; exact-SHA CI is required before merge.
 
 ## Current merge gate
 PR #8 may be merged only when:
-1. a fresh-session independent review of the CI-installer correction reports 0 Critical / 0 Important unresolved;
+1. independent fresh-session review of the CI-installer correction reports 0 Critical / 0 Important unresolved — **SATISFIED by `5103413133`**;
 2. exact-SHA CI for the final branch head passes all permanent jobs;
 3. PR remains mergeable/conflict-free;
 4. no unresolved Critical/Important review finding or blocking thread exists;
@@ -90,7 +93,7 @@ PR #8 may be merged only when:
 7. final M06 merge/post-merge evidence is recorded durably on `main`.
 
 ## Exact next unfinished action
-Independently review `33883de97d8943def09e5f1a14b2f1115833b02e -> b5b944430764da669afb8ceb68b970008be9a3a6`, focused on deterministic WooCommerce test dependency acquisition, exact version verification, optional-production-dependency boundaries, and CI security/supply-chain implications. Fix any Critical/Important finding through appropriate regression evidence. If review is clean, require exact-SHA CI on the resulting final docs head, then finish/merge PR #8 at that exact SHA, verify fresh post-merge `main` CI, record final M06 integration evidence, mark M06 complete, and hand off to M07.
+Wait for/check exact-SHA CI on this final documentation head. If all permanent jobs are green and PR #8 remains mergeable with no blocking threads/findings, mark PR #8 ready and merge using the exact verified head SHA. Then verify fresh post-merge `main` CI, record final M06 integration evidence on `main`, mark M06 complete, and hand off to M07.
 
 ## Previous milestone closeout
 - M05 merge `dd29d3bc1dc62dbfcccf1f87272a75c4e145afa6` via PR #6.
