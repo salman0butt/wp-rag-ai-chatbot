@@ -26,7 +26,43 @@ final class StructureAwareChunkerInjectedCounterTest extends TestCase {
 	 * Overlap shrinks to the actual remaining budget reported by an injected counter.
 	 */
 	public function test_overlap_respects_injected_counter_budget_units(): void {
-		$counter     = new class() implements TokenCounter {
+		$counter     = $this->double_unit_counter();
+		$chunker     = new StructureAwareChunker(
+			$counter,
+			new ChunkingConfig( 32, 4, 'm07-v1', null )
+		);
+		$new_content = implode( ' ', array_fill( 0, 14, 'new' ) );
+		$content     = "# Same\n\nalpha beta gamma delta\n\n" . $new_content;
+		$chunks      = $chunker->chunks( $this->document( $content ) );
+
+		self::assertCount( 2, $chunks );
+		self::assertSame( 32, $chunks[1]->tokenCount );
+		self::assertStringStartsWith( 'gamma delta ', $chunks[1]->content );
+		self::assertStringEndsWith( $new_content, $chunks[1]->content );
+	}
+
+	/**
+	 * Configured overlap is measured in injected counter units even with spare chunk capacity.
+	 */
+	public function test_overlap_never_exceeds_configured_injected_counter_budget(): void {
+		$counter = $this->double_unit_counter();
+		$chunker = new StructureAwareChunker(
+			$counter,
+			new ChunkingConfig( 32, 4, 'm07-v1', null )
+		);
+		$content = "# Same\n\nalpha beta gamma delta\n\none two three four five.";
+		$chunks  = $chunker->chunks( $this->document( $content ) );
+
+		self::assertCount( 2, $chunks );
+		self::assertSame( 'delta. one two three four five.', $chunks[1]->content );
+		self::assertSame( 16, $chunks[1]->tokenCount );
+	}
+
+	/**
+	 * Create a counter that charges two budget units per lexical unit.
+	 */
+	private function double_unit_counter(): TokenCounter {
+		return new class() implements TokenCounter {
 			/**
 			 * Count each lexical unit as two budget units.
 			 *
@@ -42,18 +78,6 @@ final class StructureAwareChunkerInjectedCounterTest extends TestCase {
 				return $matched * 2;
 			}
 		};
-		$chunker     = new StructureAwareChunker(
-			$counter,
-			new ChunkingConfig( 32, 4, 'm07-v1', null )
-		);
-		$new_content = implode( ' ', array_fill( 0, 14, 'new' ) );
-		$content     = "# Same\n\nalpha beta gamma delta\n\n" . $new_content;
-		$chunks      = $chunker->chunks( $this->document( $content ) );
-
-		self::assertCount( 2, $chunks );
-		self::assertSame( 32, $chunks[1]->tokenCount );
-		self::assertStringStartsWith( 'gamma delta ', $chunks[1]->content );
-		self::assertStringEndsWith( $new_content, $chunks[1]->content );
 	}
 
 	/**
