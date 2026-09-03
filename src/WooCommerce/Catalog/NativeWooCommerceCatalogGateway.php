@@ -62,9 +62,9 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return array();
 		}
 
-		$get_products = 'wc_get_products';
-		$get_product  = 'wc_get_product';
-		if ( ! is_callable( $get_products ) || ! is_callable( $get_product ) ) {
+		$get_products = $this->resolveCallable( 'wc_get_products' );
+		$get_product  = $this->resolveCallable( 'wc_get_product' );
+		if ( null === $get_products || null === $get_product ) {
 			return array();
 		}
 
@@ -103,6 +103,15 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 		return $eligible_ids;
 	}
 	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
+
+	/**
+	 * Resolve an optional runtime function without making it a static dependency.
+	 *
+	 * @return callable|null Runtime callable when available.
+	 */
+	private function resolveCallable( string $function_name ): ?callable {
+		return is_callable( $function_name ) ? $function_name : null;
+	}
 
 	/**
 	 * Validate bounded paging inputs.
