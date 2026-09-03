@@ -52,18 +52,18 @@ final class StructureAwareChunker {
 			}
 		}
 
-		$chunks = array();
+		$chunks      = array();
 		$fingerprint = $this->config->fingerprint();
 		foreach ( $descriptors as $sequence => $descriptor ) {
 			$heading_path = $descriptor['heading_path'];
-			$parent_key = DocumentHasher::hash(
+			$parent_key   = DocumentHasher::hash(
 				array(
 					'document_key'         => $document->documentKey,
 					'chunking_fingerprint' => $fingerprint,
 					'heading_path'         => $heading_path,
 				)
 			);
-			$chunk_key = DocumentHasher::hash(
+			$chunk_key    = DocumentHasher::hash(
 				array(
 					'document_key'         => $document->documentKey,
 					'chunking_fingerprint' => $fingerprint,
@@ -81,7 +81,7 @@ final class StructureAwareChunker {
 					'content'       => $descriptor['content'],
 				)
 			);
-			$token_count = $this->counter->count( $descriptor['content'] );
+			$token_count  = $this->counter->count( $descriptor['content'] );
 
 			if ( $token_count < 1 || $token_count > $this->config->maxTokens ) {
 				throw new ChunkingException( 'Chunk content violates the configured token budget.' );
@@ -127,10 +127,10 @@ final class StructureAwareChunker {
 			throw new ChunkingException( 'Document content is not valid UTF-8.' );
 		}
 
-		$result = array();
+		$result       = array();
 		$heading_path = array();
-		$paragraph = array();
-		$flush = static function () use ( &$result, &$paragraph, &$heading_path ): void {
+		$paragraph    = array();
+		$flush        = static function () use ( &$result, &$paragraph, &$heading_path ): void {
 			if ( array() === $paragraph ) {
 				return;
 			}
@@ -148,8 +148,8 @@ final class StructureAwareChunker {
 		foreach ( $lines as $line ) {
 			if ( 1 === preg_match( '/^(#{1,6})[ \t]+(.+?)\s*$/u', $line, $matches ) ) {
 				$flush();
-				$level = strlen( $matches[1] );
-				$heading_path = array_slice( $heading_path, 0, $level - 1 );
+				$level          = strlen( $matches[1] );
+				$heading_path   = array_slice( $heading_path, 0, $level - 1 );
 				$heading_path[] = trim( $matches[2] );
 				continue;
 			}
@@ -187,13 +187,13 @@ final class StructureAwareChunker {
 			return $this->split_lexically( $text );
 		}
 
-		$result = array();
+		$result  = array();
 		$current = '';
 		foreach ( $sentences as $sentence ) {
 			if ( $this->counter->count( $sentence ) > $this->config->maxTokens ) {
 				if ( '' !== $current ) {
 					$result[] = $current;
-					$current = '';
+					$current  = '';
 				}
 				array_push( $result, ...$this->split_lexically( $sentence ) );
 				continue;
@@ -206,7 +206,7 @@ final class StructureAwareChunker {
 			}
 
 			$result[] = $current;
-			$current = $sentence;
+			$current  = $sentence;
 		}
 
 		if ( '' !== $current ) {
@@ -239,12 +239,12 @@ final class StructureAwareChunker {
 
 		$tokens = $matches[0];
 		$result = array();
-		$count = count( $tokens );
+		$count  = count( $tokens );
 		for ( $start = 0; $start < $count; $start += $this->config->maxTokens ) {
-			$end_index = min( $start + $this->config->maxTokens, $count );
+			$end_index  = min( $start + $this->config->maxTokens, $count );
 			$start_byte = $tokens[ $start ][1];
-			$end_byte = $end_index < $count ? $tokens[ $end_index ][1] : strlen( $text );
-			$piece = trim( substr( $text, $start_byte, $end_byte - $start_byte ) );
+			$end_byte   = $end_index < $count ? $tokens[ $end_index ][1] : strlen( $text );
+			$piece      = trim( substr( $text, $start_byte, $end_byte - $start_byte ) );
 
 			if ( '' === $piece ) {
 				continue;
@@ -272,7 +272,7 @@ final class StructureAwareChunker {
 			throw new ChunkingException( 'Document content is not valid UTF-8.' );
 		}
 
-		$result = array();
+		$result  = array();
 		$current = '';
 		foreach ( $characters as $character ) {
 			$candidate = $current . $character;
@@ -284,7 +284,7 @@ final class StructureAwareChunker {
 				throw new ChunkingException( 'A single Unicode code point exceeds the configured token budget.' );
 			}
 			$result[] = trim( $current );
-			$current = $character;
+			$current  = $character;
 		}
 
 		if ( '' !== trim( $current ) ) {
