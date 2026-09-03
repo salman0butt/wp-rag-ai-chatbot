@@ -138,10 +138,12 @@ final class NativeGatewayProductStub {
 				return $this->value;
 			}
 
+			// phpcs:disable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Mirrors the native DateTime API used by WooCommerce.
 			/** Return the represented modification instant. */
 			public function getTimestamp(): int {
 				return ( new DateTimeImmutable( $this->value ) )->getTimestamp();
 			}
+			// phpcs:enable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
 		};
 	}
 
