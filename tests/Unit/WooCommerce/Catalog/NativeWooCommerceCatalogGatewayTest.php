@@ -82,8 +82,8 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		( new NativeWooCommerceCatalogGateway() )->productIds( 1, 251 );
 	}
 
-	/** Enumeration is bounded, deterministic, supported-type-only, and public-only. */
-	public function test_product_ids_returns_sorted_public_supported_products(): void {
+	/** Raw published page cardinality must survive eligibility filtering so callers can detect catalog exhaustion truthfully. */
+	public function test_product_ids_preserves_bounded_raw_page_cardinality_before_product_eligibility_filtering(): void {
 		self::assertTrue( class_exists( NativeWooCommerceCatalogGateway::class ) );
 		if ( ! class_exists( NativeWooCommerceCatalogGateway::class ) ) {
 			return;
@@ -126,7 +126,7 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		$gateway = new NativeWooCommerceCatalogGateway();
 
 		self::assertTrue( $gateway->isAvailable() );
-		self::assertSame( array( 3, 9 ), $gateway->productIds( 2, 25 ) );
+		self::assertSame( array( 3, 7, 9, 11, 13 ), $gateway->productIds( 2, 25 ) );
 	}
 
 	/** A missing or deleted product resolves to no catalog snapshot. */
@@ -263,38 +263,58 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 
 		Functions\when( 'wc_get_products' )->justReturn( array() );
 		Functions\when( 'wc_get_product' )->alias(
-			static fn ( int $product_id ): NativeGatewayProductStub|false => match ( $product_id ) {
-				50      => $parent,
-				101     => $blue,
-				103     => $red,
-				default => false,
+			static function ( int $product_id ) use ( $parent, $blue, $red ): NativeGatewayProductStub|false {
+				return match ( $product_id ) {
+					42      => $parent,
+					101     => $blue,
+					103     => $red,
+					default => false,
+				};
 			}
 		);
 		Functions\when( 'get_post_field' )->justReturn( '' );
+		Functions\when( 'get_term' )->justReturn( false );
 
-		$snapshot = ( new NativeWooCommerceCatalogGateway() )->product( 50 );
+		$snapshot = ( new NativeWooCommerceCatalogGateway() )->product( 42 );
 
 		self::assertNotNull( $snapshot );
+		self::assertSame( 'variable', $snapshot->type );
 		self::assertCount( 2, $snapshot->variations );
 		self::assertSame( 101, $snapshot->variations[0]->id );
 		self::assertSame( 'SHIRT-BLUE', $snapshot->variations[0]->sku );
-		self::assertSame(
-			array(
-				'Color' => 'Blue',
-				'Size'  => 'M',
-			),
-			$snapshot->variations[0]->attributes
-		);
+		self::assertSame( array( 'Color' => 'Blue', 'Size' => 'M' ), $snapshot->variations[0]->attributes );
 		self::assertSame( 103, $snapshot->variations[1]->id );
 		self::assertSame( 'SHIRT-RED', $snapshot->variations[1]->sku );
-		self::assertSame(
-			array(
-				'Color' => 'Red',
-				'Size'  => 'L',
-			),
-			$snapshot->variations[1]->attributes
+	}
+
+	/** Product snapshots exclude drafts, unsupported types, hidden products, and password-protected products. */
+	public function test_product_filters_non_public_or_unsupported_products(): void {
+		$cases = array(
+			new NativeGatewayProductStub( 'draft', 'simple', 'visible' ),
+			new NativeGatewayProductStub( 'publish', 'external', 'visible' ),
+			new NativeGatewayProductStub( 'publish', 'simple', 'hidden' ),
+			new NativeGatewayProductStub( 'publish', 'simple', 'visible' ),
 		);
-		self::assertFalse( property_exists( $snapshot->variations[0], 'price' ) );
-		self::assertFalse( property_exists( $snapshot->variations[0], 'stockStatus' ) );
+
+		Functions\when( 'wc_get_products' )->justReturn( array() );
+		Functions\when( 'wc_get_product' )->alias(
+			static function () use ( &$cases ): NativeGatewayProductStub|false {
+				return array_shift( $cases ) ?? false;
+			}
+		);
+		Functions\when( 'get_post_field' )->alias(
+			static function (): string {
+				static $calls = 0;
+				++$calls;
+				return 4 === $calls ? 'protected' : '';
+			}
+		);
+
+		$gateway = new NativeWooCommerceCatalogGateway();
+
+		self::assertNull( $gateway->product( 1 ) );
+		self::assertNull( $gateway->product( 2 ) );
+		self::assertNull( $gateway->product( 3 ) );
+		self::assertNull( $gateway->product( 4 ) );
 	}
 }
