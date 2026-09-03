@@ -2,7 +2,7 @@
 
 - Completed milestones on `main`: **M00-M06**.
 - Latest integrated milestone: **M06 — WooCommerce Knowledge Ingestion**.
-- Current milestone: **M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing — IN PROGRESS (Task 1 code/CI green; independent review pending)**.
+- Current milestone: **M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing — IN PROGRESS (Task 1 complete; Task 2 code/CI green; independent review pending)**.
 - Current verified `main`: `747733a92c23d411ccba2592d5cb8c7858b95a03`.
 - Latest verified `main` CI: `33770388757` — all permanent jobs passed.
 - M06 integration merge: `356f419ea6df23e68d89a13ee322ca50585ed74b` via PR #8.
@@ -27,32 +27,37 @@
 - Implementation plan: `docs/superpowers/plans/2026-09-03-m07-chunking-dedup-indexing.md` — **AUTO-APPROVED — SCHEDULED MODE**.
 - Selected architecture: canonical `DocumentRecord` -> meaning-preserving deterministic normalization -> structure-aware bounded chunking -> stable chunk hashes/lineage -> compatibility-safe dedup -> pure incremental index plan.
 - M08 owns embedding generation/vector stores and provider-exact compatibility; M09 owns queue/synchronization execution.
-- Task 1 — Deterministic content normalization: **IMPLEMENTED + EXACT-CODE-HEAD GREEN; INDEPENDENT FRESH-SESSION REVIEW PENDING**.
-- Tasks 2–7 remain and must not start until Task 1 independent review closes at 0 Critical / 0 Important unresolved.
+- Task 1 — Deterministic content normalization: **COMPLETE** after strict RED/GREEN, exact-head CI, and independent fresh-session review `5104488263` with 0 Critical / 0 Important unresolved.
+- Task 2 — Token budget/configuration contracts: **IMPLEMENTED + EXACT-CODE-HEAD GREEN; INDEPENDENT FRESH-SESSION REVIEW PENDING**.
+- Tasks 3–7 remain and must not start until Task 2 independent review closes at 0 Critical / 0 Important unresolved.
 
-### M07 Task 1 TDD evidence
+### M07 Task 1 evidence
 - RED test commit: `3e34a6d1125592a256463c3e75ee9406fa3e5e3a`.
 - RED CI `33775003445`: PHPStan clean; PHPUnit **263 tests / 1252 assertions / 7 expected failures**, each exactly `ContentNormalizer class does not exist yet.`
 - Minimal GREEN implementation: `de41fd281d95f2a367df163ea66d8713357b8a14`.
 - Exact-code-head GREEN CI `33775193798`: **php-quality, js-quality, package, wordpress-smoke all passed**.
-- GREEN PHP verification: PHPStan clean; PHPUnit **263 / 1252**, all passed; Composer audit clean.
-- Artifact `9901292022`, 712652 bytes, digest `sha256:1457cf8e2c625978959806ceb0e75c2409460a2ac3db4ad03e738de78873c552`.
-- Same-session review `5104040492`: **0 Critical / 0 Important unresolved in Task 1 code/test**, explicitly **not independent**.
+- Artifact `9901292022`, digest `sha256:1457cf8e2c625978959806ceb0e75c2409460a2ac3db4ad03e738de78873c552`.
+- Same-session review `5104040492`: 0 Critical / 0 Important unresolved, not independent.
+- Independent fresh-session review `5104488263`: **0 Critical / 0 Important unresolved**.
+- Fresh review-time exact-head CI `33775697649` on `8493eec0843b3b85058ffa73f3300fee770eb1c5`: all permanent jobs green; artifact `9901483331`, digest `sha256:b8ea69a97149a7554809f4d83e1df8bc4ffb8d5b8fee88546d7b042067a5aabe`.
 
-### M07 Task 1 behavior
-`ContentNormalizer` is a pure PHP/WordPress-independent utility. It:
-- strips only a leading UTF-8 BOM;
-- normalizes CRLF/lone CR to LF;
-- removes trailing spaces/tabs from each line;
-- collapses runs of three or more line feeds to two;
-- trims spaces/tabs/newlines from document edges;
-- preserves internal spacing and literal prompt-like/HTML-like/shortcode/PHP-like content;
-- is idempotent for canonical output.
+### M07 Task 2 TDD evidence
+- RED test-only commit: `220bffa181cb4a32490f6fa35b3be6904ae790d6` — `test: define M07 token budget contracts`.
+- RED PR CI `33780572899`: PHPStan clean; PHPUnit **272 tests / 1261 assertions / 9 expected failures**. Five failures were `ChunkingConfig class does not exist yet.` and four were `TokenCounter/LexicalTokenCounter contracts do not exist yet.`
+- Minimal GREEN implementation: `f802bed14cc1887c219b4ac1058236ded114224c` — `feat: add M07 token budget contracts`.
+- Exact-code-head GREEN PR CI `33780799386`: **php-quality, js-quality, package, wordpress-smoke all passed**.
+- GREEN PHP verification: PHPStan clean; PHPUnit **272 / 1276**, all passed; Composer audit clean.
+- Real WordPress smoke: activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge all passed.
+- Artifact `9903483875`, 714589 bytes, digest `sha256:f06d0f169bf7fa74718f976a3d63f05b3285347e2a45c24245c74c5a6138d388`.
+- Same-session review `5104539329`: **0 Critical / 0 Important unresolved**, explicitly not independent.
 
-It does not parse/execute content, perform provider calls, tokenize for a model, persist data, write vectors, or introduce queue behavior.
+### M07 Task 2 behavior
+`TokenCounter`, `LexicalTokenCounter`, and immutable `ChunkingConfig` are pure PHP/WordPress-independent contracts. The lexical counter counts Unicode letter/number runs plus individual non-whitespace punctuation/symbols and throws `DomainException` on invalid UTF-8. Config validation enforces max-token bounds 32..4096, overlap from 0 through exactly 25% of max, a non-blank chunking version, and a null-or-non-blank embedding compatibility key. The SHA-256 fingerprint uses the existing canonical `DocumentHasher` and incorporates all compatibility inputs.
+
+No Task 2 code performs provider calls, provider-exact tokenization, persistence, embeddings, vector writes, URL fetching, WordPress execution, or queue behavior.
 
 ## Exact next unfinished action
-Freshly recover PR #9 and independently review M07 Task 1 from RED `3e34a6d1125592a256463c3e75ee9406fa3e5e3a` through GREEN `de41fd281d95f2a367df163ea66d8713357b8a14`, including the durable documentation commits that follow it. Focus on meaning preservation, leading-BOM-only behavior, CR/LF normalization, trailing horizontal-space handling, blank-run collapse, document-edge trimming, idempotence, untrusted literal-content preservation, and compatibility with canonical M04-M06 `DocumentRecord` output. Fix any Critical/Important behavior issue via regression RED/GREEN and exact-head CI. If review is 0 Critical / 0 Important unresolved, mark Task 1 complete and begin Task 2 token/config contracts with a test-only RED commit.
+Freshly recover PR #9 and independently review M07 Task 2 from RED `220bffa181cb4a32490f6fa35b3be6904ae790d6` through GREEN `f802bed14cc1887c219b4ac1058236ded114224c` and the current documentation head. Focus on Unicode lexical-unit semantics, invalid-UTF-8 fail-closed behavior, config max/overlap bounds including exact 25%, immutability, canonical deterministic fingerprinting, embedding-compatibility identity, and absence of M08/M09/provider/network/persistence leakage. Fix any Critical/Important behavior issue via regression RED/GREEN and exact-head CI. If review is 0 Critical / 0 Important unresolved, mark Task 2 complete and begin Task 3 immutable chunk records and structure-aware splitting with a genuine test-only RED commit.
 
 ## Previous milestone closeout
 - M05 merge `dd29d3bc1dc62dbfcccf1f87272a75c4e145afa6` via PR #6.
