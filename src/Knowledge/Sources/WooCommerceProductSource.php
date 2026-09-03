@@ -103,7 +103,7 @@ final class WooCommerceProductSource implements KnowledgeSource {
 	private function selection( KnowledgeSourceRecord $source ): array {
 		$allowed_keys = array( 'product_ids', 'catalog', 'page_size' );
 		foreach ( array_keys( $source->config ) as $config_key ) {
-			if ( ! is_string( $config_key ) || ! in_array( $config_key, $allowed_keys, true ) ) {
+			if ( ! in_array( $config_key, $allowed_keys, true ) ) {
 				throw new KnowledgeSourceException( 'WooCommerce product source contains unsupported configuration.' );
 			}
 		}
