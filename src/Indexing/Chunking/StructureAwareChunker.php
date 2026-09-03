@@ -51,6 +51,7 @@ final class StructureAwareChunker {
 				);
 			}
 		}
+		$descriptors = $this->apply_overlap( $descriptors );
 
 		$chunks      = array();
 		$fingerprint = $this->config->fingerprint();
@@ -112,6 +113,73 @@ final class StructureAwareChunker {
 		}
 
 		return $chunks;
+	}
+
+	/**
+	 * Apply configured overlap between adjacent chunks in one structural parent.
+	 *
+	 * @param array<int, array{content:string, heading_path:array<int, string>}> $descriptors Base chunk descriptors.
+	 * @return array<int, array{content:string, heading_path:array<int, string>}>
+	 * @throws ChunkingException When overlap source content is not valid UTF-8.
+	 */
+	private function apply_overlap( array $descriptors ): array {
+		if ( 0 === $this->config->overlapTokens || count( $descriptors ) < 2 ) {
+			return $descriptors;
+		}
+
+		$result   = array();
+		$previous = null;
+		foreach ( $descriptors as $descriptor ) {
+			$content = $descriptor['content'];
+
+			if ( null !== $previous && $previous['heading_path'] === $descriptor['heading_path'] ) {
+				$available_tokens = $this->config->maxTokens - $this->counter->count( $content );
+				$overlap_tokens   = min( $this->config->overlapTokens, $available_tokens );
+
+				if ( $overlap_tokens > 0 ) {
+					$overlap = $this->trailing_lexical_units( $previous['content'], $overlap_tokens );
+					if ( '' !== $overlap ) {
+						$content = $overlap . ' ' . $content;
+					}
+				}
+			}
+
+			$result[] = array(
+				'content'      => $content,
+				'heading_path' => $descriptor['heading_path'],
+			);
+			$previous = $descriptor;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Copy at most the requested trailing Unicode lexical units from one chunk.
+	 *
+	 * @param string $text Source chunk content.
+	 * @param int    $limit Maximum lexical units to copy.
+	 * @throws ChunkingException When source content is not valid UTF-8.
+	 */
+	private function trailing_lexical_units( string $text, int $limit ): string {
+		$matched = preg_match_all(
+			'/[\p{L}\p{N}]+|[^\s\p{L}\p{N}]/u',
+			$text,
+			$matches,
+			PREG_OFFSET_CAPTURE
+		);
+		if ( false === $matched ) {
+			throw new ChunkingException( 'Document content is not valid UTF-8.' );
+		}
+		if ( 0 === $matched || $limit < 1 ) {
+			return '';
+		}
+
+		$tokens     = $matches[0];
+		$start      = max( 0, count( $tokens ) - $limit );
+		$start_byte = $tokens[ $start ][1];
+
+		return trim( substr( $text, $start_byte ) );
 	}
 
 	/**
