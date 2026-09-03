@@ -52,6 +52,7 @@
     "test:wp:file-ingestion": "bash scripts/test-wp-file-ingestion.sh",
     "test:wp:knowledge": "bash scripts/test-wp-knowledge.sh",
     "test:wp:providers": "bash scripts/test-wp-providers.sh",
+    "test:wp:woocommerce-knowledge": "bash scripts/test-wp-woocommerce-knowledge.sh",
     "typecheck": "tsc --noEmit",
     "verify:js": "npm run check-engines && npm run lint:pkg && npm run lint:js && npm run typecheck && npm run test:js -- --runInBand && npm run build",
     "wp-env": "wp-env"

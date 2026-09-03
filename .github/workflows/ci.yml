@@ -58,6 +58,7 @@ jobs:
       - run: npm run test:wp:providers
       - run: npm run test:wp:knowledge
       - run: npm run test:wp:file-ingestion
+      - run: npm run test:wp:woocommerce-knowledge
       - if: always()
         run: npm run env:stop
 
