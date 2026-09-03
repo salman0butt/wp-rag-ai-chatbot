@@ -51,8 +51,8 @@ final class PdfDocumentExtractor implements DocumentExtractor {
 			);
 		} catch ( ExtractionException $exception ) {
 			throw $exception;
-		} catch ( Throwable $exception ) {
-			throw new ExtractionException( 'PDF extraction failed.', 0, $exception );
+		} catch ( Throwable ) {
+			throw new ExtractionException( 'PDF extraction failed.' );
 		}
 	}
 }
