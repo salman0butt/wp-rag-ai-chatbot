@@ -249,6 +249,9 @@ final readonly class WooCommerceProduct {
 			if ( '' === $name ) {
 				throw new InvalidArgumentException( 'WooCommerce product attribute names must not be blank.' );
 			}
+			if ( array_key_exists( $name, $normalized ) ) {
+				throw new InvalidArgumentException( 'WooCommerce product attribute names must be unique after normalization.' );
+			}
 
 			$normalized_values = self::normalizeLabels( $values );
 			if ( array() === $normalized_values ) {
