@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\WooCommerce\Catalog;
 
+use DateTimeImmutable;
+
 /**
  * Minimal product object seam for native gateway tests.
  */
@@ -134,6 +136,11 @@ final class NativeGatewayProductStub {
 			public function date( string $format ): string {
 				unset( $format );
 				return $this->value;
+			}
+
+			/** Return the represented modification instant. */
+			public function getTimestamp(): int {
+				return ( new DateTimeImmutable( $this->value ) )->getTimestamp();
 			}
 		};
 	}
