@@ -19,35 +19,74 @@ use WpRagAiChatbot\Indexing\Normalization\ContentNormalizer;
  */
 final class ChunkDeduplicator {
 	/**
-	 * Deduplicate ordered chunks without mutating caller-owned records.
+	 * Deduplicate chunks without mutating caller-owned records.
 	 *
-	 * @param array<int, ChunkRecord> $chunks Ordered final chunks.
+	 * The lowest deterministic sequence wins for each compatibility fingerprint.
+	 * Equal sequences use the stable chunk key as the final deterministic tie-breaker.
+	 *
+	 * @param array<int, ChunkRecord> $chunks Final chunks.
 	 */
 	public function deduplicate( array $chunks ): ChunkDeduplicationResult {
-		$canonical_chunks  = array();
-		$duplicate_aliases = array();
-		$canonical_keys    = array();
+		$canonical_by_fingerprint = array();
 
 		foreach ( $chunks as $chunk ) {
-			$fingerprint = DocumentHasher::hash(
-				array(
-					'content'                     => ContentNormalizer::normalize( $chunk->content ),
-					'language'                    => $chunk->language,
-					'visibility'                  => $chunk->visibility,
-					'embedding_compatibility_key' => $chunk->embeddingCompatibilityKey,
-				)
-			);
+			$fingerprint = $this->fingerprint( $chunk );
+			$canonical   = $canonical_by_fingerprint[ $fingerprint ] ?? null;
 
-			if ( isset( $canonical_keys[ $fingerprint ] ) ) {
-				$duplicate_aliases[ $chunk->chunkKey ] = $canonical_keys[ $fingerprint ];
-				continue;
+			if ( null === $canonical || $this->comesBefore( $chunk, $canonical ) ) {
+				$canonical_by_fingerprint[ $fingerprint ] = $chunk;
+			}
+		}
+
+		$canonical_chunks   = array();
+		$duplicate_aliases  = array();
+		$emitted_canonicals = array();
+
+		foreach ( $chunks as $chunk ) {
+			$fingerprint = $this->fingerprint( $chunk );
+			$canonical   = $canonical_by_fingerprint[ $fingerprint ];
+
+			if ( ! isset( $emitted_canonicals[ $fingerprint ] ) ) {
+				$canonical_chunks[]                       = $canonical;
+				$emitted_canonicals[ $fingerprint ] = true;
 			}
 
-			$canonical_keys[ $fingerprint ] = $chunk->chunkKey;
-			$canonical_chunks[]             = $chunk;
+			if ( $chunk->chunkKey !== $canonical->chunkKey ) {
+				$duplicate_aliases[ $chunk->chunkKey ] = $canonical->chunkKey;
+			}
 		}
 
 		return new ChunkDeduplicationResult( $canonical_chunks, $duplicate_aliases );
+	}
+
+	/**
+	 * Build the privacy- and embedding-compatible deduplication fingerprint.
+	 *
+	 * @param ChunkRecord $chunk Final immutable chunk.
+	 */
+	private function fingerprint( ChunkRecord $chunk ): string {
+		return DocumentHasher::hash(
+			array(
+				'content'                     => ContentNormalizer::normalize( $chunk->content ),
+				'language'                    => $chunk->language,
+				'visibility'                  => $chunk->visibility,
+				'embedding_compatibility_key' => $chunk->embeddingCompatibilityKey,
+			)
+		);
+	}
+
+	/**
+	 * Determine deterministic canonical precedence.
+	 *
+	 * @param ChunkRecord $candidate Candidate canonical record.
+	 * @param ChunkRecord $canonical Current canonical record.
+	 */
+	private function comesBefore( ChunkRecord $candidate, ChunkRecord $canonical ): bool {
+		if ( $candidate->sequence !== $canonical->sequence ) {
+			return $candidate->sequence < $canonical->sequence;
+		}
+
+		return strcmp( $candidate->chunkKey, $canonical->chunkKey ) < 0;
 	}
 }
 // phpcs:enable WordPress.NamingConventions
