@@ -107,6 +107,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	/**
 	 * Resolve an optional runtime function without making it a static dependency.
 	 *
+	 * @param string $function_name Function name.
 	 * @return callable|null Runtime callable when available.
 	 */
 	private function resolveCallable( string $function_name ): ?callable {
