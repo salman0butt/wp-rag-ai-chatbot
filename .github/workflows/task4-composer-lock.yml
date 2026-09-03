@@ -1,0 +1,34 @@
+name: Task 4 Composer Lock
+
+on:
+  push:
+    branches:
+      - feat/m05-file-document-ingestion
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          coverage: none
+          tools: composer:v2
+      - name: Resolve parser dependencies
+        run: |
+          composer require --no-update 'smalot/pdfparser:^2.12.5' 'phpoffice/phpword:^1.4'
+          composer update smalot/pdfparser phpoffice/phpword --with-all-dependencies --no-interaction --prefer-dist --no-progress
+      - name: Emit resolved files
+        run: |
+          echo 'COMPOSER_JSON_B64_START'
+          base64 -w0 composer.json
+          echo
+          echo 'COMPOSER_JSON_B64_END'
+          echo 'COMPOSER_LOCK_B64_START'
+          base64 -w0 composer.lock
+          echo
+          echo 'COMPOSER_LOCK_B64_END'
