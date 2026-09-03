@@ -140,9 +140,18 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 			'Stable descriptive copy.',
 			'TRAIL-42',
 			'https://example.test/product/trail-shoe/',
-			array( 10 => 'Shoes', 20 => 'Trail Gear' ),
-			array( 30 => 'Trail', 40 => 'Lightweight' ),
-			array( 'Color' => array( 'Red', 'Blue' ), 'Size' => array( '42', '41' ) ),
+			array(
+				10 => 'Shoes',
+				20 => 'Trail Gear',
+			),
+			array(
+				30 => 'Trail',
+				40 => 'Lightweight',
+			),
+			array(
+				'Color' => array( 'Red', 'Blue' ),
+				'Size'  => array( '42', '41' ),
+			),
 			array(),
 			'2026-09-03T08:00:00+00:00'
 		);
@@ -152,7 +161,7 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		Functions\when( 'get_post_field' )->justReturn( '' );
 		Functions\when( 'get_term' )->alias(
 			static function ( int $term_id, string $taxonomy ) use ( $product ): object|false {
-				$name = 'product_cat' === $taxonomy ? $product->categoryName( $term_id ) : $product->tagName( $term_id );
+				$name = 'product_cat' === $taxonomy ? $product->category_name( $term_id ) : $product->tag_name( $term_id );
 				return null === $name ? false : (object) array( 'name' => $name );
 			}
 		);
@@ -166,8 +175,15 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 		self::assertSame( 'TRAIL-42', $snapshot->sku );
 		self::assertSame( array( 'Shoes', 'Trail Gear' ), $snapshot->categories );
 		self::assertSame( array( 'Lightweight', 'Trail' ), $snapshot->tags );
-		self::assertSame( array( 'Color' => array( 'Blue', 'Red' ), 'Size' => array( '41', '42' ) ), $snapshot->attributes );
+		self::assertSame(
+			array(
+				'Color' => array( 'Blue', 'Red' ),
+				'Size'  => array( '41', '42' ),
+			),
+			$snapshot->attributes
+		);
 		self::assertSame( array(), $snapshot->variations );
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain record property follows the approved contract.
 		self::assertSame( '2026-09-03T08:00:00+00:00', $snapshot->modifiedGmt );
 		self::assertFalse( property_exists( $snapshot, 'price' ) );
 		self::assertFalse( property_exists( $snapshot, 'stockStatus' ) );
