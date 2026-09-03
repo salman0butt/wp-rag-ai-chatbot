@@ -5,7 +5,7 @@
 - Completed milestones: **M00-M04** are integrated on `main`.
 - M05 design/spec: `docs/superpowers/specs/2026-09-03-m05-file-document-ingestion-design.md` — `AUTO-APPROVED — SCHEDULED MODE`.
 - M05 implementation plan: `docs/superpowers/plans/2026-09-03-m05-file-document-ingestion.md` — `AUTO-APPROVED — SCHEDULED MODE`.
-- M05 Tasks **1–2 are COMPLETE**; Tasks 3–7 remain.
+- M05 Tasks **1–3 are COMPLETE**; Tasks 4–7 remain.
 
 ## M05 Task 1 — Extraction contracts and registry
 - Added `ValidatedFile`, `ExtractedDocument`, `DocumentExtractor`, `DocumentExtractorRegistry`, and `ExtractionException`.
@@ -16,22 +16,31 @@
 
 ## M05 Task 2 — File validation policy
 - Added `MimeTypeDetector`, `NativeMimeTypeDetector`, and `FileValidationPolicy`.
-- Trust boundary now canonicalizes local paths, requires readable regular non-empty files, defaults to a 10 MiB ceiling, enforces explicit extension/MIME agreement using server-side `finfo`, prevents canonical allowed-root and symlink escape, and records deterministic lowercase SHA-256 in `ValidatedFile`.
-- Client MIME is not an input and is never trusted. Unsupported extensions/MIME pairs fail closed.
-- First test SHA `bb7e15f...` failed WPCS before PHPUnit and is **not** behavioral RED.
-- Valid Task 2 RED: `874a2e5d2dc901d79175806f8b5c37a4c2a5ae73`, CI `33692375663`; PHPStan no errors; PHPUnit **183 / 897 / 8 failures**, all exactly because Task 2 contracts were absent.
-- Initial behavioral GREEN: `0c844673f6c374161f8cd5634223520c249ea1b3`, CI `33692560859`; PHPStan no errors; PHPUnit **183 / 929**, Composer audit clean; PHP/JS/package green. The later review-fix head supersedes it for final Task 2 verification.
-- Distinct second-pass review found **0 Critical / 1 Important** API issue: approved public signature requires named parameter `$allowedRoot`, while the initial implementation exposed `$allowed_root`.
-- Review regression RED: `6c2fe061dc6959001d91044f828113ec49de0c62`, CI `33692753424`; PHPStan no errors; PHPUnit **184 / 932 / 1 error**, exactly `Unknown named parameter $allowedRoot`.
-- Review-fix code GREEN: `1263be3a9e7e80688cccc7234b342ce97c67c24c`, CI `33692911228`; PHPStan no errors; PHPUnit **184 / 933**, Composer audit clean. Remaining Critical/Important: **0 / 0**.
-- SHA `c06ae273...` failed WPCS before PHPUnit due suppression placement and is explicitly not GREEN evidence.
-- Documentation head `87e56c6fc76f829918c8bf3cef449a3c1c422343`, CI `33693060308`, passed **php-quality, js-quality, package/artifact upload, and wordpress-smoke**, including activation/database/provider/knowledge smoke. This closes the Task 2 handoff gate.
+- Trust boundary canonicalizes paths, requires readable regular non-empty files, defaults to a 10 MiB ceiling, enforces extension/MIME agreement using server-side `finfo`, prevents canonical allowed-root/symlink escape, and records deterministic lowercase SHA-256.
+- Valid RED: `874a2e5d2dc901d79175806f8b5c37a4c2a5ae73`, CI `33692375663`; PHPStan no errors; PHPUnit **183 / 897 / 8 failures** caused by absent Task 2 contracts.
+- Initial GREEN: `0c844673f6c374161f8cd5634223520c249ea1b3`, CI `33692560859`; PHPStan no errors; PHPUnit **183 / 929**; Composer audit clean.
+- Review found **0 Critical / 1 Important** named-argument API issue. Review RED `6c2fe061dc6959001d91044f828113ec49de0c62`, CI `33692753424`: **184 / 932 / 1 error**, exactly `Unknown named parameter $allowedRoot`.
+- Review-fix GREEN: `1263be3a9e7e80688cccc7234b342ce97c67c24c`, CI `33692911228`; PHPStan no errors; PHPUnit **184 / 933**; Composer audit clean. Remaining Critical/Important: **0 / 0**.
+- Documentation head `87e56c6fc76f829918c8bf3cef449a3c1c422343`, CI `33693060308`, passed all permanent jobs.
+
+## M05 Task 3 — Core text extractors
+- Added bounded deterministic TXT, Markdown, HTML, CSV, JSON, and XML extractors and MIME ownership through the existing registry.
+- TXT/Markdown normalize UTF-8 text and reject null-byte/binary content. HTML strips scripts/styles/comments, retains visible generic-container content and caps DOM elements at 5,000. CSV streams with limits of 1,000 rows/100 columns. JSON caps depth at 64. XML rejects `DOCTYPE`, uses `LIBXML_NONET`, caps depth at 64, and preserves mixed visible content.
+- Initial test SHA `c8af88a5...` stopped at WPCS and is **not** behavioral RED.
+- Valid primary RED: `5379d8b40341bbccbfbb2016d1e7386c0089bd77`, CI `33697098324`; PHPStan no errors; PHPUnit **201 / 950 / 17 failures**, all exactly from the six absent Task 3 extractor contracts.
+- Initial implementation needed only WPCS/static-analysis corrections. At `87dd33bec3a319504c31749509c6edcf12b240e4`, CI `33697603796` reached PHP GREEN: PHPStan no errors; PHPUnit **201 / 1001**; Composer audit clean; package passed.
+- Independent requirements/security review found **0 Critical / 2 Important** issues: generic visible HTML container text was discarded and Markdown failure behavior lacked focused regression coverage.
+- Review RED: `cd41be2cebe6e810f139aceefca12b568d5d6b12`, CI `33697784766`; PHPStan no errors; PHPUnit **203 / 1006 / 1 error**, exactly the HTML visible-text loss. Markdown binary rejection regression passed.
+- HTML review fix converged at `383a5a25045bb6e25c50aac30383254c69766877`, CI `33698148849`; PHPStan no errors; PHPUnit **203 / 1007**; Composer audit clean.
+- Final bounded second pass found **0 Critical / 1 Important** XML mixed-content issue. First test SHA `4f0adcd9...` stopped at WPCS and is not RED. Valid XML review RED: `89d0eaf4864a8b07fb00fa6de9165d6b3dbef98c`, CI `33698299866`; PHPStan no errors; PHPUnit **204 / 1009 / 1 failure**, exactly expected `Hello world!` vs actual `world`.
+- XML review-fix GREEN: `442063e463885cde958ceec47cd991c01ac4d917`, CI `33698452380`; PHPStan no errors; PHPUnit **204 / 1009**; Composer audit clean.
+- Final Task 3 review after fixes: **0 Critical / 0 Important** remaining.
 
 ## Current gates
-- M05 is **not merge-ready**: Tasks 3–7 remain. Do not merge the branch or advance to M06.
+- M05 is **not merge-ready**: Tasks 4–7 remain. Do not merge the branch or advance to M06.
 - No known blockers.
 - Draft feature PR: **#6 — `feat: build M05 file/document ingestion`**.
-- Exact next unfinished action: execute **M05 Task 3 — Core text extractors**. Add focused fixtures/tests for TXT, Markdown, HTML, CSV, JSON, and XML including malformed/empty/complexity failure paths and deterministic normalized output; capture genuine behavioral RED before production code; implement minimum bounded parsers, disable XML external-entity/network access, register supported MIME ownership, run full GREEN/security review, update durable docs, and require all permanent exact-head CI jobs green.
+- Exact next unfinished action: execute **M05 Task 4 — PDF and DOCX parser adapters**. Add test fixtures first for valid extraction, malformed failure normalization, unsupported/password-protected PDF behavior, and DOCX archive entry/uncompressed-size resource limits; capture genuine behavioral RED before dependencies/adapters exist; then add PHP 8.2-compatible `smalot/pdfparser` and `phpoffice/phpword`, keep parser libraries behind adapters, inspect DOCX ZIP resource limits before PHPWord parsing, normalize parser exceptions without leaking paths, run Composer audit/full verification/package/permanent CI, and record dependency license/security evidence.
 
 ## Previous milestone closeout
 
