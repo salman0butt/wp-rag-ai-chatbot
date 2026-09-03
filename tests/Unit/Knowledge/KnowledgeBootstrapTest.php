@@ -81,7 +81,7 @@ final class KnowledgeBootstrapTest extends TestCase {
 
 		$registry = KnowledgeBootstrap::registry();
 
-		self::assertSame( array( 'faq', 'manual_text', 'third_party', 'wordpress_posts' ), $registry->types() );
+		self::assertSame( array( 'faq', 'file', 'manual_text', 'third_party', 'wordpress_posts' ), $registry->types() );
 		self::assertSame( $extension, $registry->get( 'third_party' ) );
 	}
 
