@@ -1,6 +1,6 @@
 # M06 — WooCommerce Knowledge Ingestion
 
-Status: IN PROGRESS — design/spec and implementation plan auto-approved; Task 1 next.
+Status: IN PROGRESS — design/spec and implementation plan auto-approved; Task 1 complete; Task 2 next.
 
 ## Goal
 Normalize stable public WooCommerce catalog knowledge while clearly separating indexed descriptive facts from live transactional state.
@@ -46,7 +46,7 @@ WooCommerce remains optional. Native WooCommerce APIs stay behind the gateway. S
 - Whole-catalog enumeration is bounded, deterministic, and reviewed for N+1 behavior.
 
 ## Tasks
-- [ ] Task 1 — WooCommerce catalog contracts and immutable snapshots.
+- [x] Task 1 — WooCommerce catalog contracts and immutable snapshots.
 - [ ] Task 2 — Optional-safe native WooCommerce catalog gateway.
 - [ ] Task 3 — WooCommerce product source canonical mapping.
 - [ ] Task 4 — Stable source version and live-state exclusion regressions.
@@ -54,41 +54,91 @@ WooCommerce remains optional. Native WooCommerce APIs stay behind the gateway. S
 - [ ] Task 6 — Real WordPress/WooCommerce smoke coverage.
 - [ ] Task 7 — Integration, compatibility/security/performance review, documentation, merge, and post-merge verification.
 
+## Task 1 implementation
+Task 1 introduced:
+- `WooCommerceCatalogGateway` as a WooCommerce-independent application contract with availability, single-product lookup, and bounded product-ID paging methods.
+- Immutable `WooCommerceProduct` snapshots for stable public catalog facts only.
+- Immutable `WooCommerceVariation` snapshots for stable variation identity/SKU/options only.
+- Positive identity, supported product type, publish/public catalog visibility, required product identity text, deterministic label/attribute/variation ordering, duplicate variation-ID rejection, and normalized attribute-name collision rejection.
+- Explicit absence of live/current price, sale, stock, purchasability, cart/order, discount, customer, and arbitrary metadata fields from the snapshot boundary.
+
 ## TDD Evidence
-Pending implementation. Task 1 must begin with a genuine failing contract/invariant test on the feature branch before production classes are added.
+### Task 1 primary RED
+- Exact test-only SHA: `1a626c5d618ea0c4d3a7373eb66d8667d0fec23b`.
+- CI: `33723839314`.
+- PHPStan reached execution with no errors.
+- PHPUnit: 229 tests / 1109 assertions / 7 failures.
+- All seven failures were the expected absent `WooCommerceCatalogGateway`, `WooCommerceProduct`, and `WooCommerceVariation` contracts. Earlier WPCS-only test iterations were not counted as behavioral RED.
+
+### Task 1 implementation
+- Initial production-contract commit: `eb29bca8ee178c4542bf194821b5a4851c951c17` (`feat: add M06 WooCommerce catalog contracts`).
+- Subsequent Task 1 corrections covered readonly normalization, public record documentation, duplicate variation identity, and hidden catalog visibility before final review.
+
+### Independent review regression 1 — product attribute collision
+Review found that distinct raw attribute names such as `" Size"` and `"Size"` could collapse after trimming and silently overwrite a stable catalog fact.
+- RED SHA: `d647ebd31731a5c1cce0ea05d49733333ebda2c5`.
+- CI: `33727034899`.
+- PHPStan: no errors.
+- PHPUnit: 233 tests / 1135 assertions / 1 failure; expected `InvalidArgumentException` was not thrown.
+- GREEN SHA: `21447be4d4d498311b4a48630f1b227a76415237`.
+- CI: `33727169180`.
+- PHPStan: no errors.
+- PHPUnit: 233 tests / 1135 assertions, all passed.
+- Composer audit: no security vulnerability advisories.
+
+### Independent review regression 2 — variation attribute collision
+The same normalized-key overwrite risk existed for variation option names.
+- RED SHA: `f547bcb6b25b2f52a9cf9e32041d384f3479c4f0`.
+- CI: `33727270728`.
+- PHPStan: no errors.
+- PHPUnit: 234 tests / 1136 assertions / 1 failure; expected `InvalidArgumentException` was not thrown.
+- GREEN SHA: `17358f11c2348e002786b82ffb2d534fee2e5ae1`.
+- CI: `33727368805`.
+- PHPStan: no errors.
+- PHPUnit: 234 tests / 1136 assertions, all passed.
+- Composer audit: no security vulnerability advisories.
+- Permanent jobs: php-quality, js-quality, package, and wordpress-smoke all passed.
+- Package artifact: `9882495514`, 706232 bytes, digest `sha256:d544d7ef3c124a9495149f50e645e2643f7f89208645e40db69a93701d6ef5d2`.
 
 ## Integration Test Evidence
-Pending Task 6. Real WooCommerce fixtures and both enabled/disabled plugin states are required.
+Task 1 final exact-head CI `33727368805` passed existing WordPress activation, database, provider, WordPress knowledge, and file-ingestion smoke coverage. Real WooCommerce integration fixtures remain Task 6.
 
 ## Security Review
-Required: public product visibility; arbitrary-meta allowlist; customer/order/session/private-data exclusion; dynamic/live state separation; path-safe/sanitized errors.
+Task 1 bounded stable/live-data review result after fixes: **0 Critical / 0 Important unresolved findings**.
+
+Verified boundaries:
+- only stable descriptive catalog facts exist on product/variation snapshots;
+- live price/stock/sale/cart/order/customer/discount fields are absent;
+- publish/public catalog visibility fails closed at the snapshot boundary;
+- duplicate/normalized-colliding variation and attribute identity does not silently overwrite facts;
+- no native WooCommerce class is referenced by the application-facing gateway contract.
 
 ## Accessibility Review where UI exists
 N/A — M06 introduces no UI.
 
 ## Performance Review where relevant
-Required: bounded deterministic product ID paging, current-page hydration only, and N+1 review. Default page size 100; hard maximum 250.
+Task 1 is in-memory immutable normalization only. Bounded deterministic product paging, current-page hydration, and N+1 review are Task 2 responsibilities. Default page size remains 100 with hard maximum 250 in the approved plan.
 
 ## Code Review Findings
-Planning review: 0 Critical / 0 Important. Implementation reviews pending.
+- Planning review: 0 Critical / 0 Important.
+- Task 1 independent bounded review initially found 0 Critical / 1 Important: normalized attribute-name collisions could silently lose stable product/variation facts.
+- Both product and variation collision paths were fixed through separate RED -> GREEN regression cycles.
+- Final Task 1 review: **0 Critical / 0 Important unresolved**.
 
 ## Fresh Verification Commands
-Implementation pending; authoritative dependency-backed execution remains GitHub Actions per ADR-018.
-
-## Commits
-Planning commit pending exact SHA at time of this document update.
+Authoritative dependency-backed verification remains GitHub Actions per ADR-018. Final Task 1 exact-head run: `33727368805` on `17358f11c2348e002786b82ffb2d534fee2e5ae1`.
 
 ## Known Limitations
 One canonical document per product in M06. Variations are structured product metadata, not standalone documents. Live commerce facts are intentionally deferred to authorized runtime services/actions.
 
 ## Documentation Updated
-M06 design/spec, executable implementation plan, milestone ledger, and global status.
+M06 design/spec, executable implementation plan, milestone ledger, global status, and PR #8 track the durable milestone state.
 
 ## Completion Checklist
 All Tasks 1–7, exact-head permanent CI, whole-milestone review with 0 unresolved Critical/Important findings, merge of exact tested SHA, and fresh post-merge `main` CI.
 
 ## Exact next unfinished action
-Execute Task 1 with strict TDD: add failing tests for `WooCommerceCatalogGateway`, immutable `WooCommerceProduct`/`WooCommerceVariation` contracts, stable-only fields, identity/invariant validation, and deterministic ordering; capture genuine RED before production code.
+Execute **Task 2 — Optional-safe native WooCommerce catalog gateway** with strict TDD. Add test-only coverage for WooCommerce-unavailable behavior, invalid page/per-page values, hard maximum 250, deterministic ascending product IDs, missing/deleted products, simple/variable mapping, visibility/password exclusion, and explicit live/private-data omission. Capture genuine behavioral RED before creating `NativeWooCommerceCatalogGateway`, then implement the minimum public-API adapter, run focused/full GREEN, perform privacy/performance review, and update durable evidence before Task 3.
 
 ## Next Milestone
 M07 — Normalization, Chunking, Deduplication & Incremental Indexing.
