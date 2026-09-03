@@ -142,6 +142,31 @@ final class WooCommerceProductTest extends TestCase {
 		$this->product( status: 'private' );
 	}
 
+	/** Duplicate variation IDs must fail closed rather than create ambiguous identity. */
+	public function test_product_snapshot_rejects_duplicate_variation_ids(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		new WooCommerceProduct(
+			id: 42,
+			type: 'variable',
+			status: 'publish',
+			catalogVisibility: 'visible',
+			name: 'Trail Shoe',
+			shortDescription: 'Light trail shoe.',
+			description: 'Stable descriptive copy.',
+			sku: 'TRAIL-42',
+			canonicalUrl: 'https://example.test/product/trail-shoe/',
+			categories: array( 'Shoes' ),
+			tags: array( 'Trail' ),
+			attributes: array( 'Color' => array( 'Blue', 'Red' ) ),
+			variations: array(
+				new WooCommerceVariation( 81, 'TRAIL-42-BLUE', array( 'Color' => 'Blue' ) ),
+				new WooCommerceVariation( 81, 'TRAIL-42-RED', array( 'Color' => 'Red' ) ),
+			),
+			modifiedGmt: '2026-09-03T00:00:00+00:00'
+		);
+	}
+
 	/** Variation identity and options are deterministic stable facts. */
 	public function test_variation_snapshot_validates_identity_and_normalizes_options(): void {
 		self::assertTrue( class_exists( WooCommerceVariation::class ) );
