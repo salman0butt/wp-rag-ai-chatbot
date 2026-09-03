@@ -198,7 +198,7 @@ final class NativeWooCommerceCatalogGatewayTest extends TestCase {
 			'Trail Shirt',
 			'',
 			'Variable trail shirt.',
-			null === null ? '' : '',
+			'',
 			'https://example.test/product/trail-shirt/',
 			array(),
 			array(),
