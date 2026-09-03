@@ -87,7 +87,7 @@ final readonly class FileDocumentSource implements KnowledgeSource {
 		$validated = $this->validation_policy->validate( trim( $path ), $allowed_root );
 		$extracted = $this->extractor_registry->get( $validated->mimeType )->extract( $validated );
 
-		$document_key  = 'file:' . $source->sourceKey;
+		$document_key   = 'file:' . $source->sourceKey;
 		$source_version = $validated->sha256 . ':' . $validated->size;
 		$metadata       = array_merge(
 			$extracted->metadata,
