@@ -28,8 +28,10 @@ use WpRagAiChatbot\Knowledge\Sources\KnowledgeSource;
 use WpRagAiChatbot\Knowledge\Sources\KnowledgeSourceException;
 use WpRagAiChatbot\Knowledge\Sources\KnowledgeSourceRegistry;
 use WpRagAiChatbot\Knowledge\Sources\ManualTextSource;
+use WpRagAiChatbot\Knowledge\Sources\WooCommerceProductSource;
 use WpRagAiChatbot\Knowledge\Sources\WordPressPostSource;
 use WpRagAiChatbot\Knowledge\WordPress\NativeWordPressContentGateway;
+use WpRagAiChatbot\WooCommerce\Catalog\NativeWooCommerceCatalogGateway;
 
 /**
  * Composes native and third-party knowledge sources once WordPress is loaded.
@@ -77,6 +79,7 @@ final class KnowledgeBootstrap {
 				$extractors
 			)
 		);
+		$registry->register( new WooCommerceProductSource( new NativeWooCommerceCatalogGateway() ) );
 
 		foreach ( $extensions as $extension ) {
 			if ( ! $extension instanceof KnowledgeSource ) {
