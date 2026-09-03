@@ -136,10 +136,16 @@ final class StructureAwareChunker {
 				$available_tokens = $this->config->maxTokens - $this->counter->count( $content );
 				$overlap_tokens   = min( $this->config->overlapTokens, $available_tokens );
 
-				if ( $overlap_tokens > 0 ) {
-					$overlap = $this->trailing_lexical_units( $previous['content'], $overlap_tokens );
-					if ( '' !== $overlap ) {
-						$content = $overlap . ' ' . $content;
+				for ( $limit = $overlap_tokens; $limit > 0; --$limit ) {
+					$overlap = $this->trailing_lexical_units( $previous['content'], $limit );
+					if ( '' === $overlap ) {
+						break;
+					}
+
+					$candidate = $overlap . ' ' . $content;
+					if ( $this->counter->count( $candidate ) <= $this->config->maxTokens ) {
+						$content = $candidate;
+						break;
 					}
 				}
 			}
