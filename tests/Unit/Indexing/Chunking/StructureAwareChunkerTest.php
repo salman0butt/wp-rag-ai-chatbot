@@ -125,9 +125,9 @@ final class StructureAwareChunkerTest extends TestCase {
 			new LexicalTokenCounter(),
 			new ChunkingConfig( 32, 4, 'm07-v1', null )
 		);
-		$new_content = implode( ' ', array_fill( 0, 31, 'new' ) );
-		$content     = "# Same\n\nalpha beta gamma delta\n\n" . $new_content;
-		$chunks      = $chunker->chunks( $this->document( $content ) );
+		$new_content     = implode( ' ', array_fill( 0, 31, 'new' ) );
+		$content         = "# Same\n\nalpha beta gamma delta\n\n" . $new_content;
+		$chunks          = $chunker->chunks( $this->document( $content ) );
 
 		self::assertCount( 2, $chunks );
 		self::assertSame( 32, $chunks[1]->tokenCount );
