@@ -254,8 +254,8 @@ final class PdfDocxExtractorsTest extends TestCase {
 	/**
 	 * Create a minimal DOCX fixture from paragraph strings.
 	 *
-	 * @param string       $name Fixture basename.
-	 * @param list<string> $paragraphs Paragraph text.
+	 * @param string        $name Fixture basename.
+	 * @param array<string> $paragraphs Paragraph text.
 	 * @throws RuntimeException When fixture creation fails.
 	 */
 	private function createDocx( string $name, array $paragraphs ): string {
