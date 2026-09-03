@@ -146,7 +146,14 @@ final class PdfDocxExtractorsTest extends TestCase {
 	 */
 	public function test_docx_archive_inspector_rejects_excessive_entry_count(): void {
 		$this->requireTask4Contracts();
-		$path = $this->createZip( 'entries.docx', array( 'a.txt' => 'a', 'b.txt' => 'b', 'c.txt' => 'c' ) );
+		$path = $this->createZip(
+			'entries.docx',
+			array(
+				'a.txt' => 'a',
+				'b.txt' => 'b',
+				'c.txt' => 'c',
+			)
+		);
 
 		$this->expectException( ExtractionException::class );
 		( new DocxArchiveInspector( maxEntries: 2, maxUncompressedBytes: 1024 ) )->inspect( $path );
@@ -174,6 +181,10 @@ final class PdfDocxExtractorsTest extends TestCase {
 
 	/**
 	 * Create trusted metadata for a temporary fixture.
+	 *
+	 * @param string $path Fixture path.
+	 * @param string $mime_type Trusted fixture MIME type.
+	 * @throws RuntimeException When fixture metadata cannot be read.
 	 */
 	private function validatedFile( string $path, string $mime_type ): ValidatedFile {
 		$size = filesize( $path );
@@ -194,9 +205,14 @@ final class PdfDocxExtractorsTest extends TestCase {
 
 	/**
 	 * Write a text fixture to a temporary file.
+	 *
+	 * @param string $name Fixture basename.
+	 * @param string $content Fixture contents.
+	 * @throws RuntimeException When fixture creation fails.
 	 */
 	private function writeFixture( string $name, string $content ): string {
 		$directory = sys_get_temp_dir() . '/wp-rag-task4-' . bin2hex( random_bytes( 6 ) );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- Unit fixture setup outside WordPress bootstrap.
 		if ( ! mkdir( $directory ) && ! is_dir( $directory ) ) {
 			throw new RuntimeException( 'Unable to create temporary fixture directory.' );
 		}
@@ -214,7 +230,9 @@ final class PdfDocxExtractorsTest extends TestCase {
 	/**
 	 * Create a deterministic ZIP fixture.
 	 *
+	 * @param string               $name Fixture basename.
 	 * @param array<string,string> $entries Archive entries keyed by path.
+	 * @throws RuntimeException When ZIP fixture creation fails.
 	 */
 	private function createZip( string $name, array $entries ): string {
 		$path = $this->writeFixture( $name, 'placeholder' );
@@ -236,7 +254,9 @@ final class PdfDocxExtractorsTest extends TestCase {
 	/**
 	 * Create a minimal DOCX fixture from paragraph strings.
 	 *
+	 * @param string       $name Fixture basename.
 	 * @param list<string> $paragraphs Paragraph text.
+	 * @throws RuntimeException When fixture creation fails.
 	 */
 	private function createDocx( string $name, array $paragraphs ): string {
 		$body = '';
@@ -269,6 +289,8 @@ final class PdfDocxExtractorsTest extends TestCase {
 
 	/**
 	 * Build a tiny PDF with a single visible text operation and valid xref offsets.
+	 *
+	 * @param string $text Visible PDF text.
 	 */
 	private function minimalPdf( string $text ): string {
 		$objects = array(
