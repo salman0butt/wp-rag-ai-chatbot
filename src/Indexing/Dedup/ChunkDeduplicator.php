@@ -47,7 +47,8 @@ final class ChunkDeduplicator {
 			$canonical   = $canonical_by_fingerprint[ $fingerprint ];
 
 			if ( ! isset( $emitted_canonicals[ $fingerprint ] ) ) {
-				$canonical_chunks[]                       = $canonical;
+				$canonical_chunks[] = $canonical;
+
 				$emitted_canonicals[ $fingerprint ] = true;
 			}
 
