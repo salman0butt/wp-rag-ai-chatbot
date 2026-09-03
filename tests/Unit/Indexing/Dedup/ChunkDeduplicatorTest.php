@@ -36,6 +36,20 @@ final class ChunkDeduplicatorTest extends TestCase {
 	}
 
 	/**
+	 * Canonical selection follows deterministic chunk sequence, not caller array order.
+	 */
+	public function test_lowest_sequence_is_canonical_when_duplicate_input_order_is_reversed(): void {
+		$this->requireDeduplicator();
+		$earliest = $this->chunk( 'earliest', 2, 'Alpha beta', 'en', 'public', 'embed-v1' );
+		$later    = $this->chunk( 'later', 9, 'Alpha beta', 'en', 'public', 'embed-v1' );
+
+		$result = ( new ChunkDeduplicator() )->deduplicate( array( $later, $earliest ) );
+
+		self::assertSame( array( $earliest ), $result->canonicalChunks );
+		self::assertSame( array( $later->chunkKey => $earliest->chunkKey ), $result->duplicateAliases );
+	}
+
+	/**
 	 * Canonical content normalization prevents formatting-only duplicate embeddings.
 	 */
 	public function test_content_is_normalized_before_deduplication(): void {
