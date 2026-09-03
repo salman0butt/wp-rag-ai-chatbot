@@ -16,46 +16,102 @@ use InvalidArgumentException;
  * Immutable allowlisted stable public catalog facts for one product.
  */
 final readonly class WooCommerceProduct {
-	/** Product ID. */
+	/**
+	 * Product ID.
+	 *
+	 * @var int
+	 */
 	public int $id;
 
-	/** Supported product type. */
+	/**
+	 * Supported product type.
+	 *
+	 * @var string
+	 */
 	public string $type;
 
-	/** Public product status. */
+	/**
+	 * Public product status.
+	 *
+	 * @var string
+	 */
 	public string $status;
 
-	/** Public catalog visibility. */
+	/**
+	 * Public catalog visibility.
+	 *
+	 * @var string
+	 */
 	public string $catalogVisibility;
 
-	/** Product name. */
+	/**
+	 * Product name.
+	 *
+	 * @var string
+	 */
 	public string $name;
 
-	/** Stable short description. */
+	/**
+	 * Stable short description.
+	 *
+	 * @var string
+	 */
 	public string $shortDescription;
 
-	/** Stable full description. */
+	/**
+	 * Stable full description.
+	 *
+	 * @var string
+	 */
 	public string $description;
 
-	/** Product SKU. */
+	/**
+	 * Product SKU.
+	 *
+	 * @var string|null
+	 */
 	public ?string $sku;
 
-	/** Public product URL. */
+	/**
+	 * Public product URL.
+	 *
+	 * @var string
+	 */
 	public string $canonicalUrl;
 
-	/** @var array<int, string> Category labels. */
+	/**
+	 * Category labels.
+	 *
+	 * @var array<int, string>
+	 */
 	public array $categories;
 
-	/** @var array<int, string> Tag labels. */
+	/**
+	 * Tag labels.
+	 *
+	 * @var array<int, string>
+	 */
 	public array $tags;
 
-	/** @var array<string, array<int, string>> Descriptive attributes. */
+	/**
+	 * Descriptive attributes.
+	 *
+	 * @var array<string, array<int, string>>
+	 */
 	public array $attributes;
 
-	/** @var array<int, WooCommerceVariation> Stable variation descriptors. */
+	/**
+	 * Stable variation descriptors.
+	 *
+	 * @var array<int, WooCommerceVariation>
+	 */
 	public array $variations;
 
-	/** Stable modified marker. */
+	/**
+	 * Stable modified marker.
+	 *
+	 * @var string
+	 */
 	public string $modifiedGmt;
 
 	/**

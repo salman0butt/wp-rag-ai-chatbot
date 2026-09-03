@@ -16,13 +16,25 @@ use InvalidArgumentException;
  * Immutable stable descriptive variation facts.
  */
 final readonly class WooCommerceVariation {
-	/** Variation ID. */
+	/**
+	 * Variation ID.
+	 *
+	 * @var int
+	 */
 	public int $id;
 
-	/** Stable variation SKU. */
+	/**
+	 * Stable variation SKU.
+	 *
+	 * @var string|null
+	 */
 	public ?string $sku;
 
-	/** @var array<string,string> Descriptive variation choices. */
+	/**
+	 * Descriptive variation choices.
+	 *
+	 * @var array<string,string>
+	 */
 	public array $attributes;
 
 	/**
