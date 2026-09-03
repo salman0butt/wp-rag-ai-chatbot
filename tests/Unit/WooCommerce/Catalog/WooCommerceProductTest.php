@@ -48,7 +48,7 @@ final class WooCommerceProductTest extends TestCase {
 			categories: array( 'Outdoor', 'Shoes', 'Outdoor' ),
 			tags: array( 'Trail', 'Lightweight', 'Trail' ),
 			attributes: array(
-				'Size' => array( '44', '42', '44' ),
+				'Size'  => array( '44', '42', '44' ),
 				'Color' => array( 'Red', 'Blue' ),
 			),
 			variations: array(
@@ -157,7 +157,13 @@ final class WooCommerceProductTest extends TestCase {
 			)
 		);
 
-		self::assertSame( array( 'Color' => 'Blue', 'Size' => '42' ), $variation->attributes );
+		self::assertSame(
+			array(
+				'Color' => 'Blue',
+				'Size'  => '42',
+			),
+			$variation->attributes
+		);
 
 		$this->expectException( InvalidArgumentException::class );
 		new WooCommerceVariation( 0, null, array() );
