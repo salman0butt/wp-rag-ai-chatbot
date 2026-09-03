@@ -141,8 +141,8 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		$objects[ $font_id ] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>';
 		ksort( $objects );
 
-		$pdf     = "%PDF-1.4\n";
-		$offsets = array( 0 );
+		$pdf          = "%PDF-1.4\n";
+		$offsets      = array( 0 );
 		foreach ( $objects as $id => $body ) {
 			$offsets[ $id ] = strlen( $pdf );
 
@@ -150,7 +150,7 @@ final class PdfDocumentExtractorResourceLimitsTest extends TestCase {
 		}
 
 		$xref_offset = strlen( $pdf );
-		$pdf        .= "xref\n0 " . ( $font_id + 1 ) . "\n0000000000 65535 f \n";
+		$pdf         .= "xref\n0 " . ( $font_id + 1 ) . "\n0000000000 65535 f \n";
 		for ( $id = 1; $id <= $font_id; ++$id ) {
 			$pdf .= sprintf( '%010d 00000 n ', $offsets[ $id ] ) . "\n";
 		}
