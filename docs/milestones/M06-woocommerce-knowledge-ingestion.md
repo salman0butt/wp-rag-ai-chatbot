@@ -1,6 +1,6 @@
 # M06 — WooCommerce Knowledge Ingestion
 
-Status: INTEGRATION READY — Tasks 1–6 complete and independently reviewed; whole-milestone review complete; Task 7 final exact-SHA CI/merge/post-merge verification remains.
+Status: INTEGRATION READY — Tasks 1–6 complete and independently reviewed; whole-milestone review complete; Task 7 CI-installer correction is exact-SHA green with fresh-session independent review pending before merge.
 
 ## Goal
 Normalize stable public WooCommerce catalog knowledge while clearly separating indexed descriptive facts from live transactional state.
@@ -39,7 +39,7 @@ Whole-catalog traversal uses bounded deterministic published-candidate pages. El
 - [x] Task 4 — Stable source version and live-state exclusion regressions.
 - [x] Task 5 — Knowledge bootstrap registration and disabled-WooCommerce safety.
 - [x] Task 6 — Real WordPress/WooCommerce smoke coverage.
-- [ ] Task 7 — Final documentation-head CI, PR finishing, merge, post-merge verification, and final durable closeout.
+- [ ] Task 7 — Fresh-session review of CI-installer correction, final exact-SHA CI, PR finishing, merge, post-merge verification, and final durable closeout.
 
 ## Durable TDD / review evidence
 
@@ -101,8 +101,22 @@ Verified:
 - Real WordPress/WooCommerce smoke covers simple/variable products, variations, deterministic reads, stable-vs-live change semantics, unpublish removal, cleanup, and WooCommerce-disabled fallback.
 - M07 owns reconciliation/chunking/indexing; M09 owns background execution; M18 owns live commerce actions.
 
-## Exact integration candidate
-Documentation/evidence predecessor `0fb45e5c64f4bf2b8d2453141674881bd173fcd6` has exact-SHA CI `33758719268` green across all permanent jobs. This Task 7 documentation reconciliation commit must receive its own exact-SHA green CI before merge.
+## Task 7 CI installer regression
+Final documentation head `33883de97d8943def09e5f1a14b2f1115833b02e` exposed a reproducible external installer-path failure in CI run `33763497982`:
+- php-quality, js-quality, package, and all pre-WooCommerce WordPress smoke steps passed;
+- `wordpress-smoke` failed only when the smoke invoked WP-CLI slug resolution for WooCommerce: `Error: No plugins installed.`;
+- rerunning the failed WordPress job reproduced the same failure at the same boundary, proving it was not a one-off runner failure;
+- the prior exact-code-head Task 6 run had passed the same slug-based installer path, and no product code changed between those heads.
+
+The minimal correction `b5b944430764da669afb8ceb68b970008be9a3a6` changes only the test installer path: it installs the exact pinned archive `https://downloads.wordpress.org/plugin/woocommerce.11.0.1.zip` and then fails closed unless `wp plugin get woocommerce --field=version` reports exactly `11.0.1`.
+
+GREEN evidence:
+- exact-head CI `33764205102`: php-quality, js-quality, package, and wordpress-smoke all passed;
+- WooCommerce smoke passed with the direct pinned archive and version assertion;
+- artifact `9896789959`, digest `sha256:2a9db8580182f825c28830b9207d75504186caa768b832596ece946c7e23cad5`.
+- same-session review `5102906954`: **0 Critical / 0 Important unresolved**, explicitly not independent.
+
+Because this CI behavior changed after independent whole-M06 review `5102236196`, a genuinely independent fresh-session review of `33883de... -> b5b94443...` is required before merge.
 
 ## Accessibility review
 N/A — M06 introduces no UI.
@@ -112,14 +126,15 @@ One canonical document per product in M06. Variations are structured product met
 
 ## Completion gate
 M06 may be merged only after:
-1. this final documentation head has exact-SHA permanent CI green;
-2. PR #8 is conflict-free with no unresolved review threads/findings;
-3. merge occurs at the exact verified PR head;
-4. fresh post-merge `main` CI is green;
-5. final post-merge evidence is recorded durably.
+1. the CI-installer correction has an independent fresh-session review with 0 Critical / 0 Important unresolved;
+2. the final branch head has exact-SHA permanent CI green;
+3. PR #8 is conflict-free with no unresolved review threads/findings;
+4. merge occurs at the exact verified PR head;
+5. fresh post-merge `main` CI is green;
+6. final post-merge evidence is recorded durably.
 
 ## Exact next unfinished action
-Require exact-SHA CI on the final Task 7 documentation head. If all permanent jobs pass and PR #8 remains mergeable with no unresolved Critical/Important findings or threads, finish and merge PR #8 at that exact SHA, verify fresh post-merge `main` CI, then record final M06 integration evidence and hand off to M07 — Normalization, Chunking, Deduplication & Incremental Indexing.
+Independently review `33883de97d8943def09e5f1a14b2f1115833b02e -> b5b944430764da669afb8ceb68b970008be9a3a6`, focused on deterministic WooCommerce test dependency acquisition, exact version verification, optional-production-dependency boundaries, and CI security/supply-chain implications. If the independent review closes at 0 Critical / 0 Important, require exact-SHA CI on the resulting final docs head, then finish and merge PR #8 at that exact SHA, verify fresh post-merge `main` CI, and record final M06 integration evidence before handing off to M07.
 
 ## Next milestone
 M07 — Normalization, Chunking, Deduplication & Incremental Indexing.
