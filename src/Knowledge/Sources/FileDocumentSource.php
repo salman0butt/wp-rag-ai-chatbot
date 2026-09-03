@@ -14,6 +14,7 @@ use WpRagAiChatbot\Documents\DocumentHasher;
 use WpRagAiChatbot\Documents\DocumentRecord;
 use WpRagAiChatbot\Documents\Extraction\DocumentExtractorRegistry;
 use WpRagAiChatbot\Documents\Extraction\FileValidationPolicy;
+use WpRagAiChatbot\Documents\Extraction\ValidatedFile;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 
 /**
@@ -84,8 +85,9 @@ final readonly class FileDocumentSource implements KnowledgeSource {
 			? trim( $configured_title )
 			: $source->title;
 
-		$validated = $this->validation_policy->validate( trim( $path ), $allowed_root );
-		$extracted = $this->extractor_registry->get( $validated->mimeType )->extract( $validated );
+		$validated      = $this->validation_policy->validate( trim( $path ), $allowed_root );
+		$extractor_mime = $this->extractorMimeType( $validated );
+		$extracted      = $this->extractor_registry->get( $extractor_mime )->extract( $validated );
 
 		$document_key   = 'file:' . $source->sourceKey;
 		$source_version = $validated->sha256 . ':' . $validated->size;
@@ -138,6 +140,26 @@ final readonly class FileDocumentSource implements KnowledgeSource {
 			$source->updatedAt,
 			$source->updatedAt
 		);
+		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+	}
+
+	/**
+	 * Preserve format-aware parsers for approved text/plain fallback MIME cases.
+	 *
+	 * @param ValidatedFile $file Validated file metadata.
+	 */
+	private function extractorMimeType( ValidatedFile $file ): string {
+		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- ValidatedFile public API follows the approved domain contract.
+		if ( 'text/plain' !== $file->mimeType ) {
+			return $file->mimeType;
+		}
+
+		return match ( $file->extension ) {
+			'csv'            => 'text/csv',
+			'json'           => 'application/json',
+			'md', 'markdown' => 'text/markdown',
+			default          => $file->mimeType,
+		};
 		// phpcs:enable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 	}
 }
