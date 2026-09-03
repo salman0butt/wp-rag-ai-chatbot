@@ -48,6 +48,7 @@ final class StructureAwareChunker {
 				$descriptors[] = array(
 					'content'      => $piece,
 					'heading_path' => $paragraph['heading_path'],
+					'section_id'   => $paragraph['section_id'],
 				);
 			}
 		}
@@ -118,8 +119,8 @@ final class StructureAwareChunker {
 	/**
 	 * Apply configured overlap between adjacent chunks in one structural parent.
 	 *
-	 * @param array<int, array{content:string, heading_path:array<int, string>}> $descriptors Base chunk descriptors.
-	 * @return array<int, array{content:string, heading_path:array<int, string>}>
+	 * @param array<int, array{content:string, heading_path:array<int, string>, section_id:int}> $descriptors Base chunk descriptors.
+	 * @return array<int, array{content:string, heading_path:array<int, string>, section_id:int}>
 	 * @throws ChunkingException When overlap source content is not valid UTF-8.
 	 */
 	private function apply_overlap( array $descriptors ): array {
@@ -132,7 +133,11 @@ final class StructureAwareChunker {
 		foreach ( $descriptors as $descriptor ) {
 			$content = $descriptor['content'];
 
-			if ( null !== $previous && $previous['heading_path'] === $descriptor['heading_path'] ) {
+			if (
+				null !== $previous
+				&& $previous['heading_path'] === $descriptor['heading_path']
+				&& $previous['section_id'] === $descriptor['section_id']
+			) {
 				$available_tokens = $this->config->maxTokens - $this->counter->count( $content );
 				$overlap_tokens   = min( $this->config->overlapTokens, $available_tokens );
 
@@ -156,6 +161,7 @@ final class StructureAwareChunker {
 			$result[] = array(
 				'content'      => $content,
 				'heading_path' => $descriptor['heading_path'],
+				'section_id'   => $descriptor['section_id'],
 			);
 			$previous = $descriptor;
 		}
@@ -195,7 +201,7 @@ final class StructureAwareChunker {
 	 * Parse ATX headings and blank-line-delimited paragraphs.
 	 *
 	 * @param string $content Canonical document text.
-	 * @return array<int, array{content:string, heading_path:array<int, string>}>
+	 * @return array<int, array{content:string, heading_path:array<int, string>, section_id:int}>
 	 * @throws ChunkingException When content is not valid UTF-8.
 	 */
 	private function structured_paragraphs( string $content ): array {
@@ -207,10 +213,11 @@ final class StructureAwareChunker {
 		$result       = array();
 		$heading_path = array();
 		$paragraph    = array();
+		$section_id   = 0;
 
 		foreach ( $lines as $line ) {
 			if ( 1 === preg_match( '/^(#{1,6})[ \t]+(.+?)\s*$/u', $line, $matches ) ) {
-				$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path );
+				$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path, $section_id );
 				if ( null !== $descriptor ) {
 					$result[] = $descriptor;
 				}
@@ -218,11 +225,12 @@ final class StructureAwareChunker {
 				$level          = strlen( $matches[1] );
 				$heading_path   = array_slice( $heading_path, 0, $level - 1 );
 				$heading_path[] = trim( $matches[2] );
+				++$section_id;
 				continue;
 			}
 
 			if ( '' === trim( $line ) ) {
-				$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path );
+				$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path, $section_id );
 				if ( null !== $descriptor ) {
 					$result[] = $descriptor;
 				}
@@ -233,7 +241,7 @@ final class StructureAwareChunker {
 			$paragraph[] = $line;
 		}
 
-		$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path );
+		$descriptor = $this->paragraph_descriptor( $paragraph, $heading_path, $section_id );
 		if ( null !== $descriptor ) {
 			$result[] = $descriptor;
 		}
@@ -246,9 +254,10 @@ final class StructureAwareChunker {
 	 *
 	 * @param array<int, string> $paragraph Pending paragraph lines.
 	 * @param array<int, string> $heading_path Current heading lineage.
-	 * @return array{content:string, heading_path:array<int, string>}|null
+	 * @param int                $section_id Deterministic section-instance identifier.
+	 * @return array{content:string, heading_path:array<int, string>, section_id:int}|null
 	 */
-	private function paragraph_descriptor( array $paragraph, array $heading_path ): ?array {
+	private function paragraph_descriptor( array $paragraph, array $heading_path, int $section_id ): ?array {
 		if ( array() === $paragraph ) {
 			return null;
 		}
@@ -261,6 +270,7 @@ final class StructureAwareChunker {
 		return array(
 			'content'      => $text,
 			'heading_path' => array_values( $heading_path ),
+			'section_id'   => $section_id,
 		);
 	}
 
