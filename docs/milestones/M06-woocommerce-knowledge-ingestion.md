@@ -1,6 +1,6 @@
 # M06 — WooCommerce Knowledge Ingestion
 
-Status: IN PROGRESS — design/spec and implementation plan auto-approved; Tasks 1–3 complete; Task 4 next.
+Status: IN PROGRESS — design/spec and implementation plan auto-approved; Tasks 1–3 complete; Task 4 implementation/exact-SHA CI green with independent review pending.
 
 ## Goal
 Normalize stable public WooCommerce catalog knowledge while clearly separating indexed descriptive facts from live transactional state.
@@ -12,11 +12,12 @@ M04; M05 patterns; WooCommerce optional environment.
 - Design/spec: `docs/superpowers/specs/2026-09-03-m06-woocommerce-knowledge-ingestion-design.md`.
 - Implementation plan: `docs/superpowers/plans/2026-09-03-m06-woocommerce-knowledge-ingestion.md`.
 - Status: `AUTO-APPROVED — SCHEDULED MODE` after repository-mandated self-review.
+- Task 4 auto-approved clarification: the generic WooCommerce modified marker is retained in the gateway snapshot for observability but is not a canonical source-version input, because it cannot distinguish descriptive changes from excluded live-state changes.
 
 ## Architecture
 `NativeWooCommerceCatalogGateway` -> immutable allowlisted `WooCommerceProduct` snapshots -> `WooCommerceProductSource` -> canonical `DocumentRecord`.
 
-WooCommerce remains optional. Native WooCommerce APIs stay behind the gateway. Stable descriptive product facts are indexable; current price, sale state, stock/variation availability, cart/order state, discounts, customer-specific values, and arbitrary metadata are excluded from indexed documents and source versioning.
+WooCommerce remains optional. Native WooCommerce APIs stay behind the gateway. Stable descriptive product facts are indexable; current price, sale state, stock/variation availability, cart/order state, discounts, customer-specific values, arbitrary metadata, and generic modified-marker-only churn are excluded from indexed documents and source versioning.
 
 Whole-catalog traversal uses bounded deterministic pages of published candidate IDs. Candidate page cardinality is preserved until `WooCommerceProductSource` decides whether the raw catalog page is exhausted; fail-closed type/visibility/password eligibility is enforced when each candidate is loaded through `product()`. Duplicate candidate IDs are intentionally preserved by the gateway so they cannot shorten a full page, while source-level `$seen` suppression prevents duplicate documents.
 
@@ -25,7 +26,7 @@ Whole-catalog traversal uses bounded deterministic pages of published candidate 
 - Exact SKU/category/tag/attribute/variation metadata is preserved deterministically.
 - Public visibility/status policy fails closed.
 - Descriptive catalog updates change source version/hash as appropriate.
-- Price/stock-only changes do not change M06 source version/hash.
+- Price/stock-only changes, including accompanying generic modified-marker churn, do not change M06 source version/hash.
 - Removed/unpublished products disappear from source output.
 - Customer/order/private/arbitrary metadata is never indexed by default.
 - Disabled WooCommerce does not break plugin activation/bootstrap and yields no product documents.
@@ -35,7 +36,7 @@ Whole-catalog traversal uses bounded deterministic pages of published candidate 
 - [x] Task 1 — WooCommerce catalog contracts and immutable snapshots.
 - [x] Task 2 — Optional-safe native WooCommerce catalog gateway.
 - [x] Task 3 — WooCommerce product source canonical mapping.
-- [ ] Task 4 — Stable source version and live-state exclusion regressions.
+- [ ] Task 4 — Stable source version and live-state exclusion regressions. **Implementation + exact-code-head CI green; independent review pending.**
 - [ ] Task 5 — Knowledge bootstrap registration and disabled-WooCommerce safety.
 - [ ] Task 6 — Real WordPress/WooCommerce smoke coverage.
 - [ ] Task 7 — Integration, compatibility/security/performance review, documentation, merge, and post-merge verification.
@@ -111,26 +112,60 @@ Verified:
 - source-level duplicate suppression prevents duplicate documents;
 - only `product()`-approved public snapshots become documents;
 - canonical content/metadata excludes price, stock, discounts, orders, customers, arbitrary meta, and other live/private state;
-- no whole-catalog eager load was introduced;
-- Task 4 remains responsible for stable source-version semantics beyond the current modified-marker behavior.
+- no whole-catalog eager load was introduced.
+
+## Task 4 durable evidence — independent review pending
+Task 4 replaces the legacy `modifiedGmt:id` source version with a deterministic SHA-256 over canonical stable catalog facts and hardens the live-state boundary so generic modification-time churn cannot masquerade as descriptive knowledge change.
+
+### Stable descriptive change TDD
+- Initial test-only commit: `ef70acd32d9bfca35aa0e4e287fdf39c2f1597ea`, CI `33749041729`; PHPCS stopped execution before PHPUnit, so this is not behavioral RED evidence.
+- Executable behavioral RED: `f145303afee722c9c333408c2947059ac1b83246`, CI `33749130132` — PHPStan clean; PHPUnit **255 tests / 1227 assertions / 1 expected failure** because changing SKU/description/category/attribute/variation facts with a fixed timestamp left the legacy source version unchanged.
+- Initial stable snapshot hash implementation: `7a0d6a5681e8b3baa4187de277984b2f07569173`.
+- CI `33749325652` reached only a PHPCS assignment-alignment warning; formatting-only correction: `f62d4963a18c0687bf0ebac5a668cdb094c327d4`.
+
+### Generic modified-marker exclusion regression
+Same-session acceptance review found the original design wording internally inconsistent: it required both generic modified-marker participation and zero version/hash changes for price/stock-only updates. `NativeWooCommerceCatalogGateway` receives only generic `get_date_modified()` and no cause-specific marker, so the timestamp cannot safely identify stable knowledge changes.
+
+- Genuine behavioral RED: `73cf87f085682dc1ee843cc0548915ee7b83b9c3`, CI `33749715650`.
+- PHPStan: clean.
+- PHPUnit: **256 tests / 1243 assertions / 1 expected failure**, exactly `WooCommerceProductSourceVersionTest::test_modified_time_alone_does_not_affect_source_version_or_content_hash`.
+- Minimal correction: `595c9e7c483e42914c901e08afec9b8db935d9d1` removes only generic `modifiedGmt` from the canonical version input. Canonical URL, deterministic content, and strict allowlisted metadata remain version inputs.
+- Exact-code-head GREEN CI: `33749868280` — PHPStan clean; PHPUnit **256 / 1244**, all passed; Composer audit clean; php-quality, js-quality, package, and wordpress-smoke all passed.
+- Artifact: `9891098806`, 711932 bytes, digest `sha256:8cb875edfe65f2a7e10f70d40d37d7d17efd5b394efdce04579e6a6429581a74`.
+- Design clarification commit: `2c4f75d1f088d29652cca147ebe66f8812e58e8a`, auto-approved under scheduled-mode procedure.
+- Same-session review submission `5101332920`: **0 Critical / 0 Important unresolved in code/test**, explicitly **not independent**.
+- Required independent Task 4 review: **PENDING**. Task 4 remains unchecked and Task 5 remains blocked until that review reports 0 Critical / 0 Important unresolved and any findings are fixed through regression TDD.
+
+## Task 4 self-review findings
+Result for same-session review: **0 Critical / 0 Important unresolved**, but this does not satisfy the independent-review gate.
+
+Verified:
+- stable descriptive changes alter source version and final content hash;
+- price/stock values are absent from immutable source snapshots and never consulted by `WooCommerceProductSource`;
+- generic modified-marker-only churn cannot change source version/hash;
+- version input is canonical and deterministic through `DocumentHasher`;
+- final content hash still includes canonical identity/content/metadata/source version;
+- no new private/customer/order/arbitrary metadata path was introduced;
+- no Task 5 bootstrap behavior was pulled into Task 4.
 
 ## Accessibility review
-N/A — M06 Tasks 1–3 introduce no UI.
+N/A — M06 Tasks 1–4 introduce no UI.
 
 ## Review findings summary
 - Task 1: 0 Critical / 1 Important initially; fixed through regression TDD; final 0 / 0.
 - Task 2: 0 Critical / 1 Important GMT regression; fixed through RED/GREEN; final 0 / 0.
 - Task 3: 0 Critical / 1 Important pagination exhaustion finding; corrected, hardened through genuine cardinality RED/GREEN, final review `5101080712` is 0 / 0.
-- PR #8 has no unresolved blocking inline review threads.
+- Task 4: same-session self-review 0 / 0; **independent review pending**, so Task 4 is not complete.
+- PR #8 has no known unresolved blocking inline review threads; the missing independent Task 4 review is the active quality gate.
 
 ## Known limitations
 One canonical document per product in M06. Variations are structured product metadata, not standalone documents. Live commerce facts remain intentionally deferred to authorized runtime services/actions. Real enabled/disabled WooCommerce integration fixtures remain Task 6.
 
 ## Completion checklist
-M06 is not complete until Tasks 4–7, whole-milestone review, exact-final-SHA permanent CI, merge, and fresh post-merge `main` CI all pass.
+M06 is not complete until Task 4 independent review, Tasks 5–7, whole-milestone review, exact-final-SHA permanent CI, merge, and fresh post-merge `main` CI all pass.
 
 ## Exact next unfinished action
-Execute **Task 4 — Stable source version and live-state exclusion regressions** with strict TDD. Add the planned version tests proving stable descriptive snapshot changes alter source version/hash while excluded live-only price/stock state is not consulted; implement the smallest canonical stable snapshot versioning behavior required by the design, verify exact-head GREEN, perform fresh review, and update durable evidence before Task 5.
+Obtain a **genuinely independent Task 4 review** against baseline `140b8e111cc1d57dee464dd89cbe73ca7b0c9a2a` through the final Task 4 code/docs head. Review stable source-version determinism, descriptive-change coverage, price/stock and generic modified-marker exclusion, canonical hashing, privacy boundaries, and Task 5 scope. Fix any Critical/Important finding through strict regression TDD, require exact-head GREEN CI, and record the final 0 Critical / 0 Important review. Only then mark Task 4 complete and begin Task 5.
 
 ## Next Milestone
 M07 — Normalization, Chunking, Deduplication & Incremental Indexing.
