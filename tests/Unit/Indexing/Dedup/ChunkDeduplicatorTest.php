@@ -64,6 +64,30 @@ final class ChunkDeduplicatorTest extends TestCase {
 	}
 
 	/**
+	 * Duplicate aliases have stable key ordering regardless of caller encounter order.
+	 */
+	public function test_duplicate_aliases_are_ordered_deterministically(): void {
+		$this->requireDeduplicator();
+		$canonical  = $this->chunk( 'canonical', 0, 'Same', 'en', 'public', 'embed-v1' );
+		$first_dup  = $this->chunk( 'first-duplicate', 1, 'Same', 'en', 'public', 'embed-v1' );
+		$next_dup   = $this->chunk( 'next-duplicate', 2, 'Same', 'en', 'public', 'embed-v1' );
+		$duplicates = array( $first_dup, $next_dup );
+		usort(
+			$duplicates,
+			static fn ( ChunkRecord $left, ChunkRecord $right ): int => strcmp( $right->chunkKey, $left->chunkKey )
+		);
+
+		$result   = ( new ChunkDeduplicator() )->deduplicate( array( $duplicates[0], $duplicates[1], $canonical ) );
+		$expected = array(
+			$first_dup->chunkKey => $canonical->chunkKey,
+			$next_dup->chunkKey  => $canonical->chunkKey,
+		);
+		ksort( $expected, SORT_STRING );
+
+		self::assertSame( $expected, $result->duplicateAliases );
+	}
+
+	/**
 	 * Canonical content normalization prevents formatting-only duplicate embeddings.
 	 */
 	public function test_content_is_normalized_before_deduplication(): void {
