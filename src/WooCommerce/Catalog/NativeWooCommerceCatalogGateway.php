@@ -32,6 +32,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	 * @param int $productId Product ID.
 	 * @throws InvalidArgumentException When the product ID is invalid.
 	 */
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Interface parameter name follows the approved application contract.
 	public function product( int $productId ): ?WooCommerceProduct {
 		if ( $productId < 1 ) {
 			throw new InvalidArgumentException( 'WooCommerce product ID must be positive.' );
@@ -43,6 +44,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 
 		return null;
 	}
+	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
 
 	/**
 	 * Return one deterministic page of eligible product IDs.
@@ -52,6 +54,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	 * @return list<int>
 	 * @throws InvalidArgumentException When paging values are invalid.
 	 */
+	// phpcs:disable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Interface parameter name follows the approved application contract.
 	public function productIds( int $page, int $perPage ): array {
 		$this->validatePaging( $page, $perPage );
 
@@ -94,20 +97,21 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 		sort( $eligible_ids, SORT_NUMERIC );
 		return $eligible_ids;
 	}
+	// phpcs:enable WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase
 
 	/**
 	 * Validate bounded paging inputs.
 	 *
 	 * @param int $page One-based page number.
-	 * @param int $perPage Products per page.
+	 * @param int $per_page Products per page.
 	 * @throws InvalidArgumentException When paging values are invalid.
 	 */
-	private function validatePaging( int $page, int $perPage ): void {
+	private function validatePaging( int $page, int $per_page ): void {
 		if ( $page < 1 ) {
 			throw new InvalidArgumentException( 'WooCommerce catalog page must be positive.' );
 		}
 
-		if ( $perPage < 1 || $perPage > self::MAX_PAGE_SIZE ) {
+		if ( $per_page < 1 || $per_page > self::MAX_PAGE_SIZE ) {
 			throw new InvalidArgumentException( 'WooCommerce catalog page size must be between 1 and 250.' );
 		}
 	}
@@ -115,15 +119,15 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	/**
 	 * Normalize one WooCommerce product ID result.
 	 *
-	 * @param mixed $rawId Raw query result.
+	 * @param mixed $raw_id Raw query result.
 	 */
-	private function normalizeProductId( mixed $rawId ): ?int {
-		if ( is_int( $rawId ) ) {
-			return $rawId > 0 ? $rawId : null;
+	private function normalizeProductId( mixed $raw_id ): ?int {
+		if ( is_int( $raw_id ) ) {
+			return $raw_id > 0 ? $raw_id : null;
 		}
 
-		if ( is_string( $rawId ) && ctype_digit( $rawId ) ) {
-			$product_id = (int) $rawId;
+		if ( is_string( $raw_id ) && ctype_digit( $raw_id ) ) {
+			$product_id = (int) $raw_id;
 			return $product_id > 0 ? $product_id : null;
 		}
 
@@ -134,9 +138,9 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 	 * Verify current-page product eligibility using public product methods only.
 	 *
 	 * @param mixed $product Native WooCommerce product value.
-	 * @param int   $productId Product ID.
+	 * @param int   $product_id Product ID.
 	 */
-	private function isEligibleProduct( mixed $product, int $productId ): bool {
+	private function isEligibleProduct( mixed $product, int $product_id ): bool {
 		if ( ! is_object( $product ) ) {
 			return false;
 		}
@@ -163,7 +167,7 @@ final class NativeWooCommerceCatalogGateway implements WooCommerceCatalogGateway
 			return false;
 		}
 
-		$password = (string) get_post_field( 'post_password', $productId );
+		$password = (string) get_post_field( 'post_password', $product_id );
 		return '' === trim( $password );
 	}
 }
