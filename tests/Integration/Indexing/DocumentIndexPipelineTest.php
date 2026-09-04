@@ -154,13 +154,13 @@ final class DocumentIndexPipelineTest extends TestCase {
 		$initial  = $pipeline->plan( $before );
 		$changed  = $pipeline->plan( $after, $initial->canonicalChunks );
 
-		$before_gamma  = array_values(
+		$before_gamma = array_values(
 			array_filter(
 				$initial->canonicalChunks,
 				static fn ( $chunk ): bool => array( 'Gamma' ) === $chunk->headingPath
 			)
 		);
-		$after_gamma   = array_values(
+		$after_gamma  = array_values(
 			array_filter(
 				$changed->canonicalChunks,
 				static fn ( $chunk ): bool => array( 'Gamma' ) === $chunk->headingPath
