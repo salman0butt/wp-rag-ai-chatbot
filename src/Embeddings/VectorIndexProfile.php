@@ -14,6 +14,8 @@ namespace WpRagAiChatbot\Embeddings;
  */
 final class VectorIndexProfile {
 	/**
+	 * Create a vector index compatibility profile.
+	 *
 	 * @param EmbeddingProfile $embedding Embedding-generation profile.
 	 * @param DistanceMetric   $distance Vector distance metric.
 	 */

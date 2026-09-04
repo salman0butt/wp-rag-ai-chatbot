@@ -16,6 +16,8 @@ use InvalidArgumentException;
  */
 final class EmbeddingProfile {
 	/**
+	 * Create an embedding compatibility profile.
+	 *
 	 * @param string            $provider_id Stable provider ID.
 	 * @param string            $model_id Provider model ID.
 	 * @param int               $dimensions Vector dimensions.

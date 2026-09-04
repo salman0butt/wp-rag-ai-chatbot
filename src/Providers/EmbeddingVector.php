@@ -16,7 +16,9 @@ use InvalidArgumentException;
  */
 final class EmbeddingVector {
 	/**
-	 * @param int                  $index Original zero-based input index.
+	 * Create an indexed embedding vector.
+	 *
+	 * @param int                   $index Original zero-based input index.
 	 * @param array<int, int|float> $values Ordered vector values.
 	 * @throws InvalidArgumentException When index or values are invalid.
 	 */

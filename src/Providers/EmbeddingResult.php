@@ -16,6 +16,8 @@ use InvalidArgumentException;
  */
 final class EmbeddingResult {
 	/**
+	 * Create a normalized embedding result.
+	 *
 	 * @param string            $provider_id Stable provider ID.
 	 * @param string            $model Provider model ID.
 	 * @param EmbeddingVector[] $vectors Ordered vectors.

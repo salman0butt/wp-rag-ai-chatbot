@@ -16,6 +16,8 @@ use InvalidArgumentException;
  */
 final class EmbeddingUsage {
 	/**
+	 * Create normalized embedding usage.
+	 *
 	 * @param bool     $known Whether usage was reported.
 	 * @param int|null $input_tokens Input token count when known.
 	 * @throws InvalidArgumentException When usage values are inconsistent.

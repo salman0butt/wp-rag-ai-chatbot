@@ -16,9 +16,11 @@ use InvalidArgumentException;
  */
 final class EmbeddingRequest {
 	/**
-	 * @param string      $model Provider model ID.
-	 * @param string[]    $inputs Ordered text inputs.
-	 * @param int|null    $dimensions Optional requested dimensions.
+	 * Create an embedding request.
+	 *
+	 * @param string   $model Provider model ID.
+	 * @param string[] $inputs Ordered text inputs.
+	 * @param int|null $dimensions Optional requested dimensions.
 	 * @throws InvalidArgumentException When request values are invalid.
 	 */
 	public function __construct(
