@@ -9,16 +9,17 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Embeddings;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Embeddings\EmbeddingBatchConfig;
 use WpRagAiChatbot\Embeddings\EmbeddingService;
-use WpRagAiChatbot\Providers\EmbeddingProvider;
 use WpRagAiChatbot\Providers\EmbeddingRequest;
 use WpRagAiChatbot\Providers\EmbeddingResult;
 use WpRagAiChatbot\Providers\EmbeddingUsage;
 use WpRagAiChatbot\Providers\EmbeddingVector;
 use WpRagAiChatbot\Providers\ProviderErrorCode;
 use WpRagAiChatbot\Providers\ProviderException;
+use WpRagAiChatbot\Tests\Support\Embeddings\RecordingEmbeddingProvider;
 
 /**
  * Verifies deterministic bounded batching and fail-closed response validation.
@@ -116,7 +117,7 @@ final class EmbeddingServiceTest extends TestCase {
 			try {
 				new EmbeddingBatchConfig( $invalid );
 				self::fail( 'Expected invalid embedding batch configuration.' );
-			} catch ( \InvalidArgumentException ) {
+			} catch ( InvalidArgumentException ) {
 				self::assertTrue( true );
 			}
 		}
@@ -140,41 +141,5 @@ final class EmbeddingServiceTest extends TestCase {
 			$vectors,
 			null === $usage ? EmbeddingUsage::unknown() : EmbeddingUsage::input_tokens( $usage )
 		);
-	}
-}
-
-/**
- * Deterministic fake embedding provider for service tests.
- */
-final class RecordingEmbeddingProvider implements EmbeddingProvider {
-	/** @var EmbeddingRequest[] */
-	public array $requests = array();
-
-	/** @var EmbeddingResult[] */
-	private array $results;
-
-	/**
-	 * @param EmbeddingResult[] $results Queued results.
-	 */
-	public function __construct( array $results ) {
-		$this->results = $results;
-	}
-
-	public function provider_id(): string {
-		return 'test-embedding';
-	}
-
-	public function available(): bool {
-		return true;
-	}
-
-	public function embed( EmbeddingRequest $request ): EmbeddingResult {
-		$this->requests[] = $request;
-		$result           = array_shift( $this->results );
-		if ( ! $result instanceof EmbeddingResult ) {
-			throw new \RuntimeException( 'No queued embedding result.' );
-		}
-
-		return $result;
 	}
 }
