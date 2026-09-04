@@ -128,7 +128,11 @@ final class EmbeddingService {
 			}
 		}
 
-		/** @var EmbeddingVector[] $ordered */
+		/**
+		 * Ordered embedding vectors.
+		 *
+		 * @var EmbeddingVector[] $ordered
+		 */
 		return $ordered;
 	}
 
