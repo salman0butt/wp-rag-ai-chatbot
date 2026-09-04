@@ -7,7 +7,7 @@
 - M08 branch: `feat/m08-embeddings-vector-stores`.
 - M08 PR: **#11 — open draft**.
 - M08 design/spec and implementation plan: **AUTO-APPROVED — SCHEDULED MODE**.
-- M08 Tasks 1-7: **COMPLETE on feature branch**; Task 8 is next.
+- M08 Tasks 1-8: **COMPLETE on feature branch**; Task 9 is next.
 
 ## M07 final state — COMPLETE
 
@@ -87,12 +87,24 @@ Delivered an offline-testable Chroma v2 raw-vector adapter with validated admini
 
 - Genuine initial RED `c331890c617aa5d3bc3dcf1036a3fc85b6fb8074` / CI `33918105636`: PHPStan 0 errors; PHPUnit 390 tests / 1,724 assertions / exactly 10 intended failures because Chroma production contracts were absent.
 - Initial GREEN `ba47b547345799aa1dffc1067a488f95ccfaf5cb` / CI `33919128725`: all four permanent jobs green.
-- Independent review found one Important remote trust-boundary defect: malformed 36-character collection IDs could pass the loose hex/hyphen shape and proceed to mutation.
+- Independent review found one Important remote trust-boundary defect: malformed 36-character collection IDs could pass the loose ID check and proceed to mutation.
 - Review RED `ee19261237dd9fbf76363744d491172066ce247a` / CI `33922544502`: PHPStan 0 errors; PHPUnit 392 tests / 1,794 assertions / exactly one intended failure, proving a malformed remote ID caused a second network request.
 - Final GREEN `121a930901ab1cf0f1eb9365a83a41d104b96b76` / CI `33922772281`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 392/392, 1,795 assertions; Composer audit clean; full WordPress smoke green.
 - Package artifact `9955679919`, digest `sha256:c17aa5857594a453fec3ce433691a8847b641b72def4f2c5e5405d437a410db7`.
 - Independent Task 7 review PR #11 review `5118131476`: **Critical 0 / Important 0 unresolved**; no unresolved review threads.
 
+### Task 8 — OpenAI managed vector-store capability adapter — COMPLETE
+
+Delivered truthful managed OpenAI vector-store capabilities based on the current public API: managed file attachment/deletion and text-query search are exposed through a dedicated managed contract, while raw-vector upsert/delete/search remain false. The adapter uses the fixed official OpenAI HTTPS origin, server-side authorization, zero redirects, no automatic retries, bounded validation and fail-closed result mapping, sanitized errors, managed registry gating, and `completed`-only readiness health.
+
+- Genuine initial RED `4125950e5598082ba1c70039f98f20e7304dfc6c` / CI `33926896274`: PHPStan 0 errors; PHPUnit 399 tests / 1,804 assertions with exactly 6 intended failures caused by absent managed contracts.
+- Initial implementation reached PHP GREEN at `cdb5b2a146c162c76885ef3f3ef9f7a4ca89974f` / CI `33927328641`: PHPStan 0 errors; PHPUnit 399/399, 1,849 assertions; Composer audit clean.
+- Independent review found two Important issues: `VectorStoreRegistry` did not enforce/expose managed interface truth, and health treated non-ready OpenAI vector-store statuses as healthy.
+- Genuine review RED `13810bf7f8ee516ecee4138ba585c6cf2eccb21f` / CI `33927625909`: PHPStan 0 errors; PHPUnit 402 tests / 1,853 assertions with exactly 1 error + 2 failures for the intended findings.
+- Final implementation GREEN `dfbae21e1a4226a7ce285413a74b817e1089ce78` / CI `33927746937`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 402/402, 1,854 assertions; Composer audit clean; full WordPress smoke green.
+- Package artifact `9957422625`, digest `sha256:dfef7a3064fdb8cc2bb90958481169d087f35767c46a28470bf8fcdb59808167`.
+- Independent Task 8 review PR #11 review `5118469428`: **Critical 0 / Important 0 unresolved**; no unresolved review threads.
+
 ## Exact next unfinished action
 
-Begin M08 Task 8 — OpenAI managed vector-store capability adapter — by verifying current public OpenAI vector-store API semantics before writing contracts. Add only truthful capabilities supported by the public API; do not model managed vector-store/file operations as raw-vector upsert/delete/search if those semantics are not available. Establish a lint-clean offline behavioral RED with fake transport, then implement minimum GREEN behavior, fresh independent security/correctness review, exact-SHA permanent CI, and durable Task 8 evidence before Task 9.
+Begin M08 Task 9 — M07 plan-to-embedding/vector integration and whole-M08 closeout. Establish a lint-clean test-only behavioral RED proving accepted M07 indexing plans are transformed into bounded embedding requests and deterministic vector records under the selected embedding/index profile without bypassing compatibility, collection, metadata, or stable-ID contracts. Implement the minimum orchestration glue only; do not introduce M09 queue/retry execution or M10 hybrid retrieval. Then complete the required security/performance review and benchmark, add regression REDs for every Critical/Important finding, update durable evidence, perform whole-M08 independent review, require exact-final-head permanent CI green, mark PR #11 ready only when all milestone criteria are satisfied, merge only with expected exact SHA, and verify post-merge `main` CI before declaring M08 complete.
