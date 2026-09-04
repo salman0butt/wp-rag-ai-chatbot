@@ -62,23 +62,17 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 	) {
 	}
 
-	/**
-	 * Return the stable store ID.
-	 */
+	/** Return the stable store ID. */
 	public function store_id(): string {
 		return 'qdrant';
 	}
 
-	/**
-	 * Qdrant supports the portable raw-vector operations used by M08.
-	 */
+	/** Return truthful raw-vector capabilities. */
 	public function capabilities(): VectorStoreCapabilities {
 		return VectorStoreCapabilities::all();
 	}
 
-	/**
-	 * Perform one explicit bounded Qdrant health request.
-	 */
+	/** Perform one explicit bounded Qdrant health request. */
 	public function health(): VectorStoreHealth {
 		try {
 			$response = $this->send( 'GET', '/healthz' );
@@ -86,7 +80,7 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 				return VectorStoreHealth::healthy();
 			}
 		} catch ( VectorStoreException ) {
-			// Health is intentionally represented as state rather than an exception.
+			// Health is represented as state rather than an exception.
 		}
 
 		return VectorStoreHealth::unhealthy( 'Qdrant is unavailable.' );
@@ -109,7 +103,6 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 			),
 			$record->metadata
 		);
-
 		$response = $this->send(
 			'PUT',
 			$this->collection_path( $record->collection ) . '/points?wait=true',
@@ -218,14 +211,14 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 	}
 
 	/**
-	 * Verify Qdrant's native collection dimensions and metric before operations.
+	 * Verify Qdrant native collection dimensions and metric before operations.
 	 *
 	 * @param VectorCollection $collection Collection to inspect.
 	 * @throws VectorStoreException When the collection is unavailable, malformed, or incompatible.
 	 */
 	private function assert_remote_profile( VectorCollection $collection ): void {
 		$response = $this->send( 'GET', $this->collection_path( $collection ) );
-		if ( 404 === $response->status_code ) {
+		if ( 404 === $response->status ) {
 			throw new VectorStoreException( VectorStoreErrorCode::UNAVAILABLE, 'Qdrant vector collection is unavailable.' );
 		}
 		$this->require_success( $response, 'Qdrant vector collection could not be inspected.' );
@@ -263,7 +256,6 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 				),
 			);
 		}
-
 		if ( $filter instanceof InFilter ) {
 			return array(
 				array(
@@ -272,7 +264,6 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 				),
 			);
 		}
-
 		if ( $filter instanceof AndFilter ) {
 			$conditions = array();
 			foreach ( $filter->filters as $child ) {
@@ -326,17 +317,15 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 	 * @param string           $id Plugin stable vector ID.
 	 */
 	private function point_id( VectorCollection $collection, string $id ): string {
-		$hex       = substr( hash( 'sha256', $this->collection_path( $collection ) . "\0" . $id ), 0, 32 );
-		$hex[12]   = '5';
-		$variant   = ( hexdec( $hex[16] ) & 0x3 ) | 0x8;
-		$hex[16]   = dechex( $variant );
+		$hex     = substr( hash( 'sha256', $this->collection_path( $collection ) . "\0" . $id ), 0, 32 );
+		$hex[12] = '5';
+		$variant = ( hexdec( $hex[16] ) & 0x3 ) | 0x8;
+		$hex[16] = dechex( $variant );
 
 		return substr( $hex, 0, 8 ) . '-' . substr( $hex, 8, 4 ) . '-' . substr( $hex, 12, 4 ) . '-' . substr( $hex, 16, 4 ) . '-' . substr( $hex, 20, 12 );
 	}
 
-	/**
-	 * Return Qdrant's canonical metric identifier for the configured profile.
-	 */
+	/** Return Qdrant canonical metric identifier for the configured profile. */
 	private function qdrant_distance(): string {
 		return match ( $this->profile->distance ) {
 			DistanceMetric::COSINE      => 'Cosine',
@@ -380,11 +369,11 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 	 * @param HttpResponse $response Response to inspect.
 	 */
 	private function successful( HttpResponse $response ): bool {
-		return $response->status_code >= 200 && $response->status_code < 300;
+		return $response->status >= 200 && $response->status < 300;
 	}
 
 	/**
-	 * Require a successful HTTP response without surfacing opaque provider bodies.
+	 * Require a successful response without surfacing opaque provider bodies.
 	 *
 	 * @param HttpResponse $response Response to inspect.
 	 * @param string       $message Sanitized failure message.
