@@ -295,17 +295,30 @@ final class ChromaVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		return new VectorSearchResult( $matches );
 	}
 
-	/** Return the deterministic compatibility-isolated physical collection name. */
+	/**
+	 * Return the deterministic compatibility-isolated physical collection name.
+	 *
+	 * @param VectorCollection $collection Logical collection.
+	 */
 	private function physical_collection_name( VectorCollection $collection ): string {
 		return 'wp-' . substr( hash( 'sha256', $collection->id ), 0, 12 ) . '-' . substr( $collection->profile->fingerprint(), 0, 16 );
 	}
 
-	/** Return one encoded logical collection inspection path. */
+	/**
+	 * Return one encoded logical collection inspection path.
+	 *
+	 * @param VectorCollection $collection Logical collection.
+	 */
 	private function logical_collection_path( VectorCollection $collection ): string {
 		return $this->scope_path() . '/collections/' . rawurlencode( $this->physical_collection_name( $collection ) );
 	}
 
-	/** Return one encoded remote collection operation path. */
+	/**
+	 * Return one encoded remote collection operation path.
+	 *
+	 * @param string $remote_id Remote collection UUID.
+	 * @param string $operation Adapter-owned operation name.
+	 */
 	private function collection_operation_path( string $remote_id, string $operation ): string {
 		return $this->scope_path() . '/collections/' . rawurlencode( $remote_id ) . '/' . $operation;
 	}
@@ -323,7 +336,11 @@ final class ChromaVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		};
 	}
 
-	/** Convert Chroma distance into a portable higher-is-better score. */
+	/**
+	 * Convert Chroma distance into a portable higher-is-better score.
+	 *
+	 * @param float $distance Chroma distance.
+	 */
 	private function score_from_distance( float $distance ): float {
 		return 1.0 - $distance;
 	}
@@ -361,7 +378,11 @@ final class ChromaVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		}
 	}
 
-	/** Determine whether an HTTP response is successful. */
+	/**
+	 * Determine whether an HTTP response is successful.
+	 *
+	 * @param HttpResponse $response Response to inspect.
+	 */
 	private function successful( HttpResponse $response ): bool {
 		return $response->status >= 200 && $response->status < 300;
 	}
