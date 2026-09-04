@@ -1,6 +1,6 @@
 # M08 — Embeddings & Vector Store Abstraction/Implementations
 
-Status: IN PROGRESS — Tasks 1-4 complete; Task 5 next.
+Status: IN PROGRESS — Tasks 1-6 complete; Task 7 next.
 
 ## Goal
 Generate compatible embeddings and store/search them through replaceable vector-store adapters.
@@ -59,7 +59,7 @@ Delivered infrastructure-neutral store identity/health/capability contracts, tru
 TDD / verification:
 
 - Genuine initial RED `fb14f05ffba4a322570d02a6eb7079dadb154c9d` / CI `33874688946`: PHPStan 0 errors; PHPUnit 341 tests / 1,515 assertions with 4 errors + 1 failure caused by intentionally absent Task 3 behavior.
-- Review RED `980528cc98f4e09f98f470fc4effce65f47af3c8` / CI `33876558057`: exactly one behavioral failure proving non-scalar `VectorRecord` metadata was accepted.
+- Review RED `980528cc98f4e09f98f470fc4effce65f47af3c8`: exactly one behavioral failure proving non-scalar `VectorRecord` metadata was accepted.
 - Review RED `85f93be9d92cb53c979a9f4a722b3da11a6ac009` / CI `33880518572`: PHPStan 0 errors; PHPUnit 346 tests / 1,528 assertions / exactly one intended failure proving adapter-returned non-scalar match metadata was accepted.
 - Review RED `54762f61f2da98309e767359986b39cb76762467` / CI `33880825526`: PHPStan 0 errors; PHPUnit 347 tests / 1,529 assertions / exactly one intended failure proving malformed adapter-returned stable IDs were accepted.
 - Review GREEN `d5fa24f1cbe29a1e163c791546fc0293774d0255` / CI `33880952765`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 347/347, 1,529 assertions; Composer audit clean; full WordPress smoke green.
@@ -68,83 +68,81 @@ TDD / verification:
 
 ## Task 4 — Local WordPress vector store — COMPLETE
 
-Delivered:
+Delivered dedicated versioned vector tables, schema version 4, safe uninstall ordering, a bounded database-backed local vector store, collection/profile isolation, stable-ID replacement, idempotent deletes, prepared portable filters, database narrowing before PHP cosine scoring, hard candidate limits, deterministic ordering, explicit `LOCAL_SCALE_LIMIT`, and real WordPress integration coverage.
 
-- dedicated per-site `rag_ai_vector_collections` and `rag_ai_vectors` tables through versioned V003/V004 migrations, with schema version 4 and safe uninstall ordering;
-- a database-backed `LocalVectorStore` with stable-ID replacement, collection-scoped idempotent deletion, collection/profile compatibility enforcement, and health/capability reporting;
-- prepared portable equality/membership/conjunction filter translation with no raw SQL/vendor-filter escape hatch;
-- database candidate selection scoped by collection, compatibility fingerprint, and portable filters before any PHP cosine scoring;
-- a hard `candidate_limit + 1` SQL bound so overflow is detected without expanding into an unbounded PHP scan;
-- deterministic score-descending/stable-ID ordering and bounded top-K;
-- explicit `LOCAL_SCALE_LIMIT` error normalization when the configured local candidate ceiling is exceeded;
-- migration, scoring, adapter-boundary, compatibility, filter, replacement/delete, and real WordPress database integration coverage.
+TDD / verification:
 
-### Task 4 TDD evidence
-
-Genuine initial RED:
-
-- SHA `a0f49b3645a26889bca6c58b0d7f2349c89427c0`
-- CI `33885763320`
-- PHPStan: 0 errors.
-- PHPUnit: 353 tests / 1,535 assertions / exactly 6 intended failures proving absent V003/V004 migrations, cosine similarity, and bounded local-store configuration behavior.
-- `js-quality`, `package`, and `wordpress-smoke` were green on the same RED SHA.
-
-Implementation then progressed through regression-first compatibility/isolation fixes for adapter boundaries and delete behavior. The pre-review Task 4 head `b58fce7c5c520a0df4dbf9cd17b6c71893934821` / CI `33893539465` passed all four permanent jobs.
-
-Fresh independent review found one Important operational-contract defect: candidate-ceiling overflow was correctly fail-closed but normalized as generic `operation_failed`, while the approved M08 design requires a distinct local-scale-limit category.
-
-Review RED:
-
-- SHA `31a9f25d6492a7df3189184487cf75eb51b70a24`
-- CI `33897449155`
-- PHPStan: 0 errors.
-- PHPUnit: 358 tests / 1,575 assertions with exactly one error because `VectorStoreErrorCode::LOCAL_SCALE_LIMIT` did not yet exist.
-
-Review-fix GREEN:
-
-- SHA `69dce20f2c7c58239d999cbb414e07c5dac100fb`
-- CI `33898085114`
-- `php-quality`: success — PHPStan 0 errors; PHPUnit 358/358 tests, 1,576 assertions; Composer audit clean.
-- `js-quality`: success.
-- `package`: success.
-- `wordpress-smoke`: success — activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge.
-- Package artifact `9946564686`, digest `sha256:0753a05c42901db841a805e6c0f1305554ec56a19b4b64fb7ff7c7a9a8310740`.
-
-### Task 4 review result
-
-Fresh independent review after the regression-driven scale-limit fix:
-
-- Critical: 0
-- Important: 0 unresolved
-- Review submission: PR #11 review `5115843007`.
-- Migration/version ordering, collection/fingerprint isolation, prepared SQL/filter translation, stable-ID replacement, idempotent deletion, hard candidate bounding before PHP similarity scoring, deterministic ordering, and compatibility boundaries were reviewed.
-- No unresolved PR review threads remain.
+- Initial RED `a0f49b3645a26889bca6c58b0d7f2349c89427c0` / CI `33885763320`: PHPStan 0 errors; PHPUnit 353 tests / 1,535 assertions / exactly 6 intended failures.
+- Pre-review GREEN `b58fce7c5c520a0df4dbf9cd17b6c71893934821` / CI `33893539465`: all four permanent jobs green.
+- Independent review found one Important operational-contract defect: candidate overflow used generic `operation_failed` instead of the design-required local scale-limit category.
+- Review RED `31a9f25d6492a7df3189184487cf75eb51b70a24` / CI `33897449155`: PHPStan 0 errors; PHPUnit 358 tests / 1,575 assertions with exactly one intended error because `LOCAL_SCALE_LIMIT` did not yet exist.
+- Review GREEN `69dce20f2c7c58239d999cbb414e07c5dac100fb` / CI `33898085114`: all four permanent jobs green; PHPUnit 358/358, 1,576 assertions; Composer audit clean; full WordPress smoke green.
+- Artifact `9946564686`, digest `sha256:0753a05c42901db841a805e6c0f1305554ec56a19b4b64fb7ff7c7a9a8310740`.
+- Independent review PR #11 review `5115843007`: Critical 0; Important 0 unresolved.
 
 ### Local-store performance boundary
 
-The local adapter intentionally has no unbounded fallback. The database query requests at most `candidate_limit + 1` rows after collection/fingerprint/filter narrowing; PHP therefore scores at most the configured `candidate_limit` rows and rejects overflow as `LOCAL_SCALE_LIMIT`. The deterministic work bound is O(`candidate_limit × embedding_dimensions`) for similarity calculation plus bounded row decoding/sorting. No wall-clock SLO is asserted from CI hardware.
+The local adapter intentionally has no unbounded fallback. The database query requests at most `candidate_limit + 1` rows after collection/fingerprint/filter narrowing; PHP scores at most `candidate_limit` rows and rejects overflow as `LOCAL_SCALE_LIMIT`. Workloads that routinely exceed the ceiling should use a purpose-built external vector store rather than raising the ceiling indefinitely.
 
-Practical limit: use the local WordPress adapter only when normal collection/profile/filter narrowing keeps the candidate set at or below the configured hard candidate ceiling. If a workload routinely exceeds that ceiling, treat `LOCAL_SCALE_LIMIT` as an explicit signal to use a purpose-built external vector store rather than raising the ceiling until PHP/database scans become effectively unbounded.
+## Task 5 — Qdrant adapter — COMPLETE
+
+Delivered an offline-testable Qdrant raw-vector adapter with validated administrator-owned HTTPS origins, server-side API keys, zero redirects, one transport send per request/no retries, compatibility-isolated physical collections, remote dimensions/distance verification, deterministic plugin stable-ID → Qdrant UUID mapping, portable filters, bounded top-K, fail-closed response validation, sanitized errors, truthful health/capabilities, and a default-off credential-gated live health hook.
+
+TDD / verification:
+
+- Initial RED `8cb3d00aa13edf33ac4c41ae0aceee5f90391c20` / CI `33900244344`: PHPStan 0 errors; PHPUnit 366 tests / 1,584 assertions / exactly 8 intended failures.
+- Runtime-boundary GREEN `b8f7b3772e0cb6888084b0ea899f641c55029320` / CI `33907850449`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 366/366, 1,634 assertions; Composer audit clean.
+- Review RED `4786d836258bec795dd18a2256ef3789ae7724db`: returned compatibility fingerprint was not verified; fixed by `a6ab35993216549ccad4419c67272585e3e2bcd4`.
+- Review RED `955605e5590e89b4fdd81b7db7ec8e20badf3668`: untrusted response cardinality could exceed bounded `top_k`; fixed on path ending `0fbbda7cf057a50cc01d3ffd08ab0e716ad359a5`.
+- Live-hook RED `251fdf8fce62c2378e678c9465cf9cb3b0efd2bd` / CI `33909386169`: live-gating wrapper absent.
+- Final GREEN `974a9fb64a1bc66864b0cad82fe42a22225608c5` / CI `33909554302`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 368/368, 1,642 assertions; Composer audit clean; full WordPress smoke and offline live-Qdrant gating green.
+- Package artifact `9950829684`, digest `sha256:e701359c6b955a54de73a0e9402db4d528f2e04049b2e6b584f4c0fbc2484958`.
+- Independent review PR #11 review `5116935253`: Critical 0; Important 0 unresolved; no unresolved review threads.
+
+## Task 6 — Pinecone adapter — COMPLETE
+
+Delivered an offline-testable Pinecone raw-vector adapter with:
+
+- fixed validated administrator-owned HTTPS data-plane origins and fixed Pinecone control-plane index inspection;
+- server-side `Api-Key`, pinned `X-Pinecone-Api-Version: 2025-10`, redirects disabled, one transport send per request, and no automatic retries;
+- remote index name/dimensions/distance/data-host verification before operations;
+- compatibility-isolated namespaces and compatibility-fingerprint filters/results;
+- deterministic plugin stable-ID upsert/delete behavior;
+- portable equality/membership/conjunction filter mapping with Pinecone-specific boolean-membership fail-closed handling;
+- bounded `topK`, bounded response cardinality, deterministic score-descending/stable-ID ordering, and fail-closed untrusted fingerprint/metadata/stable-ID validation;
+- sanitized remote/transport failure handling and truthful health/capability behavior;
+- an explicit default-off live Pinecone health hook gated by `WP_RAG_AI_LIVE_PINECONE_TESTS=1`, `PINECONE_INDEX_HOST`, `PINECONE_API_KEY`, and `PINECONE_INDEX`; normal CI performs no Pinecone network call.
+
+### Task 6 TDD / review evidence
+
+- Genuine initial RED `e9334c8e0e15283988c6d1985426004c7e0c2956` / CI `33910441036`: PHPStan 0 errors; PHPUnit 378 tests / 1,652 assertions with exactly 10 intended failures because the Pinecone production contracts were absent; JS/package/WordPress smoke were green.
+- Initial GREEN `c8485e361d4cbc919b73f9d4f9fdb3049315a2c8` / CI `33911164667`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 378/378, 1,709 assertions; Composer audit clean; full WordPress smoke green.
+- API-version regression `21688ddc294f7536df54adf89acba9a65e1c83db` led to `22f81c4f57596bba5f14d30c10d05548ff612b56`, pinning Pinecone REST requests to the explicit `2025-10` contract.
+- Live-smoke gating was added through `03da15615014557213bf4b0d052004656ee1ecd1`, `ab569d79a7cd39e1ea742cd6018601c2872449f9`, `cc8952c9715f3d727e1d9761ad65ac7b0083bbf4`, and `52fe11c275891256578651138ec48462ce6f4853`; CI `33911943423` on `52fe11c...` passed all four permanent jobs with PHPUnit 379/379, 1,712 assertions.
+- Independent review found one Important vendor-capability mismatch: the portable `InFilter` accepts booleans, while Pinecone membership filtering does not support boolean `$in` values. The first test-only attempt `b23b79b40535a88a652451f179adb134e3ef9293` stopped at PHPCS and is not counted as RED.
+- Genuine review RED `d73f5bfc6309da8c435b4a9f2d31ae4e00e8133d` / CI `33913238466`: PHPStan 0 errors; PHPUnit 380 tests / 1,713 assertions / exactly one intended failure, proving the adapter continued to the remote path instead of rejecting boolean membership as `UNSUPPORTED_CAPABILITY` before network execution.
+- Review-fix/final implementation GREEN `29f1d94394827615b82fadb7129d755a5bce50a3` / CI `33913502927`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 380/380, 1,714 assertions; Composer audit clean; full WordPress smoke green.
+- Package artifact `9953323840`, digest `sha256:24ef3bd3794db00222d5999736304161a089465c32a55b68ced237ec45ce0c86`.
+- Independent Task 6 review PR #11 review `5117304228`: Critical 0; Important 0 unresolved.
+- No unresolved PR review threads at Task 6 closeout.
 
 ## Remaining Tasks
 
-- Task 5 — Qdrant adapter.
-- Task 6 — Pinecone adapter.
 - Task 7 — Chroma adapter.
 - Task 8 — OpenAI managed vector-store capability adapter using truthful current public capabilities only.
 - Task 9 — M07 plan-to-embedding/vector integration, security/performance review, benchmark, durable docs, whole-M08 review, exact-SHA CI, merge, post-merge verification.
 
 ## Security Review
-Tasks 1-4 keep credentials server-side behind the existing M03 boundary, expose no raw vendor-filter or SQL escape hatch, validate compatibility before vector operations, scope local operations by explicit collection/profile boundaries, prepare local filter query values, and bound/validate untrusted metadata and stable IDs at write/result boundaries. Direct embedding calls use fixed HTTPS endpoints with redirects disabled. No arbitrary public endpoint, client secret exposure, paid CI call, automatic retry, or unbounded local vector scan was introduced.
+Tasks 1-6 keep credentials server-side behind the existing provider/transport boundaries, expose no raw vendor-filter or SQL escape hatch, validate compatibility before vector operations, scope operations by explicit collection/profile boundaries, validate untrusted metadata and stable IDs, use fixed HTTPS/control-plane endpoints, disable redirects, sanitize remote failures, and perform no automatic retries. Live external-store hooks are explicit opt-in and credential-gated; normal CI performs no paid/external vector-store network calls.
 
 ## Performance Review
-Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata. Task 4 database-narrows candidates before PHP similarity scoring and enforces a hard configured candidate ceiling with an explicit scale-limit failure. External purpose-built vector-store performance remains Tasks 5-8.
+Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata. Task 4 database-narrows candidates before PHP similarity and enforces a hard local candidate ceiling. Tasks 5-6 delegate vector search to purpose-built external stores with bounded caller top-K and fail-closed response-cardinality checks. No unbounded adapter-side vector scan was introduced.
 
 ## Known Limitations
-M08 remains incomplete. Tasks 1-4 provide embedding execution, common vector-store contracts, and a bounded local WordPress implementation, but external vector adapters and M07 indexing integration remain unfinished. The local adapter is intentionally for modest/narrowable candidate sets and fails explicitly rather than silently scanning beyond its configured ceiling.
+M08 remains incomplete. Tasks 1-6 provide embedding execution, common vector-store contracts, a bounded local WordPress implementation, and Qdrant/Pinecone adapters. Chroma, truthful OpenAI managed-vector capability mapping, and M07 indexing integration/final whole-M08 closeout remain unfinished.
 
 ## Exact Next Unfinished Action
-Begin Task 5 — Qdrant adapter — with a test-only RED against the existing common contract suite and offline fake transport. Cover fixed/allowlisted endpoint construction, server-side credentials, collection/profile compatibility, deterministic payload mapping, stable-ID upsert/delete, portable filter translation, bounded top-K search result mapping, health/capability truthfulness, normalized error behavior, and no automatic retries. Require genuine behavioral RED before production implementation, then GREEN, independent review, full exact-SHA CI, and durable Task 5 evidence before Pinecone Task 6.
+Begin Task 7 — Chroma adapter — with a test-only offline RED against the common vector-store contracts and a fake transport. Cover fixed/validated administrator-owned HTTPS endpoint construction, server-side credentials where configured, collection/profile compatibility isolation, deterministic stable-ID upsert/delete, portable filter mapping, bounded top-K search/result validation, health/capability truthfulness, sanitized errors, and no automatic retries. Require a genuine behavioral RED before production implementation, then minimum GREEN behavior, fresh independent review with regression REDs for every Critical/Important finding, exact-SHA permanent CI, and durable Task 7 evidence before Task 8.
 
 ## Next Milestone
 M09 — Job Queue & Synchronization, only after M08 is fully reviewed, merged, and post-merge verified.
