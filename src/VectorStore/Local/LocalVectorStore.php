@@ -202,7 +202,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 		$prepared = $this->connection->prepare( $sql, ...$args );
 		$rows     = $this->connection->get_results( $prepared );
 		if ( count( $rows ) > $this->config->candidate_limit ) {
-			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Local vector candidate limit was exceeded.' );
+			throw new VectorStoreException( VectorStoreErrorCode::LOCAL_SCALE_LIMIT, 'Local vector candidate limit was exceeded.' );
 		}
 
 		$matches = array();
@@ -340,7 +340,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 * @param string $key Metadata key.
 	 */
 	private function json_path( string $key ): string {
-		return '$."' . $key . '"';
+		return '$.”' . $key . '”';
 	}
 
 	/**
