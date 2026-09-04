@@ -107,7 +107,7 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 			$this->store( $connection, 2, 2 )->search( new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 2, $fingerprint ) );
 			self::fail( 'Expected the local candidate ceiling to fail closed.' );
 		} catch ( VectorStoreException $exception ) {
-			self::assertSame( VectorStoreErrorCode::OPERATION_FAILED, $exception->error_code );
+			self::assertSame( VectorStoreErrorCode::LOCAL_SCALE_LIMIT, $exception->error_code );
 		}
 	}
 
