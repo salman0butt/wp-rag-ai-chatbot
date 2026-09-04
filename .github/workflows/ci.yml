@@ -38,7 +38,7 @@ jobs:
 
           for attempt in 1 2 3; do
             set +e
-            audit_output="$(npm audit --audit-level=critical 2>&1)"
+            audit_output="$(timeout 90s npm audit --audit-level=critical 2>&1)"
             audit_status=$?
             set -e
 
@@ -48,12 +48,19 @@ jobs:
               exit 0
             fi
 
-            if ! printf '%s\n' "$audit_output" | grep -Eq '503 Service Unavailable|audit endpoint returned an error|ECONNRESET|ETIMEDOUT|EAI_AGAIN'; then
+            is_transient=0
+            if [ "$audit_status" -eq 124 ]; then
+              is_transient=1
+            elif printf '%s\n' "$audit_output" | grep -Eq '503 Service Unavailable|audit endpoint returned an error|ECONNRESET|ETIMEDOUT|EAI_AGAIN'; then
+              is_transient=1
+            fi
+
+            if [ "$is_transient" -ne 1 ]; then
               exit "$audit_status"
             fi
 
             if [ "$attempt" -eq 3 ]; then
-              echo "npm audit registry service remained unavailable after 3 attempts." >&2
+              echo "npm audit registry service remained unavailable after 3 bounded attempts." >&2
               exit "$audit_status"
             fi
 
