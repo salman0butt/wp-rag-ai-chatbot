@@ -102,6 +102,9 @@ final class OpenAiEmbeddingTest extends TestCase {
 
 	/**
 	 * Build an OpenAI provider around deterministic credential and HTTP boundaries.
+	 *
+	 * @param QueuedHttpTransport $transport Deterministic HTTP transport.
+	 * @param string|null         $credential Optional resolved credential.
 	 */
 	private function provider( QueuedHttpTransport $transport, ?string $credential = 'openai-secret' ): OpenAiProvider {
 		$reader = $this->createMock( CredentialSourceReader::class );
