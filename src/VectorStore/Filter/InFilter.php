@@ -41,7 +41,11 @@ final class InFilter implements VectorFilter {
 			FilterValidation::value( $value );
 		}
 
-		/** @var list<scalar> $values */
+		/**
+		 * Validated scalar values.
+		 *
+		 * @var list<scalar> $values
+		 */
 		$this->values = $values;
 	}
 

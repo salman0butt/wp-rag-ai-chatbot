@@ -38,7 +38,11 @@ final class VectorSearchResult {
 			}
 		}
 
-		/** @var list<VectorMatch> $matches */
+		/**
+		 * Validated ordered matches.
+		 *
+		 * @var list<VectorMatch> $matches
+		 */
 		$this->matches = $matches;
 	}
 }

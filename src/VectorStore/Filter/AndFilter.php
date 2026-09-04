@@ -41,7 +41,11 @@ final class AndFilter implements VectorFilter {
 			}
 		}
 
-		/** @var list<VectorFilter> $filters */
+		/**
+		 * Validated child filters.
+		 *
+		 * @var list<VectorFilter> $filters
+		 */
 		$this->filters = $filters;
 	}
 
