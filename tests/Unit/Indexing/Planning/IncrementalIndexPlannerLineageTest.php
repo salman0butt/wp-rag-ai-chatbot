@@ -46,6 +46,9 @@ final class IncrementalIndexPlannerLineageTest extends TestCase {
 
 	/**
 	 * Build one stable embedding/content chunk while varying document-wide lineage.
+	 *
+	 * @param string $sourceVersion Source revision/version marker.
+	 * @param string $documentContentHash Current document-wide content hash.
 	 */
 	private function chunk( string $sourceVersion, string $documentContentHash ): ChunkRecord {
 		$parent_key = DocumentHasher::hash( array( 'parent' => 'stable' ) );
