@@ -15,7 +15,6 @@ use WpRagAiChatbot\VectorStore\VectorStore;
 use WpRagAiChatbot\VectorStore\VectorStoreCapabilities;
 use WpRagAiChatbot\VectorStore\VectorStoreHealth;
 use WpRagAiChatbot\VectorStore\VectorStoreRegistry;
-use WpRagAiChatbot\VectorStore\VectorUpsertStore;
 
 /**
  * Verifies registry identity and truthful capability boundaries.
@@ -37,14 +36,17 @@ final class VectorStoreRegistryTest extends TestCase {
 	 */
 	public function test_registry_rejects_untruthful_capabilities(): void {
 		$store = new class() implements VectorStore {
+			/** Return the test store ID. */
 			public function store_id(): string {
 				return 'lying';
 			}
 
+			/** Return intentionally untruthful capabilities. */
 			public function capabilities(): VectorStoreCapabilities {
 				return new VectorStoreCapabilities( true, false, false );
 			}
 
+			/** Return healthy test status. */
 			public function health(): VectorStoreHealth {
 				return VectorStoreHealth::healthy();
 			}
@@ -73,18 +75,23 @@ final class VectorStoreRegistryTest extends TestCase {
 	private function base_store( string $id ): VectorStore {
 		return new class( $id ) implements VectorStore {
 			/**
+			 * Create the test store.
+			 *
 			 * @param string $id Store ID.
 			 */
 			public function __construct( private readonly string $id ) {}
 
+			/** Return the test store ID. */
 			public function store_id(): string {
 				return $this->id;
 			}
 
+			/** Return no optional capabilities. */
 			public function capabilities(): VectorStoreCapabilities {
 				return VectorStoreCapabilities::none();
 			}
 
+			/** Return healthy test status. */
 			public function health(): VectorStoreHealth {
 				return VectorStoreHealth::healthy();
 			}

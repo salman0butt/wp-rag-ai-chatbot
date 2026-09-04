@@ -13,9 +13,9 @@ namespace WpRagAiChatbot\VectorStore;
  * Stable infrastructure-neutral error categories.
  */
 enum VectorStoreErrorCode: string {
-	case INVALID_REQUEST = 'invalid_request';
-	case INCOMPATIBLE_PROFILE = 'incompatible_profile';
+	case INVALID_REQUEST        = 'invalid_request';
+	case INCOMPATIBLE_PROFILE   = 'incompatible_profile';
 	case UNSUPPORTED_CAPABILITY = 'unsupported_capability';
-	case UNAVAILABLE = 'unavailable';
-	case OPERATION_FAILED = 'operation_failed';
+	case UNAVAILABLE            = 'unavailable';
+	case OPERATION_FAILED       = 'operation_failed';
 }

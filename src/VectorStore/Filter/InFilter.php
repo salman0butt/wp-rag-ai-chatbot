@@ -21,8 +21,9 @@ final class InFilter implements VectorFilter {
 	/**
 	 * Create a membership filter.
 	 *
-	 * @param string       $key Portable metadata key.
-	 * @param list<scalar> $values Allowed scalar values.
+	 * @param string $key Portable metadata key.
+	 * @param array  $values Allowed scalar values.
+	 * @phpstan-param list<scalar> $values
 	 * @throws InvalidArgumentException When filter input is invalid.
 	 */
 	public function __construct(
@@ -39,7 +40,9 @@ final class InFilter implements VectorFilter {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Determine whether metadata matches.
+	 *
+	 * @param array<string, scalar> $metadata Portable metadata.
 	 */
 	public function matches( array $metadata ): bool {
 		if ( ! array_key_exists( $this->key, $metadata ) ) {

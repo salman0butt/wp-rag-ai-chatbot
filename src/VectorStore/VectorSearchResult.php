@@ -18,7 +18,8 @@ final class VectorSearchResult {
 	/**
 	 * Create a search result.
 	 *
-	 * @param list<VectorMatch> $matches Ordered matches.
+	 * @param array $matches Ordered matches.
+	 * @phpstan-param list<VectorMatch> $matches
 	 * @throws InvalidArgumentException When matches are not an ordered list.
 	 */
 	public function __construct( public readonly array $matches ) {

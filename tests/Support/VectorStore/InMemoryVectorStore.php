@@ -25,50 +25,61 @@ use WpRagAiChatbot\VectorStore\VectorWriteResult;
  * Deterministic reference adapter for reusable contract tests only.
  */
 final class InMemoryVectorStore implements VectorUpsertStore, VectorDeleteStore, VectorSearchStore {
-	/** @var array<string, array<string, VectorRecord>> */
+	/**
+	 * Collection-scoped records.
+	 *
+	 * @var array<string, array<string, VectorRecord>>
+	 */
 	private array $records = array();
 
 	/**
+	 * Create the in-memory store.
+	 *
 	 * @param string $id Store ID.
 	 */
 	public function __construct( private readonly string $id ) {
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Return the stable store ID.
 	 */
 	public function store_id(): string {
 		return $this->id;
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Return supported operation capabilities.
 	 */
 	public function capabilities(): VectorStoreCapabilities {
 		return VectorStoreCapabilities::all();
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Return adapter health.
 	 */
 	public function health(): VectorStoreHealth {
 		return VectorStoreHealth::healthy();
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Insert or replace one stable vector record.
+	 *
+	 * @param VectorRecord $record Record to write.
 	 */
 	public function upsert( VectorRecord $record ): VectorWriteResult {
 		$collection_id = $record->collection->id;
 		$changed       = ! isset( $this->records[ $collection_id ][ $record->id ] )
-			|| $this->records[ $collection_id ][ $record->id ] != $record;
+			|| $this->records[ $collection_id ][ $record->id ] !== $record;
 		$this->records[ $collection_id ][ $record->id ] = $record;
 
 		return new VectorWriteResult( $changed );
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Delete one collection-scoped stable ID idempotently.
+	 *
+	 * @param VectorCollection $collection Collection boundary.
+	 * @param string           $id Stable record ID.
 	 */
 	public function delete( VectorCollection $collection, string $id ): VectorWriteResult {
 		$changed = isset( $this->records[ $collection->id ][ $id ] );
@@ -78,7 +89,9 @@ final class InMemoryVectorStore implements VectorUpsertStore, VectorDeleteStore,
 	}
 
 	/**
-	 * {@inheritDoc}
+	 * Search one collection deterministically.
+	 *
+	 * @param VectorSearchRequest $request Search request.
 	 */
 	public function search( VectorSearchRequest $request ): VectorSearchResult {
 		$matches = array();
@@ -115,11 +128,11 @@ final class InMemoryVectorStore implements VectorUpsertStore, VectorDeleteStore,
 		$left_norm  = 0.0;
 		$right_norm = 0.0;
 		foreach ( $left as $index => $value ) {
-			$left_value   = (float) $value;
-			$right_value  = (float) $right[ $index ];
-			$dot         += $left_value * $right_value;
-			$left_norm   += $left_value * $left_value;
-			$right_norm  += $right_value * $right_value;
+			$left_value  = (float) $value;
+			$right_value = (float) $right[ $index ];
+			$dot        += $left_value * $right_value;
+			$left_norm  += $left_value * $left_value;
+			$right_norm += $right_value * $right_value;
 		}
 
 		if ( 0.0 === $left_norm || 0.0 === $right_norm ) {

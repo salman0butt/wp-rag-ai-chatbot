@@ -21,11 +21,11 @@ final class VectorRecord {
 	/**
 	 * Create a vector record.
 	 *
-	 * @param VectorCollection        $collection Collection boundary.
-	 * @param string                  $id Stable record ID.
-	 * @param list<int|float>         $values Dense vector values.
-	 * @param string                  $compatibility_fingerprint Compatibility fingerprint.
-	 * @param array<string, scalar>   $metadata Portable metadata.
+	 * @param VectorCollection      $collection Collection boundary.
+	 * @param string                $id Stable record ID.
+	 * @param list<int|float>       $values Dense vector values.
+	 * @param string                $compatibility_fingerprint Compatibility fingerprint.
+	 * @param array<string, scalar> $metadata Portable metadata.
 	 * @throws InvalidArgumentException When record data is invalid or incompatible.
 	 */
 	public function __construct(
@@ -50,6 +50,7 @@ final class VectorRecord {
 	 *
 	 * @param array<int|float> $values Dense vector.
 	 * @param int              $dimensions Expected dimensions.
+	 * @throws InvalidArgumentException When vector data is invalid.
 	 */
 	private static function validate_vector( array $values, int $dimensions ): void {
 		if ( ! array_is_list( $values ) || count( $values ) !== $dimensions ) {
@@ -69,6 +70,7 @@ final class VectorRecord {
 	 * Validate portable scalar metadata.
 	 *
 	 * @param array<string, scalar> $metadata Metadata values.
+	 * @throws InvalidArgumentException When metadata exceeds portable bounds.
 	 */
 	private static function validate_metadata( array $metadata ): void {
 		if ( count( $metadata ) > self::MAX_METADATA_ENTRIES ) {

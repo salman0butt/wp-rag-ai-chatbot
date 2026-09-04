@@ -15,7 +15,11 @@ use InvalidArgumentException;
  * Registers vector stores and exposes only truthful optional operations.
  */
 final class VectorStoreRegistry {
-	/** @var array<string, VectorStore> */
+	/**
+	 * Registered stores.
+	 *
+	 * @var array<string, VectorStore>
+	 */
 	private array $stores = array();
 
 	/**
@@ -35,9 +39,9 @@ final class VectorStoreRegistry {
 
 		$capabilities = $store->capabilities();
 		if (
-			$capabilities->upsert !== ( $store instanceof VectorUpsertStore )
-			|| $capabilities->delete !== ( $store instanceof VectorDeleteStore )
-			|| $capabilities->search !== ( $store instanceof VectorSearchStore )
+			( $store instanceof VectorUpsertStore ) !== $capabilities->upsert
+			|| ( $store instanceof VectorDeleteStore ) !== $capabilities->delete
+			|| ( $store instanceof VectorSearchStore ) !== $capabilities->search
 		) {
 			throw new InvalidArgumentException( 'Vector store capabilities do not match implemented operation interfaces.' );
 		}
