@@ -260,6 +260,11 @@ final class PineconeVectorStore implements VectorUpsertStore, VectorDeleteStore,
 			return array( array( $filter->key => array( '$eq' => $filter->value ) ) );
 		}
 		if ( $filter instanceof InFilter ) {
+			foreach ( $filter->values as $value ) {
+				if ( is_bool( $value ) ) {
+					throw new VectorStoreException( VectorStoreErrorCode::UNSUPPORTED_CAPABILITY, 'Pinecone boolean membership filters are unsupported.' );
+				}
+			}
 			return array( array( $filter->key => array( '$in' => $filter->values ) ) );
 		}
 		if ( $filter instanceof AndFilter ) {
