@@ -49,6 +49,22 @@ final class VectorStoreContractsTest extends TestCase {
 	}
 
 	/**
+	 * Portable metadata rejects composite values at the runtime boundary.
+	 */
+	public function test_record_rejects_non_scalar_metadata(): void {
+		$collection = $this->collection( 'docs', 2 );
+
+		$this->expectException( InvalidArgumentException::class );
+		new VectorRecord(
+			$collection,
+			'chunk-1',
+			array( 0.1, 0.2 ),
+			$collection->profile->fingerprint(),
+			array( 'nested' => array( 'not-portable' ) )
+		);
+	}
+
+	/**
 	 * Search requests enforce bounded top-K and collection compatibility.
 	 */
 	public function test_search_request_validates_top_k_dimensions_and_fingerprint(): void {
