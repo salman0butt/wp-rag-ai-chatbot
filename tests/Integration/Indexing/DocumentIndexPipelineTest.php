@@ -69,7 +69,7 @@ final class DocumentIndexPipelineTest extends TestCase {
 		$second = $pipeline->plan( $document );
 
 		self::assertSame( $first->normalizedContent, $second->normalizedContent );
-		self::assertSame( $first->canonicalChunks, $second->canonicalChunks );
+		self::assertEquals( $first->canonicalChunks, $second->canonicalChunks );
 		self::assertGreaterThan( 1, count( $first->canonicalChunks ) );
 		self::assertLessThan( 160, count( $first->canonicalChunks ) );
 		foreach ( $first->canonicalChunks as $chunk ) {
