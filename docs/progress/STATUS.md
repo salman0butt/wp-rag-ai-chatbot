@@ -3,17 +3,17 @@
 - Completed milestones on `main`: **M00-M07**.
 - Current `main` SHA: `b642813c92ee152805c16a0bd6902b4ce67e33df`.
 - M07 post-closeout `main` CI: `33860207844` — all four permanent jobs passed.
-- Current milestone: **M08 — Embeddings & Vector Stores — IN PROGRESS**.
+- Current milestone: **M08 — Embeddings & Vector Stores — CLOSEOUT CANDIDATE**.
 - M08 branch: `feat/m08-embeddings-vector-stores`.
-- M08 PR: **#11 — open draft**.
+- M08 PR: **#11 — open draft pending exact documentation-head CI / ready-for-review / merge**.
 - M08 design/spec and implementation plan: **AUTO-APPROVED — SCHEDULED MODE**.
-- M08 Tasks 1-8: **COMPLETE on feature branch**; Task 9 is next.
+- M08 Tasks 1-9: **COMPLETE on feature branch**; final exact-head CI/merge/post-merge verification remain.
 
 ## M07 final state — COMPLETE
 
 M07 is durably integrated on `main` at `b642813c92ee152805c16a0bd6902b4ce67e33df`. Fresh post-closeout CI `33860207844` passed `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
 
-## M08 — IN PROGRESS
+## M08 — CLOSEOUT CANDIDATE
 
 ### Architecture gate
 
@@ -105,6 +105,22 @@ Delivered truthful managed OpenAI vector-store capabilities based on the current
 - Package artifact `9957422625`, digest `sha256:dfef7a3064fdb8cc2bb90958481169d087f35767c46a28470bf8fcdb59808167`.
 - Independent Task 8 review PR #11 review `5118469428`: **Critical 0 / Important 0 unresolved**; no unresolved review threads.
 
+### Task 9 — M07 plan-to-embedding/vector integration and M08 closeout — COMPLETE ON FEATURE BRANCH
+
+Delivered a narrow `IndexEmbeddingExecutor` that consumes accepted M07 `IndexPlan` objects, embeds only planned `upsert` chunks, executes planned deletes without re-embedding `metadataRefresh`/`unchanged` chunks, preserves M09 retries/queues and M10 retrieval as out of scope, curates bounded portable lineage metadata instead of copying arbitrary `sourceMetadata`, preflights stable IDs/profile compatibility/provider identity before paid embedding, and bounds synchronous work to 1,000 upserts and 1,000 deletes per execution.
+
+- First test-only commit `bcafccc12f72eb0c552e016ab797278948dd104d` stopped at PHPCS and is not counted as RED evidence.
+- Genuine initial RED `c356c65b9bad72346e139e1a1b7c76cfb6403b80` / CI `33928846507`: PHPCS/PHPStan clean; PHPUnit reached 405 tests / 1,854 assertions with exactly 3 missing-`IndexEmbeddingExecutor` errors.
+- Initial implementation GREEN `231e287f9749da77d8e6a8e275d8bc42c3e1a263` / CI `33929134396`: PHPStan 0 errors; PHPUnit 405/405, 1,864 assertions; Composer audit clean; JS/package green.
+- Fresh review found two Important issues: collection embedding-provider identity was not enforced before paid embedding, and synchronous delete execution had no count bound.
+- Genuine review RED `de93fcc0045ece00cf5decea052953b2b33a2a11` / CI `33929269542`: PHPStan 0 errors; PHPUnit 407 tests / 1,866 assertions with exactly 2 intended failures for provider/profile mismatch and 1,001 planned deletes.
+- Review fixes landed through `f78cc7f58442d6ffc72fb4985b44acb8cf054b98` and final implementation GREEN `3baef98b31d0d85cbde0c6cd130274645d489505` / CI `33929387362`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 407/407, 1,866 assertions; Composer audit clean; full WordPress smoke green.
+- Package artifact `9957988866`, digest `sha256:6eb92f7b5d3502975263c9a62fb3be01d4fb8390a16a87147ee36302fc02fd9b`.
+- Security review: Task 9 adds no credentials or configurable network endpoint; provider/collection identity, compatibility fingerprints, stable IDs and metadata are validated before embedding; arbitrary M07 source metadata does not cross the vector boundary; no automatic retries were introduced.
+- Performance review: embedding batches remain bounded; local candidate and external top-K/cardinality limits remain unchanged; Task 9 additionally bounds synchronous upserts/deletes to 1,000 each.
+- Exact-artifact synthetic orchestration benchmark (no network/provider/vector-engine I/O): 1,000 upserts, 8 dimensions, embedding batch 100; six post-warmup runs 7.131–7.675 ms, median 7.399 ms, exactly 10 fake provider batches and 1,000 fake writes. This is orchestration-overhead evidence only, not a dedicated-vector-engine throughput claim.
+- Whole-M08 review PR #11 review `5118637420`: **Critical 0 / Important 0 unresolved**; no unresolved inline review threads at review time.
+
 ## Exact next unfinished action
 
-Begin M08 Task 9 — M07 plan-to-embedding/vector integration and whole-M08 closeout. Establish a lint-clean test-only behavioral RED proving accepted M07 indexing plans are transformed into bounded embedding requests and deterministic vector records under the selected embedding/index profile without bypassing compatibility, collection, metadata, or stable-ID contracts. Implement the minimum orchestration glue only; do not introduce M09 queue/retry execution or M10 hybrid retrieval. Then complete the required security/performance review and benchmark, add regression REDs for every Critical/Important finding, update durable evidence, perform whole-M08 independent review, require exact-final-head permanent CI green, mark PR #11 ready only when all milestone criteria are satisfied, merge only with expected exact SHA, and verify post-merge `main` CI before declaring M08 complete.
+Require all four permanent CI jobs green on the exact documentation-complete PR head, confirm zero unresolved Critical/Important findings/threads, mark PR #11 ready, merge only with the expected exact head SHA, verify fresh push-triggered `main` CI, then update the post-merge closeout state and only then begin M09 — Job Queue & Synchronization.
