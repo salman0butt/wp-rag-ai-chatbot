@@ -156,6 +156,27 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 	}
 
 	/**
+	 * Delete cannot cross a persisted collection compatibility boundary.
+	 */
+	public function test_delete_rejects_incompatible_persisted_collection_profile(): void {
+		$connection = new ScriptedLocalVectorConnection();
+		$collection = $this->collection( 'docs' );
+
+		$connection->row_results[] = array(
+			'fingerprint' => str_repeat( '0', 64 ),
+			'dimensions'  => 2,
+		);
+
+		try {
+			$this->store( $connection, 10, 5 )->delete( $collection, 'chunk-1' );
+			self::fail( 'Expected incompatible persisted collection profile to block delete.' );
+		} catch ( VectorStoreException $exception ) {
+			self::assertSame( VectorStoreErrorCode::INCOMPATIBLE_PROFILE, $exception->error_code );
+			self::assertCount( 0, $connection->deletes );
+		}
+	}
+
+	/**
 	 * Persisted collection identity cannot silently change compatibility profile.
 	 */
 	public function test_incompatible_persisted_collection_fails_before_operation(): void {
