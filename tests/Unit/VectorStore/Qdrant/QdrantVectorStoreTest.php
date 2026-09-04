@@ -56,11 +56,12 @@ final class QdrantVectorStoreTest extends TestCase {
 		$result = $store->upsert( $record );
 		self::assertTrue( $result->changed );
 		self::assertCount( 2, $transport->requests );
+		self::assertStringContainsString( $this->physical_collection_path(), $transport->requests[0]->url );
 		$request = $transport->requests[1];
 		self::assertSame( 'PUT', $request->method );
 		self::assertSame( 0, $request->redirection );
 		self::assertSame( 'secret', $request->headers['api-key'] ?? null );
-		self::assertStringContainsString( '/collections/docs/points', $request->url );
+		self::assertStringContainsString( $this->physical_collection_path() . '/points', $request->url );
 		$id = $request->json_body['points'][0]['id'] ?? null;
 		self::assertIsString( $id );
 		self::assertMatchesRegularExpression( '/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/', $id );
@@ -85,7 +86,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		$upsert_id = $transport->requests[1]->json_body['points'][0]['id'] ?? null;
 		$delete_id = $transport->requests[3]->json_body['points'][0] ?? null;
 		self::assertSame( $upsert_id, $delete_id );
-		self::assertStringContainsString( '/collections/docs/points/delete', $transport->requests[3]->url );
+		self::assertStringContainsString( $this->physical_collection_path() . '/points/delete', $transport->requests[3]->url );
 	}
 
 	/**
@@ -104,12 +105,13 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( 0.9, $result->matches[0]->score );
 		self::assertSame( 'en', $result->matches[0]->metadata['lang'] ?? null );
 		$query_request = $transport->requests[1];
-		self::assertStringContainsString( '/collections/docs/points/query', $query_request->url );
+		self::assertStringContainsString( $this->physical_collection_path() . '/points/query', $query_request->url );
 		self::assertSame( array( 1.0, 0.0 ), $query_request->json_body['query'] ?? null );
 		self::assertSame( 5, $query_request->json_body['limit'] ?? null );
 		self::assertTrue( $query_request->json_body['with_payload'] ?? false );
-		self::assertSame( 'lang', $query_request->json_body['filter']['must'][0]['key'] ?? null );
-		self::assertSame( 'en', $query_request->json_body['filter']['must'][0]['match']['value'] ?? null );
+		self::assertSame( 'lang', $query_request->json_body['filter']['must'][1]['key'] ?? null );
+		self::assertSame( 'en', $query_request->json_body['filter']['must'][1]['match']['value'] ?? null );
+		self::assertSame( '_wp_rag_fingerprint', $query_request->json_body['filter']['must'][0]['key'] ?? null );
 	}
 
 	/**
@@ -192,6 +194,13 @@ final class QdrantVectorStoreTest extends TestCase {
 	 */
 	private function collection(): VectorCollection {
 		return new VectorCollection( 'docs', new VectorIndexProfile( new EmbeddingProfile( 'openai-direct', 'model', 2, NormalizationMode::NONE ), DistanceMetric::COSINE ) );
+	}
+
+	/**
+	 * Return the expected profile-isolated Qdrant collection path.
+	 */
+	private function physical_collection_path(): string {
+		return '/collections/docs-' . substr( $this->collection()->profile->fingerprint(), 0, 16 );
 	}
 
 	/**
