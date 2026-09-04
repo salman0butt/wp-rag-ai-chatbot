@@ -18,6 +18,7 @@ use WpRagAiChatbot\VectorStore\VectorDeleteStore;
 use WpRagAiChatbot\VectorStore\VectorRecord;
 use WpRagAiChatbot\VectorStore\VectorUpsertStore;
 
+// phpcs:disable WordPress.NamingConventions -- M07 domain DTO properties intentionally use the approved camelCase contract.
 /**
  * Executes one bounded accepted incremental indexing plan without owning retries or queues.
  */
@@ -93,7 +94,11 @@ final class IndexEmbeddingExecutor {
 			);
 
 			foreach ( $upserts as $index => $entry ) {
-				/** @var ChunkRecord $chunk */
+				/**
+				 * Typed chunk extracted from the validated execution list.
+				 *
+				 * @var ChunkRecord $chunk
+				 */
 				$chunk = $entry[0];
 				$this->upsert_store->upsert(
 					new VectorRecord(
@@ -120,13 +125,13 @@ final class IndexEmbeddingExecutor {
 	 */
 	private function metadata_for( ChunkRecord $chunk ): array {
 		$metadata = array(
-			'document_key'        => $chunk->documentKey,
-			'source_id'           => $chunk->sourceId,
-			'document_type'       => $chunk->documentType,
-			'content_hash'        => $chunk->contentHash,
-			'visibility'          => $chunk->visibility,
-			'sequence'            => $chunk->sequence,
-			'chunking_version'    => $chunk->chunkingVersion,
+			'document_key'         => $chunk->documentKey,
+			'source_id'            => $chunk->sourceId,
+			'document_type'        => $chunk->documentType,
+			'content_hash'         => $chunk->contentHash,
+			'visibility'           => $chunk->visibility,
+			'sequence'             => $chunk->sequence,
+			'chunking_version'     => $chunk->chunkingVersion,
 			'chunking_fingerprint' => $chunk->chunkingFingerprint,
 		);
 
@@ -140,3 +145,4 @@ final class IndexEmbeddingExecutor {
 		return $metadata;
 	}
 }
+// phpcs:enable WordPress.NamingConventions
