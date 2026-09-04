@@ -32,11 +32,11 @@ use WpRagAiChatbot\VectorStore\VectorStoreException;
 final class ChromaVectorStoreTest extends TestCase {
 	/** Chroma endpoints must be fixed administrator-owned HTTPS origins. */
 	public function test_config_rejects_unsafe_endpoints_and_scope(): void {
-		$class = 'WpRagAiChatbot\\VectorStore\\Chroma\\ChromaConfig';
-		self::assertTrue( class_exists( $class ), 'ChromaConfig must exist.' );
+		$config_class = 'WpRagAiChatbot\\VectorStore\\Chroma\\ChromaConfig';
+		self::assertTrue( class_exists( $config_class ), 'ChromaConfig must exist.' );
 		foreach ( array( 'http://chroma.example.test', 'https://user@chroma.example.test', 'https://chroma.example.test/path', 'https://chroma.example.test?token=x', 'https://chroma.example.test/#fragment' ) as $endpoint ) {
 			try {
-				new $class( $endpoint, 'tenant', 'database', 'secret' );
+				new $config_class( $endpoint, 'tenant', 'database', 'secret' );
 				self::fail( 'Unsafe Chroma endpoint must be rejected.' );
 			} catch ( InvalidArgumentException $exception ) {
 				self::assertNotSame( '', $exception->getMessage() );
@@ -44,10 +44,10 @@ final class ChromaVectorStoreTest extends TestCase {
 		}
 
 		foreach ( array( '', '../tenant', 'tenant/other' ) as $tenant ) {
-			$this->expect_invalid_config( $class, 'https://chroma.example.test', $tenant, 'database' );
+			$this->expect_invalid_config( $config_class, 'https://chroma.example.test', $tenant, 'database' );
 		}
 		foreach ( array( '', '../database', 'database/other' ) as $database ) {
-			$this->expect_invalid_config( $class, 'https://chroma.example.test', 'tenant', $database );
+			$this->expect_invalid_config( $config_class, 'https://chroma.example.test', 'tenant', $database );
 		}
 	}
 
@@ -200,21 +200,25 @@ final class ChromaVectorStoreTest extends TestCase {
 	/**
 	 * Assert one invalid config scope component fails closed.
 	 *
-	 * @param class-string $class Config class.
+	 * @param class-string $config_class Config class.
 	 * @param string       $endpoint Chroma origin.
 	 * @param string       $tenant Tenant value.
 	 * @param string       $database Database value.
 	 */
-	private function expect_invalid_config( string $class, string $endpoint, string $tenant, string $database ): void {
+	private function expect_invalid_config( string $config_class, string $endpoint, string $tenant, string $database ): void {
 		try {
-			new $class( $endpoint, $tenant, $database, null );
+			new $config_class( $endpoint, $tenant, $database, null );
 			self::fail( 'Unsafe Chroma scope must be rejected.' );
 		} catch ( InvalidArgumentException $exception ) {
 			self::assertNotSame( '', $exception->getMessage() );
 		}
 	}
 
-	/** Create the adapter under test using only offline dependencies. */
+	/**
+	 * Create the adapter under test using only offline dependencies.
+	 *
+	 * @param QdrantFakeTransport $transport Offline fake HTTP transport.
+	 */
 	private function store( QdrantFakeTransport $transport ): object {
 		$config_class = 'WpRagAiChatbot\\VectorStore\\Chroma\\ChromaConfig';
 		$store_class  = 'WpRagAiChatbot\\VectorStore\\Chroma\\ChromaVectorStore';
@@ -238,8 +242,15 @@ final class ChromaVectorStoreTest extends TestCase {
 		return $this->collection_response( 2, 'cosine', $this->collection()->profile->fingerprint() );
 	}
 
-	/** Build one Chroma v2 collection response. */
+	/**
+	 * Build one Chroma v2 collection response.
+	 *
+	 * @param int    $dimension Embedding dimension.
+	 * @param string $space Distance metric space.
+	 * @param string $fingerprint Compatibility fingerprint.
+	 */
 	private function collection_response( int $dimension, string $space, string $fingerprint ): HttpResponse {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- PHPUnit unit bootstrap does not load WordPress runtime functions.
 		$body = json_encode(
 			array(
 				'id'                 => '11111111-1111-4111-8111-111111111111',
