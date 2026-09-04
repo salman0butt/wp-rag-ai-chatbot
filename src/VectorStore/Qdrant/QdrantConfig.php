@@ -29,7 +29,9 @@ final class QdrantConfig {
 		public readonly string $endpoint,
 		private readonly string $api_key
 	) {
-		$parts = wp_parse_url( $endpoint );
+		// This value object is exercised outside a bootstrapped WordPress runtime.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Native parsing preserves the pure configuration boundary.
+		$parts = parse_url( $endpoint );
 		if (
 			false === filter_var( $endpoint, FILTER_VALIDATE_URL ) ||
 			! is_array( $parts ) ||
