@@ -302,22 +302,13 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		}
 	}
 
-	/**
-	 * Return a profile-isolated physical collection path.
-	 *
-	 * @param VectorCollection $collection Logical collection.
-	 */
+	/** Return a profile-isolated physical collection path. */
 	private function collection_path( VectorCollection $collection ): string {
 		$name = $collection->id . '-' . substr( $collection->profile->fingerprint(), 0, 16 );
 		return '/collections/' . rawurlencode( $name );
 	}
 
-	/**
-	 * Derive a deterministic UUIDv5-shaped Qdrant point ID from plugin identity.
-	 *
-	 * @param VectorCollection $collection Collection boundary.
-	 * @param string           $id Plugin stable vector ID.
-	 */
+	/** Derive a deterministic UUIDv5-shaped Qdrant point ID from plugin identity. */
 	private function point_id( VectorCollection $collection, string $id ): string {
 		$hex     = substr( hash( 'sha256', $this->collection_path( $collection ) . "\0" . $id ), 0, 32 );
 		$hex[12] = '5';
@@ -365,7 +356,11 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		}
 	}
 
-	/** Determine whether an HTTP response is successful. */
+	/**
+	 * Determine whether an HTTP response is successful.
+	 *
+	 * @param HttpResponse $response Response to inspect.
+	 */
 	private function successful( HttpResponse $response ): bool {
 		return $response->status >= 200 && $response->status < 300;
 	}
