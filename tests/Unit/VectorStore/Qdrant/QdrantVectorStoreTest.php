@@ -189,7 +189,11 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( 0, $transport->requests[0]->redirection );
 	}
 
-	/** Create the adapter under test using only offline dependencies. */
+	/**
+	 * Create the adapter under test using only offline dependencies.
+	 *
+	 * @param QdrantFakeTransport $transport Fake single-send transport.
+	 */
 	private function store( QdrantFakeTransport $transport ): object {
 		$config_class = 'WpRagAiChatbot\\VectorStore\\Qdrant\\QdrantConfig';
 		$store_class  = 'WpRagAiChatbot\\VectorStore\\Qdrant\\QdrantVectorStore';
