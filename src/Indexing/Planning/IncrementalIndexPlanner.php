@@ -71,7 +71,8 @@ final class IncrementalIndexPlanner {
 	private function isUnchanged( ChunkRecord $previous, ChunkRecord $current ): bool {
 		return $previous->contentHash === $current->contentHash
 			&& $previous->chunkingFingerprint === $current->chunkingFingerprint
-			&& $previous->embeddingCompatibilityKey === $current->embeddingCompatibilityKey;
+			&& $previous->embeddingCompatibilityKey === $current->embeddingCompatibilityKey
+			&& $previous->visibility === $current->visibility;
 	}
 
 	/**
