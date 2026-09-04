@@ -19,17 +19,20 @@ final class InFilter implements VectorFilter {
 	private const MAX_VALUES = 32;
 
 	/**
+	 * Allowed values.
+	 *
+	 * @var list<scalar>
+	 */
+	public readonly array $values;
+
+	/**
 	 * Create a membership filter.
 	 *
 	 * @param string $key Portable metadata key.
 	 * @param array  $values Allowed scalar values.
-	 * @phpstan-param list<scalar> $values
 	 * @throws InvalidArgumentException When filter input is invalid.
 	 */
-	public function __construct(
-		public readonly string $key,
-		public readonly array $values
-	) {
+	public function __construct( public readonly string $key, array $values ) {
 		FilterValidation::key( $key );
 		if ( ! array_is_list( $values ) || array() === $values || count( $values ) > self::MAX_VALUES ) {
 			throw new InvalidArgumentException( 'Vector membership filter values are invalid.' );
@@ -37,6 +40,9 @@ final class InFilter implements VectorFilter {
 		foreach ( $values as $value ) {
 			FilterValidation::value( $value );
 		}
+
+		/** @var list<scalar> $values */
+		$this->values = $values;
 	}
 
 	/**

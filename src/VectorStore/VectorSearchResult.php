@@ -16,13 +16,19 @@ use InvalidArgumentException;
  */
 final class VectorSearchResult {
 	/**
+	 * Ordered matches.
+	 *
+	 * @var list<VectorMatch>
+	 */
+	public readonly array $matches;
+
+	/**
 	 * Create a search result.
 	 *
 	 * @param array $matches Ordered matches.
-	 * @phpstan-param list<VectorMatch> $matches
 	 * @throws InvalidArgumentException When matches are not an ordered list.
 	 */
-	public function __construct( public readonly array $matches ) {
+	public function __construct( array $matches ) {
 		if ( ! array_is_list( $matches ) ) {
 			throw new InvalidArgumentException( 'Vector search matches must be an ordered list.' );
 		}
@@ -31,5 +37,8 @@ final class VectorSearchResult {
 				throw new InvalidArgumentException( 'Vector search result contains an invalid match.' );
 			}
 		}
+
+		/** @var list<VectorMatch> $matches */
+		$this->matches = $matches;
 	}
 }

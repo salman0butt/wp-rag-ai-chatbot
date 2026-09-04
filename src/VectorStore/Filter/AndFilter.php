@@ -19,13 +19,19 @@ final class AndFilter implements VectorFilter {
 	private const MAX_FILTERS = 16;
 
 	/**
+	 * Ordered child filters.
+	 *
+	 * @var list<VectorFilter>
+	 */
+	public readonly array $filters;
+
+	/**
 	 * Create a conjunction filter.
 	 *
 	 * @param array $filters Child filters.
-	 * @phpstan-param list<VectorFilter> $filters
 	 * @throws InvalidArgumentException When the list is invalid.
 	 */
-	public function __construct( public readonly array $filters ) {
+	public function __construct( array $filters ) {
 		if ( ! array_is_list( $filters ) || array() === $filters || count( $filters ) > self::MAX_FILTERS ) {
 			throw new InvalidArgumentException( 'Vector conjunction filter list is invalid.' );
 		}
@@ -34,6 +40,9 @@ final class AndFilter implements VectorFilter {
 				throw new InvalidArgumentException( 'Vector conjunction entries must be portable filters.' );
 			}
 		}
+
+		/** @var list<VectorFilter> $filters */
+		$this->filters = $filters;
 	}
 
 	/**
@@ -46,6 +55,7 @@ final class AndFilter implements VectorFilter {
 			if ( ! $filter->matches( $metadata ) ) {
 				return false;
 			}
+		}
 
 		return true;
 	}

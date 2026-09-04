@@ -40,23 +40,17 @@ final class InMemoryVectorStore implements VectorUpsertStore, VectorDeleteStore,
 	public function __construct( private readonly string $id ) {
 	}
 
-	/**
-	 * Return the stable store ID.
-	 */
+	/** Return the stable store ID. */
 	public function store_id(): string {
 		return $this->id;
 	}
 
-	/**
-	 * Return supported operation capabilities.
-	 */
+	/** Return supported operation capabilities. */
 	public function capabilities(): VectorStoreCapabilities {
 		return VectorStoreCapabilities::all();
 	}
 
-	/**
-	 * Return adapter health.
-	 */
+	/** Return adapter health. */
 	public function health(): VectorStoreHealth {
 		return VectorStoreHealth::healthy();
 	}
@@ -70,6 +64,7 @@ final class InMemoryVectorStore implements VectorUpsertStore, VectorDeleteStore,
 		$collection_id = $record->collection->id;
 		$changed       = ! isset( $this->records[ $collection_id ][ $record->id ] )
 			|| $this->records[ $collection_id ][ $record->id ] !== $record;
+
 		$this->records[ $collection_id ][ $record->id ] = $record;
 
 		return new VectorWriteResult( $changed );

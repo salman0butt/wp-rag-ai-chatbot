@@ -23,11 +23,11 @@ final class VectorStoreContractAssertions {
 	/**
 	 * Assert that upserting the same stable ID replaces the prior value.
 	 *
-	 * @param VectorUpsertStore    $store Store under test.
-	 * @param VectorSearchStore    $search Search capability.
-	 * @param VectorRecord         $first Initial record.
-	 * @param VectorRecord         $replacement Replacement record.
-	 * @param VectorSearchRequest  $request Query returning that record.
+	 * @param VectorUpsertStore   $store Store under test.
+	 * @param VectorSearchStore   $search Search capability.
+	 * @param VectorRecord        $first Initial record.
+	 * @param VectorRecord        $replacement Replacement record.
+	 * @param VectorSearchRequest $request Query returning that record.
 	 */
 	public static function assert_replacement(
 		VectorUpsertStore $store,

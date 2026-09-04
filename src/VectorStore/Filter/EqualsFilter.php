@@ -18,14 +18,13 @@ final class EqualsFilter implements VectorFilter {
 	/**
 	 * Create an equality filter.
 	 *
-	 * @param string $key Portable metadata key.
-	 * @param mixed  $value Portable scalar value.
-	 * @phpstan-param scalar $value
+	 * @param string                $key Portable metadata key.
+	 * @param string|int|float|bool $value Portable scalar value.
 	 * @throws InvalidArgumentException When filter input is invalid.
 	 */
 	public function __construct(
 		public readonly string $key,
-		public readonly mixed $value
+		public readonly string|int|float|bool $value
 	) {
 		FilterValidation::key( $key );
 		FilterValidation::value( $value );
