@@ -35,7 +35,7 @@ final class ChromaRemoteCollectionIdTest extends TestCase {
 		$collection = new VectorCollection( 'docs', $profile );
 		$physical   = 'wp-' . substr( hash( 'sha256', $collection->id ), 0, 12 ) . '-' . substr( $profile->fingerprint(), 0, 16 );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- PHPUnit unit bootstrap does not load WordPress runtime functions.
-		$body       = json_encode(
+		$body      = json_encode(
 			array(
 				'id'                 => '------------------------------------',
 				'name'               => $physical,
