@@ -179,8 +179,8 @@ final class PineconeVectorStore implements VectorUpsertStore, VectorDeleteStore,
 		}
 
 		$portable_matches = array();
-		foreach ( $matches as $match ) {
-			$portable_matches[] = $this->match_from_response( $match, $request->compatibility_fingerprint );
+		foreach ( $matches as $remote_match ) {
+			$portable_matches[] = $this->match_from_response( $remote_match, $request->compatibility_fingerprint );
 		}
 		usort(
 			$portable_matches,
@@ -273,24 +273,24 @@ final class PineconeVectorStore implements VectorUpsertStore, VectorDeleteStore,
 	/**
 	 * Convert one untrusted Pinecone query match into a portable match.
 	 *
-	 * @param mixed  $match Untrusted decoded match.
+	 * @param mixed  $remote_match Untrusted decoded match.
 	 * @param string $expected_fingerprint Expected compatibility fingerprint.
 	 * @throws VectorStoreException When the match is malformed or incompatible.
 	 */
-	private function match_from_response( mixed $match, string $expected_fingerprint ): VectorMatch {
+	private function match_from_response( mixed $remote_match, string $expected_fingerprint ): VectorMatch {
 		if (
-			! is_array( $match ) ||
-			! isset( $match['id'] ) ||
-			! is_string( $match['id'] ) ||
-			! isset( $match['score'] ) ||
-			! is_numeric( $match['score'] ) ||
-			! isset( $match['metadata'] ) ||
-			! is_array( $match['metadata'] )
+			! is_array( $remote_match ) ||
+			! isset( $remote_match['id'] ) ||
+			! is_string( $remote_match['id'] ) ||
+			! isset( $remote_match['score'] ) ||
+			! is_numeric( $remote_match['score'] ) ||
+			! isset( $remote_match['metadata'] ) ||
+			! is_array( $remote_match['metadata'] )
 		) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Pinecone query response is invalid.' );
 		}
 
-		$metadata    = $match['metadata'];
+		$metadata    = $remote_match['metadata'];
 		$fingerprint = $metadata[ self::METADATA_FINGERPRINT ] ?? null;
 		if ( ! is_string( $fingerprint ) || ! hash_equals( $expected_fingerprint, $fingerprint ) ) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Pinecone query response is invalid.' );
@@ -298,7 +298,7 @@ final class PineconeVectorStore implements VectorUpsertStore, VectorDeleteStore,
 		unset( $metadata[ self::METADATA_FINGERPRINT ] );
 
 		try {
-			return new VectorMatch( $match['id'], (float) $match['score'], $metadata );
+			return new VectorMatch( $remote_match['id'], (float) $remote_match['score'], $metadata );
 		} catch ( InvalidArgumentException ) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Pinecone query response is invalid.' );
 		}
@@ -363,7 +363,11 @@ final class PineconeVectorStore implements VectorUpsertStore, VectorDeleteStore,
 		}
 	}
 
-	/** Determine whether an HTTP response is successful. */
+	/**
+	 * Determine whether an HTTP response is successful.
+	 *
+	 * @param HttpResponse $response Response to inspect.
+	 */
 	private function successful( HttpResponse $response ): bool {
 		return $response->status >= 200 && $response->status < 300;
 	}
