@@ -166,12 +166,16 @@ final class DocumentIndexPipelineTest extends TestCase {
 				static fn ( $chunk ): bool => array( 'Gamma' ) === $chunk->headingPath
 			)
 		);
+		$upsert_keys  = array_map(
+			static fn ( $chunk ): string => $chunk->chunkKey,
+			$changed->indexPlan->upsert
+		);
 
 		self::assertCount( 1, $before_gamma );
 		self::assertCount( 1, $after_gamma );
 		self::assertSame( $before_gamma[0]->content, $after_gamma[0]->content );
 		self::assertSame( $before_gamma[0]->chunkKey, $after_gamma[0]->chunkKey );
-		self::assertNotContains( $after_gamma[0], $changed->indexPlan->upsert, true );
+		self::assertNotContains( $after_gamma[0]->chunkKey, $upsert_keys );
 	}
 
 	/**
