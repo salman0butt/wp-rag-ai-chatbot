@@ -84,6 +84,7 @@ jobs:
           done
       - run: npm run verify:js
       - run: npm run test:provider:live-gating
+      - run: npm run test:qdrant:live-gating
       - run: npm run test:package:assertion
 
   wordpress-smoke:
