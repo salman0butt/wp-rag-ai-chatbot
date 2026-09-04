@@ -10,8 +10,9 @@
 - M07 post-closeout artifact: `9931964669`, digest `sha256:39b33e3716b4c99e0b8b3239ab2a92f95077476b97208ed8c50bc1dee73c8413`.
 - Current milestone: **M08 — Embeddings & Vector Stores — IN PROGRESS**.
 - M08 branch: `feat/m08-embeddings-vector-stores`.
+- M08 PR: **#11 — open draft**.
 - M08 design/spec and implementation plan: **AUTO-APPROVED — SCHEDULED MODE**.
-- M08 Task 1: **COMPLETE on feature branch**; Task 2 is next.
+- M08 Tasks 1-2: **COMPLETE on feature branch**; Task 3 is next.
 
 ## M07 final state — COMPLETE
 
@@ -45,6 +46,21 @@ Genuine TDD evidence:
 
 Invalid RED attempts that failed lint before behavioral execution are deliberately excluded from TDD evidence: `8e6b9318842620a4cc6d3e2f136a4973ee952dac`, `6c969c5f21edacb214caf6e3eee15d265cd8913d`, and review-test attempt `64175895da76d473ce68b27d8bef6871fbea5676`.
 
+### Task 2 — Embedding batching/validation and direct OpenAI/OpenRouter adapters — COMPLETE
+
+Implemented vendor-neutral deterministic batching, strict response count/index/order/model/provider/dimension validation, usage aggregation with explicit unknown semantics, bounded batch configuration, direct fixed-endpoint OpenAI/OpenRouter embedding capabilities, optional embedding registration, and fake transport coverage. M08 still performs no automatic retries and CI performs no paid provider calls.
+
+Genuine TDD evidence:
+
+- Initial Task 2 test-only commit `6cefe1d07821e792f9c6af880354976d695ac9a2` / CI `33865141425` is excluded because PHPCS stopped before behavioral execution.
+- Initial RED `89767ff0b09915fb5fe1c7709fee565149d107c7` / CI `33866391356`: PHPStan 0 errors; PHPUnit 335 tests / 1,470 assertions with 8 errors + 3 failures caused by intentionally absent Task 2 service/config/provider behavior.
+- Initial assembled implementation `1179d51750c0317061f7ddeb481b61b6e8a3a0bd` / CI `33866742477` exposed repository-owned PHPCS issues; follow-up static analysis also exposed that the runtime-positive batch bound needed an explicit positive integer type contract. These were repaired without weakening runtime validation.
+- Fresh independent review found one Important behavior defect: mixed dimensions inside the first batch were accepted when the caller did not specify dimensions.
+- Review RED `74cd3a8cd439922befbc27f1e6ceb70abf63d6dc` / CI `33869958370`: PHPStan 0 errors; PHPUnit 336 tests / 1,513 assertions / exactly one intended failure proving that defect.
+- Review GREEN `cb37685ad8955f578e38b5e851193d860cec1871` / CI `33870183605`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 336/336, 1,514 assertions; Composer audit clean; JS quality/package assertions green; full WordPress smoke green.
+- Task 2 review outcome after fix: Critical 0; Important 0 unresolved.
+- Package artifact `9935760721`, digest `sha256:8861e02662d910c2595d235a22c846f9a9659143289e7753ea1a900a97ee430b`.
+
 ## Exact next unfinished action
 
-Begin M08 Task 2 with a test-only commit proving deterministic bounded batching and embedding response validation (missing/duplicate/out-of-range indices, inconsistent dimensions, ordered reconstruction, usage aggregation), plus fake-transport OpenAI/OpenRouter embedding request/error behavior. Require genuine exact-SHA RED before production implementation, then GREEN, independent review, and durable evidence update.
+Begin M08 Task 3 with test-only RED coverage for vector-store contracts, truthful optional capability interfaces, portable metadata filters, registry consistency, and a reusable adapter contract suite. Require genuine exact-SHA RED before production implementation, then GREEN, independent review, and durable evidence update.
