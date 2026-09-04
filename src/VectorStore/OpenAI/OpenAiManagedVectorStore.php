@@ -39,6 +39,8 @@ final class OpenAiManagedVectorStore implements ManagedVectorStore {
 	private const MAX_SEARCH_RESULTS = 50;
 
 	/**
+	 * Create the adapter without performing network I/O.
+	 *
 	 * @param OpenAiVectorStoreConfig $config Validated managed-store configuration.
 	 * @param HttpTransport           $transport Single-send HTTP transport.
 	 */
@@ -161,6 +163,7 @@ final class OpenAiManagedVectorStore implements ManagedVectorStore {
 	 * Convert one untrusted OpenAI search row into a bounded match.
 	 *
 	 * @param mixed $row Untrusted decoded search row.
+	 * @throws VectorStoreException When the remote row is malformed or out of bounds.
 	 */
 	private function map_match( mixed $row ): ManagedVectorMatch {
 		if ( ! is_array( $row ) || ! is_numeric( $row['score'] ?? null ) ) {
@@ -169,7 +172,7 @@ final class OpenAiManagedVectorStore implements ManagedVectorStore {
 		$file_id    = $row['file_id'] ?? null;
 		$filename   = $row['filename'] ?? null;
 		$attributes = $row['attributes'] ?? array();
-		$content     = $row['content'] ?? null;
+		$content    = $row['content'] ?? null;
 		if ( ! is_string( $file_id ) || ! is_string( $filename ) || ! is_array( $attributes ) || ! is_array( $content ) || ! array_is_list( $content ) ) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'OpenAI managed search response is invalid.' );
 		}
@@ -189,7 +192,12 @@ final class OpenAiManagedVectorStore implements ManagedVectorStore {
 		}
 	}
 
-	/** Validate an OpenAI file ID before constructing a URL. */
+	/**
+	 * Validate an OpenAI file ID before constructing a URL.
+	 *
+	 * @param string $file_id OpenAI file ID.
+	 * @throws VectorStoreException When the file ID is unsafe or malformed.
+	 */
 	private function assert_file_id( string $file_id ): void {
 		if ( 1 !== preg_match( '/^file[-_][A-Za-z0-9_-]{1,191}$/', $file_id ) ) {
 			throw new VectorStoreException( VectorStoreErrorCode::INVALID_REQUEST, 'OpenAI managed file ID is invalid.' );
@@ -207,6 +215,7 @@ final class OpenAiManagedVectorStore implements ManagedVectorStore {
 	 * @param string                    $method HTTP method.
 	 * @param string                    $path Fixed API path.
 	 * @param array<string, mixed>|null $body Optional JSON body.
+	 * @throws VectorStoreException When transport execution fails.
 	 */
 	private function send( string $method, string $path, ?array $body = null ): HttpResponse {
 		$request = new HttpRequest(
@@ -228,14 +237,24 @@ final class OpenAiManagedVectorStore implements ManagedVectorStore {
 		}
 	}
 
-	/** Require one successful remote response without exposing the body. */
+	/**
+	 * Require one successful remote response without exposing the body.
+	 *
+	 * @param HttpResponse $response Remote response.
+	 * @param string       $message Sanitized failure message.
+	 * @throws VectorStoreException When the response status is not successful.
+	 */
 	private function require_success( HttpResponse $response, string $message ): void {
 		if ( ! $this->successful( $response ) ) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, $message );
 		}
 	}
 
-	/** Return whether a response is successful. */
+	/**
+	 * Return whether a response is successful.
+	 *
+	 * @param HttpResponse $response Remote response.
+	 */
 	private function successful( HttpResponse $response ): bool {
 		return $response->status >= 200 && $response->status < 300;
 	}
@@ -243,7 +262,10 @@ final class OpenAiManagedVectorStore implements ManagedVectorStore {
 	/**
 	 * Decode an untrusted JSON body into an object map.
 	 *
+	 * @param string $body Untrusted response body.
+	 * @param string $message Sanitized invalid-response message.
 	 * @return array<string, mixed>
+	 * @throws VectorStoreException When JSON cannot be decoded as an object map.
 	 */
 	private function decode_json( string $body, string $message ): array {
 		try {

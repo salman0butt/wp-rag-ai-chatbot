@@ -16,11 +16,15 @@ use InvalidArgumentException;
  */
 final class ManagedVectorMatch {
 	/**
+	 * Create one bounded managed search match.
+	 *
 	 * @param string               $file_id Provider file ID.
 	 * @param string               $filename Provider filename.
 	 * @param float                $score Provider-native relevance score.
-	 * @param list<string>         $content Bounded text fragments.
+	 * @param array                $content Bounded text fragments.
 	 * @param array<string, mixed> $attributes Bounded scalar attributes.
+	 * @phpstan-param list<string> $content
+	 * @throws InvalidArgumentException When any result field is invalid.
 	 */
 	public function __construct(
 		public readonly string $file_id,
@@ -53,6 +57,7 @@ final class ManagedVectorMatch {
 	 * Validate the portable OpenAI attribute subset.
 	 *
 	 * @param array<string, mixed> $attributes Attributes to validate.
+	 * @throws InvalidArgumentException When any attribute exceeds the portable bounds.
 	 */
 	public static function validate_attributes( array $attributes ): void {
 		if ( count( $attributes ) > 16 ) {

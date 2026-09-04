@@ -16,7 +16,11 @@ use InvalidArgumentException;
  */
 final class ManagedVectorSearchResult {
 	/**
-	 * @param list<ManagedVectorMatch> $matches Ordered provider-managed matches.
+	 * Create a bounded ordered managed search result.
+	 *
+	 * @param array $matches Ordered provider-managed matches.
+	 * @phpstan-param list<ManagedVectorMatch> $matches
+	 * @throws InvalidArgumentException When matches are not an ordered list of managed matches.
 	 */
 	public function __construct( public readonly array $matches ) {
 		if ( ! array_is_list( $matches ) ) {

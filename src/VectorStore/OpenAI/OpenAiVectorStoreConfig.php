@@ -16,8 +16,11 @@ use InvalidArgumentException;
  */
 final class OpenAiVectorStoreConfig {
 	/**
+	 * Create validated OpenAI managed vector-store configuration.
+	 *
 	 * @param string $api_key OpenAI server-side API key.
 	 * @param string $vector_store_id OpenAI vector-store ID.
+	 * @throws InvalidArgumentException When credentials or the managed store ID are invalid.
 	 */
 	public function __construct(
 		public readonly string $api_key,
