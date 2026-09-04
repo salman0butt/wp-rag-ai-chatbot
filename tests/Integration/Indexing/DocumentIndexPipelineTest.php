@@ -94,7 +94,7 @@ final class DocumentIndexPipelineTest extends TestCase {
 		$pipeline = $this->pipeline();
 		$initial  = $pipeline->plan( $document );
 
-		$repeat   = $pipeline->plan( $document, $initial->canonicalChunks );
+		$repeat = $pipeline->plan( $document, $initial->canonicalChunks );
 
 		self::assertSame( array(), $repeat->indexPlan->upsert );
 		self::assertSame( array(), $repeat->indexPlan->deleteKeys );
@@ -117,7 +117,7 @@ final class DocumentIndexPipelineTest extends TestCase {
 		$pipeline = $this->pipeline();
 		$initial  = $pipeline->plan( $before );
 
-		$changed  = $pipeline->plan( $after, $initial->canonicalChunks );
+		$changed = $pipeline->plan( $after, $initial->canonicalChunks );
 
 		self::assertNotEmpty( $changed->indexPlan->upsert );
 		self::assertNotEmpty( $changed->indexPlan->unchanged );
