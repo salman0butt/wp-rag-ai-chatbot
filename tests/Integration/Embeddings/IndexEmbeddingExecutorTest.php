@@ -115,9 +115,48 @@ final class IndexEmbeddingExecutorTest extends TestCase {
 	}
 
 	/**
-	 * Oversized plans are rejected before constructing an unbounded embedding request.
+	 * A collection profile for another embedding provider must fail before a paid provider request.
 	 */
-	public function test_execute_rejects_more_than_the_execution_bound_before_embedding(): void {
+	public function test_execute_rejects_provider_profile_mismatch_before_embedding(): void {
+		$profile = $this->profile( 'other-provider' );
+		$collection = new VectorCollection( 'knowledge', $profile );
+		$provider = new RecordingEmbeddingProvider(
+			array(
+				new EmbeddingResult(
+					'test-embedding',
+					'embed-model',
+					array( new EmbeddingVector( 0, array( 1.0, 0.0 ) ) ),
+					EmbeddingUsage::input_tokens( 1 )
+				),
+			)
+		);
+		$store = new InMemoryVectorStore( 'memory' );
+		$executor = new IndexEmbeddingExecutor(
+			new EmbeddingService( $provider, new EmbeddingBatchConfig( 10 ) ),
+			$store,
+			$store,
+			$collection
+		);
+		$plan = new IndexPlan(
+			array( $this->chunk( 'provider-mismatch', 'Content', 0, $profile->fingerprint() ) ),
+			array(),
+			array(),
+			array(),
+			array()
+		);
+
+		try {
+			$executor->execute( $plan );
+			self::fail( 'Expected embedding provider/profile mismatch to fail closed.' );
+		} catch ( InvalidArgumentException ) {
+			self::assertCount( 0, $provider->requests );
+		}
+	}
+
+	/**
+	 * Oversized upsert plans are rejected before constructing an unbounded embedding request.
+	 */
+	public function test_execute_rejects_more_than_the_upsert_execution_bound_before_embedding(): void {
 		$profile = $this->profile();
 		$collection = new VectorCollection( 'knowledge', $profile );
 		$provider = new RecordingEmbeddingProvider( array() );
@@ -138,11 +177,36 @@ final class IndexEmbeddingExecutorTest extends TestCase {
 	}
 
 	/**
-	 * Build the selected test compatibility profile.
+	 * Oversized delete plans are rejected before starting synchronous store mutations.
 	 */
-	private function profile(): VectorIndexProfile {
+	public function test_execute_rejects_more_than_the_delete_execution_bound(): void {
+		$profile = $this->profile();
+		$collection = new VectorCollection( 'knowledge', $profile );
+		$provider = new RecordingEmbeddingProvider( array() );
+		$store = new InMemoryVectorStore( 'memory' );
+		$executor = new IndexEmbeddingExecutor(
+			new EmbeddingService( $provider, new EmbeddingBatchConfig( 10 ) ),
+			$store,
+			$store,
+			$collection
+		);
+		$delete_keys = array();
+		for ( $index = 0; $index < 1001; ++$index ) {
+			$delete_keys[] = hash( 'sha256', 'delete-' . $index );
+		}
+
+		$this->expectException( InvalidArgumentException::class );
+		$executor->execute( new IndexPlan( array(), array(), $delete_keys, array(), array() ) );
+	}
+
+	/**
+	 * Build the selected test compatibility profile.
+	 *
+	 * @param string $provider_id Embedding provider ID.
+	 */
+	private function profile( string $provider_id = 'test-embedding' ): VectorIndexProfile {
 		return new VectorIndexProfile(
-			new EmbeddingProfile( 'test-embedding', 'embed-model', 2, NormalizationMode::NONE ),
+			new EmbeddingProfile( $provider_id, 'embed-model', 2, NormalizationMode::NONE ),
 			DistanceMetric::COSINE
 		);
 	}
