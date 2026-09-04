@@ -28,6 +28,9 @@ use WpRagAiChatbot\Tests\Support\Providers\Http\QueuedHttpTransport;
  * Verifies fixed, one-shot OpenAI embedding requests and normalized responses.
  */
 final class OpenAiEmbeddingTest extends TestCase {
+	/**
+	 * Embeddings use the fixed endpoint and preserve provider order.
+	 */
 	public function test_embed_uses_fixed_endpoint_and_normalizes_ordered_response(): void {
 		$body      = '{"object":"list","data":[{"object":"embedding","index":0,"embedding":[0.1,0.2]},{"object":"embedding","index":1,"embedding":[0.3,0.4]}],"model":"text-embedding-test","usage":{"prompt_tokens":7,"total_tokens":7}}';
 		$transport = new QueuedHttpTransport( array( new HttpResponse( 200, array( 'x-request-id' => 'req_embed' ), $body ) ) );
@@ -56,16 +59,28 @@ final class OpenAiEmbeddingTest extends TestCase {
 		self::assertSame( 7, $result->usage->input_tokens );
 	}
 
+	/**
+	 * Optional dimensions are omitted when the caller does not request them.
+	 */
 	public function test_embed_omits_dimensions_when_not_requested(): void {
 		$body      = '{"data":[{"index":0,"embedding":[0.1]}],"model":"text-embedding-test"}';
 		$transport = new QueuedHttpTransport( array( new HttpResponse( 200, array(), $body ) ) );
 		$provider  = $this->provider( $transport );
 		$result    = $provider->embed( new EmbeddingRequest( 'text-embedding-test', array( 'one' ) ) );
 
-		self::assertSame( array( 'model' => 'text-embedding-test', 'input' => array( 'one' ) ), $transport->requests[0]->json_body );
+		self::assertSame(
+			array(
+				'model' => 'text-embedding-test',
+				'input' => array( 'one' ),
+			),
+			$transport->requests[0]->json_body
+		);
 		self::assertFalse( $result->usage->known );
 	}
 
+	/**
+	 * Billable embedding calls are never retried and upstream errors are redacted.
+	 */
 	public function test_embed_does_not_retry_billable_http_failure_and_redacts_secret(): void {
 		$secret    = 'openai-secret-value';
 		$transport = new QueuedHttpTransport(
@@ -85,6 +100,9 @@ final class OpenAiEmbeddingTest extends TestCase {
 		}
 	}
 
+	/**
+	 * Build an OpenAI provider around deterministic credential and HTTP boundaries.
+	 */
 	private function provider( QueuedHttpTransport $transport, ?string $credential = 'openai-secret' ): OpenAiProvider {
 		$reader = $this->createMock( CredentialSourceReader::class );
 		$store  = $this->createMock( CredentialStore::class );
