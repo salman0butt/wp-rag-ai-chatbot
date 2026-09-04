@@ -1,6 +1,6 @@
 # M08 — Embeddings & Vector Store Abstraction/Implementations
 
-Status: IN PROGRESS — Tasks 1-6 complete; Task 7 next.
+Status: IN PROGRESS — Tasks 1-7 complete; Task 8 next.
 
 ## Goal
 Generate compatible embeddings and store/search them through replaceable vector-store adapters.
@@ -101,48 +101,52 @@ TDD / verification:
 
 ## Task 6 — Pinecone adapter — COMPLETE
 
-Delivered an offline-testable Pinecone raw-vector adapter with:
+Delivered an offline-testable Pinecone raw-vector adapter with fixed validated HTTPS data/control-plane boundaries, server-side API-key handling, pinned Pinecone REST API version, redirects disabled/no retries, remote index compatibility verification, profile-isolated namespaces, deterministic stable-ID upsert/delete, portable filters, bounded/fail-closed result mapping, sanitized errors, truthful health/capabilities, and a default-off credential-gated live health hook.
 
-- fixed validated administrator-owned HTTPS data-plane origins and fixed Pinecone control-plane index inspection;
-- server-side `Api-Key`, pinned `X-Pinecone-Api-Version: 2025-10`, redirects disabled, one transport send per request, and no automatic retries;
-- remote index name/dimensions/distance/data-host verification before operations;
-- compatibility-isolated namespaces and compatibility-fingerprint filters/results;
-- deterministic plugin stable-ID upsert/delete behavior;
-- portable equality/membership/conjunction filter mapping with Pinecone-specific boolean-membership fail-closed handling;
-- bounded `topK`, bounded response cardinality, deterministic score-descending/stable-ID ordering, and fail-closed untrusted fingerprint/metadata/stable-ID validation;
-- sanitized remote/transport failure handling and truthful health/capability behavior;
-- an explicit default-off live Pinecone health hook gated by `WP_RAG_AI_LIVE_PINECONE_TESTS=1`, `PINECONE_INDEX_HOST`, `PINECONE_API_KEY`, and `PINECONE_INDEX`; normal CI performs no Pinecone network call.
+TDD / verification:
 
-### Task 6 TDD / review evidence
-
-- Genuine initial RED `e9334c8e0e15283988c6d1985426004c7e0c2956` / CI `33910441036`: PHPStan 0 errors; PHPUnit 378 tests / 1,652 assertions with exactly 10 intended failures because the Pinecone production contracts were absent; JS/package/WordPress smoke were green.
-- Initial GREEN `c8485e361d4cbc919b73f9d4f9fdb3049315a2c8` / CI `33911164667`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 378/378, 1,709 assertions; Composer audit clean; full WordPress smoke green.
-- API-version regression `21688ddc294f7536df54adf89acba9a65e1c83db` led to `22f81c4f57596bba5f14d30c10d05548ff612b56`, pinning Pinecone REST requests to the explicit `2025-10` contract.
-- Live-smoke gating was added through `03da15615014557213bf4b0d052004656ee1ecd1`, `ab569d79a7cd39e1ea742cd6018601c2872449f9`, `cc8952c9715f3d727e1d9761ad65ac7b0083bbf4`, and `52fe11c275891256578651138ec48462ce6f4853`; CI `33911943423` on `52fe11c...` passed all four permanent jobs with PHPUnit 379/379, 1,712 assertions.
-- Independent review found one Important vendor-capability mismatch: the portable `InFilter` accepts booleans, while Pinecone membership filtering does not support boolean `$in` values. The first test-only attempt `b23b79b40535a88a652451f179adb134e3ef9293` stopped at PHPCS and is not counted as RED.
-- Genuine review RED `d73f5bfc6309da8c435b4a9f2d31ae4e00e8133d` / CI `33913238466`: PHPStan 0 errors; PHPUnit 380 tests / 1,713 assertions / exactly one intended failure, proving the adapter continued to the remote path instead of rejecting boolean membership as `UNSUPPORTED_CAPABILITY` before network execution.
-- Review-fix/final implementation GREEN `29f1d94394827615b82fadb7129d755a5bce50a3` / CI `33913502927`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 380/380, 1,714 assertions; Composer audit clean; full WordPress smoke green.
+- Genuine initial RED `e9334c8e0e15283988c6d1985426004c7e0c2956` / CI `33910441036`: PHPStan 0 errors; PHPUnit 378 tests / 1,652 assertions / exactly 10 intended failures because Pinecone production contracts were absent.
+- Initial GREEN `c8485e361d4cbc919b73f9d4f9fdb3049315a2c8` / CI `33911164667`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 378/378, 1,709 assertions; Composer audit clean.
+- API-version contract was pinned through RED `21688ddc294f7536df54adf89acba9a65e1c83db` and fix `22f81c4f57596bba5f14d30c10d05548ff612b56`.
+- Live smoke gating landed through `03da15615014557213bf4b0d052004656ee1ecd1` → `52fe11c275891256578651138ec48462ce6f4853`; CI `33911943423` passed all four permanent jobs.
+- Independent review found one Important vendor-capability mismatch: boolean membership values were sent to Pinecone even though Pinecone membership filtering does not support boolean `$in` values.
+- Genuine review RED `d73f5bfc6309da8c435b4a9f2d31ae4e00e8133d` / CI `33913238466`: PHPStan 0 errors; PHPUnit 380 tests / 1,713 assertions / exactly one intended failure.
+- Final GREEN `29f1d94394827615b82fadb7129d755a5bce50a3` / CI `33913502927`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 380/380, 1,714 assertions; Composer audit clean; full WordPress smoke green.
 - Package artifact `9953323840`, digest `sha256:24ef3bd3794db00222d5999736304161a089465c32a55b68ced237ec45ce0c86`.
-- Independent Task 6 review PR #11 review `5117304228`: Critical 0; Important 0 unresolved.
-- No unresolved PR review threads at Task 6 closeout.
+- Independent Task 6 review PR #11 review `5117304228`: Critical 0; Important 0 unresolved; no unresolved review threads.
+
+## Task 7 — Chroma adapter — COMPLETE
+
+Delivered an offline-testable Chroma v2 raw-vector adapter with validated administrator-owned HTTPS origins, validated tenant/database scope, optional server-side token handling, redirects disabled/no automatic retries, deterministic compatibility-isolated physical collections, remote dimension/metric/fingerprint verification, explicit embedding upserts, stable-ID delete behavior, portable equality/membership/conjunction filters, bounded top-K/result cardinality, deterministic score ordering, sanitized failures, truthful health/capabilities, and a default-off credential-gated live health hook.
+
+TDD / verification:
+
+- Genuine initial RED `c331890c617aa5d3bc3dcf1036a3fc85b6fb8074` / CI `33918105636`: PHPStan 0 errors; PHPUnit 390 tests / 1,724 assertions / exactly 10 intended failures because `ChromaConfig` and the Chroma production adapter behavior were absent.
+- Initial GREEN `ba47b547345799aa1dffc1067a488f95ccfaf5cb` / CI `33919128725`: all four permanent jobs green after the production adapter and heartbeat-compatible health contract landed.
+- Live-health smoke coverage was added behind explicit opt-in/credential gating; normal CI performs no Chroma network call.
+- Independent review found one Important remote trust-boundary defect: the remote collection ID check accepted any 36-character hex/hyphen string, including 36 hyphens, allowing a malformed collection identifier to proceed to a mutation request.
+- Review RED `ee19261237dd9fbf76363744d491172066ce247a` / CI `33922544502`: PHPStan 0 errors; PHPUnit 392 tests / 1,794 assertions / exactly one intended failure, proving a malformed remote collection ID caused a second network request.
+- Review GREEN `121a930901ab1cf0f1eb9365a83a41d104b96b76` / CI `33922772281`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 392/392, 1,795 assertions; Composer audit clean; full WordPress smoke green.
+- Package artifact `9955679919`, digest `sha256:c17aa5857594a453fec3ce433691a8847b641b72def4f2c5e5405d437a410db7`.
+- Independent Task 7 review PR #11 review `5118131476`: Critical 0; Important 0 unresolved.
+- No unresolved PR review threads at Task 7 closeout.
 
 ## Remaining Tasks
 
-- Task 7 — Chroma adapter.
 - Task 8 — OpenAI managed vector-store capability adapter using truthful current public capabilities only.
 - Task 9 — M07 plan-to-embedding/vector integration, security/performance review, benchmark, durable docs, whole-M08 review, exact-SHA CI, merge, post-merge verification.
 
 ## Security Review
-Tasks 1-6 keep credentials server-side behind the existing provider/transport boundaries, expose no raw vendor-filter or SQL escape hatch, validate compatibility before vector operations, scope operations by explicit collection/profile boundaries, validate untrusted metadata and stable IDs, use fixed HTTPS/control-plane endpoints, disable redirects, sanitize remote failures, and perform no automatic retries. Live external-store hooks are explicit opt-in and credential-gated; normal CI performs no paid/external vector-store network calls.
+Tasks 1-7 keep credentials server-side behind existing provider/transport boundaries, expose no raw vendor-filter or SQL escape hatch, validate compatibility before vector operations, scope operations by explicit collection/profile boundaries, validate untrusted metadata and stable/remote IDs, use fixed validated HTTPS/control-plane endpoints, disable redirects, sanitize remote failures, and perform no automatic retries. Live external-store hooks are explicit opt-in and credential-gated; normal CI performs no paid/external vector-store network calls.
 
 ## Performance Review
-Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata. Task 4 database-narrows candidates before PHP similarity and enforces a hard local candidate ceiling. Tasks 5-6 delegate vector search to purpose-built external stores with bounded caller top-K and fail-closed response-cardinality checks. No unbounded adapter-side vector scan was introduced.
+Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata. Task 4 database-narrows candidates before PHP similarity and enforces a hard local candidate ceiling. Tasks 5-7 delegate vector search to purpose-built external stores with bounded caller top-K and fail-closed response-cardinality checks. No unbounded adapter-side vector scan was introduced.
 
 ## Known Limitations
-M08 remains incomplete. Tasks 1-6 provide embedding execution, common vector-store contracts, a bounded local WordPress implementation, and Qdrant/Pinecone adapters. Chroma, truthful OpenAI managed-vector capability mapping, and M07 indexing integration/final whole-M08 closeout remain unfinished.
+M08 remains incomplete. Tasks 1-7 provide embedding execution, common vector-store contracts, a bounded local WordPress implementation, and Qdrant/Pinecone/Chroma adapters. Truthful OpenAI managed-vector capability mapping and M07 indexing integration/final whole-M08 closeout remain unfinished.
 
 ## Exact Next Unfinished Action
-Begin Task 7 — Chroma adapter — with a test-only offline RED against the common vector-store contracts and a fake transport. Cover fixed/validated administrator-owned HTTPS endpoint construction, server-side credentials where configured, collection/profile compatibility isolation, deterministic stable-ID upsert/delete, portable filter mapping, bounded top-K search/result validation, health/capability truthfulness, sanitized errors, and no automatic retries. Require a genuine behavioral RED before production implementation, then minimum GREEN behavior, fresh independent review with regression REDs for every Critical/Important finding, exact-SHA permanent CI, and durable Task 7 evidence before Task 8.
+Begin Task 8 — OpenAI managed vector-store capability adapter — by verifying current public OpenAI vector-store API semantics before writing contracts, then create an offline test-only genuine RED for only the operations OpenAI truthfully supports under the common capability model. Keep credentials server-side, use fixed official endpoints, disable automatic retries, sanitize remote failures, bound result mapping, and do not pretend managed-file/vector-store operations are raw-vector upsert/delete/search if the public API does not support those semantics. Implement minimum GREEN behavior, perform fresh independent review with regression REDs for every Critical/Important finding, require exact-SHA permanent CI, and durably record Task 8 before Task 9.
 
 ## Next Milestone
 M09 — Job Queue & Synchronization, only after M08 is fully reviewed, merged, and post-merge verified.
