@@ -68,9 +68,9 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 		self::assertStringContainsString( 'fingerprint = %s', $search_call['query'] );
 		self::assertStringContainsString( 'JSON_EXTRACT', $search_call['query'] );
 		self::assertStringContainsString( 'LIMIT %d', $search_call['query'] );
-		self::assertContains( 'docs', $search_call['args'], true );
-		self::assertContains( $fingerprint, $search_call['args'], true );
-		self::assertContains( 4, $search_call['args'], true );
+		self::assertContains( 'docs', $search_call['args'] );
+		self::assertContains( $fingerprint, $search_call['args'] );
+		self::assertContains( 4, $search_call['args'] );
 	}
 
 	/**
