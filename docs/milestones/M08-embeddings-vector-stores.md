@@ -1,6 +1,6 @@
 # M08 — Embeddings & Vector Store Abstraction/Implementations
 
-Status: IN PROGRESS — Tasks 1-2 complete; Task 3 next.
+Status: IN PROGRESS — Tasks 1-3 complete; Task 4 next.
 
 ## Goal
 Generate compatible embeddings and store/search them through replaceable vector-store adapters.
@@ -25,125 +25,91 @@ Queue/retry/synchronization execution (M09) and hybrid retrieval orchestration/f
 
 ## Task 1 — Embedding contracts and compatibility fingerprints — COMPLETE
 
+Delivered optional provider embedding capability, immutable embedding request/result/vector/usage contracts, explicit unknown usage semantics, finite/list validation, embedding/index profiles, deterministic versioned compatibility fingerprints, and registry consistency.
+
+TDD / verification:
+
+- Genuine initial RED `17a77855d4634cb8f72d3327f442ef2cd0e76b3f` / CI `33861460302`: PHPStan 0 errors; PHPUnit 320 tests / 1,443 assertions with 7 missing-class errors and 2 expected-exception failures caused by absent Task 1 behavior.
+- Initial GREEN `5b071adb9426fbca4b632d77a6c09196e01c5e6a` / CI `33862552126`: PHPStan 0 errors; PHPUnit 320/320, 1,463 assertions; Composer audit clean.
+- Independent review found two Important issues: ordered-list contracts accepted associative arrays, and control characters could make the fingerprint payload ambiguous.
+- Review RED `b5e282d5c8c228b871e04e0f7512484ae4d1e275` / CI `33862913794`: PHPStan 0 errors; PHPUnit 324 tests / 1,467 assertions / exactly 4 intended failures.
+- Review GREEN `9e3b9c85351b383d246860c8f786a9e74ff1dda0` / CI `33863156655`: all four permanent jobs green; PHPUnit 324/324, 1,467 assertions; Composer audit clean.
+- Final review: Critical 0; Important 0 unresolved.
+- Package artifact `9933055991`, digest `sha256:8182986d6e45269b7f943716628edb501e3a5a97ebf14f605e0a331f1ee9e4a0`.
+
+Invalid RED attempts that stopped before behavioral execution are not counted as TDD evidence.
+
+## Task 2 — Embedding service batching/validation and direct adapters — COMPLETE
+
+Delivered deterministic bounded `EmbeddingService` batching, strict count/index/order/model/provider/dimension validation, known/unknown usage aggregation, bounded batch configuration, fixed-endpoint OpenAI/OpenRouter embedding capabilities, provider registration, and offline fake-transport coverage. M08 still performs no automatic retries and CI performs no paid provider calls.
+
+TDD / verification:
+
+- Genuine initial RED `89767ff0b09915fb5fe1c7709fee565149d107c7` / CI `33866391356`: PHPStan 0 errors; PHPUnit 335 tests / 1,470 assertions with 8 errors + 3 failures caused by absent Task 2 behavior.
+- Fresh review found one Important defect: mixed dimensions inside the first batch were accepted when the caller did not specify dimensions.
+- Review RED `74cd3a8cd439922befbc27f1e6ceb70abf63d6dc` / CI `33869958370`: PHPStan 0 errors; PHPUnit 336 tests / 1,513 assertions / exactly one intended failure.
+- Review GREEN `cb37685ad8955f578e38b5e851193d860cec1871` / CI `33870183605`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 336/336, 1,514 assertions; Composer audit clean; full WordPress smoke green.
+- Final review: Critical 0; Important 0 unresolved.
+- Package artifact `9935760721`, digest `sha256:8861e02662d910c2595d235a22c846f9a9659143289e7753ea1a900a97ee430b`.
+
+## Task 3 — Vector-store contracts, portable filters, registry, reusable contract suite — COMPLETE
+
 Delivered:
 
-- optional `EmbeddingProvider` capability in the existing provider registry without changing generation-only providers;
-- immutable `EmbeddingRequest`, `EmbeddingResult`, `EmbeddingVector`, and `EmbeddingUsage` contracts;
-- explicit unknown-vs-known-zero usage semantics;
-- finite, non-empty dense vectors and ordered-list enforcement;
-- `EmbeddingProfile`, normalization mode, distance metric, and `VectorIndexProfile`;
-- deterministic versioned SHA-256 compatibility fingerprint over provider/model/dimensions/normalization/distance;
-- provider/model control-character rejection so the delimiter-based canonical fingerprint payload cannot be made ambiguous;
-- registry ID consistency checks for optional embedding capability.
+- infrastructure-neutral `VectorStore` base identity/health/capability contract;
+- truthful optional raw upsert/delete/search operation interfaces;
+- bounded `VectorCollection`, `VectorRecord`, `VectorSearchRequest`, `VectorSearchResult`, `VectorMatch`, and write-result contracts;
+- strict compatibility fingerprint and dimension validation before adapter execution;
+- portable typed equality, membership, and conjunction filter AST with bounded key/value/cardinality rules and no raw vendor-filter escape hatch;
+- `VectorStoreRegistry` duplicate-ID, adapter-ID/capability consistency, and unsupported-operation enforcement;
+- test-only in-memory reference adapter and reusable contract assertions proving stable-ID replacement, collection-scoped idempotent deletion, compatibility/filter-aware search, score-descending/stable-ID deterministic ordering, and cross-collection isolation;
+- normalized vector-store error-code/exception boundary;
+- runtime validation of untrusted metadata on both writes and adapter-returned search matches;
+- identical stable vector-ID grammar enforced for written records and adapter-returned matches.
 
-### TDD evidence
-
-Initial test-only attempts `8e6b9318842620a4cc6d3e2f136a4973ee952dac` / CI `33861218089` and `6c969c5f21edacb214caf6e3eee15d265cd8913d` / CI `33861362647` are explicitly **not** counted as RED evidence because PHPCS stopped before behavioral execution.
+### Task 3 TDD evidence
 
 Genuine initial RED:
 
-- SHA `17a77855d4634cb8f72d3327f442ef2cd0e76b3f`
-- CI `33861460302`
+- SHA `fb14f05ffba4a322570d02a6eb7079dadb154c9d`
+- CI `33874688946`
 - PHPStan: 0 errors
-- PHPUnit: 320 tests / 1,443 assertions with 7 missing-class errors and 2 expected-exception failures, all caused by absent M08 contracts/registry embedding behavior.
+- PHPUnit: 341 tests / 1,515 assertions with 4 errors + 1 failure caused by intentionally absent collection/filter/in-memory vector-store behavior.
+- `js-quality`, `package`, and `wordpress-smoke` were green on the same RED SHA.
 
-Initial GREEN after contract implementation and static-analysis/style corrections:
+During implementation/review, exact head `980528cc98f4e09f98f470fc4effce65f47af3c8` / CI `33876558057` exposed one genuine behavioral RED: `VectorRecord` accepted non-scalar untrusted metadata. The minimum fix `41b26b18cf0afbcef0a10b5e7dddd28220d373ed` made PHPStan clean and PHPUnit 345/345, 1,527 assertions.
 
-- SHA `5b071adb9426fbca4b632d77a6c09196e01c5e6a`
-- CI `33862552126`
-- PHPStan: 0 errors
-- PHPUnit: 320/320 tests, 1,463 assertions
-- Composer audit: no security advisories.
+Fresh independent review then found two additional Important trust-boundary issues:
 
-Independent review identified two Important boundary issues:
+1. adapter-returned `VectorMatch` metadata was described as safe scalar metadata but was never runtime-validated;
+2. adapter-returned `VectorMatch` IDs rejected only blanks instead of enforcing the same bounded stable-ID grammar as `VectorRecord`.
 
-1. Request/vector/result arrays described as ordered still accepted associative PHP arrays, risking non-list JSON/data semantics.
-2. Provider/model control characters could make the line-delimited compatibility fingerprint payload ambiguous.
+Genuine review REDs:
 
-The first review-test attempt `64175895da76d473ce68b27d8bef6871fbea5676` / CI `33862746744` is explicitly **not** counted because PHPCS stopped before PHPUnit.
-
-Genuine review RED:
-
-- SHA `b5e282d5c8c228b871e04e0f7512484ae4d1e275`
-- CI `33862913794`
-- PHPStan: 0 errors
-- PHPUnit: 324 tests / 1,467 assertions / exactly 4 intended failures: control-character profile rejection plus associative request/vector/result list rejection.
+- `85f93be9d92cb53c979a9f4a722b3da11a6ac009` / CI `33880518572`: PHPStan 0 errors; PHPUnit 346 tests / 1,528 assertions / exactly one intended failure proving non-scalar match metadata was accepted.
+- `54762f61f2da98309e767359986b39cb76762467` / CI `33880825526`: PHPStan 0 errors; PHPUnit 347 tests / 1,529 assertions / exactly one intended failure proving malformed match IDs were accepted.
 
 Review-fix GREEN:
 
-- SHA `9e3b9c85351b383d246860c8f786a9e74ff1dda0`
-- CI `33863156655`
-- `php-quality`: success — PHPStan 0 errors; PHPUnit 324/324 tests, 1,467 assertions; Composer audit clean.
+- SHA `d5fa24f1cbe29a1e163c791546fc0293774d0255`
+- CI `33880952765`
+- `php-quality`: success — PHPStan 0 errors; PHPUnit 347/347 tests, 1,529 assertions; Composer audit clean.
 - `js-quality`: success.
 - `package`: success.
 - `wordpress-smoke`: success — activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge.
-- Package artifact: `9933055991`, digest `sha256:8182986d6e45269b7f943716628edb501e3a5a97ebf14f605e0a331f1ee9e4a0`.
+- Package artifact: `9939828694`, digest `sha256:eb9067510c8bbf9f791c3c9448e8decf262ade7800805d53e54f9fe5ade98bb7`.
 
-### Task 1 review result
+### Task 3 review result
 
 Fresh independent review after the regression-driven fixes:
 
 - Critical: 0
 - Important: 0 unresolved
-- The two Important findings above are fixed and regression-covered.
-- Response count/index/order/dimension cross-validation remains intentionally Task 2 `EmbeddingService` responsibility per the approved design, not a Task 1 omission.
-
-## Task 2 — Embedding service batching/validation and direct adapters — COMPLETE
-
-Delivered:
-
-- provider-neutral `EmbeddingService` with deterministic bounded application-level batching;
-- strict response count, local index, duplicate/missing/out-of-range index, model/provider consistency, ordered reconstruction, and vector-dimension validation;
-- usage aggregation that preserves unknown usage rather than fabricating totals;
-- `EmbeddingBatchConfig` with a validated positive upper bound reflected in its static-analysis type contract;
-- direct OpenAI and OpenRouter embedding capabilities using fixed HTTPS `/embeddings` endpoints, redirects disabled, existing credential/redaction boundaries, and exactly one provider request per service batch;
-- provider registration through the existing optional embedding capability slot;
-- offline fake/recording transport coverage; no paid provider calls in CI and no automatic retries in M08.
-
-### Task 2 TDD evidence
-
-The initial Task 2 test-only commit `6cefe1d07821e792f9c6af880354976d695ac9a2` / CI `33865141425` is explicitly **not** counted as RED evidence because PHPCS stopped before behavioral execution.
-
-Genuine initial RED:
-
-- SHA `89767ff0b09915fb5fe1c7709fee565149d107c7`
-- CI `33866391356`
-- PHPStan: 0 errors
-- PHPUnit: 335 tests / 1,470 assertions with 8 errors and 3 failures, all attributable to the intentionally absent `EmbeddingService`, `EmbeddingBatchConfig`, and direct-provider embedding behavior.
-
-The first assembled implementation head `1179d51750c0317061f7ddeb481b61b6e8a3a0bd` / CI `33866742477` exposed repository-owned PHPCS failures in the newly extracted provider traits and service docblock. Those style/static issues were corrected without changing the intended behavioral contract; PHPStan then identified that the runtime-positive batch bound was not represented in the property type, which was corrected by `80598faa132842967e156cf3b7785aa49f3a78b7`.
-
-Fresh Task 2 review then identified one Important behavior gap: without an explicit requested dimension, mixed vector dimensions inside the first provider batch were accepted even though the approved design requires consistent dimensions across every result.
-
-Genuine review RED:
-
-- SHA `74cd3a8cd439922befbc27f1e6ceb70abf63d6dc`
-- CI `33869958370`
-- PHPStan: 0 errors
-- PHPUnit: 336 tests / 1,513 assertions / exactly 1 intended failure: the service failed to reject mixed first-batch dimensions when no requested dimension was supplied.
-
-Review-fix GREEN:
-
-- SHA `cb37685ad8955f578e38b5e851193d860cec1871`
-- CI `33870183605`
-- `php-quality`: success — PHPStan 0 errors; PHPUnit 336/336 tests, 1,514 assertions; Composer audit clean.
-- `js-quality`: success — dependency audit, lint/typecheck/tests/build, provider live-gating, and package assertion passed.
-- `package`: success.
-- `wordpress-smoke`: success — activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge.
-- Package artifact: `9935760721`, digest `sha256:8861e02662d910c2595d235a22c846f9a9659143289e7753ea1a900a97ee430b`.
-
-### Task 2 review result
-
-Fresh independent review after the regression-driven fix:
-
-- Critical: 0
-- Important: 0 unresolved
-- The mixed-first-batch dimension finding is fixed and regression-covered.
-- Provider-specific HTTP/auth remains behind `Providers`; generic orchestration remains in `Embeddings`; no M09 retries/queue execution or M10 retrieval behavior was introduced.
+- Non-scalar write metadata, non-scalar adapter-returned match metadata, and malformed adapter-returned stable IDs are fixed and regression-covered.
+- Collection isolation, compatibility enforcement, deterministic tie ordering, portable filters, and truthful unsupported capabilities remain covered by the Task 3 contract suite.
 
 ## Remaining Tasks
 
-- Task 3 — Vector-store contracts, portable filters, registry, reusable contract suite.
 - Task 4 — Local WordPress vector store with dedicated migrations and bounded candidate search.
 - Task 5 — Qdrant adapter.
 - Task 6 — Pinecone adapter.
@@ -152,16 +118,16 @@ Fresh independent review after the regression-driven fix:
 - Task 9 — M07 plan-to-embedding/vector integration, security/performance review, benchmark, durable docs, whole-M08 review, exact-SHA CI, merge, post-merge verification.
 
 ## Security Review
-Tasks 1-2 keep credentials server-side behind the existing M03 resolver/store boundary. Direct embedding calls use fixed HTTPS endpoints with redirects disabled; provider errors use the existing redaction boundary; malformed provider responses fail closed. No arbitrary endpoint input, client-exposed secret, paid CI call, or automatic retry was introduced.
+Tasks 1-3 keep credentials server-side behind the existing M03 boundary, expose no raw vendor-filter escape hatch, validate compatibility before vector operations, scope contract operations to explicit collections, and bound/validate untrusted metadata and stable IDs at both write and adapter-returned result boundaries. Direct embedding calls use fixed HTTPS endpoints with redirects disabled. No arbitrary public endpoint, client secret exposure, paid CI call, or automatic retry was introduced.
 
 ## Performance Review
-Task 1 remains immutable value/registry work. Task 2 adds deterministic bounded batching with a validated maximum and no unbounded provider retry loop. Local vector candidate limits remain Task 4.
+Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata and keeps the in-memory implementation test-only. Production local candidate ceilings and database-backed bounded similarity calculation remain Task 4.
 
 ## Known Limitations
-M08 remains incomplete. Tasks 1-2 provide embedding contracts/orchestration and direct OpenAI/OpenRouter adapters, but vector persistence/search, local vector database behavior, external vector-store adapters, and M07 indexing integration are not yet complete.
+M08 remains incomplete. Tasks 1-3 establish embedding execution and vector-store application contracts, but production local vector persistence/search, external vector adapters, and M07 indexing integration remain unfinished.
 
 ## Exact Next Unfinished Action
-Begin Task 3 with test-only RED coverage for vector-store contracts, truthful capability interfaces, portable metadata filters, registry consistency, and a reusable adapter contract suite. Require genuine exact-SHA RED before production implementation, then GREEN, independent review, and durable evidence update.
+Begin Task 4 with a test-only RED covering dedicated versioned WordPress vector tables/migrations, collection/fingerprint isolation, stable-ID upsert replacement, collection-scoped idempotent delete, portable SQL filter translation, cosine similarity over a hard-bounded candidate set, deterministic ordering, and explicit scale-limit failure rather than unbounded PHP scanning. Require genuine behavioral RED before production implementation, then GREEN, WordPress integration verification, independent review, and durable evidence update.
 
 ## Next Milestone
 M09 — Job Queue & Synchronization, only after M08 is fully reviewed, merged, and post-merge verified.
