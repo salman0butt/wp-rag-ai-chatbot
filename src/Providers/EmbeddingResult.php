@@ -36,6 +36,9 @@ final class EmbeddingResult {
 		if ( array() === $vectors ) {
 			throw new InvalidArgumentException( 'Embedding result must contain vectors.' );
 		}
+		if ( ! array_is_list( $vectors ) ) {
+			throw new InvalidArgumentException( 'Embedding result vectors must be an ordered list.' );
+		}
 		foreach ( $vectors as $vector ) {
 			if ( ! $vector instanceof EmbeddingVector ) {
 				throw new InvalidArgumentException( 'Embedding result vectors must be EmbeddingVector instances.' );

@@ -32,6 +32,9 @@ final class EmbeddingVector {
 		if ( array() === $values ) {
 			throw new InvalidArgumentException( 'Embedding vector must not be empty.' );
 		}
+		if ( ! array_is_list( $values ) ) {
+			throw new InvalidArgumentException( 'Embedding vector values must be an ordered list.' );
+		}
 		foreach ( $values as $value ) {
 			if ( ! is_int( $value ) && ! is_float( $value ) ) {
 				throw new InvalidArgumentException( 'Embedding vector values must be numeric.' );

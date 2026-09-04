@@ -33,6 +33,9 @@ final class EmbeddingProfile {
 		if ( '' === trim( $provider_id ) || '' === trim( $model_id ) ) {
 			throw new InvalidArgumentException( 'Embedding profile provider and model must not be blank.' );
 		}
+		if ( 1 === preg_match( '/[\x00-\x1F\x7F]/', $provider_id . $model_id ) ) {
+			throw new InvalidArgumentException( 'Embedding profile provider and model must not contain control characters.' );
+		}
 		if ( $dimensions < 1 ) {
 			throw new InvalidArgumentException( 'Embedding profile dimensions must be positive.' );
 		}

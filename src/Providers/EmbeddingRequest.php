@@ -34,6 +34,9 @@ final class EmbeddingRequest {
 		if ( array() === $inputs ) {
 			throw new InvalidArgumentException( 'Embedding inputs must not be empty.' );
 		}
+		if ( ! array_is_list( $inputs ) ) {
+			throw new InvalidArgumentException( 'Embedding inputs must be an ordered list.' );
+		}
 		foreach ( $inputs as $input ) {
 			if ( ! is_string( $input ) || '' === trim( $input ) ) {
 				throw new InvalidArgumentException( 'Embedding inputs must be non-empty strings.' );
