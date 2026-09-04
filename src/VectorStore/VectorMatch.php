@@ -39,7 +39,7 @@ final class VectorMatch {
 		public readonly float $score,
 		array $metadata = array()
 	) {
-		if ( '' === trim( $id ) || ! is_finite( $score ) ) {
+		if ( 1 !== preg_match( '/^[A-Za-z0-9][A-Za-z0-9._:-]{0,191}$/', $id ) || ! is_finite( $score ) ) {
 			throw new InvalidArgumentException( 'Vector match ID and score must be valid.' );
 		}
 		if ( count( $metadata ) > self::MAX_METADATA_ENTRIES ) {
