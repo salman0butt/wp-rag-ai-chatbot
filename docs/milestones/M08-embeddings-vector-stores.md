@@ -1,6 +1,6 @@
 # M08 — Embeddings & Vector Store Abstraction/Implementations
 
-Status: IN PROGRESS — Tasks 1-7 complete; Task 8 next.
+Status: IN PROGRESS — Tasks 1-8 complete; Task 9 next.
 
 ## Goal
 Generate compatible embeddings and store/search them through replaceable vector-store adapters.
@@ -131,22 +131,35 @@ TDD / verification:
 - Independent Task 7 review PR #11 review `5118131476`: Critical 0; Important 0 unresolved.
 - No unresolved PR review threads at Task 7 closeout.
 
+## Task 8 — OpenAI managed vector-store capability adapter — COMPLETE
+
+Delivered a truthful capability-specific OpenAI managed vector-store adapter. Current public API semantics were verified before implementation: managed file attachment/deletion and text-query vector-store search are supported, while caller-supplied raw-vector upsert/delete/search semantics are not exposed. The adapter therefore implements a dedicated managed operation contract, keeps all raw-vector capability flags false, uses the fixed official OpenAI HTTPS origin, keeps authorization server-side, disables redirects, performs no automatic retries, bounds file IDs/attributes/query/results/content, validates untrusted search results, sanitizes provider failures, and reports health only when the configured vector store is `completed`/ready.
+
+TDD / verification:
+
+- Genuine initial RED `4125950e5598082ba1c70039f98f20e7304dfc6c` / CI `33926896274`: PHPStan 0 errors; PHPUnit 399 tests / 1,804 assertions with exactly 6 intended failures caused by the absent managed adapter/configuration contracts.
+- Intermediate implementation/lint/static-analysis repair commits `08afdf527ec5aa80b97edadc7b01789d37b2d50a`, `a6a62d07ce7f017e1a88eb332494675484a2ecbb`, and `cdb5b2a146c162c76885ef3f3ef9f7a4ca89974f` are not counted as additional RED evidence; the last reached PHP GREEN with PHPUnit 399/399, 1,849 assertions.
+- Independent review found two Important issues: the registry did not enforce/expose managed capability truth, and health incorrectly treated non-ready OpenAI vector-store statuses as healthy.
+- The first review-test commit stopped at PHPCS and is not counted. Genuine review RED `13810bf7f8ee516ecee4138ba585c6cf2eccb21f` / CI `33927625909`: PHPStan 0 errors; PHPUnit 402 tests / 1,853 assertions with exactly 1 error + 2 failures for the intended managed-registry and readiness findings.
+- Final implementation GREEN `dfbae21e1a4226a7ce285413a74b817e1089ce78` / CI `33927746937`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 402/402, 1,854 assertions; Composer audit clean; full WordPress smoke green.
+- Package artifact `9957422625`, digest `sha256:dfef7a3064fdb8cc2bb90958481169d087f35767c46a28470bf8fcdb59808167`.
+- Independent Task 8 review PR #11 review `5118469428`: Critical 0; Important 0 unresolved; no unresolved review threads.
+
 ## Remaining Tasks
 
-- Task 8 — OpenAI managed vector-store capability adapter using truthful current public capabilities only.
 - Task 9 — M07 plan-to-embedding/vector integration, security/performance review, benchmark, durable docs, whole-M08 review, exact-SHA CI, merge, post-merge verification.
 
 ## Security Review
-Tasks 1-7 keep credentials server-side behind existing provider/transport boundaries, expose no raw vendor-filter or SQL escape hatch, validate compatibility before vector operations, scope operations by explicit collection/profile boundaries, validate untrusted metadata and stable/remote IDs, use fixed validated HTTPS/control-plane endpoints, disable redirects, sanitize remote failures, and perform no automatic retries. Live external-store hooks are explicit opt-in and credential-gated; normal CI performs no paid/external vector-store network calls.
+Tasks 1-8 keep credentials server-side behind existing provider/transport boundaries, expose no raw vendor-filter or SQL escape hatch, validate compatibility before vector operations, scope operations by explicit collection/profile boundaries, validate untrusted metadata and stable/remote IDs, use fixed validated HTTPS/control-plane endpoints, disable redirects, sanitize remote failures, and perform no automatic retries. The OpenAI managed adapter additionally keeps raw-vector capabilities false and gates managed capability access through the registry. Live external-store hooks are explicit opt-in and credential-gated; normal CI performs no paid/external vector-store network calls.
 
 ## Performance Review
-Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata. Task 4 database-narrows candidates before PHP similarity and enforces a hard local candidate ceiling. Tasks 5-7 delegate vector search to purpose-built external stores with bounded caller top-K and fail-closed response-cardinality checks. No unbounded adapter-side vector scan was introduced.
+Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata. Task 4 database-narrows candidates before PHP similarity and enforces a hard local candidate ceiling. Tasks 5-7 delegate raw-vector search to purpose-built external stores with bounded caller top-K and fail-closed response-cardinality checks. Task 8 bounds managed search requests to OpenAI's public result ceiling and fail-closes oversized responses. No unbounded adapter-side vector scan was introduced.
 
 ## Known Limitations
-M08 remains incomplete. Tasks 1-7 provide embedding execution, common vector-store contracts, a bounded local WordPress implementation, and Qdrant/Pinecone/Chroma adapters. Truthful OpenAI managed-vector capability mapping and M07 indexing integration/final whole-M08 closeout remain unfinished.
+M08 remains incomplete until Task 9. Tasks 1-8 now provide embedding execution, common vector-store contracts, a bounded local WordPress implementation, Qdrant/Pinecone/Chroma raw-vector adapters, and truthful OpenAI managed vector-store capability mapping. M07 indexing integration and final whole-M08 closeout remain unfinished.
 
 ## Exact Next Unfinished Action
-Begin Task 8 — OpenAI managed vector-store capability adapter — by verifying current public OpenAI vector-store API semantics before writing contracts, then create an offline test-only genuine RED for only the operations OpenAI truthfully supports under the common capability model. Keep credentials server-side, use fixed official endpoints, disable automatic retries, sanitize remote failures, bound result mapping, and do not pretend managed-file/vector-store operations are raw-vector upsert/delete/search if the public API does not support those semantics. Implement minimum GREEN behavior, perform fresh independent review with regression REDs for every Critical/Important finding, require exact-SHA permanent CI, and durably record Task 8 before Task 9.
+Begin Task 9 — M07 plan-to-embedding/vector integration and whole-M08 closeout. First add a test-only behavioral RED that proves accepted M07 indexing plans can be transformed into bounded embedding requests and deterministic vector records using the chosen embedding/index profile without bypassing compatibility, collection, metadata, or stable-ID contracts. Implement the minimum orchestration glue with no M09 queue/retry behavior and no M10 hybrid retrieval. Then run security/performance review and the required benchmark, add regression REDs for every Critical/Important finding, update durable docs, perform final whole-M08 independent review, require exact-final-head permanent CI green, mark PR #11 ready only when every M08 acceptance criterion is satisfied, merge only with expected exact SHA, and verify post-merge `main` CI before declaring M08 complete.
 
 ## Next Milestone
 M09 — Job Queue & Synchronization, only after M08 is fully reviewed, merged, and post-merge verified.
