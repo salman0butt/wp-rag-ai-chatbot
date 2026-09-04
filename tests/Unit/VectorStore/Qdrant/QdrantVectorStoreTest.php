@@ -93,10 +93,10 @@ final class QdrantVectorStoreTest extends TestCase {
 	 * Search must use the current query API and map portable filters/results.
 	 */
 	public function test_search_maps_portable_filter_top_k_and_results(): void {
-		$body       = '{"result":{"points":[{"id":"936da01f-9abd-5d9d-80c7-02af85c822a8","score":0.9,"payload":{"_wp_rag_id":"chunk:2","_wp_rag_fingerprint":"ignored-by-test","lang":"en"}}]}}';
+		$collection = $this->collection();
+		$body       = '{"result":{"points":[{"id":"936da01f-9abd-5d9d-80c7-02af85c822a8","score":0.9,"payload":{"_wp_rag_id":"chunk:2","_wp_rag_fingerprint":"' . $collection->profile->fingerprint() . '","lang":"en"}}]}}';
 		$transport  = new QdrantFakeTransport( array( $this->compatible_collection_response(), new HttpResponse( 200, array(), $body ) ) );
 		$store      = $this->store( $transport );
-		$collection = $this->collection();
 		$request    = new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 5, $collection->profile->fingerprint(), new EqualsFilter( 'lang', 'en' ) );
 		$result     = $store->search( $request );
 
@@ -112,6 +112,21 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( 'lang', $query_request->json_body['filter']['must'][1]['key'] ?? null );
 		self::assertSame( 'en', $query_request->json_body['filter']['must'][1]['match']['value'] ?? null );
 		self::assertSame( '_wp_rag_fingerprint', $query_request->json_body['filter']['must'][0]['key'] ?? null );
+	}
+
+	/**
+	 * Search results are untrusted and must match the requested compatibility profile.
+	 */
+	public function test_search_rejects_mismatched_response_fingerprint(): void {
+		$body       = '{"result":{"points":[{"id":"936da01f-9abd-5d9d-80c7-02af85c822a8","score":0.9,"payload":{"_wp_rag_id":"chunk:2","_wp_rag_fingerprint":"wrong-profile","lang":"en"}}]}}';
+		$transport  = new QdrantFakeTransport( array( $this->compatible_collection_response(), new HttpResponse( 200, array(), $body ) ) );
+		$store      = $this->store( $transport );
+		$collection = $this->collection();
+		$request    = new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 5, $collection->profile->fingerprint() );
+
+		$this->expectException( VectorStoreException::class );
+		$this->expectExceptionMessage( 'Qdrant search response is invalid.' );
+		$store->search( $request );
 	}
 
 	/**
