@@ -110,6 +110,22 @@ final class EmbeddingServiceTest extends TestCase {
 	}
 
 	/**
+	 * The first batch must reject mixed vector dimensions even without an explicit dimension request.
+	 */
+	public function test_embed_rejects_mixed_dimensions_inside_first_batch_without_requested_dimensions(): void {
+		$provider = new RecordingEmbeddingProvider(
+			array(
+				$this->embedding_result( array( array( 0.1, 0.2 ), array( 0.3, 0.4, 0.5 ) ), 3 ),
+			)
+		);
+
+		$this->expectException( ProviderException::class );
+		$this->expectExceptionMessage( 'Embedding provider returned a malformed response.' );
+		( new EmbeddingService( $provider, new EmbeddingBatchConfig( 2 ) ) )
+			->embed( new EmbeddingRequest( 'embed-model', array( 'a', 'b' ) ) );
+	}
+
+	/**
 	 * Batch configuration rejects non-positive and unreasonably large values.
 	 */
 	public function test_batch_config_enforces_positive_bounded_limit(): void {
