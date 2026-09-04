@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Indexing\Planning;
 
+use WpRagAiChatbot\Documents\DocumentHasher;
 use WpRagAiChatbot\Indexing\Chunking\ChunkRecord;
 use WpRagAiChatbot\Indexing\Dedup\ChunkDeduplicationResult;
 
@@ -70,9 +71,15 @@ final class IncrementalIndexPlanner {
 	 */
 	private function isUnchanged( ChunkRecord $previous, ChunkRecord $current ): bool {
 		return $previous->contentHash === $current->contentHash
+			&& $previous->documentType === $current->documentType
+			&& $previous->title === $current->title
+			&& $previous->sourceVersion === $current->sourceVersion
+			&& $previous->documentContentHash === $current->documentContentHash
+			&& $previous->language === $current->language
+			&& $previous->visibility === $current->visibility
 			&& $previous->chunkingFingerprint === $current->chunkingFingerprint
 			&& $previous->embeddingCompatibilityKey === $current->embeddingCompatibilityKey
-			&& $previous->visibility === $current->visibility;
+			&& DocumentHasher::hash( $previous->sourceMetadata ) === DocumentHasher::hash( $current->sourceMetadata );
 	}
 
 	/**
