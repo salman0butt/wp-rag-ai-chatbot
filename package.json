@@ -44,9 +44,12 @@
     "lint:js": "wp-scripts lint-js src-js",
     "lint:pkg": "wp-scripts lint-pkg-json",
     "plugin-zip": "bash scripts/plugin-zip.sh",
+    "test:chroma:live-gating": "bash scripts/test-live-chroma-smoke-gating.sh",
     "test:js": "wp-scripts test-unit-js",
     "test:package:assertion": "bash scripts/test-package-assertion.sh",
+    "test:pinecone:live-gating": "bash scripts/test-live-pinecone-smoke-gating.sh",
     "test:provider:live-gating": "bash scripts/test-live-provider-smoke-gating.sh",
+    "test:qdrant:live-gating": "bash scripts/test-live-qdrant-smoke-gating.sh",
     "test:wp:activation": "bash scripts/test-wp-activation.sh",
     "test:wp:database": "bash scripts/test-wp-database.sh",
     "test:wp:file-ingestion": "bash scripts/test-wp-file-ingestion.sh",
@@ -54,7 +57,7 @@
     "test:wp:providers": "bash scripts/test-wp-providers.sh",
     "test:wp:woocommerce-knowledge": "bash scripts/test-wp-woocommerce-knowledge.sh",
     "typecheck": "tsc --noEmit",
-    "verify:js": "npm run check-engines && npm run lint:pkg && npm run lint:js && npm run typecheck && npm run test:js -- --runInBand && npm run build",
+    "verify:js": "npm run check-engines && npm run lint:pkg && npm run lint:js && npm run typecheck && npm run test:js -- --runInBand && npm run build && npm run test:pinecone:live-gating && npm run test:chroma:live-gating",
     "wp-env": "wp-env"
   }
 }

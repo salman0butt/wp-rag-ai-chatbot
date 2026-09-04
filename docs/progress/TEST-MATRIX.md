@@ -21,7 +21,7 @@ Status: ACTIVE — exact milestone evidence is recorded in each milestone ledger
 | Knowledge source contract | normalization and access metadata | M04 | M04-M06 + CI `php-quality`/`wordpress-smoke` |
 | Extractor security | type/size/parser failure controls | M05 | M05/M22 |
 | Chunking/indexing | boundaries/hash/dedup/incremental behavior | M07 | M07 |
-| Vector store contract | upsert/delete/search/filter/health | M08 | M08 |
+| Vector store contract | upsert/delete/search/filter/health | M08 | M08 + `docs/progress/M08-CLOSEOUT.md` |
 | Job queue | leases/retry/recovery/idempotency | M09 | M09 |
 | Retrieval quality | lexical/semantic/hybrid/filter/rerank | M10 | M10/M21 |
 | RAG grounding | strict no-answer/citations/memory | M11 | M11/M21 |
@@ -82,3 +82,19 @@ Task 7 integration candidate `aa246186a218efa7208403c36fecd051c6c143ee`, CI run 
 - **Dependency/static/permanent gates:** exact `aa246186...` run `33687296386` passed `php-quality`, `js-quality`, `wordpress-smoke`, and `package`; WordPress activation/database/provider/knowledge smoke all passed.
 
 Pre-integration artifact: ID `9868623773`, 75,709 bytes, digest `sha256:41f285035d298187635bfbfd9d9f8aff828003439384979503ba37e84b8b3fbf`.
+
+## M08 Verified Coverage — Feature Complete Candidate
+
+Exact Task 9 implementation head `3baef98b31d0d85cbde0c6cd130274645d489505`, CI `33929387362`:
+
+- `php-quality`: PHPStan 0 errors; PHPUnit 407/407, 1,866 assertions; Composer audit clean.
+- `js-quality`: lint/typecheck/Jest/build and permanent live-gating/package checks passed.
+- `package`: production install/build/ZIP/assertion passed; artifact ID `9957988866`, digest `sha256:6eb92f7b5d3502975263c9a62fb3be01d4fb8390a16a87147ee36302fc02fd9b`.
+- `wordpress-smoke`: activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge all passed.
+- Task 9 genuine RED `c356c65b9bad72346e139e1a1b7c76cfb6403b80` / CI `33928846507`: exactly three intended missing-integration errors after lint/static passed.
+- Task 9 review RED `de93fcc0045ece00cf5decea052953b2b33a2a11` / CI `33929269542`: exactly two intended failures for embedding provider/profile mismatch and unbounded delete work.
+- Whole-M08 review `5118637420`: Critical 0 / Important 0 unresolved; no unresolved inline review threads at review time.
+- Synthetic exact-artifact Task 9 benchmark: 1,000 upserts, 8 dimensions, batch 100, fake in-process provider/store; six measured runs 7.131–7.675 ms, median 7.399 ms; 10 provider batches, 1,000 writes. No network/database/vector-engine throughput claim is made.
+- Detailed security/performance/closeout evidence: `docs/progress/M08-CLOSEOUT.md`.
+
+The final documentation-head CI and post-merge `main` CI remain mandatory before M08 is marked complete on `main`.

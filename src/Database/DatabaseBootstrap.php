@@ -11,6 +11,8 @@ namespace WpRagAiChatbot\Database;
 
 use WpRagAiChatbot\Database\Migrations\V001CreateSourcesTable;
 use WpRagAiChatbot\Database\Migrations\V002CreateDocumentsTable;
+use WpRagAiChatbot\Database\Migrations\V003CreateVectorCollectionsTable;
+use WpRagAiChatbot\Database\Migrations\V004CreateVectorsTable;
 
 /**
  * Composes and executes database migrations at WordPress lifecycle boundaries.
@@ -67,6 +69,8 @@ final class DatabaseBootstrap {
 			array(
 				new V001CreateSourcesTable( $tables ),
 				new V002CreateDocumentsTable( $tables ),
+				new V003CreateVectorCollectionsTable( $tables ),
+				new V004CreateVectorsTable( $tables ),
 			)
 		);
 	}

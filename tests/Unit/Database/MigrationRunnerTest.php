@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Database;
 
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use WpRagAiChatbot\Database\DatabaseSchema;
 use WpRagAiChatbot\Database\MigrationLock;
 use WpRagAiChatbot\Database\MigrationRunner;
 use WpRagAiChatbot\Database\MigrationStatus;
@@ -82,7 +83,7 @@ final class MigrationRunnerTest extends TestCase {
 	public function test_returns_up_to_date_without_taking_lock(): void {
 		self::assertTrue( class_exists( MigrationRunner::class ), 'MigrationRunner must exist before migration behavior can pass.' );
 
-		$store = new FakeVersionStore( 2 );
+		$store = new FakeVersionStore( DatabaseSchema::VERSION );
 		$lock  = new FakeMigrationLock( true );
 		$log   = new MigrationLog();
 
@@ -120,7 +121,7 @@ final class MigrationRunnerTest extends TestCase {
 			 * Simulate another process completing migrations immediately before this process owns the lock.
 			 */
 			public function acquire(): bool {
-				$this->store->advanceExternally( 2 );
+				$this->store->advanceExternally( DatabaseSchema::VERSION );
 				return true;
 			}
 

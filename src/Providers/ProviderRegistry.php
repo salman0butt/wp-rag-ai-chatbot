@@ -13,7 +13,7 @@ use InvalidArgumentException;
 use OutOfBoundsException;
 
 /**
- * Maps stable provider IDs to generation and optional catalog adapters.
+ * Maps stable provider IDs to generation and optional capability adapters.
  */
 final class ProviderRegistry {
 	/**
@@ -31,14 +31,27 @@ final class ProviderRegistry {
 	private array $catalogs = array();
 
 	/**
+	 * Registered embedding providers keyed by stable provider ID.
+	 *
+	 * @var array<string, EmbeddingProvider>
+	 */
+	private array $embeddings = array();
+
+	/**
 	 * Register one provider.
 	 *
 	 * @param string                    $provider_id Stable provider identifier.
 	 * @param GenerationProvider        $provider Generation adapter.
 	 * @param ModelCatalogProvider|null $catalog Optional model catalog adapter.
+	 * @param EmbeddingProvider|null    $embedding Optional embedding adapter.
 	 * @throws InvalidArgumentException When the provider ID is duplicated or mismatched.
 	 */
-	public function register( string $provider_id, GenerationProvider $provider, ?ModelCatalogProvider $catalog = null ): void {
+	public function register(
+		string $provider_id,
+		GenerationProvider $provider,
+		?ModelCatalogProvider $catalog = null,
+		?EmbeddingProvider $embedding = null
+	): void {
 		if ( isset( $this->generation[ $provider_id ] ) ) {
 			throw new InvalidArgumentException( 'Provider is already registered.' );
 		}
@@ -48,10 +61,16 @@ final class ProviderRegistry {
 		if ( null !== $catalog && $provider_id !== $catalog->provider_id() ) {
 			throw new InvalidArgumentException( 'Model catalog provider ID mismatch.' );
 		}
+		if ( null !== $embedding && $provider_id !== $embedding->provider_id() ) {
+			throw new InvalidArgumentException( 'Embedding provider ID mismatch.' );
+		}
 
 		$this->generation[ $provider_id ] = $provider;
 		if ( null !== $catalog ) {
 			$this->catalogs[ $provider_id ] = $catalog;
+		}
+		if ( null !== $embedding ) {
+			$this->embeddings[ $provider_id ] = $embedding;
 		}
 	}
 
@@ -76,6 +95,15 @@ final class ProviderRegistry {
 	 */
 	public function catalog( string $provider_id ): ?ModelCatalogProvider {
 		return $this->catalogs[ $provider_id ] ?? null;
+	}
+
+	/**
+	 * Return an optional embedding provider.
+	 *
+	 * @param string $provider_id Stable provider identifier.
+	 */
+	public function embedding( string $provider_id ): ?EmbeddingProvider {
+		return $this->embeddings[ $provider_id ] ?? null;
 	}
 
 	/**
