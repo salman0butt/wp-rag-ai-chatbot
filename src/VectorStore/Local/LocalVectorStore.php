@@ -340,7 +340,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 * @param string $key Metadata key.
 	 */
 	private function json_path( string $key ): string {
-		return '$.”' . $key . '”';
+		return '$.' . '"' . $key . '"';
 	}
 
 	/**
