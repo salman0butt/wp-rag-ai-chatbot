@@ -80,7 +80,7 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 				return VectorStoreHealth::healthy();
 			}
 		} catch ( VectorStoreException ) {
-			// Health is represented as state rather than an exception.
+			return VectorStoreHealth::unhealthy( 'Qdrant is unavailable.' );
 		}
 
 		return VectorStoreHealth::unhealthy( 'Qdrant is unavailable.' );
@@ -96,7 +96,7 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		$this->assert_collection_profile( $record->collection );
 		$this->assert_remote_profile( $record->collection );
 
-		$payload = array_merge(
+		$payload  = array_merge(
 			array(
 				self::PAYLOAD_ID          => $record->id,
 				self::PAYLOAD_FINGERPRINT => $record->compatibility_fingerprint,
