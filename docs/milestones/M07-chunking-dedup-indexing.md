@@ -1,6 +1,6 @@
 # M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing
 
-Status: **IN PROGRESS — Tasks 1-6 complete; Task 7 localized chunk-count identity defect fixed, pending full exact-SHA JS verification and a fresh-session independent post-fix review.**
+Status: **CLOSEOUT IN PROGRESS — Tasks 1-6 complete; Task 7 implementation verified. Final durable-doc CI, independent closeout review, merge, and post-merge `main` verification remain.**
 
 ## Goal
 Create deterministic normalized content and chunks with traceability, compatibility-safe deduplication, and a pure-PHP incremental index plan that minimizes re-embedding without allowing stale lineage, structural identity, or security metadata.
@@ -18,10 +18,12 @@ M04-M06 source/document contracts.
 ## Acceptance criteria
 - Boundary fixtures are deterministic, including tiny and huge input.
 - Exact unchanged content produces zero index work.
-- Localized edits produce bounded embedding/upsert work instead of re-embedding downstream stable chunks.
-- Global sequence remains deterministic ordering metadata but does not destabilize chunk identity when an earlier section changes chunk count.
+- Localized edits produce bounded embedding/upsert work instead of re-embedding stable chunks outside the changed structural unit.
+- Global sequence remains deterministic ordering metadata only.
+- Changing chunk count in one section does not destabilize later byte-identical sections.
+- Inserting/removing an unrelated earlier heading does not destabilize later byte-identical section identity.
 - Stable chunks with document-wide lineage changes use explicit metadata-refresh work.
-- Repeated identical heading labels remain distinct structural parent instances while same-section chunks share one parent.
+- Repeated identical heading paths remain distinct structural parent instances while same-section chunks share one parent.
 - Dedup never crosses visibility, language, or embedding-compatibility boundaries.
 - Retrieved/source text remains untrusted literal data.
 - All public plan collections are deterministic.
@@ -33,7 +35,7 @@ M04-M06 source/document contracts.
 - [x] Task 4 — Deliberate bounded overlap. Final independent review `5107540703` clean.
 - [x] Task 5 — Compatibility-safe deduplication. Final independent review `5108150441` clean.
 - [x] Task 6 — Incremental index planning. Final independent review at `b2ef07e9b7d70626a30906f2648a577e8ce9e2e5` / CI `33827583643` clean.
-- [ ] Task 7 — Source-to-index-plan integration and milestone closeout. Current implementation fixes fresh independent review `5109627614`; fresh post-fix independent review remains mandatory.
+- [ ] Task 7 — Source-to-index-plan integration and milestone closeout. **Implementation verified; final durable-doc CI + independent closeout review + integration remain.**
 
 ## Task 7 integration contract
 `DocumentIndexPipeline` composes:
@@ -51,53 +53,67 @@ Fresh independent review `5109013876` found **0 Critical / 1 Important**: docume
 Fresh independent review `5109303824` found **0 Critical / 1 Important**: repeated identical headings could share a public structural parent key. Strict TDD produced RED `c67559f5f8f4f3ae6a7f90e9f5fe4611c3e6818f` / CI `33838410737`, then GREEN `a7e44261d5743db9759c131f2fa5b29cb42fead4` / CI `33838539319`, artifact `9924128495`, digest `sha256:0e39273a5e4df34f89cb838b1981994666423d0e9babcc7fe03855ec025f8910`. Structural parent hashes now include deterministic section-instance identity.
 
 ### Localized chunk-count identity
-Fresh-session independent Task 7 / whole-M07 review `5109627614` at `42a7a8e6e4f64e8b51fb7ea9185e1176a120c7b5` found:
+Fresh-session independent Task 7 / whole-M07 review `PRR_kwDOUK8kZs8AAAABMI663g` at `42a7a8e6e4f64e8b51fb7ea9185e1176a120c7b5` found **0 Critical / 1 Important**: `chunkKey` used document-global final sequence, so a changed early/middle section could renumber later stable identities.
 
-- **Critical: 0**
-- **Important: 1**
+- Genuine RED `ba5bda5e22cc5d164ae3fdbe41fd5bf9a717c9cc` / CI `33842200871`: PHPStan clean; PHPUnit **310 tests / 1434 assertions / exactly 1 intended failure**.
+- The fix keeps global `ChunkRecord::sequence` only for ordering and uses section-local chunk ordinals for stable identity.
 
-Finding: `chunkKey` included the document-global final `sequence`. If an edited early/middle section gained or lost a chunk, later byte-identical sections shifted sequence and therefore changed keys, causing unnecessary delete/upsert/re-embedding rather than bounded localized reuse.
+### Unrelated-heading insertion/removal identity
+Fresh-session independent Task 7 / whole-M07 review `PRR_kwDOUK8kZs8AAAABMJA_2Q` at `a13f6ff1edec5fc0df3c7a319343a1f4dcb24881` found **0 Critical / 1 Important**: a document-global section ordinal still changed later stable identities when an unrelated earlier heading was inserted/removed.
 
-Strict TDD evidence:
-- `c656164c34f3b37572a4b2a2f1e40f88cbee5bdb` / CI `33841997655`: invalid RED; PHPCS stopped before PHPUnit.
-- `098e06197dc64804011c379297002775d17aeba0` / CI `33842060013`: invalid RED; PHPCS still stopped before PHPUnit.
-- Genuine RED `ba5bda5e22cc5d164ae3fdbe41fd5bf9a717c9cc` / CI `33842200871`: production untouched; PHPStan **No errors**; PHPUnit **310 tests / 1434 assertions / exactly 1 intended failure** proving a later byte-identical Gamma section received a changed key after Beta gained a chunk.
-- Production `81202fe0351155ce151ebd5cc428e792d3d203c1`: introduced section-local chunk ordinals while retaining global sequence for ordering; CI stopped on PHPCS before behavior, so not GREEN evidence.
-- Formatting candidate `e15d95f3970b7350b99efc459a1c42293e3b16e4`: behavior passed the stable-key assertion but the new test used an outdated PHPUnit `assertNotContains` API, so CI `33842400244` is not GREEN evidence.
-- Corrected implementation/test head `a13f6ff1edec5fc0df3c7a319343a1f4dcb24881` / CI `33842525625`: PHPStan **No errors**; PHPUnit **310/310 tests / 1435 assertions**; Composer audit clean; `php-quality` ✅, `package` ✅, `wordpress-smoke` ✅. Artifact `9925441564`, digest `sha256:dbd1f32fdcc3948cfc363612b56b29523992e9643b747f3b33fc243e035655cb`. At this documentation handoff, `js-quality` remains inside external `npm audit --audit-level=critical` following npm-registry instability, so full-matrix GREEN is not yet claimed.
+- Genuine RED `7dfaae131323839317ceddddc357cf76649cecb3` / CI `33843112724`: PHPStan clean; PHPUnit **311 tests / 1439 assertions / exactly 1 intended failure**.
+- Final fix scopes the section occurrence ordinal to the same full structural heading path.
+- The dedicated integration regression verifies an unrelated inserted section does not change a later byte-identical section's `parentChunkKey`/`chunkKey` and does not add that stable chunk to `upsert`.
 
-## Current chunk identity contract
-- `ChunkRecord::sequence` is deterministic global ordering/presentation metadata.
-- `chunkKey` uses document key + chunking fingerprint + structural path + section instance + section-local chunk ordinal.
-- A chunk-count change inside one structural section therefore does not renumber the identities of later stable sections.
-- `parentChunkKey` remains section-instance-aware.
-- Content hashes still include the appropriate source/canonical/parent/content lineage.
+## Final chunk identity contract
+- `ChunkRecord::sequence` is deterministic global ordering/presentation metadata only.
+- Section-instance identity is based on full heading path plus deterministic occurrence ordinal scoped to that same heading path.
+- Stable `chunkKey` adds a section-local chunk ordinal.
+- Unrelated sibling heading insertions/removals therefore do not cascade identity churn.
+- Repeated identical heading paths are still distinct because their same-path occurrence ordinals differ.
+- `parentChunkKey` includes the stable section-instance identity.
+- Content hashes retain canonical/source/parent/content lineage as designed.
 
 ## Current index-plan contract
-The immutable plan exposes deterministic `upsert`, `metadataRefresh`, `deleteKeys`, `unchanged`, and duplicate -> canonical aliases. `metadataRefresh`, `upsert`, and `unchanged` are ordered deterministically; visibility/language/embedding compatibility remain hard boundaries.
+The immutable plan exposes deterministic `upsert`, `metadataRefresh`, `deleteKeys`, `unchanged`, and duplicate -> canonical aliases. Stable embedding/content identity with changed document-wide lineage routes to `metadataRefresh`; actual content/security/compatibility/indexed-metadata changes route to `upsert`.
 
 ## Security review
-M07 executes no retrieved/source content and performs no provider/network/credential/persistence/vector/queue/REST/hook/WordPress-runtime work. Prompt-like or markup-like source content remains literal data.
+M07 executes no retrieved/source content and performs no provider/network/credential/persistence/vector/queue/REST/hook/WordPress-runtime work. Prompt-like or markup-like source content remains literal data. Visibility/language/embedding compatibility remain hard boundaries.
+
+The JS critical-vulnerability gate remains enforced during the npm audit-service outage. The standalone audit endpoint is attempted with bounded retries; only a captured `npm ci` audit summary with no critical vulnerabilities is accepted as the outage fallback. Missing audit evidence or any critical result fails CI.
 
 ## Performance review
-Normalization/chunking stay bounded by configured limits. Dedup/planner comparison use expected O(n) map/set work plus bounded deterministic sorting. Section-local chunk identity prevents one section's chunk-count change from cascading re-embedding across later stable sections.
+Normalization/chunking stay bounded by configured limits. Dedup/planner comparison use expected O(n) map/set work plus bounded deterministic sorting. Stable section-local identity and same-path-scoped section occurrence identity prevent localized structural changes from cascading delete/upsert/re-embedding across unrelated downstream sections.
 
-## Active quality gate
-Task 7 / M07 is **not complete**. The run that performed fresh independent review `5109627614` also implemented the finding and therefore cannot provide the required independent post-fix approval. Exact implementation CI `33842525625` must also finish `js-quality` successfully, or any infrastructure-only npm failure must be rerun successfully.
+## Exact verified implementation evidence
+Feature head `c469d761217a1e1bdcf6438c364c661671889b69` / CI `33849180183`:
+
+- `php-quality` ✅ — PHPStan **No errors**; PHPUnit **311/311 / 1441 assertions**; Composer audit clean.
+- `js-quality` ✅ — install-time audit reports **36 vulnerabilities (26 moderate, 10 high, 0 critical)**; standalone audit endpoint unavailable; approved fail-closed outage fallback accepted the captured no-critical summary; JS lint/typecheck/test/build, provider live-gating, package assertion all pass.
+- `package` ✅.
+- `wordpress-smoke` ✅ — activation/database/providers/knowledge/file-ingestion/WooCommerce knowledge tests pass.
+- Artifact `9927780189`, digest `sha256:02e432b10e7191867603fae5260113cd2248567a6135bd378af6cef849975a03`.
+
+CI reliability commits used to preserve the security gate during the external npm audit outage:
+- `dac8dc46760114effb94f6524edbbef84a30b86e` — retry transient audit failures.
+- `35dba9209e5c716cf961a35e7455458aea723301` — bound retry latency.
+- `c469d761217a1e1bdcf6438c364c661671889b69` — preserve critical audit semantics using captured install-time audit evidence only as a transient-outage fallback.
 
 ## Completion checklist
-- [ ] Finish full exact-SHA CI for the localized chunk identity implementation.
-- [ ] Reconcile design/spec and implementation plan to the section-local identity contract where they still describe global sequence as key identity.
-- [ ] Verify the resulting durable documentation head with full permanent CI.
-- [ ] Fresh-session independent Task 7 / whole-M07 post-fix review: 0 unresolved Critical / Important findings.
-- [ ] Mark PR #9 ready only after the milestone is genuinely complete.
+- [x] Task 7 implementation behavior verified on exact SHA.
+- [x] Full implementation CI matrix green on `c469d761217a1e1bdcf6438c364c661671889b69` / `33849180183`.
+- [x] Security/performance/boundary review reconciled.
+- [ ] Verify final durable documentation head with full permanent CI.
+- [ ] Final independent Task 7 / whole-M07 closeout review: 0 unresolved Critical / Important findings.
+- [ ] Mark Task 7/M07 complete and PR #9 ready.
 - [ ] Verify exact final PR head with the full permanent CI matrix.
 - [ ] Merge using exact expected head SHA.
 - [ ] Verify fresh post-merge `main` CI.
+- [ ] Record durable closeout evidence on `main` and verify its exact CI.
 - [ ] Only then begin M08.
 
 ## Exact next unfinished action
-Finish exact-SHA JS verification for the localized chunk identity implementation, reconcile the M07 design/spec/plan and PR body to this contract, verify that durable head, then obtain a **new fresh-session independent Task 7 / whole-M07 post-fix review**. Only a clean review may unlock M07 completion/merge.
+Verify the reconciled durable documentation head, obtain the final clean independent Task 7 / whole-M07 closeout review, then complete PR #9 integration and post-merge `main` verification.
 
 ## Next milestone
 M08 — Embeddings & Vector Stores.
