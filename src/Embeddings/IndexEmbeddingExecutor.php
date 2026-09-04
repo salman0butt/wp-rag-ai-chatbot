@@ -56,9 +56,6 @@ final class IndexEmbeddingExecutor {
 		$fingerprint = $this->collection->profile->fingerprint();
 		$upserts     = array();
 		foreach ( $plan->upsert as $chunk ) {
-			if ( ! $chunk instanceof ChunkRecord ) {
-				throw new InvalidArgumentException( 'Index plan upserts must contain chunk records.' );
-			}
 			if ( null !== $chunk->embeddingCompatibilityKey && ! hash_equals( $fingerprint, $chunk->embeddingCompatibilityKey ) ) {
 				throw new InvalidArgumentException( 'Chunk embedding compatibility does not match the selected vector collection.' );
 			}
@@ -75,7 +72,7 @@ final class IndexEmbeddingExecutor {
 		}
 
 		foreach ( $plan->deleteKeys as $delete_key ) {
-			if ( ! is_string( $delete_key ) || 1 !== preg_match( '/^[A-Za-z0-9][A-Za-z0-9._:-]{0,191}$/', $delete_key ) ) {
+			if ( 1 !== preg_match( '/^[A-Za-z0-9][A-Za-z0-9._:-]{0,191}$/', $delete_key ) ) {
 				throw new InvalidArgumentException( 'Index plan delete key is invalid.' );
 			}
 		}
