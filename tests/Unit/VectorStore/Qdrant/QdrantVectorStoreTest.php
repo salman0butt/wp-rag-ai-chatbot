@@ -28,9 +28,7 @@ use WpRagAiChatbot\VectorStore\VectorStoreException;
  * Verifies offline Qdrant adapter behavior and network boundaries.
  */
 final class QdrantVectorStoreTest extends TestCase {
-	/**
-	 * Qdrant endpoints must be administrator-owned HTTPS origins.
-	 */
+	/** Qdrant endpoints must be administrator-owned HTTPS origins. */
 	public function test_config_rejects_unsafe_endpoints(): void {
 		$class = 'WpRagAiChatbot\\VectorStore\\Qdrant\\QdrantConfig';
 		self::assertTrue( class_exists( $class ), 'QdrantConfig must exist.' );
@@ -44,9 +42,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		}
 	}
 
-	/**
-	 * Upsert must use a deterministic Qdrant UUID while preserving plugin identity.
-	 */
+	/** Upsert must use a deterministic Qdrant UUID while preserving plugin identity. */
 	public function test_upsert_maps_stable_id_vector_metadata_and_secret_header(): void {
 		$transport  = new QdrantFakeTransport( array( $this->compatible_collection_response(), new HttpResponse( 200, array(), '{"status":"ok"}' ) ) );
 		$store      = $this->store( $transport );
@@ -71,9 +67,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( 'en', $request->json_body['points'][0]['payload']['lang'] ?? null );
 	}
 
-	/**
-	 * Delete must derive the same Qdrant UUID as upsert for the stable plugin ID.
-	 */
+	/** Delete must derive the same Qdrant UUID as upsert for the stable plugin ID. */
 	public function test_delete_is_collection_scoped_and_uses_stable_uuid_mapping(): void {
 		$transport  = new QdrantFakeTransport( array( $this->compatible_collection_response(), new HttpResponse( 200, array(), '{"status":"ok"}' ), $this->compatible_collection_response(), new HttpResponse( 200, array(), '{"status":"ok"}' ) ) );
 		$store      = $this->store( $transport );
@@ -89,9 +83,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertStringContainsString( $this->physical_collection_path() . '/points/delete', $transport->requests[3]->url );
 	}
 
-	/**
-	 * Search must use the current query API and map portable filters/results.
-	 */
+	/** Search must use the current query API and map portable filters/results. */
 	public function test_search_maps_portable_filter_top_k_and_results(): void {
 		$collection = $this->collection();
 		$body       = '{"result":{"points":[{"id":"936da01f-9abd-5d9d-80c7-02af85c822a8","score":0.9,"payload":{"_wp_rag_id":"chunk:2","_wp_rag_fingerprint":"' . $collection->profile->fingerprint() . '","lang":"en"}}]}}';
@@ -114,9 +106,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( '_wp_rag_fingerprint', $query_request->json_body['filter']['must'][0]['key'] ?? null );
 	}
 
-	/**
-	 * Search results are untrusted and must match the requested compatibility profile.
-	 */
+	/** Search results are untrusted and must match the requested compatibility profile. */
 	public function test_search_rejects_mismatched_response_fingerprint(): void {
 		$body       = '{"result":{"points":[{"id":"936da01f-9abd-5d9d-80c7-02af85c822a8","score":0.9,"payload":{"_wp_rag_id":"chunk:2","_wp_rag_fingerprint":"wrong-profile","lang":"en"}}]}}';
 		$transport  = new QdrantFakeTransport( array( $this->compatible_collection_response(), new HttpResponse( 200, array(), $body ) ) );
@@ -129,9 +119,23 @@ final class QdrantVectorStoreTest extends TestCase {
 		$store->search( $request );
 	}
 
-	/**
-	 * Collection profile mismatch must fail before any network call.
-	 */
+	/** Search results must not exceed the caller's bounded top-K contract. */
+	public function test_search_rejects_response_exceeding_top_k(): void {
+		$collection  = $this->collection();
+		$fingerprint = $collection->profile->fingerprint();
+		$body        = '{"result":{"points":['
+			. '{"id":"936da01f-9abd-5d9d-80c7-02af85c822a8","score":0.9,"payload":{"_wp_rag_id":"chunk:1","_wp_rag_fingerprint":"' . $fingerprint . '"}},'
+			. '{"id":"550e8400-e29b-51d4-a716-446655440000","score":0.8,"payload":{"_wp_rag_id":"chunk:2","_wp_rag_fingerprint":"' . $fingerprint . '"}}]}}';
+		$transport   = new QdrantFakeTransport( array( $this->compatible_collection_response(), new HttpResponse( 200, array(), $body ) ) );
+		$store       = $this->store( $transport );
+		$request     = new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 1, $fingerprint );
+
+		$this->expectException( VectorStoreException::class );
+		$this->expectExceptionMessage( 'Qdrant search response is invalid.' );
+		$store->search( $request );
+	}
+
+	/** Collection profile mismatch must fail before any network call. */
 	public function test_adapter_does_not_send_when_collection_profile_differs_from_config(): void {
 		$transport = new QdrantFakeTransport( array() );
 		$store     = $this->store( $transport );
@@ -144,9 +148,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		}
 	}
 
-	/**
-	 * Remote collection dimensions/metric must match before writes execute.
-	 */
+	/** Remote collection dimensions/metric must match before writes execute. */
 	public function test_adapter_rejects_incompatible_remote_collection_before_write(): void {
 		$bad        = new HttpResponse( 200, array(), '{"result":{"config":{"params":{"vectors":{"size":3,"distance":"Cosine"}}}}}' );
 		$transport  = new QdrantFakeTransport( array( $bad ) );
@@ -160,9 +162,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		}
 	}
 
-	/**
-	 * External response bodies and credentials must not leak through normalized errors.
-	 */
+	/** External response bodies and credentials must not leak through normalized errors. */
 	public function test_external_failure_is_sanitized(): void {
 		$transport  = new QdrantFakeTransport( array( $this->compatible_collection_response(), new HttpResponse( 500, array(), 'opaque-secret-provider-body' ) ) );
 		$store      = $this->store( $transport );
@@ -177,9 +177,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		}
 	}
 
-	/**
-	 * Explicit health checks may perform one bounded remote request.
-	 */
+	/** Explicit health checks may perform one bounded remote request. */
 	public function test_health_uses_bounded_health_endpoint(): void {
 		$transport = new QdrantFakeTransport( array( new HttpResponse( 200, array(), '"healthz check passed"' ) ) );
 		$health    = $this->store( $transport )->health();
@@ -191,11 +189,7 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( 0, $transport->requests[0]->redirection );
 	}
 
-	/**
-	 * Create the adapter under test using only offline dependencies.
-	 *
-	 * @param QdrantFakeTransport $transport Fake single-send transport.
-	 */
+	/** Create the adapter under test using only offline dependencies. */
 	private function store( QdrantFakeTransport $transport ): object {
 		$config_class = 'WpRagAiChatbot\\VectorStore\\Qdrant\\QdrantConfig';
 		$store_class  = 'WpRagAiChatbot\\VectorStore\\Qdrant\\QdrantVectorStore';
@@ -204,23 +198,17 @@ final class QdrantVectorStoreTest extends TestCase {
 		return new $store_class( new $config_class( 'https://qdrant.example.test', 'secret' ), $this->collection()->profile, $transport );
 	}
 
-	/**
-	 * Return the compatible collection fixture.
-	 */
+	/** Return the compatible collection fixture. */
 	private function collection(): VectorCollection {
 		return new VectorCollection( 'docs', new VectorIndexProfile( new EmbeddingProfile( 'openai-direct', 'model', 2, NormalizationMode::NONE ), DistanceMetric::COSINE ) );
 	}
 
-	/**
-	 * Return the expected profile-isolated Qdrant collection path.
-	 */
+	/** Return the expected profile-isolated Qdrant collection path. */
 	private function physical_collection_path(): string {
 		return '/collections/docs-' . substr( $this->collection()->profile->fingerprint(), 0, 16 );
 	}
 
-	/**
-	 * Return Qdrant collection metadata matching the configured index profile.
-	 */
+	/** Return Qdrant collection metadata matching the configured index profile. */
 	private function compatible_collection_response(): HttpResponse {
 		return new HttpResponse( 200, array(), '{"result":{"config":{"params":{"vectors":{"size":2,"distance":"Cosine"}}}}}' );
 	}
