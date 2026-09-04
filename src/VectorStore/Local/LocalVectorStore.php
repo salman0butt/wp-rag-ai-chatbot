@@ -143,11 +143,15 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 *
 	 * @param VectorCollection $collection Collection boundary.
 	 * @param string           $id Stable record ID.
-	 * @throws VectorStoreException When the ID is invalid or persistence fails.
+	 * @throws VectorStoreException When the ID is invalid, profile is incompatible, or persistence fails.
 	 */
 	public function delete( VectorCollection $collection, string $id ): VectorWriteResult {
 		if ( 1 !== preg_match( '/^[A-Za-z0-9][A-Za-z0-9._:-]{0,191}$/', $id ) ) {
 			throw new VectorStoreException( VectorStoreErrorCode::INVALID_REQUEST, 'Local vector record ID is invalid.' );
+		}
+
+		if ( ! $this->assert_persisted_collection_compatible( $collection ) ) {
+			return new VectorWriteResult( false );
 		}
 
 		$result = $this->connection->delete(
