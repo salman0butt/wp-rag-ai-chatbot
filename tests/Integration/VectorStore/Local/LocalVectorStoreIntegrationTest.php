@@ -34,6 +34,7 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 		$connection  = new ScriptedLocalVectorConnection();
 		$collection  = $this->collection( 'docs' );
 		$fingerprint = $collection->profile->fingerprint();
+
 		$connection->row_results[] = array(
 			'fingerprint' => $fingerprint,
 			'dimensions'  => 2,
@@ -79,6 +80,7 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 		$connection  = new ScriptedLocalVectorConnection();
 		$collection  = $this->collection( 'docs' );
 		$fingerprint = $collection->profile->fingerprint();
+
 		$connection->row_results[] = array(
 			'fingerprint' => $fingerprint,
 			'dimensions'  => 2,
@@ -116,15 +118,18 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 		$connection  = new ScriptedLocalVectorConnection();
 		$collection  = $this->collection( 'docs' );
 		$fingerprint = $collection->profile->fingerprint();
+
 		$connection->row_results[] = array(
 			'fingerprint' => $fingerprint,
 			'dimensions'  => 2,
 		);
+
 		$connection->row_results[] = array(
 			'vector_json'   => '[0,1]',
 			'metadata_json' => '{"language":"en"}',
 			'fingerprint'   => $fingerprint,
 		);
+
 		$connection->delete_results = array( 1, 0 );
 
 		$store = $this->store( $connection, 10, 5 );
@@ -156,6 +161,7 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 	public function test_incompatible_persisted_collection_fails_before_operation(): void {
 		$connection = new ScriptedLocalVectorConnection();
 		$collection = $this->collection( 'docs' );
+
 		$connection->row_results[] = array(
 			'fingerprint' => str_repeat( '0', 64 ),
 			'dimensions'  => 2,
