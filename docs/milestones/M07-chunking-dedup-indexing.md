@@ -1,6 +1,6 @@
 # M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing
 
-Status: **IN PROGRESS — Tasks 1-5 complete; Task 6 implementation GREEN, pending fresh-session independent review.**
+Status: **IN PROGRESS — Tasks 1-5 complete; Task 6 implementation GREEN after metadata invalidation review fix, pending fresh-session independent re-review.**
 
 ## Goal
 Create deterministic normalized content/chunks with traceability, deduplication, hashes, and incremental reindex decisions.
@@ -36,7 +36,7 @@ Actual embeddings/vector upserts (M08), async execution engine (M09).
 - [x] Task 3 — Immutable chunk records and structure-aware splitting. **Complete: corrected genuine RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [x] Task 4 — Deliberate bounded overlap. **Complete after three independent-review fixes and final clean fresh-session re-review `5107540703`.**
 - [x] Task 5 — Compatibility-safe deduplication. **Complete after deterministic-output fix and clean fresh-session re-review `5108150441`.**
-- [ ] Task 6 — Incremental index planning. **Implementation GREEN after visibility-boundary review fix; fresh-session independent review pending.**
+- [ ] Task 6 — Incremental index planning. **Implementation GREEN after visibility and metadata/lineage review fixes; fresh-session independent re-review pending.**
 - [ ] Task 7 — Source-to-index-plan integration and milestone closeout.
 
 ## Completed task evidence
@@ -98,20 +98,27 @@ Comparison uses chunk-key maps for expected O(n) set comparison; public presenta
 - Corrected genuine RED `ad550672552b54afcf2d6ef05ee72729a3f4c0cf` / CI `33823467764`: PHPStan **No errors**; PHPUnit **300 tests / 1373 assertions / exactly 8 intended failures**, all because the planner contract did not exist.
 - Initial production candidate `60721e4af7dcd05479a22f27118e74b085deafc4` added `IndexPlan` and `IncrementalIndexPlanner`; its initial CI was not accepted as final GREEN because PHP quality was not yet clean.
 
-### Review finding and strict fix
+### Visibility review finding and strict fix
 - Same-session review `5108179436`: **0 Critical / 1 Important** — a current chunk could keep the same key/content hash while changing `visibility`, causing a `public -> private` transition to be classified `unchanged` and risking stale access metadata downstream.
-- Regression attempt `1233ea599f882d36f398f6c524ec655cec24c6e8` / CI `33823740164` and style follow-up `371222f7d481fb29b780276e6ef07414cec92e92` / CI `33823791538` are **not valid RED evidence** because PHPCS stopped before PHPUnit.
-- Corrected genuine privacy RED `9e8bdbd7109ea77cdefba5ac8f369c228dd5317b` / CI `33823898874`: PHPStan **No errors**; PHPUnit **301 tests / 1390 assertions / exactly 1 intended failure**, specifically proving a visibility change was incorrectly placed in `unchanged`.
-- GREEN `508901561e2a3119edb251b2537897880851276f` — reuse requires matching `contentHash`, `chunkingFingerprint`, `embeddingCompatibilityKey`, and `visibility`.
-- Exact-SHA CI `33823962753`: first `js-quality` attempt hit the retiring npm audit quick endpoint with HTTP 400; the same unchanged exact-SHA job was retried and passed. Final permanent matrix: `php-quality` ✅, `js-quality` ✅, `package` ✅, `wordpress-smoke` ✅; PHPStan **No errors**; PHPUnit **301/301 / 1391 assertions**; Composer audit clean.
+- Regression attempts `1233ea599f882d36f398f6c524ec655cec24c6e8` / CI `33823740164` and `371222f7d481fb29b780276e6ef07414cec92e92` / CI `33823791538` are **not valid RED evidence** because PHPCS stopped before PHPUnit.
+- Corrected genuine privacy RED `9e8bdbd7109ea77cdefba5ac8f369c228dd5317b` / CI `33823898874`: PHPStan **No errors**; PHPUnit **301 tests / 1390 assertions / exactly 1 intended failure**.
+- Visibility GREEN `508901561e2a3119edb251b2537897880851276f`; CI `33823962753`: final matrix green after retrying one transient npm audit endpoint failure without source changes; PHPUnit **301/301 / 1391 assertions**; Composer audit clean.
 - Artifact `9919277309`, digest `sha256:01760ebd1e7dbd9f48e1a0fab7f936e15ce53159b9528bfb8aaa0cce8edfdd50`.
-- Same-session post-fix review `5108240331`: **0 Critical / 0 Important unresolved**, explicitly not independent because this session implemented and fixed Task 6.
+- Same-session post-fix review `5108240331`: **0 Critical / 0 Important unresolved**, explicitly not independent.
+
+### Fresh independent metadata review and strict fix
+- Fresh-session independent review `5108289931`: **0 Critical / 1 Important** — reuse still omitted language and indexed/citation metadata. A stable key/content chunk could change language, title, source version/document hash, or source metadata yet remain `unchanged`, preserving stale index/citation records.
+- Genuine test-only metadata RED `9523adb6362de793d1ed7283c5f006bfb4c09aab` / CI `33825278282`: PHPStan **No errors**; PHPUnit **303 tests / 1393 assertions / exactly 2 intended failures**, specifically language and title/source-metadata invalidation.
+- Metadata GREEN `9c5a3ecce96bbd3f5bd37647949b67c32b436963` — reuse now requires unchanged content hash, document type, title, source version, document content hash, language, visibility, chunking fingerprint, embedding compatibility key, and canonically hashed source metadata. Canonical URL/source/structural changes remain represented by content hash or chunk-key identity.
+- Exact-SHA CI `33825367919`: `php-quality` ✅, `js-quality` ✅, `package` ✅, `wordpress-smoke` ✅; PHPStan **No errors**; PHPUnit **303/303 / 1395 assertions**; Composer audit clean.
+- Artifact `9919760984`, digest `sha256:f0abedd88e5bc6e3f00e1f6730a5388cb993adf7f167ab0bc390be6a543e2098`.
+- Same-session post-fix review `5108316220`: **0 Critical / 0 Important unresolved**, explicitly not independent because this session discovered and implemented the fix.
 
 ## Security Review
-Tasks 1-6 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, or add queue/REST/hook execution paths. Task 5 prevents cross-privacy/cross-language/cross-embedding-space canonical sharing, and Task 6 explicitly treats visibility changes as an index-work boundary rather than reusing stale public/private state.
+Tasks 1-6 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, or add queue/REST/hook execution paths. Task 5 prevents cross-privacy/cross-language/cross-embedding-space canonical sharing, and Task 6 treats visibility, language, and indexed/citation metadata changes as index-work boundaries rather than reusing stale state.
 
 ## Performance Review
-Dedup and incremental comparison use hash maps for expected O(n) grouping/set comparison. Deterministic result presentation adds bounded sorting of emitted result collections. No whole-document quadratic duplicate or planner comparison is introduced.
+Dedup and incremental comparison use hash maps for expected O(n) grouping/set comparison. Task 6 hashes source metadata canonically per same-key comparison and deterministic result presentation adds bounded sorting of emitted result collections. No whole-document quadratic duplicate or planner comparison is introduced.
 
 ## Code Review Findings
 - Task 1 independent review `5104488263`: **0 Critical / 0 Important unresolved**.
@@ -120,22 +127,24 @@ Dedup and incremental comparison use hash maps for expected O(n) grouping/set co
 - Task 4 final independent re-review `5107540703`: **0 Critical / 0 Important unresolved**.
 - Task 5 final independent re-review `5108150441`: **0 Critical / 0 Important unresolved**.
 - Task 6 same-session review `5108179436`: **0 Critical / 1 Important**, visibility planning boundary; fixed through strict RED/GREEN.
-- Task 6 same-session post-fix review `5108240331`: **0 Critical / 0 Important unresolved**, not independent.
+- Task 6 same-session post-visibility review `5108240331`: **0 Critical / 0 Important unresolved**, not independent.
+- Task 6 fresh-session independent review `5108289931`: **0 Critical / 1 Important**, language/indexed-metadata reuse boundary; fixed through strict RED/GREEN.
+- Task 6 same-session post-metadata-fix review `5108316220`: **0 Critical / 0 Important unresolved**, not independent.
 
 ## Active quality gate
-Task 6 is not complete until a **new fresh-session independent review** inspects GREEN `508901561e2a3119edb251b2537897880851276f` / CI `33823962753` and records **0 unresolved Critical / Important findings**.
+Task 6 is not complete until a **new fresh-session independent re-review** inspects metadata GREEN `9c5a3ecce96bbd3f5bd37647949b67c32b436963` / CI `33825367919` and records **0 unresolved Critical / Important findings**.
 
-The next independent reviewer must verify exact no-op/minimal-work behavior; additions/deletions/localized changes; chunking and embedding compatibility invalidation; visibility privacy boundary; deterministic output ordering; duplicate-alias propagation/direction/order; caller immutability; bounded performance; and absence of M08/M09/provider/network/persistence/vector/WordPress execution scope leakage. Task 7 must not begin before this gate closes.
+The next reviewer must verify exact no-op/minimal-work behavior; additions/deletions/localized changes; chunking and embedding compatibility invalidation; visibility and language boundaries; citation/index metadata invalidation; associative metadata key-order stability; deterministic output ordering; duplicate-alias propagation/direction/order; caller immutability; bounded performance; and absence of M08/M09/provider/network/persistence/vector/WordPress execution scope leakage. Task 7 must not begin before this gate closes.
 
 ## Known Limitations
 - Provider/model-exact tokenization remains intentionally deferred/injectable for M08.
 - End-to-end source-to-index-plan pipeline composition remains Task 7.
 
 ## Exact next unfinished action
-Perform a **fresh-session independent review of Task 6** anchored to GREEN `508901561e2a3119edb251b2537897880851276f` / CI `33823962753`. If that review records 0 unresolved Critical/Important findings, mark Task 6 complete and only then begin **Task 7 — Source-to-index-plan integration and milestone closeout** with genuine test-first evidence.
+Perform a **fresh-session independent re-review of Task 6** anchored to metadata GREEN `9c5a3ecce96bbd3f5bd37647949b67c32b436963` / CI `33825367919`. If that review records 0 unresolved Critical/Important findings, mark Task 6 complete and only then begin **Task 7 — Source-to-index-plan integration and milestone closeout** with genuine test-first evidence.
 
 ## Completion Checklist
-All remaining mandatory gates remain required before M07 completion: Task 6 independent review, Task 7 genuine TDD and independent review, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
+All remaining mandatory gates remain required before M07 completion: Task 6 independent re-review, Task 7 genuine TDD and independent review, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
 
 ## Next Milestone
 M08 — Embeddings & Vector Stores.
