@@ -130,11 +130,11 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 			'fingerprint'   => $fingerprint,
 		);
 
-		$connection->row_results[] = array(
+		$connection->row_results[]  = array(
 			'fingerprint' => $fingerprint,
 			'dimensions'  => 2,
 		);
-		$connection->row_results[] = array(
+		$connection->row_results[]  = array(
 			'fingerprint' => $fingerprint,
 			'dimensions'  => 2,
 		);
