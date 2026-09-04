@@ -102,9 +102,9 @@ final class EmbeddingContractsTest extends TestCase {
 		$zero    = EmbeddingUsage::input_tokens( 0 );
 
 		self::assertFalse( $unknown->known );
-		self::assertNull( $unknown->inputTokens );
+		self::assertNull( $unknown->input_tokens );
 		self::assertTrue( $zero->known );
-		self::assertSame( 0, $zero->inputTokens );
+		self::assertSame( 0, $zero->input_tokens );
 	}
 
 	/**
