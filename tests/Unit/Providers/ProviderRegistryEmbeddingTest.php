@@ -63,20 +63,38 @@ final class ProviderRegistryEmbeddingTest extends TestCase {
 
 	/**
 	 * Build a generation provider test double.
+	 *
+	 * @param string $provider_id Stable test provider ID.
 	 */
 	private function generation_provider( string $provider_id ): GenerationProvider {
 		return new class( $provider_id ) implements GenerationProvider {
+			/**
+			 * Store the stable provider ID.
+			 *
+			 * @param string $id Stable provider ID.
+			 */
 			public function __construct( private readonly string $id ) {
 			}
 
+			/**
+			 * Return the stable provider ID.
+			 */
 			public function provider_id(): string {
 				return $this->id;
 			}
 
+			/**
+			 * Test double is always available.
+			 */
 			public function available(): bool {
 				return true;
 			}
 
+			/**
+			 * Generation is outside this registry test.
+			 *
+			 * @param GenerationRequest $request Unused request.
+			 */
 			public function generate( GenerationRequest $request ): GenerationResult {
 				throw new \LogicException( 'Not used by this test.' );
 			}
@@ -85,20 +103,38 @@ final class ProviderRegistryEmbeddingTest extends TestCase {
 
 	/**
 	 * Build an embedding provider test double.
+	 *
+	 * @param string $provider_id Stable test provider ID.
 	 */
 	private function embedding_provider( string $provider_id ): EmbeddingProvider {
 		return new class( $provider_id ) implements EmbeddingProvider {
+			/**
+			 * Store the stable provider ID.
+			 *
+			 * @param string $id Stable provider ID.
+			 */
 			public function __construct( private readonly string $id ) {
 			}
 
+			/**
+			 * Return the stable provider ID.
+			 */
 			public function provider_id(): string {
 				return $this->id;
 			}
 
+			/**
+			 * Test double is always available.
+			 */
 			public function available(): bool {
 				return true;
 			}
 
+			/**
+			 * Embedding execution is outside this registry test.
+			 *
+			 * @param EmbeddingRequest $request Unused request.
+			 */
 			public function embed( EmbeddingRequest $request ): EmbeddingResult {
 				throw new \LogicException( 'Not used by this test.' );
 			}
