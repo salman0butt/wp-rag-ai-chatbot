@@ -97,12 +97,13 @@ final class DocumentIndexPipelineTest extends TestCase {
 		$repeat = $pipeline->plan( $document, $initial->canonicalChunks );
 
 		self::assertSame( array(), $repeat->indexPlan->upsert );
+		self::assertSame( array(), $repeat->indexPlan->metadataRefresh );
 		self::assertSame( array(), $repeat->indexPlan->deleteKeys );
 		self::assertSame( $repeat->canonicalChunks, $repeat->indexPlan->unchanged );
 	}
 
 	/**
-	 * Editing one structural section keeps unrelated chunks reusable despite document-wide version/hash churn.
+	 * Editing one structural section keeps stable embeddings reusable while refreshing fresh document lineage.
 	 */
 	public function test_localized_section_change_produces_bounded_affected_work(): void {
 		$this->requirePipeline();
@@ -126,7 +127,7 @@ final class DocumentIndexPipelineTest extends TestCase {
 		$changed = $pipeline->plan( $after, $initial->canonicalChunks );
 
 		self::assertNotEmpty( $changed->indexPlan->upsert );
-		self::assertNotEmpty( $changed->indexPlan->unchanged );
+		self::assertNotEmpty( $changed->indexPlan->metadataRefresh );
 		self::assertLessThan( count( $changed->canonicalChunks ), count( $changed->indexPlan->upsert ) );
 	}
 
