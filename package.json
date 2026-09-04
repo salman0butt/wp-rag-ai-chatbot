@@ -47,6 +47,7 @@
     "test:js": "wp-scripts test-unit-js",
     "test:package:assertion": "bash scripts/test-package-assertion.sh",
     "test:provider:live-gating": "bash scripts/test-live-provider-smoke-gating.sh",
+    "test:qdrant:live-gating": "bash scripts/test-live-qdrant-smoke-gating.sh",
     "test:wp:activation": "bash scripts/test-wp-activation.sh",
     "test:wp:database": "bash scripts/test-wp-database.sh",
     "test:wp:file-ingestion": "bash scripts/test-wp-file-ingestion.sh",
