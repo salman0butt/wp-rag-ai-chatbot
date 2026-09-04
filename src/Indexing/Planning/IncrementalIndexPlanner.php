@@ -20,7 +20,7 @@ final class IncrementalIndexPlanner {
 	/**
 	 * Build the minimum deterministic index work required for current chunks.
 	 *
-	 * @param array<int, ChunkRecord>    $previousChunks Previous canonical chunks.
+	 * @param array<int, ChunkRecord>  $previousChunks Previous canonical chunks.
 	 * @param ChunkDeduplicationResult $current Current deduplicated chunks.
 	 */
 	public function plan( array $previousChunks, ChunkDeduplicationResult $current ): IndexPlan {
