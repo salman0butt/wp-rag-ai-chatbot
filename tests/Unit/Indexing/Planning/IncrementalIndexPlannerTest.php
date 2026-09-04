@@ -182,6 +182,12 @@ final class IncrementalIndexPlannerTest extends TestCase {
 
 	/**
 	 * Build one immutable chunk fixture with a stable key independent of change dimensions.
+	 *
+	 * @param string      $id Stable fixture identifier.
+	 * @param int         $sequence Deterministic chunk sequence.
+	 * @param string      $content Chunk content.
+	 * @param string      $chunkingFingerprint Chunking compatibility fixture value.
+	 * @param string|null $embeddingCompatibilityKey Embedding compatibility fixture value.
 	 */
 	private function chunk(
 		string $id,
