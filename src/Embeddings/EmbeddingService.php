@@ -105,7 +105,8 @@ final class EmbeddingService {
 			throw $this->malformed_response();
 		}
 
-		$ordered = array_fill( 0, $expected_count, null );
+		$ordered          = array_fill( 0, $expected_count, null );
+		$batch_dimensions = $expected_dimensions;
 		foreach ( $result->vectors as $vector ) {
 			if ( $vector->index >= $expected_count || null !== $ordered[ $vector->index ] ) {
 				throw $this->malformed_response();
@@ -115,7 +116,9 @@ final class EmbeddingService {
 			if ( null !== $requested_dimensions && $vector_dimensions !== $requested_dimensions ) {
 				throw $this->malformed_response();
 			}
-			if ( null !== $expected_dimensions && $vector_dimensions !== $expected_dimensions ) {
+			if ( null === $batch_dimensions ) {
+				$batch_dimensions = $vector_dimensions;
+			} elseif ( $vector_dimensions !== $batch_dimensions ) {
 				throw $this->malformed_response();
 			}
 
