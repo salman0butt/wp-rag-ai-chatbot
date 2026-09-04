@@ -205,7 +205,7 @@ final class ChromaVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		$fingerprint = is_array( $metadata ) ? ( $metadata[ self::METADATA_FINGERPRINT ] ?? null ) : null;
 		$space       = is_array( $config ) && is_array( $config['hnsw'] ?? null ) ? ( $config['hnsw']['space'] ?? null ) : null;
 		if (
-			! is_string( $id ) || 1 !== preg_match( '/^[A-Fa-f0-9-]{36}$/', $id ) ||
+			! is_string( $id ) || 1 !== preg_match( '/^[A-Fa-f0-9]{8}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{4}-[A-Fa-f0-9]{12}$/', $id ) ||
 			! is_string( $name ) || $this->physical_collection_name( $collection ) !== $name ||
 			! is_string( $tenant ) || $this->config->tenant !== $tenant ||
 			! is_string( $database ) || $this->config->database !== $database ||
