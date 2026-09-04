@@ -31,9 +31,9 @@ final class EmbeddingServiceTest extends TestCase {
 	public function test_embed_batches_deterministically_and_restores_global_order(): void {
 		$provider = new RecordingEmbeddingProvider(
 			array(
-				$this->result( array( array( 0.1, 0.2 ), array( 0.3, 0.4 ) ), 4 ),
-				$this->result( array( array( 0.5, 0.6 ), array( 0.7, 0.8 ) ), 5 ),
-				$this->result( array( array( 0.9, 1.0 ) ), 2 ),
+				$this->embedding_result( array( array( 0.1, 0.2 ), array( 0.3, 0.4 ) ), 4 ),
+				$this->embedding_result( array( array( 0.5, 0.6 ), array( 0.7, 0.8 ) ), 5 ),
+				$this->embedding_result( array( array( 0.9, 1.0 ) ), 2 ),
 			)
 		);
 		$service  = new EmbeddingService( $provider, new EmbeddingBatchConfig( 2 ) );
@@ -58,8 +58,8 @@ final class EmbeddingServiceTest extends TestCase {
 	public function test_embed_preserves_unknown_usage_when_any_batch_is_unknown(): void {
 		$provider = new RecordingEmbeddingProvider(
 			array(
-				$this->result( array( array( 0.1 ), array( 0.2 ) ), 3 ),
-				$this->result( array( array( 0.3 ) ), null ),
+				$this->embedding_result( array( array( 0.1 ), array( 0.2 ) ), 3 ),
+				$this->embedding_result( array( array( 0.3 ) ), null ),
 			)
 		);
 		$result   = ( new EmbeddingService( $provider, new EmbeddingBatchConfig( 2 ) ) )
@@ -99,8 +99,8 @@ final class EmbeddingServiceTest extends TestCase {
 	public function test_embed_rejects_dimension_inconsistency(): void {
 		$provider = new RecordingEmbeddingProvider(
 			array(
-				$this->result( array( array( 0.1, 0.2 ), array( 0.3, 0.4 ) ), 3 ),
-				$this->result( array( array( 0.5, 0.6, 0.7 ) ), 2 ),
+				$this->embedding_result( array( array( 0.1, 0.2 ), array( 0.3, 0.4 ) ), 3 ),
+				$this->embedding_result( array( array( 0.5, 0.6, 0.7 ) ), 2 ),
 			)
 		);
 
@@ -129,7 +129,7 @@ final class EmbeddingServiceTest extends TestCase {
 	 * @param array<int, array<int, float>> $values Ordered vector values.
 	 * @param int|null                      $usage Known tokens or null for unknown.
 	 */
-	private function result( array $values, ?int $usage ): EmbeddingResult {
+	private function embedding_result( array $values, ?int $usage ): EmbeddingResult {
 		$vectors = array();
 		foreach ( $values as $index => $vector ) {
 			$vectors[] = new EmbeddingVector( $index, $vector );
