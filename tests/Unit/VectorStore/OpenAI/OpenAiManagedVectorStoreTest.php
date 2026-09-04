@@ -122,6 +122,13 @@ final class OpenAiManagedVectorStoreTest extends TestCase {
 		self::assertSame( 0, $transport->requests[0]->redirection );
 	}
 
+	/** A managed store is not healthy until OpenAI reports it ready for use. */
+	public function test_health_rejects_non_ready_store_status(): void {
+		$transport = new QdrantFakeTransport( array( new HttpResponse( 200, array(), '{"id":"vs_abc123","object":"vector_store","status":"in_progress"}' ) ) );
+
+		self::assertFalse( $this->store( $transport )->health()->healthy );
+	}
+
 	/**
 	 * Create the adapter under test with offline dependencies only.
 	 *

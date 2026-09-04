@@ -11,10 +11,13 @@ namespace WpRagAiChatbot\Tests\Unit\VectorStore;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use WpRagAiChatbot\VectorStore\Managed\ManagedVectorSearchResult;
+use WpRagAiChatbot\VectorStore\Managed\ManagedVectorStore;
 use WpRagAiChatbot\VectorStore\VectorStore;
 use WpRagAiChatbot\VectorStore\VectorStoreCapabilities;
 use WpRagAiChatbot\VectorStore\VectorStoreHealth;
 use WpRagAiChatbot\VectorStore\VectorStoreRegistry;
+use WpRagAiChatbot\VectorStore\VectorWriteResult;
 
 /**
  * Verifies registry identity and truthful capability boundaries.
@@ -54,6 +57,73 @@ final class VectorStoreRegistryTest extends TestCase {
 
 		$this->expectException( InvalidArgumentException::class );
 		( new VectorStoreRegistry() )->register( $store );
+	}
+
+	/**
+	 * Managed flags cannot be advertised without implementing the managed contract.
+	 */
+	public function test_registry_rejects_untruthful_managed_capabilities(): void {
+		$store = new class() implements VectorStore {
+			/** Return the test store ID. */
+			public function store_id(): string {
+				return 'managed-liar';
+			}
+
+			/** Advertise managed capabilities without the matching interface. */
+			public function capabilities(): VectorStoreCapabilities {
+				return VectorStoreCapabilities::managed();
+			}
+
+			/** Return healthy test status. */
+			public function health(): VectorStoreHealth {
+				return VectorStoreHealth::healthy();
+			}
+		};
+
+		$this->expectException( InvalidArgumentException::class );
+		( new VectorStoreRegistry() )->register( $store );
+	}
+
+	/**
+	 * Managed operation lookup returns only stores implementing the managed contract.
+	 */
+	public function test_registry_requires_managed_interface_before_use(): void {
+		$store = new class() implements ManagedVectorStore {
+			/** Return the test store ID. */
+			public function store_id(): string {
+				return 'managed';
+			}
+
+			/** Return truthful managed capabilities. */
+			public function capabilities(): VectorStoreCapabilities {
+				return VectorStoreCapabilities::managed();
+			}
+
+			/** Return healthy test status. */
+			public function health(): VectorStoreHealth {
+				return VectorStoreHealth::healthy();
+			}
+
+			/** {@inheritDoc} */
+			public function attach_file( string $file_id, array $attributes = array() ): VectorWriteResult {
+				return new VectorWriteResult( false );
+			}
+
+			/** {@inheritDoc} */
+			public function delete_file( string $file_id ): VectorWriteResult {
+				return new VectorWriteResult( false );
+			}
+
+			/** {@inheritDoc} */
+			public function managed_search( string $query, int $max_results = 10 ): ManagedVectorSearchResult {
+				return new ManagedVectorSearchResult( array() );
+			}
+		};
+
+		$registry = new VectorStoreRegistry();
+		$registry->register( $store );
+
+		self::assertSame( $store, $registry->managed( 'managed' ) );
 	}
 
 	/**
