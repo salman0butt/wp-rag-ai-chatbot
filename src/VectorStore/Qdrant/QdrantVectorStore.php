@@ -185,7 +185,7 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 
 		$matches = array();
 		foreach ( $points as $point ) {
-			$matches[] = $this->match_from_point( $point );
+			$matches[] = $this->match_from_point( $point, $request->compatibility_fingerprint );
 		}
 		usort(
 			$matches,
@@ -278,17 +278,19 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 	/**
 	 * Convert one untrusted Qdrant query point into a portable match.
 	 *
-	 * @param mixed $point Untrusted decoded point.
-	 * @throws VectorStoreException When the point payload is malformed.
+	 * @param mixed  $point Untrusted decoded point.
+	 * @param string $expected_fingerprint Expected compatibility fingerprint.
+	 * @throws VectorStoreException When the point payload is malformed or incompatible.
 	 */
-	private function match_from_point( mixed $point ): VectorMatch {
+	private function match_from_point( mixed $point, string $expected_fingerprint ): VectorMatch {
 		if ( ! is_array( $point ) || ! isset( $point['score'] ) || ! is_numeric( $point['score'] ) || ! isset( $point['payload'] ) || ! is_array( $point['payload'] ) ) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Qdrant search response is invalid.' );
 		}
 
-		$payload = $point['payload'];
-		$id      = $payload[ self::PAYLOAD_ID ] ?? null;
-		if ( ! is_string( $id ) ) {
+		$payload     = $point['payload'];
+		$id          = $payload[ self::PAYLOAD_ID ] ?? null;
+		$fingerprint = $payload[ self::PAYLOAD_FINGERPRINT ] ?? null;
+		if ( ! is_string( $id ) || ! is_string( $fingerprint ) || ! hash_equals( $expected_fingerprint, $fingerprint ) ) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Qdrant search response is invalid.' );
 		}
 
