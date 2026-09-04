@@ -1,0 +1,119 @@
+<?php
+/**
+ * Deterministic incremental index planner.
+ *
+ * @package WpRagAiChatbot
+ */
+
+declare(strict_types=1);
+
+namespace WpRagAiChatbot\Indexing\Planning;
+
+use WpRagAiChatbot\Documents\DocumentHasher;
+use WpRagAiChatbot\Indexing\Chunking\ChunkRecord;
+use WpRagAiChatbot\Indexing\Dedup\ChunkDeduplicationResult;
+
+// phpcs:disable WordPress.NamingConventions -- ChunkRecord properties follow the approved camelCase domain contract.
+/**
+ * Compares previous and current canonical chunks without side effects.
+ */
+final class IncrementalIndexPlanner {
+	/**
+	 * Build the minimum deterministic index work required for current chunks.
+	 *
+	 * @param array<int, ChunkRecord>  $previousChunks Previous canonical chunks.
+	 * @param ChunkDeduplicationResult $current Current deduplicated chunks.
+	 */
+	public function plan( array $previousChunks, ChunkDeduplicationResult $current ): IndexPlan {
+		$previous_by_key = array();
+		foreach ( $previousChunks as $chunk ) {
+			$previous_by_key[ $chunk->chunkKey ] = $chunk;
+		}
+
+		$current_by_key   = array();
+		$upsert           = array();
+		$metadata_refresh = array();
+		$unchanged        = array();
+
+		foreach ( $current->canonicalChunks as $chunk ) {
+			$current_by_key[ $chunk->chunkKey ] = true;
+
+			$previous = $previous_by_key[ $chunk->chunkKey ] ?? null;
+			if ( null !== $previous && $this->isEmbeddingReusable( $previous, $chunk ) ) {
+				if ( $this->hasDocumentLineageChange( $previous, $chunk ) ) {
+					$metadata_refresh[] = $chunk;
+				} else {
+					$unchanged[] = $chunk;
+				}
+				continue;
+			}
+
+			$upsert[] = $chunk;
+		}
+
+		$delete_keys = array();
+		foreach ( array_keys( $previous_by_key ) as $chunk_key ) {
+			if ( ! isset( $current_by_key[ $chunk_key ] ) ) {
+				$delete_keys[] = $chunk_key;
+			}
+		}
+
+		usort( $upsert, array( $this, 'compareChunks' ) );
+		usort( $metadata_refresh, array( $this, 'compareChunks' ) );
+		usort( $unchanged, array( $this, 'compareChunks' ) );
+		sort( $delete_keys, SORT_STRING );
+
+		$duplicate_aliases = $current->duplicateAliases;
+		ksort( $duplicate_aliases, SORT_STRING );
+
+		return new IndexPlan( $upsert, $metadata_refresh, $delete_keys, $unchanged, $duplicate_aliases );
+	}
+
+	/**
+	 * Determine whether the existing embedding/content identity remains reusable.
+	 *
+	 * Document-wide source version/content hashes are intentionally handled as
+	 * metadata-only refresh boundaries so ordinary source edits do not require
+	 * re-embedding stable chunks while fresh lineage still reaches the index.
+	 *
+	 * @param ChunkRecord $previous Previous canonical chunk.
+	 * @param ChunkRecord $current Current canonical chunk.
+	 */
+	private function isEmbeddingReusable( ChunkRecord $previous, ChunkRecord $current ): bool {
+		return $previous->contentHash === $current->contentHash
+			&& $previous->documentType === $current->documentType
+			&& $previous->title === $current->title
+			&& $previous->language === $current->language
+			&& $previous->visibility === $current->visibility
+			&& $previous->tokenCount === $current->tokenCount
+			&& $previous->chunkingFingerprint === $current->chunkingFingerprint
+			&& $previous->embeddingCompatibilityKey === $current->embeddingCompatibilityKey
+			&& DocumentHasher::hash( $previous->sourceMetadata ) === DocumentHasher::hash( $current->sourceMetadata );
+	}
+
+	/**
+	 * Detect document-wide lineage changes that do not invalidate chunk embeddings.
+	 *
+	 * @param ChunkRecord $previous Previous canonical chunk.
+	 * @param ChunkRecord $current Current canonical chunk.
+	 */
+	private function hasDocumentLineageChange( ChunkRecord $previous, ChunkRecord $current ): bool {
+		return $previous->sourceVersion !== $current->sourceVersion
+			|| $previous->documentContentHash !== $current->documentContentHash;
+	}
+
+	/**
+	 * Compare chunks by deterministic sequence and stable chunk key.
+	 *
+	 * @param ChunkRecord $left Left chunk.
+	 * @param ChunkRecord $right Right chunk.
+	 */
+	private function compareChunks( ChunkRecord $left, ChunkRecord $right ): int {
+		if ( $left->sequence !== $right->sequence ) {
+			return $left->sequence <=> $right->sequence;
+		}
+
+		return strcmp( $left->chunkKey, $right->chunkKey );
+	}
+}
+// phpcs:enable WordPress.NamingConventions
