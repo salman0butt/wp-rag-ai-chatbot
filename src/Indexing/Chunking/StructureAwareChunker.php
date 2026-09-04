@@ -63,6 +63,7 @@ final class StructureAwareChunker {
 					'document_key'         => $document->documentKey,
 					'chunking_fingerprint' => $fingerprint,
 					'heading_path'         => $heading_path,
+					'section_id'           => $descriptor['section_id'],
 				)
 			);
 			$chunk_key    = DocumentHasher::hash(
