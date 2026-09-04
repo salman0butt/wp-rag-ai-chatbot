@@ -31,6 +31,7 @@ use WpRagAiChatbot\VectorStore\VectorStoreHealth;
 use WpRagAiChatbot\VectorStore\VectorUpsertStore;
 use WpRagAiChatbot\VectorStore\VectorWriteResult;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Domain exceptions are not rendered output.
 /**
  * Stores modest vector collections in dedicated per-site WordPress tables.
  */
@@ -78,11 +79,12 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 * Insert or replace one stable vector record.
 	 *
 	 * @param VectorRecord $record Record to write.
+	 * @throws VectorStoreException When persistence or encoding fails.
 	 */
 	public function upsert( VectorRecord $record ): VectorWriteResult {
 		$this->ensure_collection_for_write( $record->collection );
 
-		$sql = $this->connection->prepare(
+		$sql      = $this->connection->prepare(
 			'SELECT vector_json, metadata_json, fingerprint FROM %i WHERE collection_key = %s AND vector_key = %s LIMIT 1',
 			$this->tables->vectors(),
 			$record->collection->id,
@@ -90,10 +92,9 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 		);
 		$existing = $this->connection->get_row( $sql );
 
-		try {
-			$vector_json   = json_encode( $record->values, JSON_THROW_ON_ERROR );
-			$metadata_json = json_encode( $record->metadata, JSON_THROW_ON_ERROR );
-		} catch ( JsonException ) {
+		$vector_json   = wp_json_encode( $record->values );
+		$metadata_json = wp_json_encode( $record->metadata );
+		if ( false === $vector_json || false === $metadata_json ) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Could not encode local vector data.' );
 		}
 
@@ -142,6 +143,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 *
 	 * @param VectorCollection $collection Collection boundary.
 	 * @param string           $id Stable record ID.
+	 * @throws VectorStoreException When the ID is invalid or persistence fails.
 	 */
 	public function delete( VectorCollection $collection, string $id ): VectorWriteResult {
 		if ( 1 !== preg_match( '/^[A-Za-z0-9][A-Za-z0-9._:-]{0,191}$/', $id ) ) {
@@ -166,6 +168,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 * Search one collection using bounded candidate selection before PHP scoring.
 	 *
 	 * @param VectorSearchRequest $request Search request.
+	 * @throws VectorStoreException When the request, persisted data, or operation is invalid.
 	 */
 	public function search( VectorSearchRequest $request ): VectorSearchResult {
 		if ( $request->top_k > $this->config->max_top_k ) {
@@ -182,7 +185,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 			list( $filter_sql, $filter_args ) = $this->filter_sql( $request->filter );
 		}
 
-		$sql = 'SELECT vector_key, vector_json, metadata_json FROM %i WHERE collection_key = %s AND fingerprint = %s'
+		$sql  = 'SELECT vector_key, vector_json, metadata_json FROM %i WHERE collection_key = %s AND fingerprint = %s'
 			. $filter_sql
 			. ' ORDER BY vector_key ASC LIMIT %d';
 		$args = array_merge(
@@ -191,7 +194,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 			array( $this->config->candidate_limit + 1 )
 		);
 
-		/** @var literal-string $sql */
+		// @phpstan-ignore argument.type -- SQL is assembled only from fixed internal portable-filter fragments.
 		$prepared = $this->connection->prepare( $sql, ...$args );
 		$rows     = $this->connection->get_results( $prepared );
 		if ( count( $rows ) > $this->config->candidate_limit ) {
@@ -211,7 +214,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 					CosineSimilarity::score( $request->vector, $vector ),
 					$metadata
 				);
-			} catch ( InvalidArgumentException|JsonException ) {
+			} catch ( InvalidArgumentException | JsonException ) {
 				throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Stored local vector data is invalid.' );
 			}
 		}
@@ -231,6 +234,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 * Create a missing collection or reject an incompatible persisted profile.
 	 *
 	 * @param VectorCollection $collection Collection boundary.
+	 * @throws VectorStoreException When the collection is incompatible or cannot be created.
 	 */
 	private function ensure_collection_for_write( VectorCollection $collection ): void {
 		if ( $this->assert_persisted_collection_compatible( $collection ) ) {
@@ -258,6 +262,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 *
 	 * @param VectorCollection $collection Collection boundary.
 	 * @return bool Whether the collection already exists.
+	 * @throws VectorStoreException When the persisted collection profile is incompatible.
 	 */
 	private function assert_persisted_collection_compatible( VectorCollection $collection ): bool {
 		$sql = $this->connection->prepare(
@@ -284,6 +289,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 *
 	 * @param VectorFilter $filter Portable filter.
 	 * @return array{0:string,1:array<int,mixed>}
+	 * @throws VectorStoreException When the filter type is unsupported.
 	 */
 	private function filter_sql( VectorFilter $filter ): array {
 		if ( $filter instanceof EqualsFilter ) {
@@ -332,14 +338,16 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	/**
 	 * Encode one portable scalar for JSON comparison.
 	 *
-	 * @param scalar $value Portable scalar.
+	 * @param string|int|float|bool $value Portable scalar.
+	 * @throws VectorStoreException When the scalar cannot be encoded.
 	 */
 	private function json_scalar( string|int|float|bool $value ): string {
-		try {
-			return json_encode( $value, JSON_THROW_ON_ERROR );
-		} catch ( JsonException ) {
+		$encoded = wp_json_encode( $value );
+		if ( false === $encoded ) {
 			throw new VectorStoreException( VectorStoreErrorCode::INVALID_REQUEST, 'Local vector filter value is invalid.' );
 		}
+
+		return $encoded;
 	}
 
 	/**
@@ -347,8 +355,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 *
 	 * @param mixed $value Stored JSON value.
 	 * @return list<int|float>
-	 * @throws JsonException When JSON is malformed.
-	 * @throws InvalidArgumentException When the decoded vector is invalid.
+	 * @throws JsonException|InvalidArgumentException When stored vector data is malformed.
 	 */
 	private function decode_vector( mixed $value ): array {
 		$decoded = json_decode( (string) $value, true, 512, JSON_THROW_ON_ERROR );
@@ -362,7 +369,11 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 			}
 		}
 
-		/** @var list<int|float> $decoded */
+		/**
+		 * Validated stored vector.
+		 *
+		 * @var list<int|float> $decoded
+		 */
 		return $decoded;
 	}
 
@@ -371,8 +382,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 	 *
 	 * @param mixed $value Stored JSON value.
 	 * @return array<string, scalar>
-	 * @throws JsonException When JSON is malformed.
-	 * @throws InvalidArgumentException When decoded metadata is not portable scalar data.
+	 * @throws JsonException|InvalidArgumentException When stored metadata is malformed.
 	 */
 	private function decode_metadata( mixed $value ): array {
 		if ( null === $value || '' === $value ) {
@@ -389,7 +399,12 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 			}
 		}
 
-		/** @var array<string, scalar> $decoded */
+		/**
+		 * Validated stored metadata.
+		 *
+		 * @var array<string, scalar> $decoded
+		 */
 		return $decoded;
 	}
 }
+// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
