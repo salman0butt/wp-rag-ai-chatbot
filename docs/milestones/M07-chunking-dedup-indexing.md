@@ -1,6 +1,6 @@
 # M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing
 
-Status: **IN PROGRESS — Tasks 1-5 complete; Task 6 implementation GREEN after metadata invalidation review fix, pending fresh-session independent re-review.**
+Status: **IN PROGRESS — Tasks 1-5 complete; Task 6 implementation GREEN after token-count invalidation review fix, pending fresh-session independent re-review.**
 
 ## Goal
 Create deterministic normalized content/chunks with traceability, deduplication, hashes, and incremental reindex decisions.
@@ -36,7 +36,7 @@ Actual embeddings/vector upserts (M08), async execution engine (M09).
 - [x] Task 3 — Immutable chunk records and structure-aware splitting. **Complete: corrected genuine RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [x] Task 4 — Deliberate bounded overlap. **Complete after three independent-review fixes and final clean fresh-session re-review `5107540703`.**
 - [x] Task 5 — Compatibility-safe deduplication. **Complete after deterministic-output fix and clean fresh-session re-review `5108150441`.**
-- [ ] Task 6 — Incremental index planning. **Implementation GREEN after visibility and metadata/lineage review fixes; fresh-session independent re-review pending.**
+- [ ] Task 6 — Incremental index planning. **Implementation GREEN after visibility, indexed-metadata, and token-count review fixes; fresh-session independent re-review pending.**
 - [ ] Task 7 — Source-to-index-plan integration and milestone closeout.
 
 ## Completed task evidence
@@ -114,11 +114,19 @@ Comparison uses chunk-key maps for expected O(n) set comparison; public presenta
 - Artifact `9919760984`, digest `sha256:f0abedd88e5bc6e3f00e1f6730a5388cb993adf7f167ab0bc390be6a543e2098`.
 - Same-session post-fix review `5108316220`: **0 Critical / 0 Important unresolved**, explicitly not independent because this session discovered and implemented the fix.
 
+### Fresh independent token-count review and strict fix
+- Fresh-session independent re-review `5108416626`: **0 Critical / 1 Important** — `ChunkRecord::tokenCount` was not compared for reuse. Because M08 may inject a more exact `TokenCounter` while the counter itself is not part of `ChunkingConfig::fingerprint()`, the same key/content/config could carry a different current token count but still be emitted as `unchanged`, preserving stale index/planning metadata.
+- Genuine token-count RED `0fd08c2f28eea021a6f06f800069e835cca33f2d` / CI `33827012526`: PHPStan **No errors**; PHPUnit **304 tests / 1396 assertions / exactly 1 intended failure**, specifically `IncrementalIndexPlannerMetadataTest::test_token_count_change_forces_upsert`.
+- Token-count GREEN `62f014c07f3459cd37700db4c15afcfdcba1e475` adds the minimal reuse equality check for `tokenCount`.
+- Exact-SHA CI `33827066217`: `php-quality` ✅, `js-quality` ✅, `package` ✅, `wordpress-smoke` ✅; PHPStan **No errors**; PHPUnit **304/304 / 1397 assertions**; Composer audit clean.
+- Artifact `9920425519`, digest `sha256:29b2e109ff16b63f6e612fbba461c60a318e87bcfea101a82d3195450738b471`.
+- Same-session post-fix review `5108455605`: **0 Critical / 0 Important unresolved**, explicitly not independent because this session discovered and implemented the fix.
+
 ## Security Review
-Tasks 1-6 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, or add queue/REST/hook execution paths. Task 5 prevents cross-privacy/cross-language/cross-embedding-space canonical sharing, and Task 6 treats visibility, language, and indexed/citation metadata changes as index-work boundaries rather than reusing stale state.
+Tasks 1-6 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, or add queue/REST/hook execution paths. Task 5 prevents cross-privacy/cross-language/cross-embedding-space canonical sharing, and Task 6 treats visibility, language, token count, and indexed/citation metadata changes as index-work boundaries rather than reusing stale state.
 
 ## Performance Review
-Dedup and incremental comparison use hash maps for expected O(n) grouping/set comparison. Task 6 hashes source metadata canonically per same-key comparison and deterministic result presentation adds bounded sorting of emitted result collections. No whole-document quadratic duplicate or planner comparison is introduced.
+Dedup and incremental comparison use hash maps for expected O(n) grouping/set comparison. Task 6 hashes source metadata canonically per same-key comparison and deterministic result presentation adds bounded sorting of emitted result collections. Token-count comparison is constant-time. No whole-document quadratic duplicate or planner comparison is introduced.
 
 ## Code Review Findings
 - Task 1 independent review `5104488263`: **0 Critical / 0 Important unresolved**.
@@ -130,18 +138,20 @@ Dedup and incremental comparison use hash maps for expected O(n) grouping/set co
 - Task 6 same-session post-visibility review `5108240331`: **0 Critical / 0 Important unresolved**, not independent.
 - Task 6 fresh-session independent review `5108289931`: **0 Critical / 1 Important**, language/indexed-metadata reuse boundary; fixed through strict RED/GREEN.
 - Task 6 same-session post-metadata-fix review `5108316220`: **0 Critical / 0 Important unresolved**, not independent.
+- Task 6 fresh-session independent re-review `5108416626`: **0 Critical / 1 Important**, token-count reuse boundary; fixed through strict RED/GREEN.
+- Task 6 same-session post-token-count-fix review `5108455605`: **0 Critical / 0 Important unresolved**, not independent.
 
 ## Active quality gate
-Task 6 is not complete until a **new fresh-session independent re-review** inspects metadata GREEN `9c5a3ecce96bbd3f5bd37647949b67c32b436963` / CI `33825367919` and records **0 unresolved Critical / Important findings**.
+Task 6 is not complete until a **new fresh-session independent re-review** inspects token-count GREEN `62f014c07f3459cd37700db4c15afcfdcba1e475` / CI `33827066217` and records **0 unresolved Critical / Important findings**.
 
-The next reviewer must verify exact no-op/minimal-work behavior; additions/deletions/localized changes; chunking and embedding compatibility invalidation; visibility and language boundaries; citation/index metadata invalidation; associative metadata key-order stability; deterministic output ordering; duplicate-alias propagation/direction/order; caller immutability; bounded performance; and absence of M08/M09/provider/network/persistence/vector/WordPress execution scope leakage. Task 7 must not begin before this gate closes.
+The next reviewer must verify exact no-op/minimal-work behavior; additions/deletions/localized changes; chunking and embedding compatibility invalidation; visibility and language boundaries; token-count and citation/index metadata invalidation; associative metadata key-order stability; deterministic output ordering; duplicate-alias propagation/direction/order; caller immutability; bounded performance; and absence of M08/M09/provider/network/persistence/vector/WordPress execution scope leakage. Task 7 must not begin before this gate closes.
 
 ## Known Limitations
 - Provider/model-exact tokenization remains intentionally deferred/injectable for M08.
 - End-to-end source-to-index-plan pipeline composition remains Task 7.
 
 ## Exact next unfinished action
-Perform a **fresh-session independent re-review of Task 6** anchored to metadata GREEN `9c5a3ecce96bbd3f5bd37647949b67c32b436963` / CI `33825367919`. If that review records 0 unresolved Critical/Important findings, mark Task 6 complete and only then begin **Task 7 — Source-to-index-plan integration and milestone closeout** with genuine test-first evidence.
+Perform a **fresh-session independent re-review of Task 6** anchored to token-count GREEN `62f014c07f3459cd37700db4c15afcfdcba1e475` / CI `33827066217`. If that review records 0 unresolved Critical/Important findings, mark Task 6 complete and only then begin **Task 7 — Source-to-index-plan integration and milestone closeout** with genuine test-first evidence.
 
 ## Completion Checklist
 All remaining mandatory gates remain required before M07 completion: Task 6 independent re-review, Task 7 genuine TDD and independent review, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
