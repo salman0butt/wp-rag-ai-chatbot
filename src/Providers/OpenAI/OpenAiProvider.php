@@ -12,6 +12,7 @@ namespace WpRagAiChatbot\Providers\OpenAI;
 use JsonException;
 use WpRagAiChatbot\Providers\Credentials\CredentialResolver;
 use WpRagAiChatbot\Providers\Credentials\ResolvedCredential;
+use WpRagAiChatbot\Providers\EmbeddingProvider;
 use WpRagAiChatbot\Providers\GenerationProvider;
 use WpRagAiChatbot\Providers\GenerationRequest;
 use WpRagAiChatbot\Providers\GenerationResult;
@@ -32,9 +33,11 @@ use WpRagAiChatbot\Providers\Usage;
 
 // phpcs:disable WordPress.Security.EscapeOutput -- ProviderException metadata is sanitized/internal and is never rendered directly.
 /**
- * Implements fixed-endpoint OpenAI Responses generation and model discovery.
+ * Implements fixed-endpoint OpenAI Responses generation, embeddings, and model discovery.
  */
-final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider {
+final class OpenAiProvider implements GenerationProvider, ModelCatalogProvider, EmbeddingProvider {
+	use OpenAiEmbeddingCapability;
+
 	private const RESPONSES_URL = 'https://api.openai.com/v1/responses';
 	private const MODELS_URL    = 'https://api.openai.com/v1/models';
 
