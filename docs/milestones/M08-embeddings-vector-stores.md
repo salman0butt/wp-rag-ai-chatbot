@@ -1,6 +1,6 @@
 # M08 — Embeddings & Vector Store Abstraction/Implementations
 
-Status: IN PROGRESS — Tasks 1-3 complete; Task 4 next.
+Status: IN PROGRESS — Tasks 1-4 complete; Task 5 next.
 
 ## Goal
 Generate compatible embeddings and store/search them through replaceable vector-store adapters.
@@ -54,63 +54,80 @@ TDD / verification:
 
 ## Task 3 — Vector-store contracts, portable filters, registry, reusable contract suite — COMPLETE
 
+Delivered infrastructure-neutral store identity/health/capability contracts, truthful optional raw operation interfaces, bounded collection/record/search/result contracts, compatibility validation, a portable typed equality/membership/conjunction filter AST without raw vendor-filter escape hatches, duplicate-safe registry behavior, a test-only in-memory reference adapter, normalized errors, and runtime trust-boundary validation for vector metadata and result IDs.
+
+TDD / verification:
+
+- Genuine initial RED `fb14f05ffba4a322570d02a6eb7079dadb154c9d` / CI `33874688946`: PHPStan 0 errors; PHPUnit 341 tests / 1,515 assertions with 4 errors + 1 failure caused by intentionally absent Task 3 behavior.
+- Review RED `980528cc98f4e09f98f470fc4effce65f47af3c8` / CI `33876558057`: exactly one behavioral failure proving non-scalar `VectorRecord` metadata was accepted.
+- Review RED `85f93be9d92cb53c979a9f4a722b3da11a6ac009` / CI `33880518572`: PHPStan 0 errors; PHPUnit 346 tests / 1,528 assertions / exactly one intended failure proving adapter-returned non-scalar match metadata was accepted.
+- Review RED `54762f61f2da98309e767359986b39cb76762467` / CI `33880825526`: PHPStan 0 errors; PHPUnit 347 tests / 1,529 assertions / exactly one intended failure proving malformed adapter-returned stable IDs were accepted.
+- Review GREEN `d5fa24f1cbe29a1e163c791546fc0293774d0255` / CI `33880952765`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 347/347, 1,529 assertions; Composer audit clean; full WordPress smoke green.
+- Final review: Critical 0; Important 0 unresolved.
+- Package artifact `9939828694`, digest `sha256:eb9067510c8bbf9f791c3c9448e8decf262ade7800805d53e54f9fe5ade98bb7`.
+
+## Task 4 — Local WordPress vector store — COMPLETE
+
 Delivered:
 
-- infrastructure-neutral `VectorStore` base identity/health/capability contract;
-- truthful optional raw upsert/delete/search operation interfaces;
-- bounded `VectorCollection`, `VectorRecord`, `VectorSearchRequest`, `VectorSearchResult`, `VectorMatch`, and write-result contracts;
-- strict compatibility fingerprint and dimension validation before adapter execution;
-- portable typed equality, membership, and conjunction filter AST with bounded key/value/cardinality rules and no raw vendor-filter escape hatch;
-- `VectorStoreRegistry` duplicate-ID, adapter-ID/capability consistency, and unsupported-operation enforcement;
-- test-only in-memory reference adapter and reusable contract assertions proving stable-ID replacement, collection-scoped idempotent deletion, compatibility/filter-aware search, score-descending/stable-ID deterministic ordering, and cross-collection isolation;
-- normalized vector-store error-code/exception boundary;
-- runtime validation of untrusted metadata on both writes and adapter-returned search matches;
-- identical stable vector-ID grammar enforced for written records and adapter-returned matches.
+- dedicated per-site `rag_ai_vector_collections` and `rag_ai_vectors` tables through versioned V003/V004 migrations, with schema version 4 and safe uninstall ordering;
+- a database-backed `LocalVectorStore` with stable-ID replacement, collection-scoped idempotent deletion, collection/profile compatibility enforcement, and health/capability reporting;
+- prepared portable equality/membership/conjunction filter translation with no raw SQL/vendor-filter escape hatch;
+- database candidate selection scoped by collection, compatibility fingerprint, and portable filters before any PHP cosine scoring;
+- a hard `candidate_limit + 1` SQL bound so overflow is detected without expanding into an unbounded PHP scan;
+- deterministic score-descending/stable-ID ordering and bounded top-K;
+- explicit `LOCAL_SCALE_LIMIT` error normalization when the configured local candidate ceiling is exceeded;
+- migration, scoring, adapter-boundary, compatibility, filter, replacement/delete, and real WordPress database integration coverage.
 
-### Task 3 TDD evidence
+### Task 4 TDD evidence
 
 Genuine initial RED:
 
-- SHA `fb14f05ffba4a322570d02a6eb7079dadb154c9d`
-- CI `33874688946`
-- PHPStan: 0 errors
-- PHPUnit: 341 tests / 1,515 assertions with 4 errors + 1 failure caused by intentionally absent collection/filter/in-memory vector-store behavior.
+- SHA `a0f49b3645a26889bca6c58b0d7f2349c89427c0`
+- CI `33885763320`
+- PHPStan: 0 errors.
+- PHPUnit: 353 tests / 1,535 assertions / exactly 6 intended failures proving absent V003/V004 migrations, cosine similarity, and bounded local-store configuration behavior.
 - `js-quality`, `package`, and `wordpress-smoke` were green on the same RED SHA.
 
-During implementation/review, exact head `980528cc98f4e09f98f470fc4effce65f47af3c8` / CI `33876558057` exposed one genuine behavioral RED: `VectorRecord` accepted non-scalar untrusted metadata. The minimum fix `41b26b18cf0afbcef0a10b5e7dddd28220d373ed` made PHPStan clean and PHPUnit 345/345, 1,527 assertions.
+Implementation then progressed through regression-first compatibility/isolation fixes for adapter boundaries and delete behavior. The pre-review Task 4 head `b58fce7c5c520a0df4dbf9cd17b6c71893934821` / CI `33893539465` passed all four permanent jobs.
 
-Fresh independent review then found two additional Important trust-boundary issues:
+Fresh independent review found one Important operational-contract defect: candidate-ceiling overflow was correctly fail-closed but normalized as generic `operation_failed`, while the approved M08 design requires a distinct local-scale-limit category.
 
-1. adapter-returned `VectorMatch` metadata was described as safe scalar metadata but was never runtime-validated;
-2. adapter-returned `VectorMatch` IDs rejected only blanks instead of enforcing the same bounded stable-ID grammar as `VectorRecord`.
+Review RED:
 
-Genuine review REDs:
-
-- `85f93be9d92cb53c979a9f4a722b3da11a6ac009` / CI `33880518572`: PHPStan 0 errors; PHPUnit 346 tests / 1,528 assertions / exactly one intended failure proving non-scalar match metadata was accepted.
-- `54762f61f2da98309e767359986b39cb76762467` / CI `33880825526`: PHPStan 0 errors; PHPUnit 347 tests / 1,529 assertions / exactly one intended failure proving malformed match IDs were accepted.
+- SHA `31a9f25d6492a7df3189184487cf75eb51b70a24`
+- CI `33897449155`
+- PHPStan: 0 errors.
+- PHPUnit: 358 tests / 1,575 assertions with exactly one error because `VectorStoreErrorCode::LOCAL_SCALE_LIMIT` did not yet exist.
 
 Review-fix GREEN:
 
-- SHA `d5fa24f1cbe29a1e163c791546fc0293774d0255`
-- CI `33880952765`
-- `php-quality`: success — PHPStan 0 errors; PHPUnit 347/347 tests, 1,529 assertions; Composer audit clean.
+- SHA `69dce20f2c7c58239d999cbb414e07c5dac100fb`
+- CI `33898085114`
+- `php-quality`: success — PHPStan 0 errors; PHPUnit 358/358 tests, 1,576 assertions; Composer audit clean.
 - `js-quality`: success.
 - `package`: success.
 - `wordpress-smoke`: success — activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge.
-- Package artifact: `9939828694`, digest `sha256:eb9067510c8bbf9f791c3c9448e8decf262ade7800805d53e54f9fe5ade98bb7`.
+- Package artifact `9946564686`, digest `sha256:0753a05c42901db841a805e6c0f1305554ec56a19b4b64fb7ff7c7a9a8310740`.
 
-### Task 3 review result
+### Task 4 review result
 
-Fresh independent review after the regression-driven fixes:
+Fresh independent review after the regression-driven scale-limit fix:
 
 - Critical: 0
 - Important: 0 unresolved
-- Non-scalar write metadata, non-scalar adapter-returned match metadata, and malformed adapter-returned stable IDs are fixed and regression-covered.
-- Collection isolation, compatibility enforcement, deterministic tie ordering, portable filters, and truthful unsupported capabilities remain covered by the Task 3 contract suite.
+- Review submission: PR #11 review `5115843007`.
+- Migration/version ordering, collection/fingerprint isolation, prepared SQL/filter translation, stable-ID replacement, idempotent deletion, hard candidate bounding before PHP similarity scoring, deterministic ordering, and compatibility boundaries were reviewed.
+- No unresolved PR review threads remain.
+
+### Local-store performance boundary
+
+The local adapter intentionally has no unbounded fallback. The database query requests at most `candidate_limit + 1` rows after collection/fingerprint/filter narrowing; PHP therefore scores at most the configured `candidate_limit` rows and rejects overflow as `LOCAL_SCALE_LIMIT`. The deterministic work bound is O(`candidate_limit × embedding_dimensions`) for similarity calculation plus bounded row decoding/sorting. No wall-clock SLO is asserted from CI hardware.
+
+Practical limit: use the local WordPress adapter only when normal collection/profile/filter narrowing keeps the candidate set at or below the configured hard candidate ceiling. If a workload routinely exceeds that ceiling, treat `LOCAL_SCALE_LIMIT` as an explicit signal to use a purpose-built external vector store rather than raising the ceiling until PHP/database scans become effectively unbounded.
 
 ## Remaining Tasks
 
-- Task 4 — Local WordPress vector store with dedicated migrations and bounded candidate search.
 - Task 5 — Qdrant adapter.
 - Task 6 — Pinecone adapter.
 - Task 7 — Chroma adapter.
@@ -118,16 +135,16 @@ Fresh independent review after the regression-driven fixes:
 - Task 9 — M07 plan-to-embedding/vector integration, security/performance review, benchmark, durable docs, whole-M08 review, exact-SHA CI, merge, post-merge verification.
 
 ## Security Review
-Tasks 1-3 keep credentials server-side behind the existing M03 boundary, expose no raw vendor-filter escape hatch, validate compatibility before vector operations, scope contract operations to explicit collections, and bound/validate untrusted metadata and stable IDs at both write and adapter-returned result boundaries. Direct embedding calls use fixed HTTPS endpoints with redirects disabled. No arbitrary public endpoint, client secret exposure, paid CI call, or automatic retry was introduced.
+Tasks 1-4 keep credentials server-side behind the existing M03 boundary, expose no raw vendor-filter or SQL escape hatch, validate compatibility before vector operations, scope local operations by explicit collection/profile boundaries, prepare local filter query values, and bound/validate untrusted metadata and stable IDs at write/result boundaries. Direct embedding calls use fixed HTTPS endpoints with redirects disabled. No arbitrary public endpoint, client secret exposure, paid CI call, automatic retry, or unbounded local vector scan was introduced.
 
 ## Performance Review
-Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata and keeps the in-memory implementation test-only. Production local candidate ceilings and database-backed bounded similarity calculation remain Task 4.
+Task 2 uses bounded embedding batching. Task 3 bounds top-K/filter cardinality/metadata. Task 4 database-narrows candidates before PHP similarity scoring and enforces a hard configured candidate ceiling with an explicit scale-limit failure. External purpose-built vector-store performance remains Tasks 5-8.
 
 ## Known Limitations
-M08 remains incomplete. Tasks 1-3 establish embedding execution and vector-store application contracts, but production local vector persistence/search, external vector adapters, and M07 indexing integration remain unfinished.
+M08 remains incomplete. Tasks 1-4 provide embedding execution, common vector-store contracts, and a bounded local WordPress implementation, but external vector adapters and M07 indexing integration remain unfinished. The local adapter is intentionally for modest/narrowable candidate sets and fails explicitly rather than silently scanning beyond its configured ceiling.
 
 ## Exact Next Unfinished Action
-Begin Task 4 with a test-only RED covering dedicated versioned WordPress vector tables/migrations, collection/fingerprint isolation, stable-ID upsert replacement, collection-scoped idempotent delete, portable SQL filter translation, cosine similarity over a hard-bounded candidate set, deterministic ordering, and explicit scale-limit failure rather than unbounded PHP scanning. Require genuine behavioral RED before production implementation, then GREEN, WordPress integration verification, independent review, and durable evidence update.
+Begin Task 5 — Qdrant adapter — with a test-only RED against the existing common contract suite and offline fake transport. Cover fixed/allowlisted endpoint construction, server-side credentials, collection/profile compatibility, deterministic payload mapping, stable-ID upsert/delete, portable filter translation, bounded top-K search result mapping, health/capability truthfulness, normalized error behavior, and no automatic retries. Require genuine behavioral RED before production implementation, then GREEN, independent review, full exact-SHA CI, and durable Task 5 evidence before Pinecone Task 6.
 
 ## Next Milestone
 M09 — Job Queue & Synchronization, only after M08 is fully reviewed, merged, and post-merge verified.
