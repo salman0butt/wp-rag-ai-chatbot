@@ -1,6 +1,6 @@
 # M08 — Embeddings & Vector Store Abstraction/Implementations
 
-Status: IN PROGRESS — Task 1 complete; Task 2 next.
+Status: IN PROGRESS — Tasks 1-2 complete; Task 3 next.
 
 ## Goal
 Generate compatible embeddings and store/search them through replaceable vector-store adapters.
@@ -88,9 +88,61 @@ Fresh independent review after the regression-driven fixes:
 - The two Important findings above are fixed and regression-covered.
 - Response count/index/order/dimension cross-validation remains intentionally Task 2 `EmbeddingService` responsibility per the approved design, not a Task 1 omission.
 
+## Task 2 — Embedding service batching/validation and direct adapters — COMPLETE
+
+Delivered:
+
+- provider-neutral `EmbeddingService` with deterministic bounded application-level batching;
+- strict response count, local index, duplicate/missing/out-of-range index, model/provider consistency, ordered reconstruction, and vector-dimension validation;
+- usage aggregation that preserves unknown usage rather than fabricating totals;
+- `EmbeddingBatchConfig` with a validated positive upper bound reflected in its static-analysis type contract;
+- direct OpenAI and OpenRouter embedding capabilities using fixed HTTPS `/embeddings` endpoints, redirects disabled, existing credential/redaction boundaries, and exactly one provider request per service batch;
+- provider registration through the existing optional embedding capability slot;
+- offline fake/recording transport coverage; no paid provider calls in CI and no automatic retries in M08.
+
+### Task 2 TDD evidence
+
+The initial Task 2 test-only commit `6cefe1d07821e792f9c6af880354976d695ac9a2` / CI `33865141425` is explicitly **not** counted as RED evidence because PHPCS stopped before behavioral execution.
+
+Genuine initial RED:
+
+- SHA `89767ff0b09915fb5fe1c7709fee565149d107c7`
+- CI `33866391356`
+- PHPStan: 0 errors
+- PHPUnit: 335 tests / 1,470 assertions with 8 errors and 3 failures, all attributable to the intentionally absent `EmbeddingService`, `EmbeddingBatchConfig`, and direct-provider embedding behavior.
+
+The first assembled implementation head `1179d51750c0317061f7ddeb481b61b6e8a3a0bd` / CI `33866742477` exposed repository-owned PHPCS failures in the newly extracted provider traits and service docblock. Those style/static issues were corrected without changing the intended behavioral contract; PHPStan then identified that the runtime-positive batch bound was not represented in the property type, which was corrected by `80598faa132842967e156cf3b7785aa49f3a78b7`.
+
+Fresh Task 2 review then identified one Important behavior gap: without an explicit requested dimension, mixed vector dimensions inside the first provider batch were accepted even though the approved design requires consistent dimensions across every result.
+
+Genuine review RED:
+
+- SHA `74cd3a8cd439922befbc27f1e6ceb70abf63d6dc`
+- CI `33869958370`
+- PHPStan: 0 errors
+- PHPUnit: 336 tests / 1,513 assertions / exactly 1 intended failure: the service failed to reject mixed first-batch dimensions when no requested dimension was supplied.
+
+Review-fix GREEN:
+
+- SHA `cb37685ad8955f578e38b5e851193d860cec1871`
+- CI `33870183605`
+- `php-quality`: success — PHPStan 0 errors; PHPUnit 336/336 tests, 1,514 assertions; Composer audit clean.
+- `js-quality`: success — dependency audit, lint/typecheck/tests/build, provider live-gating, and package assertion passed.
+- `package`: success.
+- `wordpress-smoke`: success — activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge.
+- Package artifact: `9935760721`, digest `sha256:8861e02662d910c2595d235a22c846f9a9659143289e7753ea1a900a97ee430b`.
+
+### Task 2 review result
+
+Fresh independent review after the regression-driven fix:
+
+- Critical: 0
+- Important: 0 unresolved
+- The mixed-first-batch dimension finding is fixed and regression-covered.
+- Provider-specific HTTP/auth remains behind `Providers`; generic orchestration remains in `Embeddings`; no M09 retries/queue execution or M10 retrieval behavior was introduced.
+
 ## Remaining Tasks
 
-- Task 2 — Embedding service batching/validation and OpenAI/OpenRouter direct embedding adapters.
 - Task 3 — Vector-store contracts, portable filters, registry, reusable contract suite.
 - Task 4 — Local WordPress vector store with dedicated migrations and bounded candidate search.
 - Task 5 — Qdrant adapter.
@@ -100,16 +152,16 @@ Fresh independent review after the regression-driven fixes:
 - Task 9 — M07 plan-to-embedding/vector integration, security/performance review, benchmark, durable docs, whole-M08 review, exact-SHA CI, merge, post-merge verification.
 
 ## Security Review
-Task 1 contains no credentials or network execution. Inputs are validated as ordered lists; vectors must be finite; compatibility IDs reject control characters. Provider credentials/network execution enter later tasks through the existing M03 server-side provider boundary.
+Tasks 1-2 keep credentials server-side behind the existing M03 resolver/store boundary. Direct embedding calls use fixed HTTPS endpoints with redirects disabled; provider errors use the existing redaction boundary; malformed provider responses fail closed. No arbitrary endpoint input, client-exposed secret, paid CI call, or automatic retry was introduced.
 
 ## Performance Review
-Task 1 is immutable value/registry work only and introduces no network loops or vector scans. Batching bounds are Task 2; local candidate limits are Task 4.
+Task 1 remains immutable value/registry work. Task 2 adds deterministic bounded batching with a validated maximum and no unbounded provider retry loop. Local vector candidate limits remain Task 4.
 
 ## Known Limitations
-M08 remains incomplete. No embedding provider network execution, vector persistence/search, local vector database, or external vector-store adapter is enabled by Task 1.
+M08 remains incomplete. Tasks 1-2 provide embedding contracts/orchestration and direct OpenAI/OpenRouter adapters, but vector persistence/search, local vector database behavior, external vector-store adapters, and M07 indexing integration are not yet complete.
 
 ## Exact Next Unfinished Action
-Begin Task 2 with test-only RED coverage for deterministic bounded batching, count/index/dimension/order validation, usage aggregation, and fake-transport OpenAI/OpenRouter embedding requests. Do not implement provider behavior before exact RED evidence.
+Begin Task 3 with test-only RED coverage for vector-store contracts, truthful capability interfaces, portable metadata filters, registry consistency, and a reusable adapter contract suite. Require genuine exact-SHA RED before production implementation, then GREEN, independent review, and durable evidence update.
 
 ## Next Milestone
 M09 — Job Queue & Synchronization, only after M08 is fully reviewed, merged, and post-merge verified.
