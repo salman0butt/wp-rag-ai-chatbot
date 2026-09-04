@@ -43,7 +43,7 @@ final class ProviderBootstrap {
 	private static ?ProviderConfigurationService $configuration = null;
 
 	/**
-	 * Compose all M03 provider infrastructure once.
+	 * Compose all provider infrastructure once.
 	 */
 	public static function register(): void {
 		if ( null !== self::$registry ) {
@@ -66,12 +66,14 @@ final class ProviderBootstrap {
 		$registry->register(
 			ProviderIds::OPENAI_DIRECT,
 			$openai,
-			new CachedModelCatalogProvider( $openai, $cache )
+			new CachedModelCatalogProvider( $openai, $cache ),
+			$openai
 		);
 		$registry->register(
 			ProviderIds::OPENROUTER_DIRECT,
 			$openrouter,
-			new CachedModelCatalogProvider( $openrouter, $cache )
+			new CachedModelCatalogProvider( $openrouter, $cache ),
+			$openrouter
 		);
 		$registry->register( ProviderIds::WORDPRESS_AI_CLIENT, $core );
 
