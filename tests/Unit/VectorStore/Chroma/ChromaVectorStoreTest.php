@@ -185,15 +185,15 @@ final class ChromaVectorStoreTest extends TestCase {
 		self::assertCount( 2, $transport->requests );
 	}
 
-	/** Explicit health uses one bounded v2 health request and no collection mutation. */
-	public function test_health_uses_bounded_v2_healthcheck(): void {
+	/** Explicit health uses one bounded v2 heartbeat request and no collection mutation. */
+	public function test_health_uses_bounded_v2_heartbeat(): void {
 		$transport = new QdrantFakeTransport( array( new HttpResponse( 200, array(), '"ok"' ) ) );
 		$health    = $this->store( $transport )->health();
 
 		self::assertTrue( $health->healthy );
 		self::assertCount( 1, $transport->requests );
 		self::assertSame( 'GET', $transport->requests[0]->method );
-		self::assertStringEndsWith( '/api/v2/healthcheck', $transport->requests[0]->url );
+		self::assertStringEndsWith( '/api/v2/heartbeat', $transport->requests[0]->url );
 		self::assertSame( 0, $transport->requests[0]->redirection );
 	}
 
