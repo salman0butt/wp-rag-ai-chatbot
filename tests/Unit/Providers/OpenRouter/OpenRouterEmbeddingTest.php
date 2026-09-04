@@ -102,6 +102,9 @@ final class OpenRouterEmbeddingTest extends TestCase {
 
 	/**
 	 * Build an OpenRouter provider around deterministic credential and HTTP boundaries.
+	 *
+	 * @param QueuedHttpTransport $transport Deterministic HTTP transport.
+	 * @param string|null         $credential Optional resolved credential.
 	 */
 	private function provider( QueuedHttpTransport $transport, ?string $credential = 'openrouter-secret' ): OpenRouterProvider {
 		$reader = $this->createMock( CredentialSourceReader::class );
