@@ -1,6 +1,6 @@
 # M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing
 
-Status: **IN PROGRESS — Tasks 1-4 complete; Task 5 implementation GREEN after independent-review fix, pending fresh-session independent re-review.**
+Status: **IN PROGRESS — Tasks 1-5 complete; Task 6 implementation GREEN, pending fresh-session independent review.**
 
 ## Goal
 Create deterministic normalized content/chunks with traceability, deduplication, hashes, and incremental reindex decisions.
@@ -35,8 +35,8 @@ Actual embeddings/vector upserts (M08), async execution engine (M09).
 - [x] Task 2 — Token budget/configuration contracts. **Complete: strict RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [x] Task 3 — Immutable chunk records and structure-aware splitting. **Complete: corrected genuine RED/GREEN, exact-head CI, independent fresh-session review clean.**
 - [x] Task 4 — Deliberate bounded overlap. **Complete after three independent-review fixes and final clean fresh-session re-review `5107540703`.**
-- [ ] Task 5 — Compatibility-safe deduplication. **Implementation GREEN after fresh independent-review finding; new fresh-session independent re-review pending.**
-- [ ] Task 6 — Incremental index planning.
+- [x] Task 5 — Compatibility-safe deduplication. **Complete after deterministic-output fix and clean fresh-session re-review `5108150441`.**
+- [ ] Task 6 — Incremental index planning. **Implementation GREEN after visibility-boundary review fix; fresh-session independent review pending.**
 - [ ] Task 7 — Source-to-index-plan integration and milestone closeout.
 
 ## Completed task evidence
@@ -44,25 +44,23 @@ Actual embeddings/vector upserts (M08), async execution engine (M09).
 ### Task 1
 - RED `3e34a6d1125592a256463c3e75ee9406fa3e5e3a`; CI `33775003445`.
 - GREEN `de41fd281d95f2a367df163ea66d8713357b8a14`; CI `33775193798`.
-- Independent fresh-session review `5104488263`: **0 Critical / 0 Important unresolved**.
+- Independent review `5104488263`: **0 Critical / 0 Important unresolved**.
 
 ### Task 2
 - RED `220bffa181cb4a32490f6fa35b3be6904ae790d6`; CI `33780572899`.
 - GREEN `f802bed14cc1887c219b4ac1058236ded114224c`; CI `33780799386`; PHPUnit 272/272 / 1276 assertions.
 - Artifact `9903483875`, digest `sha256:f06d0f169bf7fa74718f976a3d63f05b3285347e2a45c24245c74c5a6138d388`.
-- Independent fresh-session review `5105069991`: **0 Critical / 0 Important unresolved**.
+- Independent review `5105069991`: **0 Critical / 0 Important unresolved**.
 
 ### Task 3
 - Corrected genuine RED `7dc00a29dfa4db8a7f7f627cdd6fa9c1c587b442`; CI `33793246971`.
 - Final Task 3 code `3b223cc22c41e35bbc3599f717606232ea976587`.
 - Documentation-head CI `33794954967`: all permanent jobs green.
-- Independent fresh-session review `5105859046`: **0 Critical / 0 Important unresolved**.
+- Independent review `5105859046`: **0 Critical / 0 Important unresolved**.
 
 ### Task 4
-- Original genuine RED `49f423bcbdfd1458be31b4e376c55ef269e32a39`; CI `33796054973`; original GREEN `aae5ab3861928bbcc2370d72a1a550c6c6eb2745`; CI `33796230348`.
-- Independent review `5106144751`: **0 Critical / 1 Important**, injected-counter remaining-capacity bug. Fixed via genuine RED `4f5f04fc8a5e98ed34ba1806c19ed5839568159e` / CI `33798780250` and GREEN `47f991ba738359738156f93072a146bfbee785ad` / CI `33799042113`.
-- Independent review `5106687305`: **0 Critical / 1 Important**, configured overlap budget was still interpreted as lexical units. Fixed via corrected genuine RED `817839912b46022020e5019fb2d771d054799b83` / CI `33804895198` and GREEN `68af1fc882ecee55d9e7c6282353a48ded3f3fc1` / CI `33805024423`.
-- Independent review `5107172233`: **0 Critical / 1 Important**, repeated identical headings could cross section boundaries. Fixed via genuine RED `4cc8105c19843d6ca689124612eaaabcc2e5e138` / CI `33810138595` and GREEN `ba4b3e28cde2eee2ea273d3d8546a7bad0a109b0` / CI `33810450726`.
+- Original RED/GREEN: `49f423bcbdfd1458be31b4e376c55ef269e32a39` / CI `33796054973`; `aae5ab3861928bbcc2370d72a1a550c6c6eb2745` / CI `33796230348`.
+- Independent findings `5106144751`, `5106687305`, and `5107172233` were fixed through genuine review-specific RED/GREEN cycles.
 - Final independent fresh-session re-review `5107540703` at durable head `ba1a14f11338bbecc83d660dc208ebcc1267b553` / CI `33810787511`: **0 Critical / 0 Important unresolved**.
 - Task 4 is **COMPLETE**.
 
@@ -71,53 +69,73 @@ Actual embeddings/vector upserts (M08), async execution engine (M09).
 ### Contract
 `ChunkDeduplicator` is a pure-PHP deterministic stage returning immutable `ChunkDeduplicationResult` with ordered canonical chunks and duplicate -> canonical aliases. Compatibility fingerprints include normalized content, language, visibility, and embedding-compatibility identity. Public/private, language, and incompatible embedding spaces are hard dedup boundaries. Caller-owned `ChunkRecord` objects remain immutable.
 
-### Initial Task 5 implementation evidence
-- Same-session review found canonical selection could follow encounter order rather than deterministic `ChunkRecord::sequence`.
-- Genuine regression RED `cffd2a65731dc67e83f71af4ee8d3ee40de0646e`; CI `33816189082`: PHPStan clean; PHPUnit **290 tests / 1361 assertions / 1 intended failure**.
-- First production fix `f5e924f03ce50ed9163ab59d10dce4e0b201dc18` is not accepted as GREEN evidence because PHPCS stopped before PHPUnit.
-- Candidate `51efdfc4facc94a56852a64a82a80211ae78753d` corrected canonical selection to lowest sequence, with stable `chunkKey` tie-break.
-
-### Fresh independent Task 5 review finding
-- Fresh-session independent review `5107854511` at candidate `51efdfc4facc94a56852a64a82a80211ae78753d`: **0 Critical / 1 Important**.
-- Finding: canonical selection was deterministic within each fingerprint, but `canonicalChunks` were emitted when a fingerprint was first encountered; reversing distinct input groups therefore reversed canonical output. Duplicate aliases were likewise inserted in caller encounter order. This violated M07's byte-identical deterministic-output contract.
-
-### Review-fix TDD
-- First valid regression RED `b13475f36718a9d4e8dc605d825b47e0474b9e98`; CI `33819241603`: PHPStan **No errors**; PHPUnit **291 tests / 1363 assertions / exactly 1 intended failure**, proving distinct canonical groups followed caller encounter order.
-- Consolidated test-only RED `c7991f59a7f00982ae78fbcc5987198155323471`; CI `33819403618`: PHPStan **No errors**; PHPUnit **292 tests / 1364 assertions / exactly 2 intended failures**, proving both canonical result order and duplicate-alias map order were encounter-dependent.
-- GREEN `9e6c7cb9cfbecb6ec7a3a746dc6c7332d0d20f25` — `fix: make dedup output ordering deterministic`.
-- GREEN behavior: compatibility grouping and lowest-sequence/stable-key canonical selection remain unchanged; emitted canonical chunks are deterministically ordered by `sequence` then `chunkKey`; duplicate aliases are deterministically ordered by duplicate `chunkKey`.
-- Exact-SHA GREEN CI `33819541096`: all permanent jobs passed (`php-quality`, `js-quality`, `package`, `wordpress-smoke`); PHPStan **No errors**; PHPUnit **292/292 tests / 1365 assertions**; Composer audit clean.
+### Evidence
+- Earlier canonical-selection review regression RED `cffd2a65731dc67e83f71af4ee8d3ee40de0646e` / CI `33816189082`; candidate `51efdfc4facc94a56852a64a82a80211ae78753d` fixed lowest-sequence/stable-key canonical selection.
+- Fresh independent review `5107854511`: **0 Critical / 1 Important** — canonical and alias presentation still exposed input encounter order.
+- Consolidated genuine RED `c7991f59a7f00982ae78fbcc5987198155323471` / CI `33819403618`: PHPStan clean; PHPUnit **292 tests / 1364 assertions / exactly 2 intended failures**.
+- GREEN `9e6c7cb9cfbecb6ec7a3a746dc6c7332d0d20f25`; CI `33819541096`: all permanent jobs green; PHPUnit **292/292 / 1365 assertions**; Composer audit clean.
 - Artifact `9917817913`, digest `sha256:074cdc75d55d554950fc2620ab2b5b4441459aa2bcfd7784af4644df57ff91e1`.
-- Same-session post-fix review `5107905687`: **0 Critical / 0 Important unresolved**, explicitly not independent.
+- Same-session review `5107905687`: **0 Critical / 0 Important unresolved**, not independent.
+- Fresh-session independent re-review `5108150441`: **0 Critical / 0 Important unresolved**. Task 5 is **COMPLETE**.
+
+## Task 6 — Incremental index planning
+
+### Contract
+`IncrementalIndexPlanner` is a pure-PHP side-effect-free comparison stage:
+
+`plan(array $previousChunks, ChunkDeduplicationResult $current): IndexPlan`
+
+Immutable `IndexPlan` exposes deterministic:
+- `upsert`: new or changed current canonical chunks;
+- `deleteKeys`: previous canonical keys absent from current output;
+- `unchanged`: reusable current canonical chunks;
+- `duplicateAliases`: duplicate -> canonical traceability from dedup.
+
+Comparison uses chunk-key maps for expected O(n) set comparison; public presentation is deterministically sorted. Embedding/vector execution remains M08 and queue/synchronization remains M09.
+
+### Initial TDD
+- Test-only attempt `58a785aa2317a6032c72c15734efe38b525b2cf6` / CI `33823402476` is **not valid RED** because PHPCS stopped before PHPUnit on fixture documentation.
+- Corrected genuine RED `ad550672552b54afcf2d6ef05ee72729a3f4c0cf` / CI `33823467764`: PHPStan **No errors**; PHPUnit **300 tests / 1373 assertions / exactly 8 intended failures**, all because the planner contract did not exist.
+- Initial production candidate `60721e4af7dcd05479a22f27118e74b085deafc4` added `IndexPlan` and `IncrementalIndexPlanner`; its initial CI was not accepted as final GREEN because PHP quality was not yet clean.
+
+### Review finding and strict fix
+- Same-session review `5108179436`: **0 Critical / 1 Important** — a current chunk could keep the same key/content hash while changing `visibility`, causing a `public -> private` transition to be classified `unchanged` and risking stale access metadata downstream.
+- Regression attempt `1233ea599f882d36f398f6c524ec655cec24c6e8` / CI `33823740164` and style follow-up `371222f7d481fb29b780276e6ef07414cec92e92` / CI `33823791538` are **not valid RED evidence** because PHPCS stopped before PHPUnit.
+- Corrected genuine privacy RED `9e8bdbd7109ea77cdefba5ac8f369c228dd5317b` / CI `33823898874`: PHPStan **No errors**; PHPUnit **301 tests / 1390 assertions / exactly 1 intended failure**, specifically proving a visibility change was incorrectly placed in `unchanged`.
+- GREEN `508901561e2a3119edb251b2537897880851276f` — reuse requires matching `contentHash`, `chunkingFingerprint`, `embeddingCompatibilityKey`, and `visibility`.
+- Exact-SHA CI `33823962753`: first `js-quality` attempt hit the retiring npm audit quick endpoint with HTTP 400; the same unchanged exact-SHA job was retried and passed. Final permanent matrix: `php-quality` ✅, `js-quality` ✅, `package` ✅, `wordpress-smoke` ✅; PHPStan **No errors**; PHPUnit **301/301 / 1391 assertions**; Composer audit clean.
+- Artifact `9919277309`, digest `sha256:01760ebd1e7dbd9f48e1a0fab7f936e15ce53159b9528bfb8aaa0cce8edfdd50`.
+- Same-session post-fix review `5108240331`: **0 Critical / 0 Important unresolved**, explicitly not independent because this session implemented and fixed Task 6.
 
 ## Security Review
-Tasks 1-5 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, alter visibility, or add queue/REST/hook execution paths. Dedup compatibility explicitly includes visibility and embedding-compatibility identity, preventing cross-privacy/cross-space canonical sharing.
+Tasks 1-6 remain pure PHP and WordPress-independent. They do not execute retrieved content, fetch URLs, call providers, touch credentials, persist data, write embeddings/vectors, or add queue/REST/hook execution paths. Task 5 prevents cross-privacy/cross-language/cross-embedding-space canonical sharing, and Task 6 explicitly treats visibility changes as an index-work boundary rather than reusing stale public/private state.
 
 ## Performance Review
-Task 5 retains expected O(n) compatibility fingerprinting/grouping. Enforcing byte-identical presentation order adds sorting of canonical and alias outputs; this is bounded to the emitted result sets and is required to remove caller encounter order from observable output. No whole-document quadratic duplicate comparison was introduced.
+Dedup and incremental comparison use hash maps for expected O(n) grouping/set comparison. Deterministic result presentation adds bounded sorting of emitted result collections. No whole-document quadratic duplicate or planner comparison is introduced.
 
 ## Code Review Findings
 - Task 1 independent review `5104488263`: **0 Critical / 0 Important unresolved**.
 - Task 2 independent review `5105069991`: **0 Critical / 0 Important unresolved**.
 - Task 3 independent review `5105859046`: **0 Critical / 0 Important unresolved**.
-- Task 4 final independent re-review `5107540703`: **0 Critical / 0 Important unresolved**; Task 4 complete.
-- Task 5 fresh independent review `5107854511`: **0 Critical / 1 Important**, deterministic result-order defect fixed through strict RED/GREEN at `9e6c7cb9cfbecb6ec7a3a746dc6c7332d0d20f25`.
-- Task 5 same-session post-fix review `5107905687`: **0 Critical / 0 Important unresolved**, not independent.
+- Task 4 final independent re-review `5107540703`: **0 Critical / 0 Important unresolved**.
+- Task 5 final independent re-review `5108150441`: **0 Critical / 0 Important unresolved**.
+- Task 6 same-session review `5108179436`: **0 Critical / 1 Important**, visibility planning boundary; fixed through strict RED/GREEN.
+- Task 6 same-session post-fix review `5108240331`: **0 Critical / 0 Important unresolved**, not independent.
 
 ## Active quality gate
-Task 5 is not complete until a **new fresh-session independent re-review** inspects GREEN `9e6c7cb9cfbecb6ec7a3a746dc6c7332d0d20f25` / CI `33819541096` and records **0 unresolved Critical / Important findings**. This session found and implemented review `5107854511`, so it cannot self-certify the post-fix independent gate.
+Task 6 is not complete until a **new fresh-session independent review** inspects GREEN `508901561e2a3119edb251b2537897880851276f` / CI `33823962753` and records **0 unresolved Critical / Important findings**.
 
-The next independent reviewer must verify deterministic lowest-sequence canonical selection and stable tie-breaks; canonical output order independent of input encounter order; deterministic duplicate-alias key order and alias direction; normalized-content behavior; visibility/language/embedding-compatibility boundaries; caller immutability; bounded performance; and absence of M08/M09/provider/network/persistence/vector/WordPress execution scope leakage. Task 6 must not begin before this gate closes.
+The next independent reviewer must verify exact no-op/minimal-work behavior; additions/deletions/localized changes; chunking and embedding compatibility invalidation; visibility privacy boundary; deterministic output ordering; duplicate-alias propagation/direction/order; caller immutability; bounded performance; and absence of M08/M09/provider/network/persistence/vector/WordPress execution scope leakage. Task 7 must not begin before this gate closes.
 
 ## Known Limitations
 - Provider/model-exact tokenization remains intentionally deferred/injectable for M08.
-- Incremental planning and end-to-end pipeline composition remain Tasks 6-7.
+- End-to-end source-to-index-plan pipeline composition remains Task 7.
 
 ## Exact next unfinished action
-Perform a **fresh-session independent re-review of Task 5** anchored to GREEN `9e6c7cb9cfbecb6ec7a3a746dc6c7332d0d20f25` / CI `33819541096`. If that review records 0 unresolved Critical/Important findings, mark Task 5 complete in both durable ledgers and only then begin **Task 6 — Incremental index planning** with a genuine test-only RED.
+Perform a **fresh-session independent review of Task 6** anchored to GREEN `508901561e2a3119edb251b2537897880851276f` / CI `33823962753`. If that review records 0 unresolved Critical/Important findings, mark Task 6 complete and only then begin **Task 7 — Source-to-index-plan integration and milestone closeout** with genuine test-first evidence.
 
 ## Completion Checklist
-All remaining mandatory gates remain required before M07 completion: Task 5 independent re-review, Tasks 6-7 genuine TDD and independent reviews, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
+All remaining mandatory gates remain required before M07 completion: Task 6 independent review, Task 7 genuine TDD and independent review, whole-M07 review, exact-final-SHA full CI, durable docs, PR completion/merge, and fresh post-merge `main` CI.
 
 ## Next Milestone
 M08 — Embeddings & Vector Stores.
