@@ -137,6 +137,23 @@ final class IncrementalIndexPlannerTest extends TestCase {
 	}
 
 	/**
+	 * Visibility changes are index-work boundaries even when key/content are stable.
+	 */
+	public function test_visibility_change_forces_upsert(): void {
+		$this->requirePlanner();
+		$previous = $this->chunk( 'same-key', 0, 'same', 'chunking-v1', null, 'public' );
+		$current  = $this->chunk( 'same-key', 0, 'same', 'chunking-v1', null, 'private' );
+
+		$plan = ( new IncrementalIndexPlanner() )->plan(
+			array( $previous ),
+			new ChunkDeduplicationResult( array( $current ), array() )
+		);
+
+		self::assertSame( array( $current ), $plan->upsert );
+		self::assertSame( array(), $plan->unchanged );
+	}
+
+	/**
 	 * All observable plan collections are deterministic regardless of caller order.
 	 */
 	public function test_plan_output_and_duplicate_aliases_are_deterministically_ordered(): void {
@@ -188,13 +205,15 @@ final class IncrementalIndexPlannerTest extends TestCase {
 	 * @param string      $content Chunk content.
 	 * @param string      $chunkingFingerprint Chunking compatibility fixture value.
 	 * @param string|null $embeddingCompatibilityKey Embedding compatibility fixture value.
+	 * @param string      $visibility Visibility planning boundary.
 	 */
 	private function chunk(
 		string $id,
 		int $sequence,
 		string $content = 'same',
 		string $chunkingFingerprint = 'chunking-v1',
-		?string $embeddingCompatibilityKey = null
+		?string $embeddingCompatibilityKey = null,
+		string $visibility = 'public'
 	): ChunkRecord {
 		return new ChunkRecord(
 			DocumentHasher::hash( array( 'chunk-key' => $id ) ),
@@ -208,7 +227,7 @@ final class IncrementalIndexPlannerTest extends TestCase {
 			'v1',
 			DocumentHasher::hash( array( 'document' => 'plan' ) ),
 			'en',
-			'public',
+			$visibility,
 			$sequence,
 			null,
 			array(),
