@@ -34,6 +34,13 @@ final class EmbeddingService {
 	}
 
 	/**
+	 * Return the stable ID of the configured embedding provider.
+	 */
+	public function provider_id(): string {
+		return $this->provider->provider_id();
+	}
+
+	/**
 	 * Embed one ordered request through deterministic bounded batches.
 	 *
 	 * @param EmbeddingRequest $request Normalized embedding request.
