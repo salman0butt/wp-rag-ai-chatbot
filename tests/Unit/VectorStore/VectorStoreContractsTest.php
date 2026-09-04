@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\VectorStore;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use WpRagAiChatbot\Embeddings\DistanceMetric;
 use WpRagAiChatbot\Embeddings\EmbeddingProfile;
 use WpRagAiChatbot\Embeddings\NormalizationMode;
@@ -20,6 +21,7 @@ use WpRagAiChatbot\VectorStore\Filter\AndFilter;
 use WpRagAiChatbot\VectorStore\Filter\EqualsFilter;
 use WpRagAiChatbot\VectorStore\Filter\InFilter;
 use WpRagAiChatbot\VectorStore\VectorCollection;
+use WpRagAiChatbot\VectorStore\VectorMatch;
 use WpRagAiChatbot\VectorStore\VectorRecord;
 use WpRagAiChatbot\VectorStore\VectorSearchRequest;
 
@@ -61,6 +63,16 @@ final class VectorStoreContractsTest extends TestCase {
 			array( 0.1, 0.2 ),
 			$collection->profile->fingerprint(),
 			array( 'nested' => array( 'not-portable' ) )
+		);
+	}
+
+	/**
+	 * Adapter-returned metadata is validated as untrusted portable data.
+	 */
+	public function test_match_rejects_non_scalar_metadata(): void {
+		$this->expectException( InvalidArgumentException::class );
+		( new ReflectionClass( VectorMatch::class ) )->newInstanceArgs(
+			array( 'chunk-1', 1.0, array( 'nested' => array( 'not-portable' ) ) )
 		);
 	}
 
