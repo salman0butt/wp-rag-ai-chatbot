@@ -112,6 +112,9 @@ final class VectorRecord {
 			if ( ! is_string( $key ) || 1 !== preg_match( '/^[A-Za-z][A-Za-z0-9_.-]{0,63}$/', $key ) ) {
 				throw new InvalidArgumentException( 'Vector metadata key is invalid.' );
 			}
+			if ( ! is_scalar( $value ) ) {
+				throw new InvalidArgumentException( 'Vector metadata values must be scalar.' );
+			}
 			if ( is_string( $value ) && strlen( $value ) > 512 ) {
 				throw new InvalidArgumentException( 'Vector metadata string exceeds the portable length limit.' );
 			}
