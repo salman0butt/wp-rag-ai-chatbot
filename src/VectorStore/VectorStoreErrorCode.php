@@ -17,5 +17,6 @@ enum VectorStoreErrorCode: string {
 	case INCOMPATIBLE_PROFILE   = 'incompatible_profile';
 	case UNSUPPORTED_CAPABILITY = 'unsupported_capability';
 	case UNAVAILABLE            = 'unavailable';
+	case LOCAL_SCALE_LIMIT      = 'local_scale_limit';
 	case OPERATION_FAILED       = 'operation_failed';
 }
