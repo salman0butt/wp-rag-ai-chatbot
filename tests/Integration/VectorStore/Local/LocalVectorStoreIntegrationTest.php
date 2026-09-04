@@ -31,22 +31,37 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 	 * Search scopes collection/profile/filter before bounded PHP scoring and sorts deterministically.
 	 */
 	public function test_search_is_bounded_filtered_and_deterministic(): void {
-		$connection = new ScriptedLocalVectorConnection();
-		$collection = $this->collection( 'docs' );
+		$connection  = new ScriptedLocalVectorConnection();
+		$collection  = $this->collection( 'docs' );
 		$fingerprint = $collection->profile->fingerprint();
-		$connection->row_results[] = array( 'fingerprint' => $fingerprint, 'dimensions' => 2 );
+		$connection->row_results[] = array(
+			'fingerprint' => $fingerprint,
+			'dimensions'  => 2,
+		);
 		$connection->result_sets[] = array(
-			array( 'vector_key' => 'b', 'vector_json' => '[1,0]', 'metadata_json' => '{"language":"en"}' ),
-			array( 'vector_key' => 'a', 'vector_json' => '[1,0]', 'metadata_json' => '{"language":"en"}' ),
-			array( 'vector_key' => 'c', 'vector_json' => '[0,1]', 'metadata_json' => '{"language":"en"}' ),
+			array(
+				'vector_key'    => 'b',
+				'vector_json'   => '[1,0]',
+				'metadata_json' => '{"language":"en"}',
+			),
+			array(
+				'vector_key'    => 'a',
+				'vector_json'   => '[1,0]',
+				'metadata_json' => '{"language":"en"}',
+			),
+			array(
+				'vector_key'    => 'c',
+				'vector_json'   => '[0,1]',
+				'metadata_json' => '{"language":"en"}',
+			),
 		);
 
-		$store = $this->store( $connection, 3, 2 );
+		$store  = $this->store( $connection, 3, 2 );
 		$result = $store->search(
 			new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 2, $fingerprint, new EqualsFilter( 'language', 'en' ) )
 		);
 
-		self::assertSame( array( 'a', 'b' ), array_map( static fn ( $match ): string => $match->id, $result->matches ) );
+		self::assertSame( array( 'a', 'b' ), array_map( static fn ( $vector_match ): string => $vector_match->id, $result->matches ) );
 		$search_call = $connection->prepared_calls[ count( $connection->prepared_calls ) - 1 ];
 		self::assertStringContainsString( 'collection_key = %s', $search_call['query'] );
 		self::assertStringContainsString( 'fingerprint = %s', $search_call['query'] );
@@ -61,14 +76,29 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 	 * Candidate overflow fails explicitly instead of expanding a PHP scan.
 	 */
 	public function test_search_fails_closed_when_candidate_ceiling_is_exceeded(): void {
-		$connection = new ScriptedLocalVectorConnection();
-		$collection = $this->collection( 'docs' );
+		$connection  = new ScriptedLocalVectorConnection();
+		$collection  = $this->collection( 'docs' );
 		$fingerprint = $collection->profile->fingerprint();
-		$connection->row_results[] = array( 'fingerprint' => $fingerprint, 'dimensions' => 2 );
+		$connection->row_results[] = array(
+			'fingerprint' => $fingerprint,
+			'dimensions'  => 2,
+		);
 		$connection->result_sets[] = array(
-			array( 'vector_key' => 'a', 'vector_json' => '[1,0]', 'metadata_json' => '{}' ),
-			array( 'vector_key' => 'b', 'vector_json' => '[1,0]', 'metadata_json' => '{}' ),
-			array( 'vector_key' => 'c', 'vector_json' => '[1,0]', 'metadata_json' => '{}' ),
+			array(
+				'vector_key'    => 'a',
+				'vector_json'   => '[1,0]',
+				'metadata_json' => '{}',
+			),
+			array(
+				'vector_key'    => 'b',
+				'vector_json'   => '[1,0]',
+				'metadata_json' => '{}',
+			),
+			array(
+				'vector_key'    => 'c',
+				'vector_json'   => '[1,0]',
+				'metadata_json' => '{}',
+			),
 		);
 
 		try {
@@ -83,22 +113,41 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 	 * Stable-ID replacement and delete stay collection-scoped and delete is idempotent.
 	 */
 	public function test_upsert_replaces_stable_id_and_delete_is_collection_scoped(): void {
-		$connection = new ScriptedLocalVectorConnection();
-		$collection = $this->collection( 'docs' );
+		$connection  = new ScriptedLocalVectorConnection();
+		$collection  = $this->collection( 'docs' );
 		$fingerprint = $collection->profile->fingerprint();
-		$connection->row_results[] = array( 'fingerprint' => $fingerprint, 'dimensions' => 2 );
-		$connection->row_results[] = array( 'vector_json' => '[0,1]', 'metadata_json' => '{"language":"en"}', 'fingerprint' => $fingerprint );
+		$connection->row_results[] = array(
+			'fingerprint' => $fingerprint,
+			'dimensions'  => 2,
+		);
+		$connection->row_results[] = array(
+			'vector_json'   => '[0,1]',
+			'metadata_json' => '{"language":"en"}',
+			'fingerprint'   => $fingerprint,
+		);
 		$connection->delete_results = array( 1, 0 );
 
 		$store = $this->store( $connection, 10, 5 );
 		$write = $store->upsert( new VectorRecord( $collection, 'chunk-1', array( 1.0, 0.0 ), $fingerprint, array( 'language' => 'en' ) ) );
 		self::assertTrue( $write->changed );
 		self::assertCount( 1, $connection->updates );
-		self::assertSame( array( 'collection_key' => 'docs', 'vector_key' => 'chunk-1' ), $connection->updates[0]['where'] );
+		self::assertSame(
+			array(
+				'collection_key' => 'docs',
+				'vector_key'     => 'chunk-1',
+			),
+			$connection->updates[0]['where']
+		);
 
 		self::assertTrue( $store->delete( $collection, 'chunk-1' )->changed );
 		self::assertFalse( $store->delete( $collection, 'chunk-1' )->changed );
-		self::assertSame( array( 'collection_key' => 'docs', 'vector_key' => 'chunk-1' ), $connection->deletes[0]['where'] );
+		self::assertSame(
+			array(
+				'collection_key' => 'docs',
+				'vector_key'     => 'chunk-1',
+			),
+			$connection->deletes[0]['where']
+		);
 	}
 
 	/**
@@ -107,7 +156,10 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 	public function test_incompatible_persisted_collection_fails_before_operation(): void {
 		$connection = new ScriptedLocalVectorConnection();
 		$collection = $this->collection( 'docs' );
-		$connection->row_results[] = array( 'fingerprint' => str_repeat( '0', 64 ), 'dimensions' => 2 );
+		$connection->row_results[] = array(
+			'fingerprint' => str_repeat( '0', 64 ),
+			'dimensions'  => 2,
+		);
 
 		try {
 			$this->store( $connection, 10, 5 )->search(
@@ -121,6 +173,10 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 
 	/**
 	 * Build the production adapter dynamically so absent behavior reaches behavioral RED.
+	 *
+	 * @param ScriptedLocalVectorConnection $connection Test connection.
+	 * @param int                           $candidate_limit Candidate ceiling.
+	 * @param int                           $max_top_k Maximum top-K.
 	 */
 	private function store( ScriptedLocalVectorConnection $connection, int $candidate_limit, int $max_top_k ): object {
 		$class = 'WpRagAiChatbot\\VectorStore\\Local\\LocalVectorStore';
@@ -133,6 +189,8 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 
 	/**
 	 * Create a compatible two-dimensional collection.
+	 *
+	 * @param string $id Collection ID.
 	 */
 	private function collection( string $id ): VectorCollection {
 		return new VectorCollection(
