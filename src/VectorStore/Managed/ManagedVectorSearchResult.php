@@ -18,8 +18,7 @@ final class ManagedVectorSearchResult {
 	/**
 	 * Create a bounded ordered managed search result.
 	 *
-	 * @param array $matches Ordered provider-managed matches.
-	 * @phpstan-param list<ManagedVectorMatch> $matches
+	 * @param array<int, mixed> $matches Untrusted provider-managed matches to validate.
 	 * @throws InvalidArgumentException When matches are not an ordered list of managed matches.
 	 */
 	public function __construct( public readonly array $matches ) {

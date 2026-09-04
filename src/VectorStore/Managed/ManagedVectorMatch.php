@@ -21,9 +21,8 @@ final class ManagedVectorMatch {
 	 * @param string               $file_id Provider file ID.
 	 * @param string               $filename Provider filename.
 	 * @param float                $score Provider-native relevance score.
-	 * @param array                $content Bounded text fragments.
+	 * @param array<int, mixed>    $content Untrusted text fragments to validate.
 	 * @param array<string, mixed> $attributes Bounded scalar attributes.
-	 * @phpstan-param list<string> $content
 	 * @throws InvalidArgumentException When any result field is invalid.
 	 */
 	public function __construct(
@@ -56,7 +55,7 @@ final class ManagedVectorMatch {
 	/**
 	 * Validate the portable OpenAI attribute subset.
 	 *
-	 * @param array<string, mixed> $attributes Attributes to validate.
+	 * @param array<mixed, mixed> $attributes Attributes to validate.
 	 * @throws InvalidArgumentException When any attribute exceeds the portable bounds.
 	 */
 	public static function validate_attributes( array $attributes ): void {
