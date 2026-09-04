@@ -9,31 +9,42 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\VectorStore\Qdrant;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Embeddings\DistanceMetric;
 use WpRagAiChatbot\Embeddings\EmbeddingProfile;
 use WpRagAiChatbot\Embeddings\NormalizationMode;
 use WpRagAiChatbot\Embeddings\VectorIndexProfile;
-use WpRagAiChatbot\Providers\Http\HttpRequest;
 use WpRagAiChatbot\Providers\Http\HttpResponse;
-use WpRagAiChatbot\Providers\Http\HttpTransport;
+use WpRagAiChatbot\Tests\Support\VectorStore\QdrantFakeTransport;
 use WpRagAiChatbot\VectorStore\Filter\EqualsFilter;
 use WpRagAiChatbot\VectorStore\VectorCollection;
 use WpRagAiChatbot\VectorStore\VectorRecord;
 use WpRagAiChatbot\VectorStore\VectorSearchRequest;
+use WpRagAiChatbot\VectorStore\VectorStoreException;
 
+/**
+ * Verifies offline Qdrant adapter behavior and network boundaries.
+ */
 final class QdrantVectorStoreTest extends TestCase {
+	/**
+	 * Qdrant endpoints must be HTTPS.
+	 */
 	public function test_config_rejects_non_https_endpoint(): void {
 		$class = 'WpRagAiChatbot\\VectorStore\\Qdrant\\QdrantConfig';
 		self::assertTrue( class_exists( $class ), 'QdrantConfig must exist.' );
-		$this->expectException( \InvalidArgumentException::class );
+		$this->expectException( InvalidArgumentException::class );
 		new $class( 'http://qdrant.example.test', 'secret' );
 	}
 
+	/**
+	 * Upsert must preserve stable IDs, vectors, metadata, and single-send auth.
+	 */
 	public function test_upsert_maps_stable_id_vector_metadata_and_secret_header_once(): void {
-		$transport = new QdrantFakeTransport( array( new HttpResponse( 200, array(), '{"status":"ok"}' ) ) );
-		$store     = $this->store( $transport );
-		$record    = new VectorRecord( $this->collection(), 'chunk:1', array( 1.0, 0.0 ), $this->collection()->profile->fingerprint(), array( 'lang' => 'en' ) );
+		$transport  = new QdrantFakeTransport( array( new HttpResponse( 200, array(), '{"status":"ok"}' ) ) );
+		$store      = $this->store( $transport );
+		$collection = $this->collection();
+		$record     = new VectorRecord( $collection, 'chunk:1', array( 1.0, 0.0 ), $collection->profile->fingerprint(), array( 'lang' => 'en' ) );
 
 		$result = $store->upsert( $record );
 		self::assertTrue( $result->changed );
@@ -48,6 +59,9 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( 'en', $request->json_body['points'][0]['payload']['lang'] ?? null );
 	}
 
+	/**
+	 * Delete must remain collection-scoped and single-send.
+	 */
 	public function test_delete_is_collection_scoped_and_single_send(): void {
 		$transport = new QdrantFakeTransport( array( new HttpResponse( 200, array(), '{"status":"ok"}' ) ) );
 		$store     = $this->store( $transport );
@@ -58,12 +72,16 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( array( 'chunk:1' ), $transport->requests[0]->json_body['points'] ?? null );
 	}
 
+	/**
+	 * Search must map portable filters and bounded top-K into Qdrant.
+	 */
 	public function test_search_maps_portable_filter_top_k_and_results(): void {
-		$body      = '{"result":[{"id":"chunk:2","score":0.9,"payload":{"lang":"en"}}]}';
-		$transport = new QdrantFakeTransport( array( new HttpResponse( 200, array(), $body ) ) );
-		$store     = $this->store( $transport );
-		$request   = new VectorSearchRequest( $this->collection(), array( 1.0, 0.0 ), 5, $this->collection()->profile->fingerprint(), new EqualsFilter( 'lang', 'en' ) );
-		$result    = $store->search( $request );
+		$body       = '{"result":[{"id":"chunk:2","score":0.9,"payload":{"lang":"en"}}]}';
+		$transport  = new QdrantFakeTransport( array( new HttpResponse( 200, array(), $body ) ) );
+		$store      = $this->store( $transport );
+		$collection = $this->collection();
+		$request    = new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 5, $collection->profile->fingerprint(), new EqualsFilter( 'lang', 'en' ) );
+		$result     = $store->search( $request );
 
 		self::assertCount( 1, $result->matches );
 		self::assertSame( 'chunk:2', $result->matches[0]->id );
@@ -72,11 +90,14 @@ final class QdrantVectorStoreTest extends TestCase {
 		self::assertSame( 'lang', $transport->requests[0]->json_body['filter']['must'][0]['key'] ?? null );
 	}
 
+	/**
+	 * Compatibility mismatch must fail before any network write.
+	 */
 	public function test_adapter_does_not_send_when_collection_profile_differs_from_config(): void {
 		$transport = new QdrantFakeTransport( array() );
 		$store     = $this->store( $transport );
 		$other     = new VectorCollection( 'docs', new VectorIndexProfile( new EmbeddingProfile( 'openai-direct', 'model', 2, NormalizationMode::NONE ), DistanceMetric::DOT ) );
-		$this->expectException( \WpRagAiChatbot\VectorStore\VectorStoreException::class );
+		$this->expectException( VectorStoreException::class );
 		try {
 			$store->upsert( new VectorRecord( $other, 'chunk:1', array( 1.0, 0.0 ), $other->profile->fingerprint() ) );
 		} finally {
@@ -84,6 +105,11 @@ final class QdrantVectorStoreTest extends TestCase {
 		}
 	}
 
+	/**
+	 * Create the adapter under test using only offline dependencies.
+	 *
+	 * @param QdrantFakeTransport $transport Fake single-send transport.
+	 */
 	private function store( QdrantFakeTransport $transport ): object {
 		$config_class = 'WpRagAiChatbot\\VectorStore\\Qdrant\\QdrantConfig';
 		$store_class  = 'WpRagAiChatbot\\VectorStore\\Qdrant\\QdrantVectorStore';
@@ -92,21 +118,10 @@ final class QdrantVectorStoreTest extends TestCase {
 		return new $store_class( new $config_class( 'https://qdrant.example.test', 'secret' ), $this->collection()->profile, $transport );
 	}
 
+	/**
+	 * Return the compatible collection fixture.
+	 */
 	private function collection(): VectorCollection {
 		return new VectorCollection( 'docs', new VectorIndexProfile( new EmbeddingProfile( 'openai-direct', 'model', 2, NormalizationMode::NONE ), DistanceMetric::COSINE ) );
-	}
-}
-
-final class QdrantFakeTransport implements HttpTransport {
-	/** @var list<HttpRequest> */
-	public array $requests = array();
-	/** @param list<HttpResponse> $responses */
-	public function __construct( private array $responses ) {}
-	public function send( HttpRequest $request ): HttpResponse {
-		$this->requests[] = $request;
-		if ( array() === $this->responses ) {
-			throw new \RuntimeException( 'Unexpected HTTP request.' );
-		}
-		return array_shift( $this->responses );
 	}
 }
