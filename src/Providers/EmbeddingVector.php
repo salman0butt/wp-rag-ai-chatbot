@@ -18,8 +18,8 @@ final class EmbeddingVector {
 	/**
 	 * Create an indexed embedding vector.
 	 *
-	 * @param int                   $index Original zero-based input index.
-	 * @param array<int, int|float> $values Ordered vector values.
+	 * @param int                     $index Original zero-based input index.
+	 * @param array<array-key, mixed> $values Ordered raw vector values.
 	 * @throws InvalidArgumentException When index or values are invalid.
 	 */
 	public function __construct(

@@ -18,10 +18,10 @@ final class EmbeddingResult {
 	/**
 	 * Create a normalized embedding result.
 	 *
-	 * @param string            $provider_id Stable provider ID.
-	 * @param string            $model Provider model ID.
-	 * @param EmbeddingVector[] $vectors Ordered vectors.
-	 * @param EmbeddingUsage    $usage Normalized usage.
+	 * @param string                  $provider_id Stable provider ID.
+	 * @param string                  $model Provider model ID.
+	 * @param array<array-key, mixed> $vectors Ordered raw vectors.
+	 * @param EmbeddingUsage          $usage Normalized usage.
 	 * @throws InvalidArgumentException When result metadata is invalid.
 	 */
 	public function __construct(

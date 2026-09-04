@@ -18,9 +18,9 @@ final class EmbeddingRequest {
 	/**
 	 * Create an embedding request.
 	 *
-	 * @param string   $model Provider model ID.
-	 * @param string[] $inputs Ordered text inputs.
-	 * @param int|null $dimensions Optional requested dimensions.
+	 * @param string                  $model Provider model ID.
+	 * @param array<array-key, mixed> $inputs Ordered raw text inputs.
+	 * @param int|null                $dimensions Optional requested dimensions.
 	 * @throws InvalidArgumentException When request values are invalid.
 	 */
 	public function __construct(
