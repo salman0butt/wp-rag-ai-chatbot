@@ -28,7 +28,8 @@ final class QdrantFakeTransport implements HttpTransport {
 	/**
 	 * Create the fake transport.
 	 *
-	 * @param list<HttpResponse> $responses Queued responses.
+	 * @param array $responses Queued responses.
+	 * @phpstan-param list<HttpResponse> $responses
 	 */
 	public function __construct( private array $responses ) {
 	}
@@ -37,6 +38,7 @@ final class QdrantFakeTransport implements HttpTransport {
 	 * Record one request and return the next response.
 	 *
 	 * @param HttpRequest $request Request to record.
+	 * @throws RuntimeException When a request has no queued response.
 	 */
 	public function send( HttpRequest $request ): HttpResponse {
 		$this->requests[] = $request;
