@@ -28,6 +28,9 @@ use WpRagAiChatbot\Tests\Support\Providers\Http\QueuedHttpTransport;
  * Verifies fixed, one-shot OpenRouter embedding requests and normalized responses.
  */
 final class OpenRouterEmbeddingTest extends TestCase {
+	/**
+	 * Embeddings use the fixed endpoint and preserve provider order.
+	 */
 	public function test_embed_uses_fixed_endpoint_and_normalizes_ordered_response(): void {
 		$body      = '{"object":"list","data":[{"object":"embedding","index":0,"embedding":[0.1,0.2]},{"object":"embedding","index":1,"embedding":[0.3,0.4]}],"model":"provider/embed-model","usage":{"prompt_tokens":9,"total_tokens":9}}';
 		$transport = new QueuedHttpTransport( array( new HttpResponse( 200, array( 'x-request-id' => 'or_embed' ), $body ) ) );
@@ -55,6 +58,9 @@ final class OpenRouterEmbeddingTest extends TestCase {
 		self::assertSame( 9, $result->usage->input_tokens );
 	}
 
+	/**
+	 * Optional dimensions are emitted only when the caller requests them.
+	 */
 	public function test_embed_includes_dimensions_only_when_requested(): void {
 		$body      = '{"data":[{"index":0,"embedding":[0.1,0.2]}],"model":"provider/embed-model"}';
 		$transport = new QueuedHttpTransport( array( new HttpResponse( 200, array(), $body ) ) );
@@ -72,6 +78,9 @@ final class OpenRouterEmbeddingTest extends TestCase {
 		self::assertFalse( $result->usage->known );
 	}
 
+	/**
+	 * Billable embedding calls are never retried and upstream errors are redacted.
+	 */
 	public function test_embed_does_not_retry_billable_http_failure_and_redacts_secret(): void {
 		$secret    = 'openrouter-secret-value';
 		$transport = new QueuedHttpTransport(
@@ -91,6 +100,9 @@ final class OpenRouterEmbeddingTest extends TestCase {
 		}
 	}
 
+	/**
+	 * Build an OpenRouter provider around deterministic credential and HTTP boundaries.
+	 */
 	private function provider( QueuedHttpTransport $transport, ?string $credential = 'openrouter-secret' ): OpenRouterProvider {
 		$reader = $this->createMock( CredentialSourceReader::class );
 		$store  = $this->createMock( CredentialStore::class );
