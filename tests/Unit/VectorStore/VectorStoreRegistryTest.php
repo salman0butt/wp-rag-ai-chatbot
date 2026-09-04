@@ -104,17 +104,31 @@ final class VectorStoreRegistryTest extends TestCase {
 				return VectorStoreHealth::healthy();
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Attach a test file without persistence.
+			 *
+			 * @param string               $file_id Provider file ID.
+			 * @param array<string, mixed> $attributes Searchable file attributes.
+			 */
 			public function attach_file( string $file_id, array $attributes = array() ): VectorWriteResult {
 				return new VectorWriteResult( false );
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Delete a test file without persistence.
+			 *
+			 * @param string $file_id Provider file ID.
+			 */
 			public function delete_file( string $file_id ): VectorWriteResult {
 				return new VectorWriteResult( false );
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return an empty managed search result.
+			 *
+			 * @param string $query Text query.
+			 * @param int    $max_results Maximum result count.
+			 */
 			public function managed_search( string $query, int $max_results = 10 ): ManagedVectorSearchResult {
 				return new ManagedVectorSearchResult( array() );
 			}
