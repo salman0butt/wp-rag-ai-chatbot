@@ -30,16 +30,21 @@ final class IncrementalIndexPlanner {
 			$previous_by_key[ $chunk->chunkKey ] = $chunk;
 		}
 
-		$current_by_key = array();
-		$upsert         = array();
-		$unchanged      = array();
+		$current_by_key   = array();
+		$upsert           = array();
+		$metadata_refresh = array();
+		$unchanged        = array();
 
 		foreach ( $current->canonicalChunks as $chunk ) {
 			$current_by_key[ $chunk->chunkKey ] = true;
 
 			$previous = $previous_by_key[ $chunk->chunkKey ] ?? null;
-			if ( null !== $previous && $this->isUnchanged( $previous, $chunk ) ) {
-				$unchanged[] = $chunk;
+			if ( null !== $previous && $this->isEmbeddingReusable( $previous, $chunk ) ) {
+				if ( $this->hasDocumentLineageChange( $previous, $chunk ) ) {
+					$metadata_refresh[] = $chunk;
+				} else {
+					$unchanged[] = $chunk;
+				}
 				continue;
 			}
 
@@ -54,26 +59,27 @@ final class IncrementalIndexPlanner {
 		}
 
 		usort( $upsert, array( $this, 'compareChunks' ) );
+		usort( $metadata_refresh, array( $this, 'compareChunks' ) );
 		usort( $unchanged, array( $this, 'compareChunks' ) );
 		sort( $delete_keys, SORT_STRING );
 
 		$duplicate_aliases = $current->duplicateAliases;
 		ksort( $duplicate_aliases, SORT_STRING );
 
-		return new IndexPlan( $upsert, $delete_keys, $unchanged, $duplicate_aliases );
+		return new IndexPlan( $upsert, $metadata_refresh, $delete_keys, $unchanged, $duplicate_aliases );
 	}
 
 	/**
-	 * Determine whether an existing key remains compatibility-safe and reusable.
+	 * Determine whether the existing embedding/content identity remains reusable.
 	 *
-	 * Document-wide source version/content hashes are intentionally excluded here:
-	 * ordinary source edits change them for every chunk, while unchanged current
-	 * ChunkRecord values still carry the fresh lineage metadata for later stages.
+	 * Document-wide source version/content hashes are intentionally handled as
+	 * metadata-only refresh boundaries so ordinary source edits do not require
+	 * re-embedding stable chunks while fresh lineage still reaches the index.
 	 *
 	 * @param ChunkRecord $previous Previous canonical chunk.
 	 * @param ChunkRecord $current Current canonical chunk.
 	 */
-	private function isUnchanged( ChunkRecord $previous, ChunkRecord $current ): bool {
+	private function isEmbeddingReusable( ChunkRecord $previous, ChunkRecord $current ): bool {
 		return $previous->contentHash === $current->contentHash
 			&& $previous->documentType === $current->documentType
 			&& $previous->title === $current->title
@@ -83,6 +89,17 @@ final class IncrementalIndexPlanner {
 			&& $previous->chunkingFingerprint === $current->chunkingFingerprint
 			&& $previous->embeddingCompatibilityKey === $current->embeddingCompatibilityKey
 			&& DocumentHasher::hash( $previous->sourceMetadata ) === DocumentHasher::hash( $current->sourceMetadata );
+	}
+
+	/**
+	 * Detect document-wide lineage changes that do not invalidate chunk embeddings.
+	 *
+	 * @param ChunkRecord $previous Previous canonical chunk.
+	 * @param ChunkRecord $current Current canonical chunk.
+	 */
+	private function hasDocumentLineageChange( ChunkRecord $previous, ChunkRecord $current ): bool {
+		return $previous->sourceVersion !== $current->sourceVersion
+			|| $previous->documentContentHash !== $current->documentContentHash;
 	}
 
 	/**
