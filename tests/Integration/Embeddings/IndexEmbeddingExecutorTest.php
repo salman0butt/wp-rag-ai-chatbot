@@ -20,7 +20,6 @@ use WpRagAiChatbot\Embeddings\NormalizationMode;
 use WpRagAiChatbot\Embeddings\VectorIndexProfile;
 use WpRagAiChatbot\Indexing\Chunking\ChunkRecord;
 use WpRagAiChatbot\Indexing\Planning\IndexPlan;
-use WpRagAiChatbot\Providers\EmbeddingRequest;
 use WpRagAiChatbot\Providers\EmbeddingResult;
 use WpRagAiChatbot\Providers\EmbeddingUsage;
 use WpRagAiChatbot\Providers\EmbeddingVector;
@@ -29,6 +28,8 @@ use WpRagAiChatbot\Tests\Support\VectorStore\InMemoryVectorStore;
 use WpRagAiChatbot\VectorStore\VectorCollection;
 use WpRagAiChatbot\VectorStore\VectorSearchRequest;
 
+// phpcs:disable WordPress.NamingConventions -- M07 domain DTO properties intentionally use the approved camelCase contract.
+// phpcs:disable Generic.Formatting.MultipleStatementAlignment -- Test fixtures favor local grouping over alignment churn.
 /**
  * Verifies bounded deterministic execution of accepted M07 index plans.
  */
@@ -37,14 +38,14 @@ final class IndexEmbeddingExecutorTest extends TestCase {
 	 * Only planned upserts are embedded; deletes execute without re-embedding refresh/unchanged chunks.
 	 */
 	public function test_execute_embeds_only_upserts_and_applies_planned_deletes(): void {
-		$profile     = $this->profile();
-		$collection  = new VectorCollection( 'knowledge', $profile );
-		$upsert_a    = $this->chunk( 'upsert-a', 'First content', 0, $profile->fingerprint() );
-		$upsert_b    = $this->chunk( 'upsert-b', 'Second content', 1, $profile->fingerprint() );
-		$refresh     = $this->chunk( 'refresh', 'Refresh content', 2, $profile->fingerprint() );
-		$unchanged   = $this->chunk( 'unchanged', 'Unchanged content', 3, $profile->fingerprint() );
-		$delete_key  = hash( 'sha256', 'delete' );
-		$provider    = new RecordingEmbeddingProvider(
+		$profile = $this->profile();
+		$collection = new VectorCollection( 'knowledge', $profile );
+		$upsert_a = $this->chunk( 'upsert-a', 'First content', 0, $profile->fingerprint() );
+		$upsert_b = $this->chunk( 'upsert-b', 'Second content', 1, $profile->fingerprint() );
+		$refresh = $this->chunk( 'refresh', 'Refresh content', 2, $profile->fingerprint() );
+		$unchanged = $this->chunk( 'unchanged', 'Unchanged content', 3, $profile->fingerprint() );
+		$delete_key = hash( 'sha256', 'delete' );
+		$provider = new RecordingEmbeddingProvider(
 			array(
 				new EmbeddingResult(
 					'test-embedding',
@@ -57,10 +58,10 @@ final class IndexEmbeddingExecutorTest extends TestCase {
 				),
 			)
 		);
-		$store       = new InMemoryVectorStore( 'memory' );
-		$service     = new EmbeddingService( $provider, new EmbeddingBatchConfig( 10 ) );
-		$executor    = new IndexEmbeddingExecutor( $service, $store, $store, $collection );
-		$plan        = new IndexPlan(
+		$store = new InMemoryVectorStore( 'memory' );
+		$service = new EmbeddingService( $provider, new EmbeddingBatchConfig( 10 ) );
+		$executor = new IndexEmbeddingExecutor( $service, $store, $store, $collection );
+		$plan = new IndexPlan(
 			array( $upsert_a, $upsert_b ),
 			array( $refresh ),
 			array( $delete_key ),
@@ -80,7 +81,7 @@ final class IndexEmbeddingExecutorTest extends TestCase {
 		);
 		self::assertSame(
 			array( $upsert_a->chunkKey, $upsert_b->chunkKey ),
-			array_map( static fn ( $match ): string => $match->id, $result->matches )
+			array_map( static fn ( $vector_match ): string => $vector_match->id, $result->matches )
 		);
 		self::assertSame( $upsert_a->documentKey, $result->matches[0]->metadata['document_key'] );
 		self::assertSame( $upsert_a->contentHash, $result->matches[0]->metadata['content_hash'] );
@@ -91,17 +92,17 @@ final class IndexEmbeddingExecutorTest extends TestCase {
 	 * A chunk tied to another compatibility profile fails before any provider or store operation.
 	 */
 	public function test_execute_rejects_incompatible_chunk_before_embedding(): void {
-		$profile    = $this->profile();
+		$profile = $this->profile();
 		$collection = new VectorCollection( 'knowledge', $profile );
-		$provider   = new RecordingEmbeddingProvider( array() );
-		$store      = new InMemoryVectorStore( 'memory' );
-		$executor   = new IndexEmbeddingExecutor(
+		$provider = new RecordingEmbeddingProvider( array() );
+		$store = new InMemoryVectorStore( 'memory' );
+		$executor = new IndexEmbeddingExecutor(
 			new EmbeddingService( $provider, new EmbeddingBatchConfig( 10 ) ),
 			$store,
 			$store,
 			$collection
 		);
-		$plan       = new IndexPlan(
+		$plan = new IndexPlan(
 			array( $this->chunk( 'incompatible', 'Content', 0, str_repeat( 'f', 64 ) ) ),
 			array(),
 			array(),
@@ -111,33 +112,29 @@ final class IndexEmbeddingExecutorTest extends TestCase {
 
 		$this->expectException( InvalidArgumentException::class );
 		$executor->execute( $plan );
-
-		self::assertCount( 0, $provider->requests );
 	}
 
 	/**
 	 * Oversized plans are rejected before constructing an unbounded embedding request.
 	 */
 	public function test_execute_rejects_more_than_the_execution_bound_before_embedding(): void {
-		$profile    = $this->profile();
+		$profile = $this->profile();
 		$collection = new VectorCollection( 'knowledge', $profile );
-		$provider   = new RecordingEmbeddingProvider( array() );
-		$store      = new InMemoryVectorStore( 'memory' );
-		$executor   = new IndexEmbeddingExecutor(
+		$provider = new RecordingEmbeddingProvider( array() );
+		$store = new InMemoryVectorStore( 'memory' );
+		$executor = new IndexEmbeddingExecutor(
 			new EmbeddingService( $provider, new EmbeddingBatchConfig( 10 ) ),
 			$store,
 			$store,
 			$collection
 		);
-		$upserts    = array();
+		$upserts = array();
 		for ( $index = 0; $index < 1001; ++$index ) {
 			$upserts[] = $this->chunk( 'chunk-' . $index, 'Content ' . $index, $index, $profile->fingerprint() );
 		}
 
 		$this->expectException( InvalidArgumentException::class );
 		$executor->execute( new IndexPlan( $upserts, array(), array(), array(), array() ) );
-
-		self::assertCount( 0, $provider->requests );
 	}
 
 	/**
@@ -183,3 +180,5 @@ final class IndexEmbeddingExecutorTest extends TestCase {
 		);
 	}
 }
+// phpcs:enable Generic.Formatting.MultipleStatementAlignment
+// phpcs:enable WordPress.NamingConventions
