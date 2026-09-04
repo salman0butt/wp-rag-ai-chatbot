@@ -18,8 +18,8 @@ final class CosineSimilarity {
 	/**
 	 * Score two equal-dimension finite non-zero vectors.
 	 *
-	 * @param array<int, int|float> $query Query vector.
-	 * @param array<int, int|float> $candidate Candidate vector.
+	 * @param array<int, mixed> $query Query vector.
+	 * @param array<int, mixed> $candidate Candidate vector.
 	 * @throws InvalidArgumentException When vectors are invalid or incompatible.
 	 */
 	public static function score( array $query, array $candidate ): float {
@@ -32,7 +32,7 @@ final class CosineSimilarity {
 		$candidate_norm = 0.0;
 		foreach ( $query as $index => $query_value ) {
 			$candidate_value = $candidate[ $index ];
-			if ( ! is_numeric( $query_value ) || ! is_numeric( $candidate_value ) ) {
+			if ( ( ! is_int( $query_value ) && ! is_float( $query_value ) ) || ( ! is_int( $candidate_value ) && ! is_float( $candidate_value ) ) ) {
 				throw new InvalidArgumentException( 'Cosine vectors must contain only numeric values.' );
 			}
 
