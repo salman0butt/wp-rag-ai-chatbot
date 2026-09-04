@@ -20,7 +20,8 @@ final class IncrementalIndexPlanner {
 	/**
 	 * Build the minimum deterministic index work required for current chunks.
 	 *
-	 * @param array<int, ChunkRecord> $previousChunks Previous canonical chunks.
+	 * @param array<int, ChunkRecord>    $previousChunks Previous canonical chunks.
+	 * @param ChunkDeduplicationResult $current Current deduplicated chunks.
 	 */
 	public function plan( array $previousChunks, ChunkDeduplicationResult $current ): IndexPlan {
 		$previous_by_key = array();
@@ -34,8 +35,8 @@ final class IncrementalIndexPlanner {
 
 		foreach ( $current->canonicalChunks as $chunk ) {
 			$current_by_key[ $chunk->chunkKey ] = true;
-			$previous = $previous_by_key[ $chunk->chunkKey ] ?? null;
 
+			$previous = $previous_by_key[ $chunk->chunkKey ] ?? null;
 			if ( null !== $previous && $this->isUnchanged( $previous, $chunk ) ) {
 				$unchanged[] = $chunk;
 				continue;
@@ -63,6 +64,9 @@ final class IncrementalIndexPlanner {
 
 	/**
 	 * Determine whether an existing key remains compatibility-safe and reusable.
+	 *
+	 * @param ChunkRecord $previous Previous canonical chunk.
+	 * @param ChunkRecord $current Current canonical chunk.
 	 */
 	private function isUnchanged( ChunkRecord $previous, ChunkRecord $current ): bool {
 		return $previous->contentHash === $current->contentHash
@@ -72,6 +76,9 @@ final class IncrementalIndexPlanner {
 
 	/**
 	 * Compare chunks by deterministic sequence and stable chunk key.
+	 *
+	 * @param ChunkRecord $left Left chunk.
+	 * @param ChunkRecord $right Right chunk.
 	 */
 	private function compareChunks( ChunkRecord $left, ChunkRecord $right ): int {
 		if ( $left->sequence !== $right->sequence ) {
