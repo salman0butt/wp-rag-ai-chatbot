@@ -74,8 +74,22 @@ final class VectorStoreContractsTest extends TestCase {
 			)
 		);
 
-		self::assertTrue( $filter->matches( array( 'language' => 'en', 'visibility' => 'public' ) ) );
-		self::assertFalse( $filter->matches( array( 'language' => 'fr', 'visibility' => 'public' ) ) );
+		self::assertTrue(
+			$filter->matches(
+				array(
+					'language'   => 'en',
+					'visibility' => 'public',
+				)
+			)
+		);
+		self::assertFalse(
+			$filter->matches(
+				array(
+					'language'   => 'fr',
+					'visibility' => 'public',
+				)
+			)
+		);
 	}
 
 	/**
@@ -90,9 +104,9 @@ final class VectorStoreContractsTest extends TestCase {
 	 * Test-only reference adapter proves replacement, isolation, filtering and ordering.
 	 */
 	public function test_in_memory_contract_preserves_collection_isolation_and_stable_ordering(): void {
-		$store      = new InMemoryVectorStore( 'memory' );
-		$docs       = $this->collection( 'docs', 2 );
-		$other_docs = $this->collection( 'other-docs', 2 );
+		$store       = new InMemoryVectorStore( 'memory' );
+		$docs        = $this->collection( 'docs', 2 );
+		$other_docs  = $this->collection( 'other-docs', 2 );
 		$fingerprint = $docs->profile->fingerprint();
 
 		$store->upsert( new VectorRecord( $docs, 'b', array( 1.0, 0.0 ), $fingerprint, array( 'language' => 'en' ) ) );
@@ -104,18 +118,21 @@ final class VectorStoreContractsTest extends TestCase {
 			new VectorSearchRequest( $docs, array( 1.0, 0.0 ), 5, $fingerprint, new EqualsFilter( 'language', 'en' ) )
 		);
 
-		self::assertSame( array( 'a', 'b' ), array_map( static fn ( $match ): string => $match->id, $result->matches ) );
+		self::assertSame( array( 'a', 'b' ), array_map( static fn ( $vector_match ): string => $vector_match->id, $result->matches ) );
 
 		$store->upsert( new VectorRecord( $docs, 'a', array( 0.0, 1.0 ), $fingerprint, array( 'language' => 'en' ) ) );
-		self::assertSame( array( 'b', 'a' ), array_map( static fn ( $match ): string => $match->id, $store->search( new VectorSearchRequest( $docs, array( 1.0, 0.0 ), 5, $fingerprint, new EqualsFilter( 'language', 'en' ) ) )->matches ) );
+		self::assertSame( array( 'b', 'a' ), array_map( static fn ( $vector_match ): string => $vector_match->id, $store->search( new VectorSearchRequest( $docs, array( 1.0, 0.0 ), 5, $fingerprint, new EqualsFilter( 'language', 'en' ) ) )->matches ) );
 
 		$store->delete( $docs, 'b' );
 		$store->delete( $docs, 'b' );
-		self::assertSame( array( 'a' ), array_map( static fn ( $match ): string => $match->id, $store->search( new VectorSearchRequest( $docs, array( 1.0, 0.0 ), 5, $fingerprint, new EqualsFilter( 'language', 'en' ) ) )->matches ) );
+		self::assertSame( array( 'a' ), array_map( static fn ( $vector_match ): string => $vector_match->id, $store->search( new VectorSearchRequest( $docs, array( 1.0, 0.0 ), 5, $fingerprint, new EqualsFilter( 'language', 'en' ) ) )->matches ) );
 	}
 
 	/**
 	 * Create a compatible collection fixture.
+	 *
+	 * @param string $id Collection ID.
+	 * @param int    $dimensions Vector dimensions.
 	 */
 	private function collection( string $id, int $dimensions ): VectorCollection {
 		return new VectorCollection(
