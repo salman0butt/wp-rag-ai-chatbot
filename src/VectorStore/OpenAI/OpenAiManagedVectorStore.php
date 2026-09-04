@@ -68,7 +68,11 @@ final class OpenAiManagedVectorStore implements ManagedVectorStore {
 				return VectorStoreHealth::unhealthy( 'OpenAI managed vector store is unavailable.' );
 			}
 			$data = $this->decode_json( $response->body, 'OpenAI managed vector-store response is invalid.' );
-			if ( ( $data['id'] ?? null ) !== $this->config->vector_store_id || ( $data['object'] ?? null ) !== 'vector_store' ) {
+			if (
+				( $data['id'] ?? null ) !== $this->config->vector_store_id
+				|| ( $data['object'] ?? null ) !== 'vector_store'
+				|| ( $data['status'] ?? null ) !== 'completed'
+			) {
 				return VectorStoreHealth::unhealthy( 'OpenAI managed vector store is unavailable.' );
 			}
 			return VectorStoreHealth::healthy();

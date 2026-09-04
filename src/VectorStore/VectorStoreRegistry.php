@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\VectorStore;
 
 use InvalidArgumentException;
+use WpRagAiChatbot\VectorStore\Managed\ManagedVectorStore;
 
 /**
  * Registers vector stores and exposes only truthful optional operations.
@@ -44,6 +45,11 @@ final class VectorStoreRegistry {
 			|| ( $store instanceof VectorSearchStore ) !== $capabilities->search
 		) {
 			throw new InvalidArgumentException( 'Vector store capabilities do not match implemented operation interfaces.' );
+		}
+
+		$is_managed = $store instanceof ManagedVectorStore;
+		if ( $is_managed !== $capabilities->managed_ingestion || $is_managed !== $capabilities->managed_search ) {
+			throw new InvalidArgumentException( 'Vector store managed capabilities do not match implemented operation interfaces.' );
 		}
 
 		$this->stores[ $id ] = $store;
@@ -103,6 +109,21 @@ final class VectorStoreRegistry {
 		$store = $this->get( $id );
 		if ( ! $store instanceof VectorSearchStore ) {
 			throw new InvalidArgumentException( 'Vector store does not support search.' );
+		}
+
+		return $store;
+	}
+
+	/**
+	 * Require managed file-ingestion and text-search capability.
+	 *
+	 * @param string $id Store ID.
+	 * @throws InvalidArgumentException When unsupported.
+	 */
+	public function managed( string $id ): ManagedVectorStore {
+		$store = $this->get( $id );
+		if ( ! $store instanceof ManagedVectorStore ) {
+			throw new InvalidArgumentException( 'Vector store does not support managed operations.' );
 		}
 
 		return $store;
