@@ -179,7 +179,7 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 
 		$data   = $this->decode_json( $response->body, 'Qdrant search response is invalid.' );
 		$points = $data['result']['points'] ?? null;
-		if ( ! is_array( $points ) || ! array_is_list( $points ) ) {
+		if ( ! is_array( $points ) || ! array_is_list( $points ) || count( $points ) > $request->top_k ) {
 			throw new VectorStoreException( VectorStoreErrorCode::OPERATION_FAILED, 'Qdrant search response is invalid.' );
 		}
 
@@ -365,11 +365,7 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		}
 	}
 
-	/**
-	 * Determine whether an HTTP response is successful.
-	 *
-	 * @param HttpResponse $response Response to inspect.
-	 */
+	/** Determine whether an HTTP response is successful. */
 	private function successful( HttpResponse $response ): bool {
 		return $response->status >= 200 && $response->status < 300;
 	}
