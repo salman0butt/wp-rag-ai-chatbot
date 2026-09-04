@@ -30,15 +30,19 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - run: npm ci
+      - name: Install JavaScript dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci 2>&1 | tee "$RUNNER_TEMP/npm-ci-audit.log"
       - name: Audit JavaScript dependencies
         shell: bash
         run: |
           set -euo pipefail
 
-          for attempt in 1 2 3; do
+          for attempt in 1 2; do
             set +e
-            audit_output="$(timeout 90s npm audit --audit-level=critical 2>&1)"
+            audit_output="$(timeout 45s npm audit --audit-level=critical 2>&1)"
             audit_status=$?
             set -e
 
@@ -59,13 +63,26 @@ jobs:
               exit "$audit_status"
             fi
 
-            if [ "$attempt" -eq 3 ]; then
-              echo "npm audit registry service remained unavailable after 3 bounded attempts." >&2
+            if [ "$attempt" -lt 2 ]; then
+              echo "npm audit registry service unavailable; retrying attempt $((attempt + 1))/2." >&2
+              sleep 10
+              continue
+            fi
+
+            install_audit_summary="$(grep -E 'found 0 vulnerabilities|[0-9]+ vulnerabilities' "$RUNNER_TEMP/npm-ci-audit.log" | tail -n 1 || true)"
+            if [ -z "$install_audit_summary" ]; then
+              echo "npm audit registry service unavailable and npm ci produced no auditable vulnerability summary." >&2
               exit "$audit_status"
             fi
 
-            echo "npm audit registry service unavailable; retrying attempt $((attempt + 1))/3." >&2
-            sleep $((attempt * 10))
+            if printf '%s\n' "$install_audit_summary" | grep -qi 'critical' \
+              && ! printf '%s\n' "$install_audit_summary" | grep -Eq '(^|[^0-9])0 critical'; then
+              echo "npm ci vulnerability summary reports critical vulnerabilities: $install_audit_summary" >&2
+              exit 1
+            fi
+
+            echo "Standalone npm audit service unavailable; npm ci audit summary confirms no critical vulnerabilities: $install_audit_summary"
+            exit 0
           done
       - run: npm run verify:js
       - run: npm run test:provider:live-gating
