@@ -102,17 +102,23 @@ final class DocumentIndexPipelineTest extends TestCase {
 	}
 
 	/**
-	 * Editing one structural section keeps unrelated chunks reusable.
+	 * Editing one structural section keeps unrelated chunks reusable despite document-wide version/hash churn.
 	 */
 	public function test_localized_section_change_produces_bounded_affected_work(): void {
 		$this->requirePipeline();
 		$before   = $this->document(
 			'localized',
-			"# Alpha\n\nAlpha section remains stable with several descriptive words.\n\n# Beta\n\nBeta section contains the original wording for this fixture.\n\n# Gamma\n\nGamma section remains stable with several descriptive words."
+			"# Alpha\n\nAlpha section remains stable with several descriptive words.\n\n# Beta\n\nBeta section contains the original wording for this fixture.\n\n# Gamma\n\nGamma section remains stable with several descriptive words.",
+			array(),
+			'post',
+			'v1'
 		);
 		$after    = $this->document(
 			'localized',
-			"# Alpha\n\nAlpha section remains stable with several descriptive words.\n\n# Beta\n\nBeta section contains revised wording for this fixture only.\n\n# Gamma\n\nGamma section remains stable with several descriptive words."
+			"# Alpha\n\nAlpha section remains stable with several descriptive words.\n\n# Beta\n\nBeta section contains revised wording for this fixture only.\n\n# Gamma\n\nGamma section remains stable with several descriptive words.",
+			array(),
+			'post',
+			'v2'
 		);
 		$pipeline = $this->pipeline();
 		$initial  = $pipeline->plan( $before );
@@ -143,12 +149,14 @@ final class DocumentIndexPipelineTest extends TestCase {
 	 * @param string               $content Canonical text.
 	 * @param array<string, mixed> $metadata Source metadata.
 	 * @param string               $documentType Document type.
+	 * @param string               $sourceVersion Source revision/version marker.
 	 */
 	private function document(
 		string $id,
 		string $content,
 		array $metadata = array(),
-		string $documentType = 'post'
+		string $documentType = 'post',
+		string $sourceVersion = 'v1'
 	): DocumentRecord {
 		$time = new DateTimeImmutable( '2026-01-01T00:00:00+00:00' );
 
@@ -162,7 +170,7 @@ final class DocumentIndexPipelineTest extends TestCase {
 			'https://example.test/' . $id,
 			$content,
 			$metadata,
-			'v1',
+			$sourceVersion,
 			DocumentHasher::hash( array( 'content' => $content ) ),
 			'en',
 			'public',
