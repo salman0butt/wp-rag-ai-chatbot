@@ -7,7 +7,7 @@
 - M08 branch: `feat/m08-embeddings-vector-stores`.
 - M08 PR: **#11 — open draft**.
 - M08 design/spec and implementation plan: **AUTO-APPROVED — SCHEDULED MODE**.
-- M08 Tasks 1-5: **COMPLETE on feature branch**; Task 6 is next.
+- M08 Tasks 1-6: **COMPLETE on feature branch**; Task 7 is next.
 
 ## M07 final state — COMPLETE
 
@@ -56,31 +56,33 @@ The bounded local WordPress vector store is complete on the feature branch: vers
 
 ### Task 5 — Qdrant adapter — COMPLETE
 
-Delivered an offline-testable Qdrant raw-vector adapter with:
+Delivered an offline-testable Qdrant raw-vector adapter with validated administrator-owned HTTPS origins, server-side credentials, zero redirects/no retries, remote profile verification, compatibility-isolated collections, deterministic stable-ID mapping, portable filters, bounded result validation, sanitized errors, truthful health/capabilities, and a default-off credential-gated live health hook.
 
-- validated administrator-owned HTTPS origins and server-side API keys;
-- zero redirects and exactly one transport send per adapter request, with no automatic retries;
-- compatibility-isolated physical collections plus remote dimensions/distance verification before operations;
-- deterministic plugin stable-ID → Qdrant UUID mapping for upsert/delete;
-- portable equality/membership/conjunction filter translation and compatibility-fingerprint filtering;
-- bounded `top_k` search mapping with deterministic score-descending/stable-ID ordering;
-- fail-closed validation of untrusted result fingerprints, metadata, stable IDs, and response cardinality;
-- sanitized errors that do not expose remote response bodies or credentials;
-- truthful health/capabilities behavior;
-- an explicit default-off live Qdrant health contract hook gated by `WP_RAG_AI_LIVE_QDRANT_TESTS=1`, `QDRANT_URL`, and `QDRANT_API_KEY`; normal CI performs no Qdrant network call.
-
-Genuine TDD / review evidence:
-
-- Initial RED `8cb3d00aa13edf33ac4c41ae0aceee5f90391c20` / CI `33900244344`: PHPStan 0 errors; PHPUnit 366 tests / 1,584 assertions / exactly 8 intended Qdrant failures because Task 5 production contracts were absent.
-- Runtime-boundary fix GREEN `b8f7b3772e0cb6888084b0ea899f641c55029320` / CI `33907850449`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 366/366, 1,634 assertions; Composer audit clean.
-- Independent review Important #1: Qdrant search response compatibility fingerprints were not verified. Review RED `4786d836258bec795dd18a2256ef3789ae7724db` / CI `33908272642`: PHPStan 0 errors; PHPUnit 367 tests / 1,637 assertions / exactly one intended failure. Fix `a6ab35993216549ccad4419c67272585e3e2bcd4` validates the returned fingerprint fail-closed.
-- Independent review Important #2: an untrusted Qdrant response could exceed the caller's bounded `top_k`. Review RED `955605e5590e89b4fdd81b7db7ec8e20badf3668` / CI `33908789909`: PHPStan 0 errors; PHPUnit 368 tests / 1,641 assertions / exactly one intended failure. Fix path ending at `0fbbda7cf057a50cc01d3ffd08ab0e716ad359a5` enforces the response cardinality bound.
-- Live-hook RED `251fdf8fce62c2378e678c9465cf9cb3b0efd2bd` / CI `33909386169`: normal JS verification passed, then `test:qdrant:live-gating` failed exactly because the planned live Qdrant wrapper did not yet exist.
-- Final Task 5 GREEN `974a9fb64a1bc66864b0cad82fe42a22225608c5` / CI `33909554302`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all green; PHPStan 0 errors; PHPUnit 368/368, 1,642 assertions; Composer audit clean; full WordPress smoke green; offline live-Qdrant gating passed.
+- Initial RED `8cb3d00aa13edf33ac4c41ae0aceee5f90391c20` / CI `33900244344`: PHPStan 0 errors; PHPUnit 366 tests / 1,584 assertions / exactly 8 intended failures.
+- Runtime-boundary GREEN `b8f7b3772e0cb6888084b0ea899f641c55029320` / CI `33907850449`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 366/366, 1,634 assertions; Composer audit clean.
+- Review RED `4786d836258bec795dd18a2256ef3789ae7724db`: returned compatibility fingerprint was not verified; fixed by `a6ab35993216549ccad4419c67272585e3e2bcd4`.
+- Review RED `955605e5590e89b4fdd81b7db7ec8e20badf3668`: untrusted response cardinality could exceed bounded `top_k`; fixed on path ending `0fbbda7cf057a50cc01d3ffd08ab0e716ad359a5`.
+- Live-hook RED `251fdf8fce62c2378e678c9465cf9cb3b0efd2bd` / CI `33909386169`.
+- Final GREEN `974a9fb64a1bc66864b0cad82fe42a22225608c5` / CI `33909554302`: all four permanent jobs green; PHPUnit 368/368, 1,642 assertions; Composer audit clean; full WordPress smoke and offline live-Qdrant gating green.
 - Package artifact `9950829684`, digest `sha256:e701359c6b955a54de73a0e9402db4d528f2e04049b2e6b584f4c0fbc2484958`.
-- Independent Task 5 review submission PR #11 review `5116935253`: **Critical 0 / Important 0 unresolved**.
-- No unresolved PR review threads.
+- Independent Task 5 review PR #11 review `5116935253`: **Critical 0 / Important 0 unresolved**; no unresolved review threads.
+
+### Task 6 — Pinecone adapter — COMPLETE
+
+Delivered an offline-testable Pinecone raw-vector adapter with fixed validated HTTPS data/control-plane boundaries, server-side API-key handling, pinned Pinecone REST API version, redirects disabled/no retries, remote index compatibility verification, profile-isolated namespaces, deterministic stable-ID upsert/delete, portable filters, bounded/fail-closed result mapping, sanitized errors, truthful health/capabilities, and a default-off credential-gated live health hook.
+
+- Genuine initial RED `e9334c8e0e15283988c6d1985426004c7e0c2956` / CI `33910441036`: PHPStan 0 errors; PHPUnit 378 tests / 1,652 assertions / exactly 10 intended failures because Pinecone production contracts were absent; JS/package/WordPress smoke green.
+- Initial GREEN `c8485e361d4cbc919b73f9d4f9fdb3049315a2c8` / CI `33911164667`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 378/378, 1,709 assertions; Composer audit clean; full WordPress smoke green.
+- API-version contract was pinned through RED `21688ddc294f7536df54adf89acba9a65e1c83db` and fix `22f81c4f57596bba5f14d30c10d05548ff612b56`.
+- Pinecone live smoke gating landed through `03da15615014557213bf4b0d052004656ee1ecd1` → `52fe11c275891256578651138ec48462ce6f4853`; CI `33911943423` passed all four permanent jobs, PHPUnit 379/379, 1,712 assertions.
+- Fresh independent review found one Important adapter-capability mismatch: portable boolean membership values were sent to Pinecone even though Pinecone membership filtering does not support boolean `$in` values.
+- The first regression attempt `b23b79b40535a88a652451f179adb134e3ef9293` stopped at PHPCS and is not counted as RED.
+- Genuine review RED `d73f5bfc6309da8c435b4a9f2d31ae4e00e8133d` / CI `33913238466`: PHPStan 0 errors; PHPUnit 380 tests / 1,713 assertions / exactly one intended failure, proving the adapter continued toward network execution rather than rejecting unsupported boolean membership.
+- Final implementation GREEN `29f1d94394827615b82fadb7129d755a5bce50a3` / CI `33913502927`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all green; PHPStan 0 errors; PHPUnit 380/380, 1,714 assertions; Composer audit clean; full WordPress smoke green.
+- Package artifact `9953323840`, digest `sha256:24ef3bd3794db00222d5999736304161a089465c32a55b68ced237ec45ce0c86`.
+- Independent Task 6 review PR #11 review `5117304228`: **Critical 0 / Important 0 unresolved**.
+- No unresolved PR review threads at Task 6 closeout.
 
 ## Exact next unfinished action
 
-Begin M08 Task 6 — Pinecone adapter — with a test-only offline RED against the common vector-store contracts and a fake transport. Cover fixed/validated endpoint construction, server-side credentials, namespace/collection and compatibility isolation, deterministic stable-ID upsert/delete, portable filter mapping, bounded top-K search/result validation, health/capability truthfulness, sanitized errors, and no automatic retries. Require genuine behavioral RED before production implementation, then GREEN, fresh independent review, exact-SHA permanent CI, and durable Task 6 evidence before Chroma Task 7.
+Begin M08 Task 7 — Chroma adapter — with a test-only offline RED against the common vector-store contracts and a fake transport. Cover fixed/validated administrator-owned HTTPS endpoint construction, server-side credential handling where configured, collection/profile compatibility isolation, deterministic stable-ID upsert/delete, portable filter mapping, bounded top-K search/result validation, health/capability truthfulness, sanitized errors, and no automatic retries. Require genuine behavioral RED before production implementation, then minimum GREEN behavior, fresh independent review, exact-SHA permanent CI, and durable Task 7 evidence before Task 8.
