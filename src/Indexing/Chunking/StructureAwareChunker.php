@@ -53,13 +53,15 @@ final class StructureAwareChunker {
 				)
 			);
 			foreach ( $this->split_to_budget( $paragraph['content'] ) as $piece ) {
-				$section_sequence                   = $section_sequences[ $section_key ] ?? 0;
-				$descriptors[]                      = array(
+				$section_sequence = $section_sequences[ $section_key ] ?? 0;
+
+				$descriptors[] = array(
 					'content'          => $piece,
 					'heading_path'     => $paragraph['heading_path'],
 					'section_id'       => $section_id,
 					'section_sequence' => $section_sequence,
 				);
+
 				$section_sequences[ $section_key ] = $section_sequence + 1;
 			}
 		}
