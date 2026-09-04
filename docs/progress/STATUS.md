@@ -2,14 +2,16 @@
 
 - Completed milestones on `main`: **M00-M07**.
 - Latest integrated milestone: **M07 — Content Normalization, Chunking, Deduplication & Incremental Indexing — COMPLETE**.
-- Verified `main` integration SHA: `173bef46d5301f185018cac93256521a5bf23032`.
-- M07 integration PR: **#9 — merged** on 2026-09-04.
-- M07 final feature head: `a73eccba8a974fae28e34d7cee807dbad5cb2be6`.
-- M07 final-head CI: `33853251131` — all permanent jobs passed.
-- M07 post-merge `main` CI: `33854072764` — all permanent jobs passed.
-- M07 post-merge artifact: `9929654030`, digest `sha256:dde8996ed71b6b3d3d1ff6ec0fdb93d932d85993e00cc8f7bbd9ab70624cdcc3`.
-- Design/spec and implementation plan: **AUTO-APPROVED — SCHEDULED MODE**.
-- Next milestone: **M08 — Embeddings & Vector Stores — NOT STARTED**.
+- Current `main` SHA: `b642813c92ee152805c16a0bd6902b4ce67e33df`.
+- M07 feature PR: **#9 — merged**.
+- M07 durable closeout PR: **#10 — merged** on 2026-09-04.
+- M07 closeout merge SHA: `b642813c92ee152805c16a0bd6902b4ce67e33df`.
+- M07 post-closeout `main` CI: `33860207844` — all four permanent jobs passed.
+- M07 post-closeout artifact: `9931964669`, digest `sha256:39b33e3716b4c99e0b8b3239ab2a92f95077476b97208ed8c50bc1dee73c8413`.
+- Current milestone: **M08 — Embeddings & Vector Stores — IN PROGRESS**.
+- M08 branch: `feat/m08-embeddings-vector-stores`.
+- M08 design/spec and implementation plan: **AUTO-APPROVED — SCHEDULED MODE**.
+- M08 Task 1: **COMPLETE on feature branch**; Task 2 is next.
 
 ## M07 final state — COMPLETE
 
@@ -17,57 +19,32 @@ M07 delivers the pure-PHP deterministic pipeline:
 
 `DocumentRecord -> ContentNormalizer -> StructureAwareChunker -> ChunkDeduplicator -> IncrementalIndexPlanner -> DocumentIndexResult`
 
-The milestone remains execution-free: M08 owns embedding/vector-store/provider execution and M09 owns queue/synchronization execution.
+PR #10 reconciled the durable milestone ledger after PR #9's implementation merge. Exact PR #10 head `52daa443823b0e10c15cd813471222886dd2ef92` passed CI `33855408235`, received fresh review with Critical 0 / Important 0 / no blockers, and was merged with expected-head protection. Fresh `main` CI `33860207844` at `b642813c92ee152805c16a0bd6902b4ce67e33df` passed `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
 
-### Completed task gates
+## M08 — IN PROGRESS
 
-- Task 1 — Deterministic content normalization: complete; independent review clean.
-- Task 2 — Token budget/configuration contracts: complete; independent review clean.
-- Task 3 — Immutable chunk records and structure-aware splitting: complete; independent review clean.
-- Task 4 — Deliberate bounded overlap: complete after injected-counter and repeated-heading section-isolation review fixes; final independent review clean.
-- Task 5 — Compatibility-safe deduplication: complete after deterministic canonical-selection/output-order fixes; final independent review clean.
-- Task 6 — Incremental index planning: complete after visibility/indexed-metadata/token-count invalidation fixes; final independent review clean.
-- Task 7 — Source-to-index-plan integration and milestone closeout: complete after lineage-refresh and stable section/chunk identity hardening; final whole-M07 review clean.
+### Architecture gate
 
-## Task 7 review-driven hardening
+- Design/spec: `docs/superpowers/specs/2026-09-04-m08-embeddings-vector-stores-design.md`, commit `b63add146280f5770939f52c9806ef928c0d39ca` — **AUTO-APPROVED — SCHEDULED MODE** after self-review.
+- Implementation plan: `docs/superpowers/plans/2026-09-04-m08-embeddings-vector-stores.md`, commit `6b3ae63ed84c1e0e81884d32ae6f3c1577c4bf0a` — **AUTO-APPROVED — SCHEDULED MODE**.
+- Architecture uses capability-aware vector-store contracts, keeps provider HTTP/auth inside `Providers`, keeps generic embedding orchestration in `Embeddings`, and excludes M09 queue/retries and M10 hybrid retrieval.
 
-- **Document-lineage metadata refresh:** independent review found stable embeddings could retain stale citation lineage. Genuine RED `9fa0fe7eff90fb21aace4000445acdb2c0891ce8` / CI `33834820185`; GREEN `3bf83a1b9b5dee2df2440ff55471b2bf39ba22c0` / CI `33835032002`. `IndexPlan` now has deterministic `metadataRefresh` work.
-- **Repeated-heading public parent identity:** independent review found distinct repeated headings could share a parent key. RED `c67559f5f8f4f3ae6a7f90e9f5fe4611c3e6818f` / CI `33838410737`; GREEN `a7e44261d5743db9759c131f2fa5b29cb42fead4` / CI `33838539319`.
-- **Localized chunk-count identity:** independent review found document-global chunk sequence caused downstream key churn. Genuine RED `ba5bda5e22cc5d164ae3fdbe41fd5bf9a717c9cc` / CI `33842200871`: PHPStan clean; PHPUnit 310 tests / 1434 assertions / exactly 1 intended failure. Stable chunk identity now uses section-local chunk ordinals while global `sequence` remains presentation/order metadata only.
-- **Unrelated-heading insertion stability:** independent review found document-global section ordinals still destabilized later unchanged sections. Genuine RED `7dfaae131323839317ceddddc357cf76649cecb3` / CI `33843112724`: PHPStan clean; PHPUnit 311 tests / 1439 assertions / exactly 1 intended failure. Section occurrence ordinals are now scoped to the same full heading path.
+### Task 1 — Embedding contracts and compatibility fingerprints — COMPLETE
 
-## Final M07 contracts
+Implemented optional provider embedding capability, embedding request/result/vector/usage value objects, embedding/index profiles, normalization/distance enums, deterministic versioned compatibility fingerprints, finite/list validation, unknown usage semantics, and registry ID consistency.
 
-- Deterministic normalization and structure-aware bounded chunking.
-- Global `ChunkRecord::sequence` is ordering/presentation metadata only.
-- Stable section identity is full structural heading path + same-path occurrence ordinal.
-- Stable chunk identity adds a section-local chunk ordinal.
-- Repeated identical heading paths remain distinct section instances.
-- Overlap never crosses section instances and obeys injected-counter/configured token budgets.
-- Dedup never crosses visibility, language, or embedding-compatibility boundaries.
-- `IndexPlan` deterministically separates `upsert`, `metadataRefresh`, `deleteKeys`, `unchanged`, and duplicate -> canonical aliases.
-- Retrieved/source content remains literal untrusted data.
-- No provider/network/persistence/vector/embedding execution/queue/REST/hook/WordPress-runtime behavior is introduced by M07.
+Genuine TDD evidence:
 
-## Final review / verification
+- Initial RED `17a77855d4634cb8f72d3327f442ef2cd0e76b3f` / CI `33861460302`: PHPStan 0 errors; PHPUnit 320 tests / 1,443 assertions with 7 missing-class errors + 2 expected-exception failures caused by absent M08 behavior.
+- Initial GREEN `5b071adb9426fbca4b632d77a6c09196e01c5e6a` / CI `33862552126`: PHPStan 0 errors; PHPUnit 320/320, 1,463 assertions; Composer audit clean.
+- Independent review found two Important issues: associative arrays violated ordered-list semantics, and control characters could make the line-delimited fingerprint payload ambiguous.
+- Review RED `b5e282d5c8c228b871e04e0f7512484ae4d1e275` / CI `33862913794`: PHPStan 0 errors; PHPUnit 324 tests / 1,467 assertions / exactly 4 intended failures.
+- Review GREEN `9e3b9c85351b383d246860c8f786a9e74ff1dda0` / CI `33863156655`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 324/324, 1,467 assertions; Composer audit clean; full WordPress smoke green.
+- Review outcome after fixes: Critical 0; Important 0 unresolved.
+- Package artifact `9933055991`, digest `sha256:8182986d6e45269b7f943716628edb501e3a5a97ebf14f605e0a331f1ee9e4a0`.
 
-Fresh-session independent whole-M07 final-head review `PRR_kwDOUK8kZs8AAAABMKGtxA` at `a73eccba8a974fae28e34d7cee807dbad5cb2be6` reported:
-
-- Critical: **0**
-- Important: **0**
-- Unresolved blocking review findings: **none**
-
-Final-head CI `33853251131` passed all permanent jobs before merge.
-
-Fresh post-merge `main` CI `33854072764` at `173bef46d5301f185018cac93256521a5bf23032` passed:
-
-- `php-quality` ✅ — PHPStan no errors; PHPUnit **311/311 tests, 1441 assertions**; Composer audit found no security advisories.
-- `js-quality` ✅ — dependency install/audit gate, lint/typecheck/tests/build, provider live-gating, and package assertion all passed.
-- `package` ✅.
-- `wordpress-smoke` ✅ — activation, database, providers, knowledge, file-ingestion, and WooCommerce knowledge smoke passed.
-
-Post-merge artifact: `9929654030`, digest `sha256:dde8996ed71b6b3d3d1ff6ec0fdb93d932d85993e00cc8f7bbd9ab70624cdcc3`.
+Invalid RED attempts that failed lint before behavioral execution are deliberately excluded from TDD evidence: `8e6b9318842620a4cc6d3e2f136a4973ee952dac`, `6c969c5f21edacb214caf6e3eee15d265cd8913d`, and review-test attempt `64175895da76d473ce68b27d8bef6871fbea5676`.
 
 ## Exact next unfinished action
 
-Verify this documentation-only M07 closeout branch with the full permanent CI matrix, merge it to `main`, verify fresh post-closeout `main` CI, then begin **M08 — Embeddings & Vector Stores** with fresh repository recovery plus design/spec/plan auto-approval.
+Begin M08 Task 2 with a test-only commit proving deterministic bounded batching and embedding response validation (missing/duplicate/out-of-range indices, inconsistent dimensions, ordered reconstruction, usage aggregation), plus fake-transport OpenAI/OpenRouter embedding request/error behavior. Require genuine exact-SHA RED before production implementation, then GREEN, independent review, and durable evidence update.
