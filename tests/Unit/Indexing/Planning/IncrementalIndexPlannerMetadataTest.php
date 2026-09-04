@@ -53,13 +53,30 @@ final class IncrementalIndexPlannerMetadataTest extends TestCase {
 	}
 
 	/**
+	 * Token-count metadata changes require updating the stored index record.
+	 */
+	public function test_token_count_change_forces_upsert(): void {
+		$previous = $this->chunk( 'en', 'Title', array( 'category' => 'docs' ), 1 );
+		$current  = $this->chunk( 'en', 'Title', array( 'category' => 'docs' ), 2 );
+
+		$plan = ( new IncrementalIndexPlanner() )->plan(
+			array( $previous ),
+			new ChunkDeduplicationResult( array( $current ), array() )
+		);
+
+		self::assertSame( array( $current ), $plan->upsert );
+		self::assertSame( array(), $plan->unchanged );
+	}
+
+	/**
 	 * Build one stable-key/content chunk while varying indexed metadata.
 	 *
 	 * @param string               $language Chunk language.
 	 * @param string               $title Citation title.
 	 * @param array<string, mixed> $sourceMetadata Source metadata.
+	 * @param int                  $tokenCount Stored chunk token count.
 	 */
-	private function chunk( string $language, string $title, array $sourceMetadata ): ChunkRecord {
+	private function chunk( string $language, string $title, array $sourceMetadata, int $tokenCount = 1 ): ChunkRecord {
 		return new ChunkRecord(
 			DocumentHasher::hash( array( 'chunk-key' => 'metadata-stable' ) ),
 			'doc-plan',
@@ -85,7 +102,7 @@ final class IncrementalIndexPlannerMetadataTest extends TestCase {
 			0,
 			DocumentHasher::hash( array( 'parent' => 'stable' ) ),
 			array(),
-			1,
+			$tokenCount,
 			'm07-v1',
 			DocumentHasher::hash( array( 'fingerprint' => 'chunking-v1' ) ),
 			null,
