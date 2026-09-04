@@ -19,6 +19,8 @@ use WpRagAiChatbot\Database\TableNames;
  */
 final class V003CreateVectorCollectionsTable implements Migration {
 	/**
+	 * Create the migration.
+	 *
 	 * @param TableNames $tables Table-name resolver.
 	 */
 	public function __construct( private readonly TableNames $tables ) {

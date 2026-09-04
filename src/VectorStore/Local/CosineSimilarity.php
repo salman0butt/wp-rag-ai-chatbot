@@ -20,9 +20,10 @@ final class CosineSimilarity {
 	 *
 	 * @param array<int, int|float> $query Query vector.
 	 * @param array<int, int|float> $candidate Candidate vector.
+	 * @throws InvalidArgumentException When vectors are invalid or incompatible.
 	 */
 	public static function score( array $query, array $candidate ): float {
-		if ( array_is_list( $query ) === false || array_is_list( $candidate ) === false || count( $query ) !== count( $candidate ) || $query === array() ) {
+		if ( false === array_is_list( $query ) || false === array_is_list( $candidate ) || count( $query ) !== count( $candidate ) || array() === $query ) {
 			throw new InvalidArgumentException( 'Cosine vectors must be non-empty ordered lists with matching dimensions.' );
 		}
 

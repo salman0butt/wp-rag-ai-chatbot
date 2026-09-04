@@ -20,6 +20,7 @@ final class LocalVectorStoreConfig {
 	 *
 	 * @param int $candidate_limit Maximum database rows that may reach PHP similarity scoring.
 	 * @param int $max_top_k Maximum requested result count.
+	 * @throws InvalidArgumentException When either bound is invalid.
 	 */
 	public function __construct(
 		public readonly int $candidate_limit,
