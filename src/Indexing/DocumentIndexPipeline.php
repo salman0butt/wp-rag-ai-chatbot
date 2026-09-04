@@ -17,12 +17,18 @@ use WpRagAiChatbot\Indexing\Dedup\ChunkDeduplicator;
 use WpRagAiChatbot\Indexing\Normalization\ContentNormalizer;
 use WpRagAiChatbot\Indexing\Planning\IncrementalIndexPlanner;
 
+// phpcs:disable WordPress.NamingConventions -- Domain contracts use approved camelCase names.
 /**
  * Composes deterministic normalization, chunking, deduplication, and planning.
  */
 final class DocumentIndexPipeline {
 	/**
 	 * Create the pure M07 composition service.
+	 *
+	 * @param ContentNormalizer        $normalizer Deterministic content normalizer.
+	 * @param StructureAwareChunker    $chunker Structure-aware bounded chunker.
+	 * @param ChunkDeduplicator        $deduplicator Compatibility-safe deduplicator.
+	 * @param IncrementalIndexPlanner  $planner Pure incremental index planner.
 	 */
 	public function __construct(
 		private ContentNormalizer $normalizer,
@@ -56,6 +62,9 @@ final class DocumentIndexPipeline {
 
 	/**
 	 * Return the original immutable document when normalization is already stable.
+	 *
+	 * @param DocumentRecord $document Source document.
+	 * @param string         $normalizedContent Deterministically normalized content.
 	 */
 	private function normalizedDocument( DocumentRecord $document, string $normalizedContent ): DocumentRecord {
 		if ( $normalizedContent === $document->content ) {
@@ -81,3 +90,4 @@ final class DocumentIndexPipeline {
 		);
 	}
 }
+// phpcs:enable WordPress.NamingConventions

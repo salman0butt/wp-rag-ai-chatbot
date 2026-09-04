@@ -20,11 +20,11 @@ final readonly class DocumentIndexResult {
 	/**
 	 * Create one immutable document-index result.
 	 *
-	 * @param string                   $normalizedContent Canonical normalized document text.
-	 * @param array<int, ChunkRecord>  $chunks Ordered chunks before deduplication.
-	 * @param array<int, ChunkRecord>  $canonicalChunks Ordered canonical chunks after deduplication.
-	 * @param array<string, string>    $duplicateAliases Duplicate chunk key => canonical chunk key.
-	 * @param IndexPlan                $indexPlan Pure incremental index plan.
+	 * @param string                  $normalizedContent Canonical normalized document text.
+	 * @param array<int, ChunkRecord> $chunks Ordered chunks before deduplication.
+	 * @param array<int, ChunkRecord> $canonicalChunks Ordered canonical chunks after deduplication.
+	 * @param array<string, string>   $duplicateAliases Duplicate chunk key => canonical chunk key.
+	 * @param IndexPlan               $indexPlan Pure incremental index plan.
 	 */
 	public function __construct(
 		public string $normalizedContent,
