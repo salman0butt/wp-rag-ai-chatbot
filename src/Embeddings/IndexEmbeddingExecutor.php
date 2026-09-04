@@ -26,6 +26,9 @@ final class IndexEmbeddingExecutor {
 	/** Maximum chunks embedded by one synchronous execution. */
 	private const MAX_UPSERTS_PER_EXECUTION = 1000;
 
+	/** Maximum vector deletes issued by one synchronous execution. */
+	private const MAX_DELETES_PER_EXECUTION = 1000;
+
 	/**
 	 * Create the execution boundary.
 	 *
@@ -51,6 +54,12 @@ final class IndexEmbeddingExecutor {
 	public function execute( IndexPlan $plan ): void {
 		if ( count( $plan->upsert ) > self::MAX_UPSERTS_PER_EXECUTION ) {
 			throw new InvalidArgumentException( 'Index plan exceeds the bounded embedding execution limit.' );
+		}
+		if ( count( $plan->deleteKeys ) > self::MAX_DELETES_PER_EXECUTION ) {
+			throw new InvalidArgumentException( 'Index plan exceeds the bounded vector delete execution limit.' );
+		}
+		if ( $this->collection->profile->embedding->provider_id !== $this->embedding_service->provider_id() ) {
+			throw new InvalidArgumentException( 'Selected vector profile does not match the configured embedding provider.' );
 		}
 
 		$fingerprint = $this->collection->profile->fingerprint();
