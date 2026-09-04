@@ -218,10 +218,11 @@ final class StructureAwareChunker {
 			throw new ChunkingException( 'Document content is not valid UTF-8.' );
 		}
 
-		$result       = array();
-		$heading_path = array();
-		$paragraph    = array();
-		$section_id   = 0;
+		$result              = array();
+		$heading_path        = array();
+		$heading_occurrences = array();
+		$paragraph           = array();
+		$section_id          = 0;
 
 		foreach ( $lines as $line ) {
 			if ( 1 === preg_match( '/^(#{1,6})[ \t]+(.+?)\s*$/u', $line, $matches ) ) {
@@ -233,7 +234,9 @@ final class StructureAwareChunker {
 				$level          = strlen( $matches[1] );
 				$heading_path   = array_slice( $heading_path, 0, $level - 1 );
 				$heading_path[] = trim( $matches[2] );
-				++$section_id;
+				$heading_key    = DocumentHasher::hash( array( 'heading_path' => $heading_path ) );
+				$section_id     = ( $heading_occurrences[ $heading_key ] ?? 0 ) + 1;
+				$heading_occurrences[ $heading_key ] = $section_id;
 				continue;
 			}
 
