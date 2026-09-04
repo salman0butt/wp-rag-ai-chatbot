@@ -77,6 +77,7 @@ final class IncrementalIndexPlanner {
 			&& $previous->documentContentHash === $current->documentContentHash
 			&& $previous->language === $current->language
 			&& $previous->visibility === $current->visibility
+			&& $previous->tokenCount === $current->tokenCount
 			&& $previous->chunkingFingerprint === $current->chunkingFingerprint
 			&& $previous->embeddingCompatibilityKey === $current->embeddingCompatibilityKey
 			&& DocumentHasher::hash( $previous->sourceMetadata ) === DocumentHasher::hash( $current->sourceMetadata );
