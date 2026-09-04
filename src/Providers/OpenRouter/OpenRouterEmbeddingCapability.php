@@ -19,6 +19,7 @@ use WpRagAiChatbot\Providers\Http\HttpTransportException;
 use WpRagAiChatbot\Providers\ProviderException;
 use WpRagAiChatbot\Providers\ProviderIds;
 
+// phpcs:disable WordPress.Security.EscapeOutput -- ProviderException metadata is sanitized/internal and is never rendered directly.
 /**
  * Adds fixed-endpoint, one-shot embeddings to the direct OpenRouter adapter.
  */
