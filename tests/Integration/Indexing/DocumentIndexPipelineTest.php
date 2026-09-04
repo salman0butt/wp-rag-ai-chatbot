@@ -94,7 +94,7 @@ final class DocumentIndexPipelineTest extends TestCase {
 		$pipeline = $this->pipeline();
 		$initial  = $pipeline->plan( $document );
 
-		$repeat = $pipeline->plan( $document, $initial->canonicalChunks );
+		$repeat   = $pipeline->plan( $document, $initial->canonicalChunks );
 
 		self::assertSame( array(), $repeat->indexPlan->upsert );
 		self::assertSame( array(), $repeat->indexPlan->deleteKeys );
@@ -106,18 +106,18 @@ final class DocumentIndexPipelineTest extends TestCase {
 	 */
 	public function test_localized_section_change_produces_bounded_affected_work(): void {
 		$this->requirePipeline();
-		$before = $this->document(
+		$before   = $this->document(
 			'localized',
 			"# Alpha\n\nAlpha section remains stable with several descriptive words.\n\n# Beta\n\nBeta section contains the original wording for this fixture.\n\n# Gamma\n\nGamma section remains stable with several descriptive words."
 		);
-		$after  = $this->document(
+		$after    = $this->document(
 			'localized',
 			"# Alpha\n\nAlpha section remains stable with several descriptive words.\n\n# Beta\n\nBeta section contains revised wording for this fixture only.\n\n# Gamma\n\nGamma section remains stable with several descriptive words."
 		);
 		$pipeline = $this->pipeline();
 		$initial  = $pipeline->plan( $before );
 
-		$changed = $pipeline->plan( $after, $initial->canonicalChunks );
+		$changed  = $pipeline->plan( $after, $initial->canonicalChunks );
 
 		self::assertNotEmpty( $changed->indexPlan->upsert );
 		self::assertNotEmpty( $changed->indexPlan->unchanged );
