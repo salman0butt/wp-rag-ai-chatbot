@@ -194,7 +194,7 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 			array( $this->config->candidate_limit + 1 )
 		);
 
-		// @phpstan-ignore argument.type -- SQL is assembled only from fixed internal portable-filter fragments.
+		// @phpstan-ignore argument.type
 		$prepared = $this->connection->prepare( $sql, ...$args );
 		$rows     = $this->connection->get_results( $prepared );
 		if ( count( $rows ) > $this->config->candidate_limit ) {
