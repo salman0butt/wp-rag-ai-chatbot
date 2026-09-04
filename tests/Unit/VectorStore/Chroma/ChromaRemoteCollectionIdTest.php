@@ -28,14 +28,14 @@ use WpRagAiChatbot\VectorStore\VectorStoreException;
 final class ChromaRemoteCollectionIdTest extends TestCase {
 	/** A non-UUID remote collection ID must fail before a mutation request is sent. */
 	public function test_upsert_rejects_malformed_remote_collection_uuid(): void {
-		$profile     = new VectorIndexProfile(
+		$profile    = new VectorIndexProfile(
 			new EmbeddingProfile( 'openai-direct', 'model', 2, NormalizationMode::NONE ),
 			DistanceMetric::COSINE
 		);
-		$collection  = new VectorCollection( 'docs', $profile );
-		$physical    = 'wp-' . substr( hash( 'sha256', $collection->id ), 0, 12 ) . '-' . substr( $profile->fingerprint(), 0, 16 );
+		$collection = new VectorCollection( 'docs', $profile );
+		$physical   = 'wp-' . substr( hash( 'sha256', $collection->id ), 0, 12 ) . '-' . substr( $profile->fingerprint(), 0, 16 );
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- PHPUnit unit bootstrap does not load WordPress runtime functions.
-		$body        = json_encode(
+		$body       = json_encode(
 			array(
 				'id'                 => '------------------------------------',
 				'name'               => $physical,
@@ -47,13 +47,13 @@ final class ChromaRemoteCollectionIdTest extends TestCase {
 			),
 			JSON_THROW_ON_ERROR
 		);
-		$transport   = new QdrantFakeTransport( array( new HttpResponse( 200, array(), $body ) ) );
-		$store       = new ChromaVectorStore(
+		$transport = new QdrantFakeTransport( array( new HttpResponse( 200, array(), $body ) ) );
+		$store     = new ChromaVectorStore(
 			new ChromaConfig( 'https://chroma.example.test', 'tenant', 'database', 'secret' ),
 			$profile,
 			$transport
 		);
-		$record      = new VectorRecord( $collection, 'chunk:1', array( 1.0, 0.0 ), $profile->fingerprint() );
+		$record    = new VectorRecord( $collection, 'chunk:1', array( 1.0, 0.0 ), $profile->fingerprint() );
 
 		$this->expectException( VectorStoreException::class );
 		try {
