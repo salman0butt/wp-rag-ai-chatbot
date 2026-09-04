@@ -25,7 +25,8 @@ final class VectorSearchResult {
 	/**
 	 * Create a search result.
 	 *
-	 * @param array $matches Ordered matches.
+	 * @param array $matches Untrusted result values.
+	 * @phpstan-param array<array-key, mixed> $matches
 	 * @throws InvalidArgumentException When matches are not an ordered list.
 	 */
 	public function __construct( array $matches ) {

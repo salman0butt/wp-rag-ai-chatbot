@@ -20,18 +20,26 @@ final class VectorSearchRequest {
 	private const MAX_TOP_K = 100;
 
 	/**
+	 * Validated query vector.
+	 *
+	 * @var list<int|float>
+	 */
+	public readonly array $vector;
+
+	/**
 	 * Create a search request.
 	 *
 	 * @param VectorCollection  $collection Collection boundary.
-	 * @param list<int|float>   $vector Query vector.
+	 * @param array             $vector Untrusted query vector.
 	 * @param int               $top_k Result count limit.
 	 * @param string            $compatibility_fingerprint Compatibility fingerprint.
 	 * @param VectorFilter|null $filter Optional portable filter.
+	 * @phpstan-param array<array-key, mixed> $vector
 	 * @throws InvalidArgumentException When the request is invalid or incompatible.
 	 */
 	public function __construct(
 		public readonly VectorCollection $collection,
-		public readonly array $vector,
+		array $vector,
 		public readonly int $top_k,
 		public readonly string $compatibility_fingerprint,
 		public readonly ?VectorFilter $filter = null
@@ -50,5 +58,12 @@ final class VectorSearchRequest {
 		if ( ! hash_equals( $collection->profile->fingerprint(), $compatibility_fingerprint ) ) {
 			throw new InvalidArgumentException( 'Vector search compatibility fingerprint does not match its collection.' );
 		}
+
+		/**
+		 * Validated query vector.
+		 *
+		 * @var list<int|float> $vector
+		 */
+		$this->vector = $vector;
 	}
 }

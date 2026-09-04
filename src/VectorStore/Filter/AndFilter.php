@@ -28,7 +28,8 @@ final class AndFilter implements VectorFilter {
 	/**
 	 * Create a conjunction filter.
 	 *
-	 * @param array $filters Child filters.
+	 * @param array $filters Untrusted child filter values.
+	 * @phpstan-param array<array-key, mixed> $filters
 	 * @throws InvalidArgumentException When the list is invalid.
 	 */
 	public function __construct( array $filters ) {

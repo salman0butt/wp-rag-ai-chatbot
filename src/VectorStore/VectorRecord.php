@@ -19,21 +19,37 @@ final class VectorRecord {
 	private const MAX_METADATA_ENTRIES = 32;
 
 	/**
+	 * Validated dense vector.
+	 *
+	 * @var list<int|float>
+	 */
+	public readonly array $values;
+
+	/**
+	 * Validated portable metadata.
+	 *
+	 * @var array<string, scalar>
+	 */
+	public readonly array $metadata;
+
+	/**
 	 * Create a vector record.
 	 *
-	 * @param VectorCollection      $collection Collection boundary.
-	 * @param string                $id Stable record ID.
-	 * @param list<int|float>       $values Dense vector values.
-	 * @param string                $compatibility_fingerprint Compatibility fingerprint.
-	 * @param array<string, scalar> $metadata Portable metadata.
+	 * @param VectorCollection $collection Collection boundary.
+	 * @param string           $id Stable record ID.
+	 * @param array            $values Untrusted dense vector values.
+	 * @param string           $compatibility_fingerprint Compatibility fingerprint.
+	 * @param array            $metadata Untrusted metadata.
+	 * @phpstan-param array<array-key, mixed> $values
+	 * @phpstan-param array<array-key, mixed> $metadata
 	 * @throws InvalidArgumentException When record data is invalid or incompatible.
 	 */
 	public function __construct(
 		public readonly VectorCollection $collection,
 		public readonly string $id,
-		public readonly array $values,
+		array $values,
 		public readonly string $compatibility_fingerprint,
-		public readonly array $metadata = array()
+		array $metadata = array()
 	) {
 		if ( 1 !== preg_match( '/^[A-Za-z0-9][A-Za-z0-9._:-]{0,191}$/', $id ) ) {
 			throw new InvalidArgumentException( 'Vector record ID is invalid.' );
@@ -43,13 +59,28 @@ final class VectorRecord {
 			throw new InvalidArgumentException( 'Vector record compatibility fingerprint does not match its collection.' );
 		}
 		self::validate_metadata( $metadata );
+
+		/**
+		 * Validated dense vector values.
+		 *
+		 * @var list<int|float> $values
+		 */
+		$this->values = $values;
+
+		/**
+		 * Validated portable metadata.
+		 *
+		 * @var array<string, scalar> $metadata
+		 */
+		$this->metadata = $metadata;
 	}
 
 	/**
 	 * Validate a dense ordered finite vector.
 	 *
-	 * @param array<int|float> $values Dense vector.
-	 * @param int              $dimensions Expected dimensions.
+	 * @param array $values Dense vector.
+	 * @param int   $dimensions Expected dimensions.
+	 * @phpstan-param array<array-key, mixed> $values
 	 * @throws InvalidArgumentException When vector data is invalid.
 	 */
 	private static function validate_vector( array $values, int $dimensions ): void {
@@ -69,7 +100,8 @@ final class VectorRecord {
 	/**
 	 * Validate portable scalar metadata.
 	 *
-	 * @param array<string, scalar> $metadata Metadata values.
+	 * @param array $metadata Metadata values.
+	 * @phpstan-param array<array-key, mixed> $metadata
 	 * @throws InvalidArgumentException When metadata exceeds portable bounds.
 	 */
 	private static function validate_metadata( array $metadata ): void {

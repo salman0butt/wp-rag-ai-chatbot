@@ -29,7 +29,8 @@ final class InFilter implements VectorFilter {
 	 * Create a membership filter.
 	 *
 	 * @param string $key Portable metadata key.
-	 * @param array  $values Allowed scalar values.
+	 * @param array  $values Untrusted scalar candidates.
+	 * @phpstan-param array<array-key, mixed> $values
 	 * @throws InvalidArgumentException When filter input is invalid.
 	 */
 	public function __construct( public readonly string $key, array $values ) {
