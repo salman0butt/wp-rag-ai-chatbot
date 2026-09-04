@@ -130,6 +130,14 @@ final class LocalVectorStoreIntegrationTest extends TestCase {
 			'fingerprint'   => $fingerprint,
 		);
 
+		$connection->row_results[] = array(
+			'fingerprint' => $fingerprint,
+			'dimensions'  => 2,
+		);
+		$connection->row_results[] = array(
+			'fingerprint' => $fingerprint,
+			'dimensions'  => 2,
+		);
 		$connection->delete_results = array( 1, 0 );
 
 		$store = $this->store( $connection, 10, 5 );
