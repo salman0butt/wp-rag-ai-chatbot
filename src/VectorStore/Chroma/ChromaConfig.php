@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\VectorStore\Chroma;
 
 use InvalidArgumentException;
 
+// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Domain exceptions are not rendered output.
 /**
  * Validated administrator-owned Chroma endpoint, scope, and optional token.
  */
