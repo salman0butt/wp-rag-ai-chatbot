@@ -25,10 +25,10 @@ final class DocumentIndexPipeline {
 	/**
 	 * Create the pure M07 composition service.
 	 *
-	 * @param ContentNormalizer        $normalizer Deterministic content normalizer.
-	 * @param StructureAwareChunker    $chunker Structure-aware bounded chunker.
-	 * @param ChunkDeduplicator        $deduplicator Compatibility-safe deduplicator.
-	 * @param IncrementalIndexPlanner  $planner Pure incremental index planner.
+	 * @param ContentNormalizer       $normalizer Deterministic content normalizer.
+	 * @param StructureAwareChunker   $chunker Structure-aware bounded chunker.
+	 * @param ChunkDeduplicator       $deduplicator Compatibility-safe deduplicator.
+	 * @param IncrementalIndexPlanner $planner Pure incremental index planner.
 	 */
 	public function __construct(
 		private ContentNormalizer $normalizer,
