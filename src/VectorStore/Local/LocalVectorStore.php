@@ -301,7 +301,8 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 
 		if ( $filter instanceof InFilter ) {
 			$clauses = array();
-			$args    = array();
+
+			$args = array();
 			foreach ( $filter->values as $value ) {
 				$clauses[] = 'JSON_EXTRACT(metadata_json, %s) = JSON_EXTRACT(%s, \'$\')';
 				$args[]     = $this->json_path( $filter->key );
@@ -312,12 +313,14 @@ final class LocalVectorStore implements VectorUpsertStore, VectorDeleteStore, Ve
 		}
 
 		if ( $filter instanceof AndFilter ) {
-			$sql  = '';
+			$sql = '';
+
 			$args = array();
 			foreach ( $filter->filters as $child ) {
 				list( $child_sql, $child_args ) = $this->filter_sql( $child );
-				$sql                            .= $child_sql;
-				$args                            = array_merge( $args, $child_args );
+				$sql .= $child_sql;
+
+				$args = array_merge( $args, $child_args );
 			}
 
 			return array( $sql, $args );
