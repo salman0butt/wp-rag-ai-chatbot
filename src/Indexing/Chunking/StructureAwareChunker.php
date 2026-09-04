@@ -47,8 +47,8 @@ final class StructureAwareChunker {
 		foreach ( $this->structured_paragraphs( $content ) as $paragraph ) {
 			$section_id = $paragraph['section_id'];
 			foreach ( $this->split_to_budget( $paragraph['content'] ) as $piece ) {
-				$section_sequence = $section_sequences[ $section_id ] ?? 0;
-				$descriptors[]    = array(
+				$section_sequence                 = $section_sequences[ $section_id ] ?? 0;
+				$descriptors[]                    = array(
 					'content'          => $piece,
 					'heading_path'     => $paragraph['heading_path'],
 					'section_id'       => $section_id,
