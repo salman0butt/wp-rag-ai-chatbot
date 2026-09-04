@@ -1,168 +1,113 @@
 # M07 Chunking, Deduplication & Incremental Indexing Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** use applicable Superpowers skills and execute task-by-task with genuine RED/GREEN evidence, exact-SHA CI, independent review, and durable repository handoff.
 
 **Goal:** Transform canonical `DocumentRecord` values into deterministic structure-aware chunks and pure incremental index plans that avoid unnecessary embedding work.
 
-**Architecture:** A WordPress-independent PHP pipeline normalizes text, applies deterministic budgeted structure-aware splitting, creates immutable chunk records, deduplicates them by compatibility-safe fingerprints, and compares old/new canonical chunks to produce an index plan. M07 performs no embedding, vector, queue, or persistence side effects.
+**Architecture:** WordPress-independent PHP pipeline: normalize text -> deterministic structure-aware bounded splitting -> immutable stable chunk records -> compatibility-safe dedup -> old/new incremental plan. M07 performs no embedding, vector, queue, persistence, network, hook, REST, or WordPress runtime side effects.
 
 **Tech Stack:** PHP 8.2+, PHPUnit 10, PHPStan, PHPCS/WPCS, existing `DocumentRecord`/`DocumentHasher`.
 
 **Spec:** `docs/superpowers/specs/2026-09-03-m07-chunking-dedup-indexing-design.md`
 
-## Global Constraints
-
-- Server runtime remains PHP/WordPress; no mandatory Node/Python/external service.
-- `DocumentRecord` is the canonical input contract.
-- M07 must not generate embeddings, write vectors, or implement the M09 job queue.
-- Source text/metadata remains untrusted data and is never executed/interpreted as policy.
-- Default lexical token budget is deterministic and injectable; provider-exact tokenization remains M08-compatible.
-- Every behavior change requires genuine RED before production implementation.
-- Every task requires independent review before the next behavior task begins.
-
----
-
-### Task 1: Deterministic content normalization
-
-**Files:**
-- Create: `src/Indexing/Normalization/ContentNormalizer.php`
-- Create: `tests/Unit/Indexing/Normalization/ContentNormalizerTest.php`
-
-**Interfaces:**
-- Produces: `ContentNormalizer::normalize(string $content): string`
-
-- [ ] **Step 1: Write failing fixtures** covering CRLF/CR, leading UTF-8 BOM, trailing horizontal whitespace, 3+ blank-line collapse, leading/trailing whitespace, instruction-like text preservation, and idempotence.
-
-```php
-self::assertSame(
-    "# Title\n\nKeep <script>literal</script> text\n\nEnd",
-    ContentNormalizer::normalize("\xEF\xBB\xBF# Title  \r\n\r\n\r\nKeep <script>literal</script> text\t\r\n\r\nEnd  ")
-);
-self::assertSame($normalized, ContentNormalizer::normalize($normalized));
-```
-
-- [ ] **Step 2: Run focused test on the test-only commit** via authoritative GitHub Actions. Expected: PHPUnit failure because `ContentNormalizer` does not exist; PHPStan/PHPCS must reach the intended behavioral failure rather than fail for test syntax/style.
-- [ ] **Step 3: Implement minimum normalizer**: strip one leading UTF-8 BOM; normalize line endings; `rtrim($line, " \t")`; collapse `\n{3,}` to `\n\n`; trim whole content.
-- [ ] **Step 4: Run focused + full PHP verification**. Expected: Task 1 tests green plus all existing tests green.
-- [ ] **Step 5: Independent review** for meaning preservation, untrusted-content handling, UTF-8/BOM edge behavior, and M04–M06 compatibility.
-- [ ] **Step 6: Commit/update durable M07 evidence** only after review is clean.
-
-### Task 2: Token budget/configuration contracts
-
-**Files:**
-- Create: `src/Indexing/Chunking/TokenCounter.php`
-- Create: `src/Indexing/Chunking/LexicalTokenCounter.php`
-- Create: `src/Indexing/Chunking/ChunkingConfig.php`
-- Create: `tests/Unit/Indexing/Chunking/LexicalTokenCounterTest.php`
-- Create: `tests/Unit/Indexing/Chunking/ChunkingConfigTest.php`
-
-**Interfaces:**
-- `TokenCounter::count(string $text): int`
-- `new ChunkingConfig(int $maxTokens = 512, int $overlapTokens = 64, string $chunkingVersion = 'm07-v1', ?string $embeddingCompatibilityKey = null)`
-- `ChunkingConfig::fingerprint(): string`
-
-- [ ] **Step 1: RED tests** for ASCII/Unicode/punctuation/empty token counts and config bounds (`maxTokens` 32–4096; overlap >=0 and <=25% max; non-empty version; null-or-non-empty compatibility key; deterministic fingerprint).
-- [ ] **Step 2: Verify RED** on exact test SHA.
-- [ ] **Step 3: Implement minimal contracts** using Unicode regex `/[\p{L}\p{N}]+|[^\s\p{L}\p{N}]/u`; fail closed on invalid UTF-8.
-- [ ] **Step 4: Verify GREEN and full PHP suite.**
-- [ ] **Step 5: Independent review** for deterministic cross-source behavior and no provider coupling.
-
-### Task 3: Immutable chunk records and structure-aware splitting
-
-**Files:**
-- Create: `src/Indexing/Chunking/ChunkRecord.php`
-- Create: `src/Indexing/Chunking/ChunkingException.php`
-- Create: `src/Indexing/Chunking/StructureAwareChunker.php`
-- Create: `tests/Unit/Indexing/Chunking/ChunkRecordTest.php`
-- Create: `tests/Unit/Indexing/Chunking/StructureAwareChunkerTest.php`
-
-**Interfaces:**
-- `StructureAwareChunker::__construct(TokenCounter $counter, ChunkingConfig $config)`
-- `StructureAwareChunker::chunks(DocumentRecord $document): array<int, ChunkRecord>`
-- `ChunkRecord` properties exactly as listed in the M07 design spec.
-
-- [ ] **Step 1: RED fixtures** for headings, paragraphs, sentence fallback, one oversized sentence, zero/tiny content, stable order/keys/hashes, metadata/visibility copying, heading paths, parent keys, and deterministic repeated calls.
-- [ ] **Step 2: Verify RED** because chunk types/implementation are absent.
-- [ ] **Step 3: Implement section parser** recognizing only ATX `#`–`######` headings already present in canonical text; blank-line blocks are paragraphs.
-- [ ] **Step 4: Implement recursive boundary splitting** in section → paragraph → sentence → Unicode lexical-unit order and assign zero-based final sequences only after boundaries are stable.
-- [ ] **Step 5: Implement deterministic keys/hashes** through `DocumentHasher`; never use timestamps/randomness.
-- [ ] **Step 6: Verify GREEN/full suite, then independent review.**
-
-### Task 4: Deliberate bounded overlap
-
-**Files:**
-- Modify: `src/Indexing/Chunking/StructureAwareChunker.php`
-- Modify: `tests/Unit/Indexing/Chunking/StructureAwareChunkerTest.php`
-
-**Interfaces:** unchanged from Task 3.
-
-- [ ] **Step 1: RED tests** proving overlap is at most configured tokens, applies only between adjacent chunks with the same structural parent, never crosses sections/documents, and always leaves room for new content.
-- [ ] **Step 2: Verify RED** on exact SHA.
-- [ ] **Step 3: Implement minimal trailing-unit overlap** using the injected counter/budget rules.
-- [ ] **Step 4: Verify GREEN/full suite and independent review** for infinite-loop/quadratic-risk issues.
-
-### Task 5: Compatibility-safe deduplication
-
-**Files:**
-- Create: `src/Indexing/Dedup/ChunkDeduplicationResult.php`
-- Create: `src/Indexing/Dedup/ChunkDeduplicator.php`
-- Create: `tests/Unit/Indexing/Dedup/ChunkDeduplicatorTest.php`
-
-**Interfaces:**
-- `ChunkDeduplicator::deduplicate(array $chunks): ChunkDeduplicationResult`
-- Result exposes ordered `canonicalChunks` plus `duplicateAliases` (`duplicate chunk key => canonical chunk key`).
-
-- [ ] **Step 1: RED tests** for identical content dedup, earliest-sequence canonical selection, deterministic aliases, public/private isolation, language isolation, embedding-compatibility isolation, and no mutation of input records.
-- [ ] **Step 2: Verify RED.**
-- [ ] **Step 3: Implement O(n) hash-map dedup** with `DocumentHasher` fingerprint over normalized content + language + visibility + compatibility key.
-- [ ] **Step 4: Verify GREEN/full suite and independent privacy review.**
-
-### Task 6: Incremental index planning
-
-**Files:**
-- Create: `src/Indexing/Planning/IndexPlan.php`
-- Create: `src/Indexing/Planning/IncrementalIndexPlanner.php`
-- Create: `tests/Unit/Indexing/Planning/IncrementalIndexPlannerTest.php`
-
-**Interfaces:**
-- `IncrementalIndexPlanner::plan(array $previousChunks, ChunkDeduplicationResult $current): IndexPlan`
-- `IndexPlan` exposes deterministically ordered `upsert`, `deleteKeys`, `unchanged`, and `duplicateAliases`.
-
-- [ ] **Step 1: RED tests** for initial index, exact no-op, one localized changed chunk, removed chunks, new chunks, chunking-fingerprint change, embedding-compatibility change, and deterministic ordering.
-- [ ] **Step 2: Verify RED.**
-- [ ] **Step 3: Implement O(n) maps by chunk key**; unchanged requires same content hash, chunking fingerprint, and compatibility key; changed/replaced current keys are upserts; absent old keys are deletes.
-- [ ] **Step 4: Verify GREEN/full suite and independent review** focused on zero unnecessary re-embed work.
-
-### Task 7: Source-to-index-plan integration and milestone closeout
-
-**Files:**
-- Create: `src/Indexing/DocumentIndexPipeline.php`
-- Create: `src/Indexing/DocumentIndexResult.php`
-- Create: `tests/Integration/Indexing/DocumentIndexPipelineTest.php`
-- Modify: `docs/milestones/M07-chunking-dedup-indexing.md`
-- Modify: `docs/progress/STATUS.md`
-- Modify: `docs/progress/TEST-MATRIX.md` if its existing structure tracks this layer.
-- Modify: `docs/progress/SECURITY.md` if its existing structure tracks milestone reviews.
-- Modify: `docs/FEATURE-MATRIX.md` only after M07 completion.
-
-**Interfaces:**
-- `DocumentIndexPipeline::__construct(ContentNormalizer $normalizer, StructureAwareChunker $chunker, ChunkDeduplicator $deduplicator, IncrementalIndexPlanner $planner)`
-- `DocumentIndexPipeline::plan(DocumentRecord $document, array $previousChunks = []): DocumentIndexResult`
-
-- [ ] **Step 1: RED integration fixtures** representing WordPress-style heading/paragraph content, file-style long text, and WooCommerce-style catalog text; prove deterministic metadata propagation, zero work on unchanged content, and bounded affected work for localized changes.
-- [ ] **Step 2: Verify RED.**
-- [ ] **Step 3: Implement composition service only**; do not add persistence, embeddings, vector calls, queues, hooks, or REST.
-- [ ] **Step 4: Add large-document regression fixture** asserting deterministic bounded chunk count and completion without machine-specific time assertions.
-- [ ] **Step 5: Full security/privacy/performance review** including untrusted prompt-like content preservation, visibility boundaries, linear map behavior, and large-block fallback termination.
-- [ ] **Step 6: Independent whole-M07 review**; fix every Critical/Important finding with regression TDD where behavior changes.
-- [ ] **Step 7: Run exact-final-SHA full CI** (`php-quality`, `js-quality`, `package`, `wordpress-smoke`) and record artifact digest.
-- [ ] **Step 8: Reconcile durable docs, finish PR, merge only the exact verified SHA, then verify fresh post-merge `main` CI before marking M07 complete.**
-
-## Plan self-review
-
-- Spec coverage: normalization, token budget, structure-aware recursion, overlap, lineage, hashes, dedup, compatibility boundaries, incremental planning, integration, performance, security, review, CI, docs, merge and post-merge verification are all mapped to tasks.
-- Placeholder scan: no TODO/TBD or unspecified implementation steps remain.
-- Type consistency: `DocumentRecord` input, `ChunkRecord`, `ChunkDeduplicationResult`, `IndexPlan`, and `DocumentIndexResult` flow consistently from Tasks 1–7.
-- Milestone boundaries: embeddings/vector stores remain M08; queues/sync workers remain M09.
-
 Status: **AUTO-APPROVED — SCHEDULED MODE**
+
+## Global constraints
+
+- `DocumentRecord` is the canonical input.
+- Source content/metadata remains untrusted literal data.
+- Token counting is deterministic and injectable; provider-exact behavior remains M08.
+- Every behavior change requires genuine RED before production code.
+- Every task must pass its independent review gate before later milestone behavior proceeds.
+- Stable chunk identity must not depend on document-global sequence shifts caused by unrelated section chunk-count changes.
+
+## Task 1 — Deterministic normalization
+
+**Implementation:** `ContentNormalizer::normalize(string): string`.
+
+Required evidence: CRLF/CR, BOM, trailing whitespace, blank-run collapse, trim, instruction-like text preservation, idempotence; strict RED/GREEN; independent review.
+
+## Task 2 — Token/config contracts
+
+**Implementation:** `TokenCounter`, `LexicalTokenCounter`, `ChunkingConfig`.
+
+Required evidence: ASCII/Unicode/punctuation/empty counts; config bounds; deterministic fingerprint; invalid UTF-8 fail-closed; strict RED/GREEN; independent review.
+
+## Task 3 — Immutable chunks and structure-aware splitting
+
+**Implementation:** `ChunkRecord`, `ChunkingException`, `StructureAwareChunker`.
+
+Required behavior:
+
+- ATX heading sections and blank-line paragraphs;
+- sentence then lexical/code-point-safe oversized fallback;
+- deterministic global `ChunkRecord::sequence` for final presentation order;
+- deterministic **section-instance identity**;
+- deterministic **section-local chunk ordinal**;
+- `chunkKey = hash(document key + chunking fingerprint + structural path + section instance + section-local ordinal)`;
+- global sequence is **not** stable chunk identity;
+- `parentChunkKey` includes section instance so repeated identical headings remain distinct;
+- stable downstream chunk keys when an earlier section changes chunk count.
+
+Required evidence includes headings, paragraphs, oversized blocks, zero/tiny/huge content, metadata/visibility propagation, repeated headings, stable parent identities, stable downstream identities, deterministic repeated calls, strict RED/GREEN, independent review.
+
+## Task 4 — Deliberate bounded overlap
+
+Overlap applies only between adjacent chunks from the same section instance. Both overlap and final max-token budgets use the injected counter; new content is preserved. Verify repeated-heading isolation, Unicode/fail-closed behavior, bounded termination/performance, strict RED/GREEN, independent review.
+
+## Task 5 — Compatibility-safe dedup
+
+Deduplicate with deterministic fingerprinting over canonical content plus hard compatibility/privacy boundaries. Canonical selection and aliases are deterministic; aliases point duplicate -> canonical. Verify public/private, language, embedding compatibility, immutability, ordering, strict RED/GREEN, independent review.
+
+## Task 6 — Incremental index planning
+
+`IndexPlan` exposes deterministic:
+
+- `upsert`;
+- `metadataRefresh`;
+- `deleteKeys`;
+- `unchanged`;
+- duplicate aliases.
+
+Planner must invalidate reuse for real per-chunk content/security/compatibility/indexed-metadata changes while preserving reusable embeddings for document-wide lineage-only changes through explicit `metadataRefresh`. Verify visibility, language, token count, source metadata, chunking/embedding compatibility, exact no-op, additions/deletions/localized changes, deterministic ordering, strict RED/GREEN, independent review.
+
+## Task 7 — Source-to-index-plan integration and milestone closeout
+
+**Implementation:** `DocumentIndexPipeline`, `DocumentIndexResult`, integration tests, durable M07 docs.
+
+Required integration fixtures:
+
+- WordPress-style canonical heading/paragraph text;
+- file-style long text;
+- WooCommerce-style catalog text;
+- prompt/markup-like text remains literal data;
+- deterministic repeated calls;
+- exact unchanged content produces zero index work;
+- localized content edits produce bounded upsert/embedding work plus explicit lineage metadata refresh where needed;
+- **localized chunk-count change:** an early/middle section may gain/lose chunks while a later byte-identical section retains its `chunkKey` and avoids `upsert`;
+- repeated-identical-heading sections remain distinct parents;
+- large-document bounded completion without machine-specific timing assertions.
+
+### Task 7 quality sequence
+
+1. Write/verify genuine RED on the exact test-only SHA.
+2. Implement the minimum production behavior.
+3. Run exact implementation CI: `php-quality`, `js-quality`, `package`, `wordpress-smoke`; record PHPUnit/PHPStan/audits/artifact digest.
+4. Perform same-session verification/review only as implementation feedback; it does not replace fresh independent review when this session changed production code.
+5. Reconcile `docs/progress/STATUS.md`, this milestone ledger, design spec, plan, security/test matrices where applicable, and PR description.
+6. Verify the exact durable documentation head with the full permanent CI matrix.
+7. Perform a **new fresh-session independent Task 7 / whole-M07 review** and require 0 unresolved Critical / Important findings.
+8. Only then mark Task 7/M07 complete and PR #9 ready.
+9. Verify exact final PR head with full CI.
+10. Merge using exact expected head SHA.
+11. Verify fresh post-merge `main` CI before starting M08.
+
+## Current review-driven Task 7 evidence
+
+- Lineage refresh: review `5109013876`; RED `9fa0fe7eff90fb21aace4000445acdb2c0891ce8` / CI `33834820185`; GREEN `3bf83a1b9b5dee2df2440ff55471b2bf39ba22c0` / CI `33835032002`.
+- Repeated-heading parent identity: review `5109303824`; RED `c67559f5f8f4f3ae6a7f90e9f5fe4611c3e6818f` / CI `33838410737`; GREEN `a7e44261d5743db9759c131f2fa5b29cb42fead4` / CI `33838539319`.
+- Localized chunk-count identity: fresh review `5109627614` found 0 Critical / 1 Important. Genuine RED `ba5bda5e22cc5d164ae3fdbe41fd5bf9a717c9cc` / CI `33842200871` proved a later byte-identical section changed key after an earlier section gained a chunk. Current corrected implementation/test head `a13f6ff1edec5fc0df3c7a319343a1f4dcb24881` has PHPStan clean, PHPUnit **310/310 / 1435 assertions**, Composer audit clean, package green, WordPress smoke green; its JS job is still awaiting completion of the external npm audit call at the latest handoff, so full-matrix GREEN is not yet claimed.
+
+## Milestone boundary
+
+Embeddings/vector stores remain M08. Queue/synchronization execution remains M09. M07 closes only after exact-SHA green CI, clean fresh independent whole-M07 review, durable docs, exact-SHA merge, and post-merge `main` CI.
