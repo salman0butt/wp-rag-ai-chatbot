@@ -45,16 +45,22 @@ final class StructureAwareChunker {
 		$descriptors       = array();
 		$section_sequences = array();
 		foreach ( $this->structured_paragraphs( $content ) as $paragraph ) {
-			$section_id = $paragraph['section_id'];
+			$section_id  = $paragraph['section_id'];
+			$section_key = DocumentHasher::hash(
+				array(
+					'heading_path' => $paragraph['heading_path'],
+					'section_id'   => $section_id,
+				)
+			);
 			foreach ( $this->split_to_budget( $paragraph['content'] ) as $piece ) {
-				$section_sequence                 = $section_sequences[ $section_id ] ?? 0;
-				$descriptors[]                    = array(
+				$section_sequence                   = $section_sequences[ $section_key ] ?? 0;
+				$descriptors[]                      = array(
 					'content'          => $piece,
 					'heading_path'     => $paragraph['heading_path'],
 					'section_id'       => $section_id,
 					'section_sequence' => $section_sequence,
 				);
-				$section_sequences[ $section_id ] = $section_sequence + 1;
+				$section_sequences[ $section_key ] = $section_sequence + 1;
 			}
 		}
 		$descriptors = $this->apply_overlap( $descriptors );
