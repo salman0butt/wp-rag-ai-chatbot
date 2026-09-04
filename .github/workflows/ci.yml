@@ -31,7 +31,35 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm audit --audit-level=critical
+      - name: Audit JavaScript dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for attempt in 1 2 3; do
+            set +e
+            audit_output="$(npm audit --audit-level=critical 2>&1)"
+            audit_status=$?
+            set -e
+
+            printf '%s\n' "$audit_output"
+
+            if [ "$audit_status" -eq 0 ]; then
+              exit 0
+            fi
+
+            if ! printf '%s\n' "$audit_output" | grep -Eq '503 Service Unavailable|audit endpoint returned an error|ECONNRESET|ETIMEDOUT|EAI_AGAIN'; then
+              exit "$audit_status"
+            fi
+
+            if [ "$attempt" -eq 3 ]; then
+              echo "npm audit registry service remained unavailable after 3 attempts." >&2
+              exit "$audit_status"
+            fi
+
+            echo "npm audit registry service unavailable; retrying attempt $((attempt + 1))/3." >&2
+            sleep $((attempt * 10))
+          done
       - run: npm run verify:js
       - run: npm run test:provider:live-gating
       - run: npm run test:package:assertion
