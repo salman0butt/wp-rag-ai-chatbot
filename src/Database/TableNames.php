@@ -36,11 +36,25 @@ final class TableNames {
 	}
 
 	/**
-	 * All tables introduced by M02 in safe deletion order.
+	 * Local vector collections table.
+	 */
+	public function vector_collections(): string {
+		return $this->prefix . 'rag_ai_vector_collections';
+	}
+
+	/**
+	 * Local vectors table.
+	 */
+	public function vectors(): string {
+		return $this->prefix . 'rag_ai_vectors';
+	}
+
+	/**
+	 * All plugin tables in safe deletion order.
 	 *
 	 * @return string[]
 	 */
 	public function all(): array {
-		return array( $this->documents(), $this->sources() );
+		return array( $this->vectors(), $this->vector_collections(), $this->documents(), $this->sources() );
 	}
 }
