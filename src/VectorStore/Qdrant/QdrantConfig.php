@@ -29,7 +29,7 @@ final class QdrantConfig {
 		public readonly string $endpoint,
 		private readonly string $api_key
 	) {
-		$parts = parse_url( $endpoint );
+		$parts = wp_parse_url( $endpoint );
 		if (
 			false === filter_var( $endpoint, FILTER_VALIDATE_URL ) ||
 			! is_array( $parts ) ||
