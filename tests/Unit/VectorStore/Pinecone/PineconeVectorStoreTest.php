@@ -83,7 +83,7 @@ final class PineconeVectorStoreTest extends TestCase {
 	/** Search must map the portable contract onto Pinecone query semantics. */
 	public function test_search_maps_filter_top_k_namespace_and_results(): void {
 		$collection = $this->collection();
-		$body       = '{"matches":[{"id":"chunk:2","score":0.9,"metadata":{"_wp_rag_fingerprint":"' . $collection->profile->fingerprint() . '","lang":"en"}}]}' ;
+		$body       = '{"matches":[{"id":"chunk:2","score":0.9,"metadata":{"_wp_rag_fingerprint":"' . $collection->profile->fingerprint() . '","lang":"en"}}]}';
 		$transport  = new QdrantFakeTransport( array( $this->compatible_index_response(), new HttpResponse( 200, array(), $body ) ) );
 		$store      = $this->store( $transport );
 		$request    = new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 5, $collection->profile->fingerprint(), new EqualsFilter( 'lang', 'en' ) );
@@ -105,7 +105,7 @@ final class PineconeVectorStoreTest extends TestCase {
 
 	/** Search results are untrusted and must preserve compatibility isolation. */
 	public function test_search_rejects_mismatched_response_fingerprint(): void {
-		$body       = '{"matches":[{"id":"chunk:2","score":0.9,"metadata":{"_wp_rag_fingerprint":"wrong-profile","lang":"en"}}]}' ;
+		$body       = '{"matches":[{"id":"chunk:2","score":0.9,"metadata":{"_wp_rag_fingerprint":"wrong-profile","lang":"en"}}]}';
 		$transport  = new QdrantFakeTransport( array( $this->compatible_index_response(), new HttpResponse( 200, array(), $body ) ) );
 		$store      = $this->store( $transport );
 		$collection = $this->collection();
@@ -122,7 +122,7 @@ final class PineconeVectorStoreTest extends TestCase {
 		$fingerprint = $collection->profile->fingerprint();
 		$body        = '{"matches":['
 			. '{"id":"chunk:1","score":0.9,"metadata":{"_wp_rag_fingerprint":"' . $fingerprint . '"}},'
-			. '{"id":"chunk:2","score":0.8,"metadata":{"_wp_rag_fingerprint":"' . $fingerprint . '"}}]}' ;
+			. '{"id":"chunk:2","score":0.8,"metadata":{"_wp_rag_fingerprint":"' . $fingerprint . '"}}]}';
 		$transport   = new QdrantFakeTransport( array( $this->compatible_index_response(), new HttpResponse( 200, array(), $body ) ) );
 		$store       = $this->store( $transport );
 		$request     = new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 1, $fingerprint );
