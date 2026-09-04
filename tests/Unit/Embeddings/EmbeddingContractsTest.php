@@ -96,7 +96,13 @@ final class EmbeddingContractsTest extends TestCase {
 	public function test_embedding_vector_rejects_associative_values(): void {
 		$this->expectException( InvalidArgumentException::class );
 
-		new EmbeddingVector( 0, array( 'first' => 0.1, 'second' => 0.2 ) );
+		new EmbeddingVector(
+			0,
+			array(
+				'first'  => 0.1,
+				'second' => 0.2,
+			)
+		);
 	}
 
 	/**
@@ -119,7 +125,13 @@ final class EmbeddingContractsTest extends TestCase {
 	public function test_embedding_request_rejects_associative_inputs(): void {
 		$this->expectException( InvalidArgumentException::class );
 
-		new EmbeddingRequest( 'model-a', array( 'first' => 'one', 'second' => 'two' ) );
+		new EmbeddingRequest(
+			'model-a',
+			array(
+				'first'  => 'one',
+				'second' => 'two',
+			)
+		);
 	}
 
 	/**
