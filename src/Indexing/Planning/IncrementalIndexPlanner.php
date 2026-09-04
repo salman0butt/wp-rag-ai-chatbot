@@ -66,6 +66,10 @@ final class IncrementalIndexPlanner {
 	/**
 	 * Determine whether an existing key remains compatibility-safe and reusable.
 	 *
+	 * Document-wide source version/content hashes are intentionally excluded here:
+	 * ordinary source edits change them for every chunk, while unchanged current
+	 * ChunkRecord values still carry the fresh lineage metadata for later stages.
+	 *
 	 * @param ChunkRecord $previous Previous canonical chunk.
 	 * @param ChunkRecord $current Current canonical chunk.
 	 */
@@ -73,8 +77,6 @@ final class IncrementalIndexPlanner {
 		return $previous->contentHash === $current->contentHash
 			&& $previous->documentType === $current->documentType
 			&& $previous->title === $current->title
-			&& $previous->sourceVersion === $current->sourceVersion
-			&& $previous->documentContentHash === $current->documentContentHash
 			&& $previous->language === $current->language
 			&& $previous->visibility === $current->visibility
 			&& $previous->tokenCount === $current->tokenCount
