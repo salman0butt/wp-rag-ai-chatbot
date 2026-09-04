@@ -236,6 +236,7 @@ final class StructureAwareChunker {
 				$heading_path[] = trim( $matches[2] );
 				$heading_key    = DocumentHasher::hash( array( 'heading_path' => $heading_path ) );
 				$section_id     = ( $heading_occurrences[ $heading_key ] ?? 0 ) + 1;
+
 				$heading_occurrences[ $heading_key ] = $section_id;
 				continue;
 			}
