@@ -36,13 +36,13 @@ final class PineconeBooleanMembershipFilterTest extends TestCase {
 				DistanceMetric::COSINE
 			)
 		);
-		$transport = new QdrantFakeTransport( array() );
-		$store     = new PineconeVectorStore(
+		$transport  = new QdrantFakeTransport( array() );
+		$store      = new PineconeVectorStore(
 			new PineconeConfig( 'https://docs-example.svc.us-east-1.pinecone.io', 'secret', 'docs-index' ),
 			$collection->profile,
 			$transport
 		);
-		$request   = new VectorSearchRequest(
+		$request    = new VectorSearchRequest(
 			$collection,
 			array( 1.0, 0.0 ),
 			5,
