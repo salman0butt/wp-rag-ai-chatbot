@@ -302,13 +302,22 @@ final class QdrantVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 		}
 	}
 
-	/** Return a profile-isolated physical collection path. */
+	/**
+	 * Return a profile-isolated physical collection path.
+	 *
+	 * @param VectorCollection $collection Logical collection.
+	 */
 	private function collection_path( VectorCollection $collection ): string {
 		$name = $collection->id . '-' . substr( $collection->profile->fingerprint(), 0, 16 );
 		return '/collections/' . rawurlencode( $name );
 	}
 
-	/** Derive a deterministic UUIDv5-shaped Qdrant point ID from plugin identity. */
+	/**
+	 * Derive a deterministic UUIDv5-shaped Qdrant point ID from plugin identity.
+	 *
+	 * @param VectorCollection $collection Collection boundary.
+	 * @param string           $id Plugin stable vector ID.
+	 */
 	private function point_id( VectorCollection $collection, string $id ): string {
 		$hex     = substr( hash( 'sha256', $this->collection_path( $collection ) . "\0" . $id ), 0, 32 );
 		$hex[12] = '5';
