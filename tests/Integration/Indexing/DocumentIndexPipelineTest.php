@@ -132,6 +132,49 @@ final class DocumentIndexPipelineTest extends TestCase {
 	}
 
 	/**
+	 * Changing chunk count in one section must not invalidate later stable section identities.
+	 */
+	public function test_localized_chunk_count_change_preserves_later_section_identity(): void {
+		$this->requirePipeline();
+		$before = $this->document(
+			'localized-count',
+			"# Alpha\n\nAlpha remains stable.\n\n# Beta\n\nBeta is initially short.\n\n# Gamma\n\nGamma remains byte identical and must retain its chunk identity.",
+			array(),
+			'post',
+			'v1'
+		);
+		$after  = $this->document(
+			'localized-count',
+			"# Alpha\n\nAlpha remains stable.\n\n# Beta\n\nBeta now contains enough words to exceed the configured lexical budget and split into multiple chunks while only this structural section changes. This additional sentence intentionally keeps growing the changed section so its chunk count increases without modifying the following Gamma section at all.\n\n# Gamma\n\nGamma remains byte identical and must retain its chunk identity.",
+			array(),
+			'post',
+			'v2'
+		);
+		$pipeline = $this->pipeline();
+		$initial  = $pipeline->plan( $before );
+		$changed  = $pipeline->plan( $after, $initial->canonicalChunks );
+
+		$before_gamma = array_values(
+			array_filter(
+				$initial->canonicalChunks,
+				static fn ( $chunk ): bool => array( 'Gamma' ) === $chunk->headingPath
+			)
+		);
+		$after_gamma = array_values(
+			array_filter(
+				$changed->canonicalChunks,
+				static fn ( $chunk ): bool => array( 'Gamma' ) === $chunk->headingPath
+			)
+		);
+
+		self::assertCount( 1, $before_gamma );
+		self::assertCount( 1, $after_gamma );
+		self::assertSame( $before_gamma[0]->content, $after_gamma[0]->content );
+		self::assertSame( $before_gamma[0]->chunkKey, $after_gamma[0]->chunkKey );
+		self::assertNotContains( $after_gamma[0], $changed->indexPlan->upsert, true );
+	}
+
+	/**
 	 * Build the pure M07 pipeline under the approved default lexical contract.
 	 */
 	private function pipeline(): DocumentIndexPipeline {
