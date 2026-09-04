@@ -42,14 +42,19 @@ final class StructureAwareChunker {
 			return array();
 		}
 
-		$descriptors = array();
+		$descriptors       = array();
+		$section_sequences = array();
 		foreach ( $this->structured_paragraphs( $content ) as $paragraph ) {
+			$section_id = $paragraph['section_id'];
 			foreach ( $this->split_to_budget( $paragraph['content'] ) as $piece ) {
-				$descriptors[] = array(
-					'content'      => $piece,
-					'heading_path' => $paragraph['heading_path'],
-					'section_id'   => $paragraph['section_id'],
+				$section_sequence = $section_sequences[ $section_id ] ?? 0;
+				$descriptors[]    = array(
+					'content'          => $piece,
+					'heading_path'     => $paragraph['heading_path'],
+					'section_id'       => $section_id,
+					'section_sequence' => $section_sequence,
 				);
+				$section_sequences[ $section_id ] = $section_sequence + 1;
 			}
 		}
 		$descriptors = $this->apply_overlap( $descriptors );
@@ -71,7 +76,8 @@ final class StructureAwareChunker {
 					'document_key'         => $document->documentKey,
 					'chunking_fingerprint' => $fingerprint,
 					'structural_path'      => $heading_path,
-					'sequence'             => $sequence,
+					'section_id'           => $descriptor['section_id'],
+					'section_sequence'     => $descriptor['section_sequence'],
 				)
 			);
 			$content_hash = DocumentHasher::hash(
@@ -120,8 +126,8 @@ final class StructureAwareChunker {
 	/**
 	 * Apply configured overlap between adjacent chunks in one structural parent.
 	 *
-	 * @param array<int, array{content:string, heading_path:array<int, string>, section_id:int}> $descriptors Base chunk descriptors.
-	 * @return array<int, array{content:string, heading_path:array<int, string>, section_id:int}>
+	 * @param array<int, array{content:string, heading_path:array<int, string>, section_id:int, section_sequence:int}> $descriptors Base chunk descriptors.
+	 * @return array<int, array{content:string, heading_path:array<int, string>, section_id:int, section_sequence:int}>
 	 * @throws ChunkingException When overlap source content is not valid UTF-8.
 	 */
 	private function apply_overlap( array $descriptors ): array {
@@ -160,9 +166,10 @@ final class StructureAwareChunker {
 			}
 
 			$result[] = array(
-				'content'      => $content,
-				'heading_path' => $descriptor['heading_path'],
-				'section_id'   => $descriptor['section_id'],
+				'content'          => $content,
+				'heading_path'     => $descriptor['heading_path'],
+				'section_id'       => $descriptor['section_id'],
+				'section_sequence' => $descriptor['section_sequence'],
 			);
 			$previous = $descriptor;
 		}
