@@ -94,6 +94,7 @@ final class ProviderRegistryEmbeddingTest extends TestCase {
 			 * Generation is outside this registry test.
 			 *
 			 * @param GenerationRequest $request Unused request.
+			 * @throws \LogicException Always because generation is not part of this test.
 			 */
 			public function generate( GenerationRequest $request ): GenerationResult {
 				throw new \LogicException( 'Not used by this test.' );
@@ -134,6 +135,7 @@ final class ProviderRegistryEmbeddingTest extends TestCase {
 			 * Embedding execution is outside this registry test.
 			 *
 			 * @param EmbeddingRequest $request Unused request.
+			 * @throws \LogicException Always because embedding execution is not part of this test.
 			 */
 			public function embed( EmbeddingRequest $request ): EmbeddingResult {
 				throw new \LogicException( 'Not used by this test.' );
