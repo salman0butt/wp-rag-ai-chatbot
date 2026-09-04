@@ -16,6 +16,7 @@ use WpRagAiChatbot\Embeddings\EmbeddingProfile;
 use WpRagAiChatbot\Embeddings\NormalizationMode;
 use WpRagAiChatbot\Embeddings\VectorIndexProfile;
 use WpRagAiChatbot\Providers\EmbeddingRequest;
+use WpRagAiChatbot\Providers\EmbeddingResult;
 use WpRagAiChatbot\Providers\EmbeddingUsage;
 use WpRagAiChatbot\Providers\EmbeddingVector;
 
@@ -67,6 +68,15 @@ final class EmbeddingContractsTest extends TestCase {
 	}
 
 	/**
+	 * Delimiter control characters cannot create an ambiguous compatibility fingerprint.
+	 */
+	public function test_embedding_profile_rejects_control_characters_in_fingerprint_identifiers(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		new EmbeddingProfile( "openai-direct\nmodel=shadow", 'model-a', 3, NormalizationMode::NONE );
+	}
+
+	/**
 	 * Empty and non-finite vectors cannot enter storage/search paths.
 	 */
 	public function test_embedding_vector_rejects_empty_and_non_finite_values(): void {
@@ -81,6 +91,15 @@ final class EmbeddingContractsTest extends TestCase {
 	}
 
 	/**
+	 * Dense vector values must remain an ordered PHP list.
+	 */
+	public function test_embedding_vector_rejects_associative_values(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		new EmbeddingVector( 0, array( 'first' => 0.1, 'second' => 0.2 ) );
+	}
+
+	/**
 	 * Request inputs preserve caller order and validate required fields.
 	 */
 	public function test_embedding_request_preserves_order_and_validates_dimensions(): void {
@@ -92,6 +111,29 @@ final class EmbeddingContractsTest extends TestCase {
 
 		$this->expectException( InvalidArgumentException::class );
 		new EmbeddingRequest( 'model-a', array( 'text' ), 0 );
+	}
+
+	/**
+	 * Ordered text inputs must remain a PHP list for deterministic JSON transport.
+	 */
+	public function test_embedding_request_rejects_associative_inputs(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		new EmbeddingRequest( 'model-a', array( 'first' => 'one', 'second' => 'two' ) );
+	}
+
+	/**
+	 * Provider vectors must remain an ordered PHP list before service validation.
+	 */
+	public function test_embedding_result_rejects_associative_vectors(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		new EmbeddingResult(
+			'provider-a',
+			'model-a',
+			array( 'first' => new EmbeddingVector( 0, array( 0.1, 0.2 ) ) ),
+			EmbeddingUsage::unknown()
+		);
 	}
 
 	/**
