@@ -73,7 +73,7 @@ final class ChromaVectorStore implements VectorUpsertStore, VectorDeleteStore, V
 	/** Perform one explicit bounded Chroma health request. */
 	public function health(): VectorStoreHealth {
 		try {
-			$response = $this->send( 'GET', '/api/v2/healthcheck' );
+			$response = $this->send( 'GET', '/api/v2/heartbeat' );
 			if ( $this->successful( $response ) ) {
 				return VectorStoreHealth::healthy();
 			}
