@@ -7,7 +7,7 @@
 - M08 branch: `feat/m08-embeddings-vector-stores`.
 - M08 PR: **#11 — open draft**.
 - M08 design/spec and implementation plan: **AUTO-APPROVED — SCHEDULED MODE**.
-- M08 Tasks 1-3: **COMPLETE on feature branch**; Task 4 is next.
+- M08 Tasks 1-4: **COMPLETE on feature branch**; Task 5 is next.
 
 ## M07 final state — COMPLETE
 
@@ -40,19 +40,38 @@ Deterministic bounded embedding batching, strict response reconstruction/validat
 
 Vector-store base/operation contracts, truthful capability registry, bounded portable metadata/filter AST, compatibility-aware request/record/result contracts, normalized errors, and the test-only in-memory reusable contract adapter are complete.
 
+- Genuine RED `fb14f05ffba4a322570d02a6eb7079dadb154c9d` / CI `33874688946`: PHPStan 0 errors; PHPUnit 341 tests / 1,515 assertions with 4 errors + 1 failure.
+- Review REDs `980528cc98f4e09f98f470fc4effce65f47af3c8`, `85f93be9d92cb53c979a9f4a722b3da11a6ac009`, and `54762f61f2da98309e767359986b39cb76762467` captured metadata/result-ID trust-boundary defects.
+- Final GREEN `d5fa24f1cbe29a1e163c791546fc0293774d0255` / CI `33880952765`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 347/347, 1,529 assertions; Composer audit clean; full WordPress smoke green.
+- Package artifact `9939828694`, digest `sha256:eb9067510c8bbf9f791c3c9448e8decf262ade7800805d53e54f9fe5ade98bb7`.
+- Independent review: **Critical 0 / Important 0 unresolved**.
+
+### Task 4 — COMPLETE
+
+The bounded local WordPress vector store is complete on the feature branch:
+
+- versioned V003/V004 per-site vector collection/vector tables, schema version 4, safe uninstall ordering;
+- collection/fingerprint compatibility isolation;
+- stable-ID replacement and collection-scoped idempotent deletion;
+- prepared portable equality/membership/conjunction filter SQL without raw vendor/query escape hatches;
+- database candidate narrowing before PHP cosine similarity;
+- hard `candidate_limit + 1` fetch bound, bounded top-K, deterministic score-descending/stable-ID ordering;
+- explicit `LOCAL_SCALE_LIMIT` failure when the configured local candidate ceiling is exceeded;
+- real WordPress database smoke/integration coverage.
+
 Genuine TDD / review evidence:
 
-- Initial RED `fb14f05ffba4a322570d02a6eb7079dadb154c9d` / CI `33874688946`: PHPStan 0 errors; PHPUnit 341 tests / 1,515 assertions with 4 errors + 1 failure caused by intentionally absent Task 3 behavior; JS/package/WordPress smoke green.
-- Review RED `980528cc98f4e09f98f470fc4effce65f47af3c8` / CI `33876558057`: exactly one behavioral failure proving non-scalar `VectorRecord` metadata was accepted.
-- Fix `41b26b18cf0afbcef0a10b5e7dddd28220d373ed`: PHPStan clean; PHPUnit 345/345, 1,527 assertions.
-- Independent review RED `85f93be9d92cb53c979a9f4a722b3da11a6ac009` / CI `33880518572`: PHPStan 0 errors; PHPUnit 346 tests / 1,528 assertions / exactly one intended failure proving adapter-returned non-scalar match metadata was accepted.
-- Independent review RED `54762f61f2da98309e767359986b39cb76762467` / CI `33880825526`: PHPStan 0 errors; PHPUnit 347 tests / 1,529 assertions / exactly one intended failure proving malformed adapter-returned stable IDs were accepted.
-- Final Task 3 implementation GREEN `d5fa24f1cbe29a1e163c791546fc0293774d0255` / CI `33880952765`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 347/347, 1,529 assertions; Composer audit clean; full WordPress smoke green.
-- Package artifact `9939828694`, digest `sha256:eb9067510c8bbf9f791c3c9448e8decf262ade7800805d53e54f9fe5ade98bb7`.
-- Independent review after fixes: **Critical 0 / Important 0 unresolved**.
+- Initial RED `a0f49b3645a26889bca6c58b0d7f2349c89427c0` / CI `33885763320`: PHPStan 0 errors; PHPUnit 353 tests / 1,535 assertions / exactly 6 intended failures for absent V003/V004 migrations, cosine scoring, and local-store bounds. JS/package/WordPress smoke green.
+- Pre-review Task 4 GREEN `b58fce7c5c520a0df4dbf9cd17b6c71893934821` / CI `33893539465`: all four permanent jobs green.
+- Fresh independent review found one Important issue: candidate-ceiling overflow used generic `operation_failed` instead of the design-required local scale-limit category.
+- Review RED `31a9f25d6492a7df3189184487cf75eb51b70a24` / CI `33897449155`: PHPStan 0 errors; PHPUnit 358 tests / 1,575 assertions with exactly one error for absent `LOCAL_SCALE_LIMIT`.
+- Review-fix GREEN `69dce20f2c7c58239d999cbb414e07c5dac100fb` / CI `33898085114`: all four permanent jobs green; PHPStan 0 errors; PHPUnit 358/358, 1,576 assertions; Composer audit clean; full WordPress smoke green.
+- Package artifact `9946564686`, digest `sha256:0753a05c42901db841a805e6c0f1305554ec56a19b4b64fb7ff7c7a9a8310740`.
+- Independent review submission PR #11 review `5115843007`: **Critical 0 / Important 0 unresolved**.
+- No unresolved PR review threads.
 
-Task 3 specifically regression-covers collection isolation, fingerprint/dimension incompatibility, duplicate registry IDs, truthful unsupported capabilities, bounded typed filters without raw vendor fragments, stable-ID replacement, collection-scoped idempotent deletion, deterministic score-descending/stable-ID ordering, non-scalar write metadata rejection, safe adapter-returned metadata, and stable adapter-returned match IDs.
+Local performance boundary: after collection/fingerprint/filter narrowing, SQL requests at most `candidate_limit + 1` rows. PHP scores at most `candidate_limit` rows; overflow fails as `LOCAL_SCALE_LIMIT`, so there is no unbounded fallback. Use the local adapter only when normal narrowing stays within the configured candidate ceiling; workloads that routinely exceed it should move to a purpose-built external vector store rather than simply raising the ceiling indefinitely.
 
 ## Exact next unfinished action
 
-Begin M08 Task 4 with a test-only RED for dedicated versioned WordPress vector tables/migrations, collection/fingerprint isolation, stable-ID replacement, collection-scoped idempotent deletion, portable SQL filter translation, bounded candidate selection before PHP cosine similarity, deterministic ordering, and explicit local scale-limit behavior. Do not begin production implementation until that exact test-only head reaches genuine behavioral RED.
+Begin M08 Task 5 — Qdrant adapter — with a test-only offline RED covering fixed/allowlisted endpoint construction, server-side credentials, collection/profile compatibility, deterministic payload mapping, stable-ID upsert/delete, portable filter translation, bounded top-K result mapping, health/capability truthfulness, normalized errors, and no automatic retries. Require genuine behavioral RED before production implementation; then GREEN, fresh independent review, full exact-SHA CI, and durable evidence before Task 6.
