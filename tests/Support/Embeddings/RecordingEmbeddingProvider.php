@@ -57,6 +57,9 @@ final class RecordingEmbeddingProvider implements EmbeddingProvider {
 
 	/**
 	 * Record one request and return the next queued result.
+	 *
+	 * @param EmbeddingRequest $request Normalized embedding request.
+	 * @throws RuntimeException When no queued result remains.
 	 */
 	public function embed( EmbeddingRequest $request ): EmbeddingResult {
 		$this->requests[] = $request;
