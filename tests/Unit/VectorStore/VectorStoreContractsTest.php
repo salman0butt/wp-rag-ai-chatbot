@@ -77,6 +77,14 @@ final class VectorStoreContractsTest extends TestCase {
 	}
 
 	/**
+	 * Adapter-returned IDs must retain the stable vector-ID contract.
+	 */
+	public function test_match_rejects_malformed_stable_id(): void {
+		$this->expectException( InvalidArgumentException::class );
+		new VectorMatch( "bad\nid", 1.0 );
+	}
+
+	/**
 	 * Search requests enforce bounded top-K and collection compatibility.
 	 */
 	public function test_search_request_validates_top_k_dimensions_and_fingerprint(): void {
