@@ -117,7 +117,7 @@ final class StructureAwareChunkerTest extends TestCase {
 	}
 
 	/**
-	 * Repeated heading labels still represent distinct section instances for overlap.
+	 * Repeated heading labels still represent distinct structural parent instances.
 	 */
 	public function test_overlap_does_not_cross_repeated_identical_heading_sections(): void {
 		$this->requireChunker();
@@ -129,6 +129,7 @@ final class StructureAwareChunkerTest extends TestCase {
 		$chunks  = $chunker->chunks( $this->document( $content ) );
 
 		self::assertCount( 2, $chunks );
+		self::assertNotSame( $chunks[0]->parentChunkKey, $chunks[1]->parentChunkKey );
 		self::assertSame( 'one two three four five.', $chunks[1]->content );
 	}
 
