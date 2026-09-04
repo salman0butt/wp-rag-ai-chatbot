@@ -43,6 +43,9 @@ final class PineconeVectorStore implements VectorUpsertStore, VectorDeleteStore,
 	/** HTTP timeout for one bounded adapter request. */
 	private const TIMEOUT_SECONDS = 10;
 
+	/** Stable Pinecone API contract pinned for direct REST requests. */
+	private const API_VERSION = '2025-10';
+
 	/** Reserved metadata key containing the compatibility fingerprint. */
 	private const METADATA_FINGERPRINT = '_wp_rag_fingerprint';
 
@@ -347,9 +350,10 @@ final class PineconeVectorStore implements VectorUpsertStore, VectorDeleteStore,
 			$method,
 			$url,
 			array(
-				'Accept'       => 'application/json',
-				'Content-Type' => 'application/json',
-				'Api-Key'      => $this->config->api_key(),
+				'Accept'                 => 'application/json',
+				'Content-Type'           => 'application/json',
+				'Api-Key'                => $this->config->api_key(),
+				'X-Pinecone-Api-Version' => self::API_VERSION,
 			),
 			$body,
 			self::TIMEOUT_SECONDS,
