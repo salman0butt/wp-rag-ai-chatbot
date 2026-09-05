@@ -10,7 +10,8 @@
 - Current milestone: **M09 — Database Job Queue, Synchronization, Retries & Recovery — IN PROGRESS**.
 - Active M09 branch: `feat/m09-job-queue-sync-recovery`; draft PR #13.
 - M09 Task 1 — jobs schema and immutable queue contracts: **COMPLETE**.
-- M09 Task 2 — atomic enqueue/lease/heartbeat/progress/cancellation/recovery repository: **NEXT**.
+- M09 Task 2 — atomic enqueue/lease/heartbeat/progress/cancellation/recovery repository: **COMPLETE**.
+- M09 Task 3 — retry/failure state machine, typed handler registry and bounded worker: **NEXT**.
 
 ## M08 final state — COMPLETE
 
@@ -55,11 +56,23 @@ Independent review RED/GREEN evidence:
 - package artifact `9959839970`, digest `sha256:8f9e663d82e3fa109b49a4f4e9dfc164764e2155e302ba7dbdca706170cf6926`.
 - independent Task 1 review `5119113623`: **Critical 0 / Important 0 unresolved**.
 
+### Task 2 — COMPLETE
+
+Task 2 delivered named-lock idempotent enqueue, bounded deterministic queue/recovery scans, optimistic conditional lease claims, current-owner heartbeat/progress/completion/retry/failure predicates, direct/cooperative cancellation, expired-lease reclaim, stale-owner rejection and real WordPress/MySQL queue behavior coverage.
+
+Systematic debugging first corrected a PHPUnit fixture-only closure-capture defect; no production behavior was changed for that false RED. The real Task 2 review RED was then established through the permanent WordPress database smoke:
+
+- `0bf964f402a07f3846afa5095c578bcf04feb150` / CI `33940320856` — `php-quality`, `js-quality`, and `package` GREEN; `wordpress-smoke` failed exactly because active idempotency lookup returned the oldest duplicate-active row instead of the approved newest row.
+- `a5d3203677ea1cca951391755e766657b795477f` / CI `33940511092` — minimum newest-first lookup fix; all four permanent jobs GREEN.
+- PHPUnit **431/431**, **1,962 assertions**; PHPStan **0 errors**; Composer audit clean.
+- real WordPress smoke passes hostile-literal idempotent round-trip, duplicate-active newest selection, competing claims, expired reclaim/stale-owner rejection, heartbeat/progress, running and queued cancellation, and due `retry_wait` behavior.
+- package artifact `9961657307`, digest `sha256:c93ebcef05b7bbbb88472a801db01966e627e5cdead745fd25c3a23323d6a4b8`.
+- independent Task 2 review `5119484425`: **Critical 0 / Important 0 unresolved**.
+
 Detailed evidence is retained in `docs/milestones/M09-job-queue-sync-recovery.md` and PR #13.
 
 ## Remaining M09 work
 
-- Task 2 — atomic enqueue, lease claim, heartbeat, progress, cancellation and recovery repository.
 - Task 3 — retry/failure state machine, typed handler registry and bounded worker.
 - Task 4 — WP-Cron, WP-CLI/server-cron execution and bounded cleanup.
 - Task 5 — M07/M08 synchronization orchestration through queued jobs.
@@ -67,4 +80,4 @@ Detailed evidence is retained in `docs/milestones/M09-job-queue-sync-recovery.md
 
 ## Exact next unfinished action
 
-Begin M09 **Task 2** with a lint-clean test-only commit for atomic enqueue/idempotency and lease-safe repository transitions. Require genuine behavioral RED evidence for named-lock deduplication, bounded claim/recovery scans, one-winner lease claims, lease-token predicates, heartbeat/progress/cancellation and stale-owner rejection before implementing the minimum `WpdbJobRepository` behavior. Keep PR #13 draft/unmerged until all M09 tasks and whole-milestone review are complete.
+Begin M09 **Task 3** with a lint-clean test-only behavioral RED for deterministic bounded retry policy, typed/allowlisted handler registration, unknown-type failure, retryable versus terminal execution, final-attempt failure, constant sanitized unexpected-`Throwable` persistence, cooperative cancellation, bounded worker count/time, generated worker token, and execution-context heartbeat/progress/cancellation delegation. Keep PR #13 draft/unmerged until all M09 tasks and whole-milestone review are complete.
