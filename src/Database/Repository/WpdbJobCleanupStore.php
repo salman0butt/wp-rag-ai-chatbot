@@ -40,7 +40,7 @@ final class WpdbJobCleanupStore implements JobCleanupStore {
 	 *
 	 * @param DateTimeImmutable $before Cleanup cutoff.
 	 * @param int               $limit Maximum rows to delete.
-	 * @throws JobQueueException When the storage bound is invalid.
+	 * @throws JobQueueException When the storage bound is invalid or the query fails.
 	 */
 	public function delete_terminal_before( DateTimeImmutable $before, int $limit ): int {
 		if ( $limit < 1 || $limit > self::MAX_LIMIT ) {
@@ -59,8 +59,8 @@ final class WpdbJobCleanupStore implements JobCleanupStore {
 		);
 
 		$deleted = $this->connection->query( $sql );
-		if ( $deleted < 0 || $deleted > $limit ) {
-			throw new JobQueueException( 'Job cleanup returned an invalid affected-row count.' );
+		if ( false === $deleted || $deleted < 0 || $deleted > $limit ) {
+			throw new JobQueueException( 'Job cleanup query failed or returned an invalid affected-row count.' );
 		}
 		return $deleted;
 	}
