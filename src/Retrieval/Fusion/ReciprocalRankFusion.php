@@ -30,7 +30,7 @@ final readonly class ReciprocalRankFusion {
 	 * Fuse channel rankings by stable chunk ID.
 	 *
 	 * @param array $channels Ranked candidates keyed by channel name.
-	 * @phpstan-param array<string, array<array-key, RankedCandidate>> $channels
+	 * @phpstan-param array<string, array<array-key, mixed>> $channels
 	 * @return list<RetrievalCandidate>
 	 * @throws InvalidArgumentException When a channel, candidate, or duplicate lineage is invalid.
 	 */
@@ -44,12 +44,13 @@ final readonly class ReciprocalRankFusion {
 
 		foreach ( $channels as $channel => $candidates ) {
 			$weight = $this->channel_weight( $channel );
-			$ranked = array_values( $candidates );
+			$ranked = array();
 
-			foreach ( $ranked as $candidate ) {
+			foreach ( $candidates as $candidate ) {
 				if ( ! $candidate instanceof RankedCandidate ) {
 					throw new InvalidArgumentException( 'Fusion channels must contain ranked candidates.' );
 				}
+				$ranked[] = $candidate;
 			}
 
 			usort(
