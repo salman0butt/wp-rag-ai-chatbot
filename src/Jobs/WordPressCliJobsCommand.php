@@ -54,18 +54,25 @@ final class WordPressCliJobsCommand {
 			return false;
 		}
 
+		$add_command = array( 'WP_CLI', 'add_command' );
+		$success     = array( 'WP_CLI', 'success' );
+		$error       = array( 'WP_CLI', 'error' );
+		if ( ! is_callable( $add_command ) || ! is_callable( $success ) || ! is_callable( $error ) ) {
+			return false;
+		}
+
 		$command  = new self( $runner );
-		$callback = static function ( array $args, array $assoc_args ) use ( $command ): void {
+		$callback = static function ( array $args, array $assoc_args ) use ( $command, $success, $error ): void {
 			unset( $args );
 			try {
 				$result = $command->run( $assoc_args );
-				call_user_func( array( 'WP_CLI', 'success' ), sprintf( 'Started %d job(s).', $result->started_jobs ) );
+				$success( sprintf( 'Started %d job(s).', $result->started_jobs ) );
 			} catch ( JobQueueException ) {
-				call_user_func( array( 'WP_CLI', 'error' ), 'Invalid jobs worker limit.' );
+				$error( 'Invalid jobs worker limit.' );
 			}
 		};
 
-		call_user_func( array( 'WP_CLI', 'add_command' ), 'wp-rag-ai jobs run', $callback );
+		$add_command( 'wp-rag-ai jobs run', $callback );
 		return true;
 	}
 }
