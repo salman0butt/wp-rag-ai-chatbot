@@ -38,5 +38,8 @@ final class WorkerConfig {
 	 * Create the worker configuration boundary.
 	 */
 	public function __construct() {
+		$this->max_jobs             = 0;
+		$this->start_budget_seconds = 0;
+		$this->lease_seconds        = 0;
 	}
 }
