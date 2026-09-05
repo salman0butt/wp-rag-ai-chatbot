@@ -36,8 +36,8 @@ final class WordPressJobCron {
 	/**
 	 * Execute the shared worker with the default bounded configuration.
 	 */
-	public function run(): JobWorkerResult {
-		return $this->runner->run( new WorkerConfig() );
+	public function run(): void {
+		$this->runner->run( new WorkerConfig() );
 	}
 
 	/**
