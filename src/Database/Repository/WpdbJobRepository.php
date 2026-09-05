@@ -282,6 +282,27 @@ final class WpdbJobRepository implements JobRepository {
 	}
 
 	/**
+	 * Complete the current live lease as cancelled.
+	 *
+	 * @param JobLease          $lease Current lease.
+	 * @param DateTimeImmutable $now Current time.
+	 */
+	public function markCancelled( JobLease $lease, DateTimeImmutable $now ): void {
+		$now_sql = self::format_utc( $now );
+		$sql     = $this->connection->prepare(
+			"UPDATE %i SET status = 'cancelled', cancel_requested_at = COALESCE(cancel_requested_at, %s), lease_owner = NULL, lease_expires_at = NULL, completed_at = %s, updated_at = %s WHERE id = %d AND status = 'running' AND lease_owner = %s AND lease_expires_at IS NOT NULL AND lease_expires_at > %s",
+			$this->tables->jobs(),
+			$now_sql,
+			$now_sql,
+			$now_sql,
+			$lease->job->id,
+			$lease->lease_owner,
+			$now_sql
+		);
+		$this->require_single_transition( $sql, 'Job cancellation transition lost the current lease.' );
+	}
+
+	/**
 	 * Complete the current non-cancelled live lease.
 	 *
 	 * @param JobLease          $lease Current lease.
