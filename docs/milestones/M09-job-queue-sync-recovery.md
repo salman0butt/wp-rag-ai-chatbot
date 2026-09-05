@@ -1,6 +1,6 @@
 # M09 — Database Job Queue, Synchronization, Retries & Recovery
 
-Status: **IN PROGRESS — Task 1 complete; Task 2 next**
+Status: **IN PROGRESS — Tasks 1–2 complete; Task 3 next**
 
 ## Goal
 Run large indexing/synchronization reliably outside normal page-request lifetime.
@@ -32,8 +32,8 @@ M02 DB, M07-M08 indexing/vector behaviors.
 ## Planned tasks
 
 1. **Task 1 — Jobs schema and immutable queue contracts — COMPLETE.**
-2. **Task 2 — Atomic enqueue, lease claim, heartbeat, progress, cancellation and recovery repository — NEXT.**
-3. Task 3 — Retry/failure state machine, typed handler registry and bounded worker.
+2. **Task 2 — Atomic enqueue, lease claim, heartbeat, progress, cancellation and recovery repository — COMPLETE.**
+3. **Task 3 — Retry/failure state machine, typed handler registry and bounded worker — NEXT.**
 4. Task 4 — WP-Cron, WP-CLI/server-cron execution and bounded cleanup.
 5. Task 5 — M07/M08 synchronization orchestration through queued jobs.
 6. Task 6 — Whole-M09 security/performance/recovery review, verification, merge and post-merge closeout.
@@ -52,7 +52,7 @@ Task 1 delivered:
 - the `JobRepository::enqueue(JobRequest, DateTimeImmutable): JobRecord` persistence boundary required by Task 2;
 - rejection of runtime-only/executable PHP values before queue persistence.
 
-## TDD evidence
+### Task 1 TDD evidence
 
 Recovered Task 1 production work exposed a real WordPress integration RED at `b09aaabebc9847bfa0f3ecf96060794041547a6f` / CI `33932076035`: PHP/unit quality was green but `wordpress-smoke` failed because the integration fixture still asserted schema V4 after the legitimate V5 migration.
 
@@ -83,7 +83,7 @@ Final Task 1 implementation GREEN:
 - Composer audit **clean**;
 - package artifact `9959839970`, digest `sha256:8f9e663d82e3fa109b49a4f4e9dfc164764e2155e302ba7dbdca706170cf6926`.
 
-## Security review
+### Task 1 review
 
 Task 1 independent review `5119113623` covered schema/index correctness, per-site prefixing, migration/uninstall lifecycle, stable queue contracts, payload/type/idempotency/attempt bounds, and executable/runtime-object persistence boundaries.
 
@@ -96,11 +96,69 @@ Findings fixed with regression-first evidence:
 
 Task 1 final review result: **Critical 0 / Important 0 unresolved**.
 
-The wider M09 design continues to require allowlisted job types, prepared SQL, opaque lease tokens, lease-token predicates on running transitions, server-side configuration/credential reconstruction, sanitized errors, and no anonymous web mutation surface.
+## Task 2 — Atomic repository behavior
+
+Task 2 delivered:
+
+- non-idempotent enqueue with generated opaque job identities;
+- named-lock idempotent enqueue and active-job deduplication with `finally` lock release;
+- bounded deterministic due/recovery candidate scans;
+- optimistic one-winner conditional lease claims;
+- current-lease heartbeat and monotonic progress predicates;
+- queued/retry direct cancellation and cooperative running cancellation requests;
+- current-lease completion/retry/failure predicates;
+- expired-running-job reclaim with stale-owner rejection;
+- canonical UTC persistence formatting and bounded lease/error inputs;
+- real WordPress/MySQL integration coverage for idempotency, hostile literals, competing claims, lease expiry/reclaim, stale owners, progress, cancellation and due retry-wait work.
+
+### Task 2 TDD and recovery evidence
+
+The recovered Task 2 branch initially reported a one-test PHPUnit failure at `ba77fab1c8a715241e35573d93bd2bf66ebb057c` / CI `33938412971`. Systematic debugging proved this was **not a production behavioral RED**: the PHPUnit fixture's `get_row()` arrow function captured the generated `$inserted_jobkey` by value before the insert callback populated it.
+
+Fixture-only corrections:
+
+- `e8cfe17f3c44c4e14fb662f64c316800b88d5520` — move key capture into the mocked insert invocation;
+- `a342eca15332324f0fe3e0b3e50cca4ba558d432` — capture the generated key by reference during mocked rehydration;
+- CI `33940191204` — PHP quality GREEN with PHPUnit **431/431, 1,962 assertions**, PHPStan 0 errors and Composer audit clean.
+
+The missing real-database Task 2 gate was then added without production changes:
+
+- `b21620c21ab4dcd07de02432da4ac90ab299b9af` — add the real WordPress queue repository smoke;
+- `0bf964f402a07f3846afa5095c578bcf04feb150` — wire it into the permanent database smoke.
+
+This produced a genuine review RED at `0bf964f402a07f3846afa5095c578bcf04feb150` / CI `33940320856`: `php-quality`, `js-quality` and `package` were GREEN, while `wordpress-smoke` failed exactly with **“Idempotent enqueue did not return the newest active matching job.”** The repository selected the oldest active duplicate with `ORDER BY id ASC`, contrary to the approved design's newest-active rule.
+
+Minimum production fix:
+
+- `a5d3203677ea1cca951391755e766657b795477f` — change active idempotency lookup to `ORDER BY id DESC LIMIT 1`.
+
+Final Task 2 implementation GREEN:
+
+- exact implementation SHA `a5d3203677ea1cca951391755e766657b795477f`;
+- CI `33940511092` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN;
+- PHPUnit **431/431**, **1,962 assertions**;
+- PHPStan **0 errors**;
+- Composer audit **clean**;
+- real WordPress database smoke passes duplicate-active newest selection, hostile-literal idempotent round-trip, one-winner lease claim, expired reclaim, stale-owner rejection, heartbeat/progress, cooperative running cancellation, queued cancellation and due `retry_wait` behavior;
+- package artifact `9961657307`, digest `sha256:c93ebcef05b7bbbb88472a801db01966e627e5cdead745fd25c3a23323d6a4b8`.
+
+### Task 2 independent review
+
+Task 2 review `5119484425` covered atomicity predicates, named-lock release, bounded due/recovery scans, deterministic ordering, stale-worker safety, current-lease mutation predicates, cancellation race boundaries, prepared hostile literals, UTC persistence and real MySQL/WordPress coverage.
+
+Finding fixed regression-first:
+
+1. **Important:** active idempotency lookup returned the oldest matching non-terminal row instead of the newest row required by the approved M09 design. Regression `0bf964f402a07f3846afa5095c578bcf04feb150` / CI `33940320856`; fixed by `a5d3203677ea1cca951391755e766657b795477f`.
+
+Task 2 final review result: **Critical 0 / Important 0 unresolved**.
+
+## Security review
+
+Tasks 1–2 preserve prepared value SQL, plugin-owned table identifiers, data-only bounded payloads, named-lock scoping, opaque lease identities, current-owner predicates for running transitions, cancellation-aware completion and no anonymous web mutation surface. Task 3 must keep persisted handler types allowlisted and persist only sanitized failures.
 
 ## Performance review
 
-Task 1 schema includes the designed queue-scan, lease-recovery, idempotency-lookup and terminal-cleanup indexes. Later tasks must preserve bounded claim candidates, at most 10 jobs/default worker invocation, a 20-second start budget, lease duration bounds 30..900 seconds, and terminal cleanup capped at 500 rows/pass.
+Task 1 schema provides queue-scan, lease-recovery, idempotency-lookup and terminal-cleanup indexes. Task 2 keeps due and expired candidate queries bounded to 10 each, merges/sorts deterministically and attempts at most 10 candidate claims per call. Later tasks must preserve bounded worker count/time and cleanup limits.
 
 ## Known limitations / deferrals
 
@@ -111,7 +169,7 @@ Task 1 schema includes the designed queue-scan, lease-recovery, idempotency-look
 
 ## Exact next unfinished action
 
-Begin **Task 2 — atomic enqueue, lease claim, heartbeat, progress, cancellation and recovery repository** with a lint-clean test-only RED. Cover non-idempotent enqueue, named-lock idempotent enqueue/deduplication, bounded due/recovery candidate scans, one-winner conditional lease claims, current-lease-token enforcement on heartbeat/progress/complete/fail transitions, queued/retry cancellation, running cancellation requests, stale-owner rejection and expired-lease recovery. Require the exact test-only SHA to reach genuine behavioral failures before implementing the minimum `WpdbJobRepository` behavior.
+Begin **Task 3 — retry/failure state machine, typed handler registry and bounded worker** with a lint-clean test-only behavioral RED. Cover deterministic 30/60/120/... backoff capped at 900 seconds, duplicate/unknown handler rejection, retryable versus terminal failures, final-attempt failure, constant sanitization of unexpected `Throwable`, cancellation completion, bounded `WorkerConfig` count/time/lease limits, worker token generation, and execution-context heartbeat/progress/cancellation delegation. Require genuine RED before production behavior, then focused/full GREEN, independent review, regression-first fixes and durable Task 3 evidence.
 
 ## Next Milestone
 M10 — Hybrid Retrieval, only after M09 is merged and fresh post-merge `main` CI is green.
