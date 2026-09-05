@@ -14,8 +14,11 @@ namespace WpRagAiChatbot\Retrieval;
  */
 final readonly class RetrievalQuery {
 	/**
-	 * @param string       $normalized Normalized full query.
-	 * @param list<string> $lexical_terms Ordered lexical terms.
+	 * Create normalized retrieval query data.
+	 *
+	 * @param string $normalized Normalized full query.
+	 * @param array  $lexical_terms Ordered lexical terms.
+	 * @phpstan-param list<string> $lexical_terms
 	 */
 	public function __construct(
 		public string $normalized,
