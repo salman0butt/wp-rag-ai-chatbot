@@ -26,7 +26,7 @@ final class JobWorkerBootstrap {
 		$connection = new WpdbConnection( $wpdb );
 		$tables     = new TableNames( $connection->prefix() );
 		$repository = new WpdbJobRepository( $connection, $tables );
-		$worker     = new JobWorker( $repository, new JobHandlerRegistry(), new SystemUtcClock() );
+		$worker     = new JobWorker( $repository, new JobHandlerRegistry(), new SystemClock() );
 
 		$cron = new WordPressJobCron( $worker );
 		$cron->register();
