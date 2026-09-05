@@ -36,8 +36,13 @@ final class ConfidenceEstimator {
 			)
 		);
 
+		$channels = array();
+		foreach ( $candidate->channel_evidence as $evidence ) {
+			$channels[ $evidence->channel ] = true;
+		}
+
 		$rank_signal     = 1.0 / $best_rank;
-		$agreement_bonus = count( $candidate->channel_evidence ) > 1 ? 0.35 : 0.0;
+		$agreement_bonus = count( $channels ) > 1 ? 0.35 : 0.0;
 		$score           = min( 1.0, ( 0.65 * $rank_signal ) + $agreement_bonus );
 
 		$level = match ( true ) {
