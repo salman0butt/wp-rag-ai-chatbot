@@ -19,6 +19,7 @@ use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Jobs\JobLease;
 use WpRagAiChatbot\Jobs\JobProgress;
 use WpRagAiChatbot\Jobs\JobQueueException;
+use WpRagAiChatbot\Jobs\JobRecord;
 use WpRagAiChatbot\Jobs\JobRequest;
 use WpRagAiChatbot\Jobs\JobStatus;
 
@@ -113,7 +114,12 @@ final class WpdbJobRepositoryTest extends TestCase {
 		$connection = $this->connection();
 		$connection->expects( self::exactly( 4 ) )->method( 'prepare' )->willReturnOnConsecutiveCalls( 'due', 'expired', 'claim', 'claimed' );
 		$connection->expects( self::exactly( 2 ) )->method( 'get_results' )->willReturnOnConsecutiveCalls(
-			array( array( 'id' => 9, 'eligible_at' => '2026-09-05 00:59:00' ) ),
+			array(
+				array(
+					'id'          => 9,
+					'eligible_at' => '2026-09-05 00:59:00',
+				),
+			),
 			array()
 		);
 		$connection->expects( self::once() )->method( 'query' )->with( 'claim' )->willReturn( 1 );
@@ -200,6 +206,8 @@ final class WpdbJobRepositoryTest extends TestCase {
 
 	/**
 	 * Create the repository under test.
+	 *
+	 * @param Connection $connection Database connection fixture.
 	 */
 	private function repository( Connection $connection ): WpdbJobRepository {
 		return new WpdbJobRepository( $connection, new TableNames( 'wp_' ) );
@@ -210,8 +218,8 @@ final class WpdbJobRepositoryTest extends TestCase {
 	 *
 	 * @param array<string, mixed> $row Persisted job row.
 	 */
-	private function record( array $row ): \WpRagAiChatbot\Jobs\JobRecord {
-		return new \WpRagAiChatbot\Jobs\JobRecord(
+	private function record( array $row ): JobRecord {
+		return new JobRecord(
 			(int) $row['id'],
 			(string) $row['job_key'],
 			(string) $row['type'],
@@ -239,6 +247,12 @@ final class WpdbJobRepositoryTest extends TestCase {
 	/**
 	 * Build a persisted row accepted by JobRecord hydration.
 	 *
+	 * @param int         $id Database identifier.
+	 * @param string      $job_key Stable opaque job key.
+	 * @param JobStatus   $status Persisted job status.
+	 * @param string|null $idempotency_key Optional idempotency key.
+	 * @param string|null $lease_owner Optional current lease owner.
+	 * @param int         $attempts Persisted attempt count.
 	 * @return array<string, mixed>
 	 */
 	private static function row(
@@ -276,6 +290,8 @@ final class WpdbJobRepositoryTest extends TestCase {
 
 	/**
 	 * Build one deterministic UTC datetime.
+	 *
+	 * @param string $value UTC datetime literal.
 	 */
 	private static function utc( string $value ): DateTimeImmutable {
 		return new DateTimeImmutable( $value, new DateTimeZone( 'UTC' ) );
