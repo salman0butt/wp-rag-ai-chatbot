@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Tests\Unit\Jobs;
 
 use PHPUnit\Framework\TestCase;
+use WpRagAiChatbot\Jobs\JobRepository;
 
 /**
  * Defines the remaining Task 3 execution contracts before implementation.
@@ -27,6 +28,13 @@ final class JobWorkerContractsTest extends TestCase {
 	 */
 	public function test_cancelled_exception_contract_exists(): void {
 		self::assertTrue( class_exists( 'WpRagAiChatbot\\Jobs\\JobCancelledException' ) );
+	}
+
+	/**
+	 * Current-lease cancellation has a terminal repository transition.
+	 */
+	public function test_repository_exposes_current_lease_cancel_transition(): void {
+		self::assertTrue( method_exists( JobRepository::class, 'markCancelled' ) );
 	}
 
 	/**
