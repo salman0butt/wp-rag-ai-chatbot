@@ -99,6 +99,20 @@ final class JobContractsTest extends TestCase {
 	}
 
 	/**
+	 * Executable PHP objects cannot be smuggled through JSON encoding.
+	 */
+	public function test_job_request_rejects_object_payload_values(): void {
+		$this->expectException( JobQueueException::class );
+
+		new JobRequest(
+			'index.document',
+			array(
+				'callback' => static fn (): string => 'should-never-run-or-persist',
+			)
+		);
+	}
+
+	/**
 	 * Retry attempts are explicitly bounded to protect worker execution.
 	 */
 	public function test_job_request_rejects_more_than_ten_attempts(): void {
