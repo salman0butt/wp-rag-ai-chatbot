@@ -15,7 +15,11 @@ use InvalidArgumentException;
  * Immutable grounded chunk candidate with explicit lineage and channel evidence.
  */
 final readonly class RetrievalCandidate {
-	/** @var list<ChannelEvidence> */
+	/**
+	 * Validated channel evidence.
+	 *
+	 * @var list<ChannelEvidence>
+	 */
 	public array $channel_evidence;
 
 	/**
@@ -59,7 +63,11 @@ final readonly class RetrievalCandidate {
 			}
 		}
 
-		/** @var list<ChannelEvidence> $channel_evidence */
+		/**
+		 * Runtime-validated channel evidence.
+		 *
+		 * @var list<ChannelEvidence> $channel_evidence
+		 */
 		$this->channel_evidence = $channel_evidence;
 	}
 }
