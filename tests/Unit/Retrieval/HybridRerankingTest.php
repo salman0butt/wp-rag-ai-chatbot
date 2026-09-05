@@ -37,7 +37,11 @@ final class HybridRerankingTest extends TestCase {
 	 */
 	public function test_reranker_receives_only_access_approved_bounded_candidates(): void {
 		$reranker = new class() implements Reranker {
-			/** @var list<string> */
+			/**
+			 * Candidate IDs observed by the fake reranker.
+			 *
+			 * @var list<string>
+			 */
 			public array $seen = array();
 
 			/**
@@ -50,7 +54,8 @@ final class HybridRerankingTest extends TestCase {
 				return new RerankResult( array( $request->candidates[0]->chunk_id => 1.0 ) );
 			}
 		};
-		$policy   = new class() implements CandidateAccessPolicy {
+
+		$policy = new class() implements CandidateAccessPolicy {
 			/**
 			 * Reject one leading fixture.
 			 *
@@ -61,7 +66,9 @@ final class HybridRerankingTest extends TestCase {
 				return 'blocked' !== $candidate->chunk_id;
 			}
 		};
-		$config   = new RetrievalConfig( rerank_top_n: 1, context_candidate_limit: 2 );
+
+		$config = new RetrievalConfig( rerank_top_n: 1, context_candidate_limit: 2 );
+
 		$retriever = $this->retriever(
 			array( $this->ranked( 'blocked', 1.0 ), $this->ranked( 'allowed-a', 0.9 ), $this->ranked( 'allowed-b', 0.8 ) ),
 			array(),
@@ -91,6 +98,7 @@ final class HybridRerankingTest extends TestCase {
 				return new RerankResult( array( 'injected' => 1.0 ) );
 			}
 		};
+
 		$retriever = $this->retriever(
 			array( $this->ranked( 'first', 1.0 ), $this->ranked( 'second', 0.9 ) ),
 			array(),
@@ -119,6 +127,7 @@ final class HybridRerankingTest extends TestCase {
 				return new RerankResult( array( 'injected' => 1.0 ) );
 			}
 		};
+
 		$retriever = $this->retriever(
 			array( $this->ranked( 'first', 1.0 ) ),
 			array(),
@@ -135,11 +144,13 @@ final class HybridRerankingTest extends TestCase {
 	/**
 	 * Create the orchestrator with deterministic fake channels.
 	 *
-	 * @param list<RankedCandidate>      $semantic Semantic fixtures.
-	 * @param list<RankedCandidate>      $lexical Lexical fixtures.
+	 * @param array                      $semantic Semantic fixtures.
+	 * @param array                      $lexical Lexical fixtures.
 	 * @param CandidateAccessPolicy|null $policy Optional trusted policy.
 	 * @param RetrievalConfig            $config Retrieval bounds.
 	 * @param Reranker                   $reranker Reranker under test.
+	 * @phpstan-param list<RankedCandidate> $semantic
+	 * @phpstan-param list<RankedCandidate> $lexical
 	 */
 	private function retriever(
 		array $semantic,
@@ -149,7 +160,12 @@ final class HybridRerankingTest extends TestCase {
 		Reranker $reranker
 	): HybridRetriever {
 		$semantic_channel = new class( $semantic ) implements SemanticRetrievalChannel {
-			/** @param list<RankedCandidate> $result Fixtures. */
+			/**
+			 * Create the fake semantic channel.
+			 *
+			 * @param array $result Semantic fixtures.
+			 * @phpstan-param list<RankedCandidate> $result
+			 */
 			public function __construct( private array $result ) {
 			}
 
@@ -164,8 +180,14 @@ final class HybridRerankingTest extends TestCase {
 				return $this->result;
 			}
 		};
-		$lexical_channel  = new class( $lexical ) implements LexicalRetrievalChannel {
-			/** @param list<RankedCandidate> $result Fixtures. */
+
+		$lexical_channel = new class( $lexical ) implements LexicalRetrievalChannel {
+			/**
+			 * Create the fake lexical channel.
+			 *
+			 * @param array $result Lexical fixtures.
+			 * @phpstan-param list<RankedCandidate> $result
+			 */
 			public function __construct( private array $result ) {
 			}
 
@@ -180,6 +202,7 @@ final class HybridRerankingTest extends TestCase {
 				return $this->result;
 			}
 		};
+
 		$policy ??= new class() implements CandidateAccessPolicy {
 			/**
 			 * Allow all fixtures.
@@ -203,17 +226,26 @@ final class HybridRerankingTest extends TestCase {
 		);
 	}
 
-	/** Create one native candidate fixture. */
+	/**
+	 * Create one native candidate fixture.
+	 *
+	 * @param string $id Stable chunk identifier.
+	 * @param float  $score Native score.
+	 */
 	private function ranked( string $id, float $score ): RankedCandidate {
 		return new RankedCandidate( $id, 'doc-' . $id, 8, 'content-' . $id, 'en', 'public', $score );
 	}
 
-	/** Create the query fixture. */
+	/**
+	 * Create the query fixture.
+	 */
 	private function query(): RetrievalQuery {
 		return new RetrievalQuery( 'refund policy', array( 'refund', 'policy' ) );
 	}
 
-	/** Create trusted semantic context. */
+	/**
+	 * Create trusted semantic context.
+	 */
 	private function semantic_context(): SemanticRetrievalContext {
 		return new SemanticRetrievalContext(
 			new RetrievalFilter( 'public', 'en', array( 8 ) ),
@@ -221,7 +253,9 @@ final class HybridRerankingTest extends TestCase {
 		);
 	}
 
-	/** Create trusted lexical scope. */
+	/**
+	 * Create trusted lexical scope.
+	 */
 	private function lexical_filter(): LexicalFilter {
 		return new LexicalFilter( 'collection-1', null, 8, 'en', 'public' );
 	}
