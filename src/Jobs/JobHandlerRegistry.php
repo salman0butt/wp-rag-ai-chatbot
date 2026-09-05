@@ -17,8 +17,12 @@ final class JobHandlerRegistry {
 	 * Register one explicit stable job type.
 	 *
 	 * @param JobHandler $handler Typed handler implementation.
+	 * @throws JobQueueException Until behavioral registration is implemented.
 	 */
 	public function register( JobHandler $handler ): void {
+		if ( '' === $handler->type() ) {
+			throw new JobQueueException( 'Job handler type is required.' );
+		}
 		throw new JobQueueException( 'Job handler registration is not implemented yet.' );
 	}
 
@@ -26,8 +30,12 @@ final class JobHandlerRegistry {
 	 * Resolve one explicitly registered stable job type.
 	 *
 	 * @param string $type Persisted job type.
+	 * @throws JobQueueException Until behavioral resolution is implemented.
 	 */
 	public function for_type( string $type ): JobHandler {
+		if ( '' === $type ) {
+			throw new JobQueueException( 'Job handler type is required.' );
+		}
 		throw new JobQueueException( 'Job handler resolution is not implemented yet.' );
 	}
 }
