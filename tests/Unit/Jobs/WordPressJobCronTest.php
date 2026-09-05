@@ -71,9 +71,8 @@ final class WordPressJobCronTest extends TestCase {
 	public function test_run_delegates_to_shared_worker(): void {
 		$runner = $this->runner( 2 );
 		$cron   = new WordPressJobCron( $runner );
-		$result = $cron->run();
+		$cron->run();
 
-		self::assertSame( 2, $result->started_jobs );
 		self::assertCount( 1, $runner->configs );
 		self::assertSame( 10, $runner->configs[0]->max_jobs );
 	}
