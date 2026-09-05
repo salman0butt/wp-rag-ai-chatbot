@@ -44,6 +44,8 @@ final class DocumentIndexJobHandler implements JobHandler {
 	 *
 	 * @param JobRecord           $job Current persisted running job.
 	 * @param JobExecutionContext $context Current lease execution context.
+	 * @throws JobCancelledException When cooperative cancellation is requested.
+	 * @throws JobExecutionException When a normalized dependency failure must be persisted safely.
 	 */
 	public function handle( JobRecord $job, JobExecutionContext $context ): void {
 		$payload = DocumentIndexJobPayload::from_array( $job->payload );
@@ -59,8 +61,10 @@ final class DocumentIndexJobHandler implements JobHandler {
 			$this->dependencies->execute( $payload, $plan );
 			$context->update_progress( new JobProgress( 2, 2, 'Index synchronization complete' ) );
 		} catch ( ProviderException $error ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal queue exception contains only constant sanitized text plus a fixed enum-derived code.
 			throw $this->provider_failure( $error );
 		} catch ( VectorStoreException $error ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal queue exception contains only constant sanitized text plus a fixed enum-derived code.
 			throw $this->vector_failure( $error );
 		}
 	}
