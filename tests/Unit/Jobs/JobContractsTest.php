@@ -43,8 +43,8 @@ final class JobContractsTest extends TestCase {
 
 		self::assertSame( 'index.document', $request->type );
 		self::assertSame( array( 'document_id' => 42 ), $request->payload );
-		self::assertSame( 'document:42:v7', $request->idempotencyKey );
-		self::assertSame( 3, $request->maxAttempts );
+		self::assertSame( 'document:42:v7', $request->idempotency_key );
+		self::assertSame( 3, $request->max_attempts );
 	}
 
 	/**
