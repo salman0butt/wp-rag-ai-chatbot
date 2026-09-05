@@ -193,10 +193,18 @@ final class SemanticRetrieverTest extends TestCase {
 	 */
 	private function store( array $matches ): VectorSearchStore {
 		return new class($matches) implements VectorSearchStore {
-			/** @var VectorSearchRequest|null Captured vector search request. */
+			/**
+			 * Captured vector search request.
+			 *
+			 * @var VectorSearchRequest|null
+			 */
 			public ?VectorSearchRequest $request = null;
 
-			/** @var int Number of vector search calls. */
+			/**
+			 * Number of vector search calls.
+			 *
+			 * @var int
+			 */
 			public int $search_count = 0;
 
 			/**
