@@ -35,6 +35,6 @@ final class JobsMigrationContractTest extends TestCase {
 		$tables = new TableNames( 'wp_9_' );
 
 		self::assertSame( 'wp_9_rag_ai_jobs', $tables->jobs() );
-		self::assertContains( $tables->jobs(), $tables->all(), true );
+		self::assertContains( $tables->jobs(), $tables->all() );
 	}
 }
