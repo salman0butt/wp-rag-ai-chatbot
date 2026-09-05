@@ -54,7 +54,7 @@ final class WordPressCliJobsCommand {
 			return false;
 		}
 
-		$command = new self( $runner );
+		$command  = new self( $runner );
 		$callback = static function ( array $args, array $assoc_args ) use ( $command ): void {
 			unset( $args );
 			try {
