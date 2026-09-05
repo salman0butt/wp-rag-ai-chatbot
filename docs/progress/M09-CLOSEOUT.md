@@ -1,134 +1,103 @@
 # M09 Closeout — Database Job Queue, Synchronization, Retries & Recovery
 
-Status: **FEATURE COMPLETE — final pre-merge verification required**
+Status: **COMPLETE — merged and post-merge verified on `main`**
 
 ## Architecture / plan
 
-M09 was classified architectural and completed under the repository's scheduled-mode auto-approval procedure:
+M09 was architectural and completed under scheduled-mode auto-approval:
 
 - design/spec: `docs/superpowers/specs/2026-09-05-m09-job-queue-sync-recovery-design.md` — **AUTO-APPROVED — SCHEDULED MODE**;
 - implementation plan: `docs/superpowers/plans/2026-09-05-m09-job-queue-sync-recovery.md` — **AUTO-APPROVED — SCHEDULED MODE**.
 
-The selected architecture is WordPress-native: one versioned per-site jobs table, optimistic conditional leases, typed/allowlisted handlers, deterministic bounded retry/backoff, bounded workers, cooperative cancellation/progress, WP-Cron and WP-CLI entrypoints over the same worker, terminal-only bounded cleanup, and identifier-only M07/M08 synchronization orchestration. No Redis/external queue dependency or `SKIP LOCKED` requirement was introduced.
+Selected architecture: versioned per-site jobs table, optimistic conditional leases, typed/allowlisted handlers, deterministic bounded retry/backoff, bounded workers, cooperative progress/cancellation, shared WP-Cron/WP-CLI execution, terminal-only bounded cleanup, and identifier-only M07/M08 synchronization orchestration. No Redis/external queue dependency and no `SKIP LOCKED` requirement.
 
-## Completed scope
+## Completed tasks
 
-### Task 1 — jobs schema and immutable queue contracts
+1. **Jobs schema and immutable queue contracts — COMPLETE.** Final GREEN `62534b47e10a5b47e8770ebcbed0c31877f35623` / CI `33934918490`; review `5119113623`: Critical 0 / Important 0 unresolved.
+2. **Atomic queue repository and recovery — COMPLETE.** Review RED `0bf964f402a07f3846afa5095c578bcf04feb150`; final GREEN `a5d3203677ea1cca951391755e766657b795477f` / CI `33940511092`; review `5119484425`: Critical 0 / Important 0 unresolved.
+3. **Retry state machine, typed handlers and bounded worker — COMPLETE.** Behavioral REDs `429419e629021a02f10753f4dddcbe6ec8169677`, `95c648f49d3089ebf8925342a2a2e1afe004858a`, `f4ae81a364d607bd1a7326d29ed7d9d8dd41056f`; final GREEN `99b9f176a2d16a9214ed8d5d594be536f56ae06a` / CI `33950927777`; review `5120228931`: Critical 0 / Important 0 unresolved.
+4. **WordPress cron/CLI execution and bounded cleanup — COMPLETE.** Genuine RED `92f748ae6f6287c0d492b63216797c85b24f9aae`; final integration `08c1e3b5fc9c36b78135b4b5a63746ca29605152` / CI `33956576384`; review `5120610581`: Critical 0 / Important 0 unresolved.
+5. **Queued M07/M08 synchronization orchestration — COMPLETE.** Initial RED `383888696dd8aae7598b806eb79ef9c689d2c32d`; review RED `b70f2d8f4818d7d0dcdb4fb3f20818efab318585`; fix `19d6b2f8cb3b689761e5c5ab0a36439a3c2d74db`; final implementation/review head `d2ddad95ad47563e1da319da10ce4db88bfbd6df` / CI `33960825615`; review `5120881838`: Critical 0 / Important 0 unresolved.
+6. **Whole-M09 closeout — COMPLETE.** Whole-milestone review `5120888824`: Critical 0 / Important 0 unresolved; zero unresolved inline review threads.
 
-- Schema V5 and `${prefix}rag_ai_jobs` with due-work, recovery, idempotency and cleanup indexes.
-- Migration, uninstall and reinstall lifecycle coverage.
-- Stable queue states, bounded JSON-only requests, immutable job records and enqueue boundary.
-- Runtime/executable PHP objects rejected before persistence.
-- Final GREEN `62534b47e10a5b47e8770ebcbed0c31877f35623` / CI `33934918490`.
-- Review `5119113623`: **Critical 0 / Important 0 unresolved**.
+## Final verification
 
-### Task 2 — atomic queue repository and recovery
+### Task 5 implementation gate
 
-- Named-lock active-idempotency enqueue.
-- Deterministic bounded candidate scans.
-- One-winner optimistic lease claim, heartbeat/progress, retry/fail/complete transitions.
-- Queued/running cancellation, expired lease reclaim and stale-owner rejection.
-- Real WordPress/MySQL integration.
-- Review RED `0bf964f402a07f3846afa5095c578bcf04feb150` / CI `33940320856` fixed newest-active idempotency selection.
-- Final GREEN `a5d3203677ea1cca951391755e766657b795477f` / CI `33940511092`.
-- Review `5119484425`: **Critical 0 / Important 0 unresolved**.
+`d2ddad95ad47563e1da319da10ce4db88bfbd6df` / CI `33960825615`:
 
-### Task 3 — retry state machine, handlers and bounded worker
+- `php-quality` GREEN;
+- `js-quality` GREEN;
+- `package` GREEN;
+- `wordpress-smoke` GREEN;
+- PHPUnit **492/492**, **2,058 assertions**;
+- PHPStan **0 errors**;
+- Composer audit clean;
+- artifact `9967877267`, digest `sha256:25967d9332511c6fc4bc304e7da24ba0671c92421f5afe616175501141a06403`.
 
-- Deterministic backoff capped at 900 seconds and attempts capped at 10.
-- Explicit typed handler registry and safe unknown-type handling.
-- Bounded job count/start budget/lease duration and cryptographically opaque worker identity.
-- Retryable vs terminal/final-attempt transitions.
-- Constant unexpected-Throwable persistence.
-- Cancellation priority and cooperative cancellation.
-- Lease-scoped heartbeat/progress/cancellation context.
-- Behavioral REDs `429419e629021a02f10753f4dddcbe6ec8169677`, `95c648f49d3089ebf8925342a2a2e1afe004858a`, and closeout RED `f4ae81a364d607bd1a7326d29ed7d9d8dd41056f`.
-- Final GREEN `99b9f176a2d16a9214ed8d5d594be536f56ae06a` / CI `33950927777`.
-- Review `5120228931`: **Critical 0 / Important 0 unresolved**.
+### Final pre-merge gate
 
-### Task 4 — WordPress execution and cleanup
+Final PR #13 head `40259aa5d23826398344017427efbd905c0d7913` / CI `33961209970`:
 
-- Stable schedule-if-absent WP-Cron hook and deactivation unscheduling.
-- Shared worker semantics for cron and `wp wp-rag-ai jobs run --limit=<1..100>`.
-- Terminal-only cleanup with a 500-row hard cap and deterministic ordering.
-- Real WordPress cron lifecycle and real MySQL cleanup coverage.
-- Documented WP-CLI/server-cron path for low-traffic / `DISABLE_WP_CRON` sites.
-- Genuine RED `92f748ae6f6287c0d492b63216797c85b24f9aae` / CI `33953938875`.
-- Final GREEN `08c1e3b5fc9c36b78135b4b5a63746ca29605152` / CI `33956576384`.
-- Review `5120610581`: **Critical 0 / Important 0 unresolved**.
+- all four permanent jobs GREEN;
+- PHPUnit **492/492**, **2,058 assertions**;
+- PHPStan **0 errors**;
+- Composer audit clean;
+- artifact `9967995819`, digest `sha256:68644f8d961a28b58ed7a4859563421bc6883b2fafe52d7b07cbbd8c6776bc71`.
 
-### Task 5 — queued M07/M08 synchronization orchestration
+PR #13 was marked ready only after the exact-head gate passed and merged with expected-head-SHA protection.
 
-- Stable `index.document` typed job.
-- Exact-shape identifier-only payload: document/source/collection/configuration/generation identities only.
-- Deterministic generation-scoped SHA-256 idempotency key.
-- Explicit server-side dependency reconstruction boundary; unavailable reconstruction fails closed without serializing live source/provider objects.
-- M07 `DocumentIndexPipeline`/`IndexPlan` and M08 `IndexEmbeddingExecutor` reuse.
-- Bounded progress, heartbeat and cancellation checkpoints.
-- Safe provider/vector failure classification with constant persisted messages.
-- Rerun integration proves stable M07 chunk/M08 vector identity rather than duplicate vector records.
-- Initial RED `383888696dd8aae7598b806eb79ef9c689d2c32d` / CI `33959103043`.
-- Review RED `b70f2d8f4818d7d0dcdb4fb3f20818efab318585` / CI `33960520400` proved normalized provider/vector exceptions escaped and would become terminal generic worker failures.
-- Minimum fix `19d6b2f8cb3b689761e5c5ab0a36439a3c2d74db`; standards-only follow-up `cb491d6a42f141f6315a2522327938e2630fd874`.
-- Rerun identity hardening `ec7c519162fac587b9a921ad2d228e0df0479da0` and taxonomy coverage `d2ddad95ad47563e1da319da10ce4db88bfbd6df`.
-- Task 5 GREEN CI `33960825615`: all four permanent jobs passed; PHPUnit **492/492**, **2,058 assertions**; PHPStan 0; Composer audit clean; artifact `9967877267`, digest `sha256:25967d9332511c6fc4bc304e7da24ba0671c92421f5afe616175501141a06403`.
-- Review `5120881838`: **Critical 0 / Important 0 unresolved**.
+### Merge
 
-## Whole-M09 review
+- PR: #13 — `feat: add M09 job queue and recovery`
+- Accepted head: `40259aa5d23826398344017427efbd905c0d7913`
+- Merge SHA: `0a4ba0d3133e41d28812d5ddb81abad8266b0c26`
 
-Independent whole-milestone review `5120888824` covered cross-task state-machine, recovery, concurrency, idempotency, retry, cancellation, entrypoint, synchronization, security and performance invariants.
+### Fresh post-merge `main` verification
 
-Result: **Critical 0 / Important 0 unresolved**. Zero unresolved inline review threads at review time. Accessibility is N/A because M09 adds no user-facing UI.
+CI `33961341720` ran on exact `main` SHA `0a4ba0d3133e41d28812d5ddb81abad8266b0c26` and passed:
 
-### Security
+- `php-quality` GREEN;
+- `js-quality` GREEN;
+- `package` GREEN;
+- `wordpress-smoke` GREEN, including activation, database queue coverage, providers, knowledge, file ingestion and WooCommerce knowledge;
+- package artifact `9968035763`, digest `sha256:de944bc71d41444cab9f4974ce4f81788536d3769b347d7391905a8c587f96d8`.
 
-- Queue payloads are bounded JSON data and handler types are allowlisted; persisted type/payload values cannot select arbitrary PHP callables/classes.
-- SQL values remain prepared and table identifiers remain plugin-owned/site-scoped.
-- Lease owners are opaque and required for running-state mutation.
-- Stale lease owners cannot update reclaimed/completed work.
-- Unexpected Throwables persist only constant generic diagnostics.
-- Task 5 persists no credentials, source bodies, chunks, embeddings or raw provider/vector error messages.
-- WP-Cron and WP-CLI delegate to the same typed worker instead of exposing a separate mutation surface.
+## Security closeout
 
-### Recovery / concurrency
+- Queue payloads remain bounded JSON data; typed persisted values cannot select arbitrary PHP callables/classes.
+- SQL values remain prepared and table names plugin-owned/site-scoped.
+- Lease owners are opaque and required for running-state mutations; stale owners cannot overwrite reclaimed/completed work.
+- Unexpected runtime failures persist only constant generic diagnostics.
+- `index.document` payloads contain stable identifiers only and persist no credentials, source bodies, chunks, embeddings, or raw provider/vector messages.
+- Normalized provider/vector errors map to safe constant messages and bounded retry semantics.
+- Cron and CLI delegate to the same typed worker; no separate untyped execution surface exists.
 
-- Active idempotency lookup suppresses duplicate active work without mutating the existing payload.
+## Recovery / concurrency closeout
+
+- Active idempotency suppresses duplicate active work without rewriting the existing payload.
 - Due/recovery scans are deterministic and bounded.
-- Conditional SQL predicates arbitrate one winning lease owner.
-- Lease expiry makes work reclaimable without granting stale owners mutation rights.
+- Conditional lease predicates produce one current owner; expiry enables reclaim while stale owners remain unauthorized.
 - Cancellation wins before handler resolution and is checked cooperatively around synchronization phases.
 - Attempts and backoff are bounded; final attempts cannot return to retry-wait.
-- Rerun synchronization keeps stable M07/M08 identities.
+- Rerunning synchronization preserves stable M07 chunk/M08 vector identity.
 
-### Performance
+## Performance closeout
 
-- Queue, recovery, idempotency and cleanup access paths are indexed.
-- Candidate scans and worker loops are bounded.
-- Worker starts are limited by count and wall-clock start budget.
-- CLI limits are 1..100; cleanup is capped at 500 terminal rows per pass.
-- Synchronization reuses M07/M08 bounded plan/execution limits and adds no unbounded provider loop.
-- No global worker lock or external queue dependency is required.
+- Queue/recovery/idempotency/cleanup access paths are indexed.
+- Candidate scans and worker loops are bounded by count/time.
+- WP-CLI accepts only 1..100 work starts; cleanup deletes at most 500 terminal rows per pass.
+- Synchronization reuses M07/M08 bounded planning/execution limits and adds no unbounded provider loop.
+- No global worker lock or external queue dependency was introduced.
 
-## Pre-merge verification
+## Known limitations / deferrals
 
-Task 5 exact implementation/review head `d2ddad95ad47563e1da319da10ce4db88bfbd6df` / CI `33960825615` passed all permanent jobs with PHPUnit **492/492**, **2,058 assertions**, PHPStan 0 errors and clean Composer audit.
+- M10 owns hybrid retrieval/reranking.
+- M13 owns the primary admin jobs/progress UI.
+- Cooperative cancellation is checkpoint-based rather than unsafe process termination.
+- WP-Cron depends on WordPress traffic unless the documented WP-CLI/server-cron path is configured.
+- Source-specific persistent reconstruction can be registered later; unavailable reconstruction fails explicitly rather than serializing runtime source/provider objects.
 
-Task 5 documentation / Task 6 review head `896ad25de22a05994329d57418ce9b85012276bf` / CI `33961044907` passed `php-quality`, `js-quality`, `package`, and `wordpress-smoke`. Artifact `9967946558`, digest `sha256:4cb9c6f91c3842f02deb0cce645dc413f952a379fb3b90c4e60d4649ed139028`.
+## Next milestone
 
-This closeout file creates a later documentation-only head. Repository policy therefore requires one final exact-head CI run after this commit before PR #13 may merge.
-
-## Merge gate
-
-Before merging PR #13:
-
-1. final PR head must equal the SHA whose CI is being accepted;
-2. all four permanent CI jobs must be GREEN on that exact SHA;
-3. whole-M09 review must remain Critical 0 / Important 0 unresolved;
-4. unresolved inline review threads must remain zero;
-5. PR must be transitioned from draft only after the above are true;
-6. merge must use expected-head-SHA protection;
-7. fresh post-merge `main` CI must pass before M09 is considered integrated.
-
-## Post-merge closeout
-
-After merge and fresh `main` CI, update durable project status to **M09 COMPLETE**, record the merge SHA/post-merge run/artifact, and advance the current milestone to M10 — Hybrid Retrieval.
+**M10 — Hybrid Retrieval.** Recover/classify its milestone before implementation and apply the repository architecture gate, strict TDD, independent review, exact-SHA verification, and post-merge closeout process.
