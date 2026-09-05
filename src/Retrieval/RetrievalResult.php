@@ -34,17 +34,14 @@ final readonly class RetrievalResult {
 		array $candidates,
 		public RetrievalTrace $trace
 	) {
+		$validated_candidates = array();
 		foreach ( $candidates as $candidate ) {
 			if ( ! $candidate instanceof RetrievalCandidate ) {
 				throw new InvalidArgumentException( 'Retrieval result candidate is invalid.' );
 			}
+			$validated_candidates[] = $candidate;
 		}
 
-		/**
-		 * Runtime-validated retrieval candidates.
-		 *
-		 * @var list<RetrievalCandidate> $candidates
-		 */
-		$this->candidates = array_values( $candidates );
+		$this->candidates = $validated_candidates;
 	}
 }
