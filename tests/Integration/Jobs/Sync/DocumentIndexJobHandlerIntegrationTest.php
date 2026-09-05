@@ -136,7 +136,7 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 				}
 				$raw = $this->pipeline->plan( $this->document )->indexPlan;
 				$upsert = array_map( fn ( ChunkRecord $chunk ): ChunkRecord => $this->compatible_chunk( $chunk ), $raw->upsert );
-				return new IndexPlan( $upsert, $raw->metadataRefresh, $raw->deleteKeys, $raw->unchanged, $raw->duplicateMap );
+				return new IndexPlan( $upsert, $raw->metadataRefresh, $raw->deleteKeys, $raw->unchanged, $raw->duplicateAliases );
 			}
 
 			/**
