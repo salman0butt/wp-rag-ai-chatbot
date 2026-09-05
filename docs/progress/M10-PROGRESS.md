@@ -146,10 +146,39 @@ Independent-review fail-closed fix cycle:
 - GREEN: `be72422d848dd027d9e9c260cb26bd9f32909ef2`, CI `33982906694` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed; PHPStan reported no errors, PHPUnit passed 528 tests / 2,155 assertions, and Composer audit reported no security advisories.
 - Independent re-review on the GREEN exact head: **0 unresolved Critical / 0 unresolved Important**; PR #15 has no blocking review threads.
 
+## Task 5 — Semantic retriever over M08 contracts
+
+Status: **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**.
+
+Delivered:
+
+- trusted `RetrievalFilter` with explicit portable document/source/language/visibility scope and a bounded mandatory-filter bag;
+- `VectorFilterMapper` conversion of trusted scope into portable vector-store filters, rejecting unsupported mandatory filters before embedding or search execution;
+- bounded `SemanticRetrievalContext` with canonical chunk hydration;
+- exactly one normalized query embedding per semantic retrieval through the accepted `EmbeddingService` and `EmbeddingProfile` contracts;
+- bounded `VectorSearchStore` search against the selected `VectorCollection` and profile fingerprint, with semantic top-K capped at the portable hard ceiling;
+- fail-closed candidate hydration rejecting missing/malformed vector lineage and vector/canonical lineage mismatches;
+- canonical trusted-scope recheck for document/source/language/visibility after vector search;
+- native semantic-score ordering with stable chunk-ID tie-break and a final hard result cap.
+
+### Strict TDD evidence
+
+- Filter contract test first: `a73dfa604ed224f807f30f56644e68f2bcd003ec`; production filter sequence `867c1e95e81e97e5f54586d2dee05dbb4ff4707b`, `96beb6539c77dea5b8830baa69c19213927a2ecc`, validation fix `ccff856e8e17693d5486d6d4c89e656654035d7a`, and type cleanup `d295d336d9e1662dc2535c0bd49f67dc73ee1ac4`.
+- Semantic behavior test first: `680a94404fa72236d479ffbe7b19828f3ac7b5c1`, followed only by test lint/docs cleanup `268aff0107626ba9af3a418caa7d35cb5aec2a43`, `022ad110546087e0fe4d97c93ee36632d285496c`, and `c626e3c87935561c3787c6ac5f36285468695866`.
+- Valid RED: `c626e3c87935561c3787c6ac5f36285468695866`, CI `33986009935` — `php-quality` failed at `composer verify:php` on the finalized semantic RED fixture before `SemanticRetrievalContext` / `SemanticRetriever` existed; `js-quality`, `package`, and `wordpress-smoke` passed.
+- Implementation: `5b02c0f51d939ecb497ad3ee6ba427bd50b71056` (`SemanticRetrievalContext`), `2898644da4e1af4cbd0fde1002af842c0ce14e84` (`SemanticRetriever`), and `cc3dc97cf30ad612c87a78209a6b46649ff783ec` (standards cleanup).
+- Test expectation correction: `3c8063a303f308df322ab9acfe74ecbb8c3f91a1` aligns the asserted stable tie order with the actual lexicographic SHA-256 chunk IDs; production ranking behavior did not change.
+- Final GREEN before ledger update: `3c8063a303f308df322ab9acfe74ecbb8c3f91a1`, CI `33986357114` — all four permanent jobs passed.
+
+### Independent review
+
+- Scoped review from `53025a37835c8ae8ea8da2648d6b85abfb621e8a` through `3c8063a303f308df322ab9acfe74ecbb8c3f91a1` checked one-query embedding, bounded semantic top-K, profile/collection compatibility, portable trusted filters, mandatory-filter fail-closed-before-search behavior, canonical lineage hydration, post-search trusted scope, deterministic tie ordering, and candidate/result caps.
+- Result: **0 Critical / 0 Important**. PR #15 has no unresolved review threads.
+
 ## Review / integration state
 
-Tasks 1, 2, 3, and 4 are complete, GREEN, and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 5–8 are unfinished.
+Tasks 1, 2, 3, 4, and 5 are complete, GREEN, and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 6–8 are unfinished.
 
 ## Exact next unfinished action
 
-Begin Task 5 — semantic retriever over M08 contracts — by recovering the accepted `EmbeddingService`, `EmbeddingProfile`, `VectorCollection`, and `VectorSearchStore` interfaces plus required vector metadata lineage, then write test-only RED coverage for one-query embedding, bounded semantic top-K, portable trusted filter mapping, missing-lineage drop, deterministic rank tie-break, and unsupported mandatory-filter failure-before-search. Do not add `SemanticRetriever`, `SemanticRetrievalContext`, `RetrievalFilter`, or `VectorFilterMapper` production classes until exact-head CI proves the expected RED.
+Begin Task 6 — hybrid orchestration and final safety filter — with a test-only RED commit covering: hybrid evidence can change lexical-only ordering; lexical-only fallback is deterministic when semantic retrieval is unavailable but not required; the final trusted scope filter runs after fusion; deterministic confidence is surfaced without fabricating certainty; and no result exceeds the configured final limit. Do not add `HybridRetriever` or `FinalSafetyFilter` until exact-head CI proves that behavioral RED.
