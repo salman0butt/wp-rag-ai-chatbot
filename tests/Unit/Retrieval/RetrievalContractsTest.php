@@ -44,6 +44,24 @@ final class RetrievalContractsTest extends TestCase {
 	}
 
 	/**
+	 * Candidate construction rejects malformed channel evidence members.
+	 */
+	public function test_candidate_rejects_non_channel_evidence_members(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		new RetrievalCandidate(
+			'chunk-1',
+			'doc-1',
+			42,
+			'Grounded chunk content.',
+			'en',
+			'public',
+			array( 'not-channel-evidence' ),
+			0.0163934426
+		);
+	}
+
+	/**
 	 * Channel evidence rejects impossible ranks and non-finite scores.
 	 */
 	public function test_channel_evidence_rejects_invalid_numeric_values(): void {
@@ -90,5 +108,15 @@ final class RetrievalContractsTest extends TestCase {
 
 		self::assertSame( array( $candidate ), $result->candidates );
 		self::assertSame( $trace, $result->trace );
+	}
+
+	/**
+	 * Result construction rejects malformed candidate members.
+	 */
+	public function test_result_rejects_non_candidate_members(): void {
+		$trace = new RetrievalTrace( hash( 'sha256', 'SKU-42/A' ), 8, array( 'lexical' => 1 ) );
+
+		$this->expectException( InvalidArgumentException::class );
+		new RetrievalResult( array( 'not-a-candidate' ), $trace );
 	}
 }
