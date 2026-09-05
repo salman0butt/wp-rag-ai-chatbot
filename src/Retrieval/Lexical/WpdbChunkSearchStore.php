@@ -137,7 +137,7 @@ final class WpdbChunkSearchStore implements ChunkSearchStore {
 			$args[]         = $normalized;
 		}
 
-		$sql  = 'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, content_hash, language, visibility, sequence, metadata_json FROM %i WHERE '
+		$sql    = 'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, content_hash, language, visibility, sequence, metadata_json FROM %i WHERE '
 			. implode( ' AND ', $clauses )
 			. ' AND (' . implode( ' OR ', $term_clauses ) . ') ORDER BY chunk_key ASC LIMIT %d';
 		$args[] = $request->limit;
