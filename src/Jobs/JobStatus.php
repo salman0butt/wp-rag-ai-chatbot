@@ -19,4 +19,11 @@ enum JobStatus: string {
 	case SUCCEEDED  = 'succeeded';
 	case FAILED     = 'failed';
 	case CANCELLED  = 'cancelled';
+
+	/**
+	 * Whether this state is immutable and terminal.
+	 */
+	public function terminal(): bool {
+		return in_array( $this, array( self::SUCCEEDED, self::FAILED, self::CANCELLED ), true );
+	}
 }
