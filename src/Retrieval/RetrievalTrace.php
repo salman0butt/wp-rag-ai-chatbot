@@ -44,8 +44,6 @@ final readonly class RetrievalTrace {
 
 		foreach ( $channel_failures as $channel => $reason ) {
 			if (
-				! is_string( $channel ) ||
-				! is_string( $reason ) ||
 				! in_array( $channel, array( 'semantic', 'lexical' ), true ) ||
 				$reason !== $channel . '_unavailable'
 			) {
