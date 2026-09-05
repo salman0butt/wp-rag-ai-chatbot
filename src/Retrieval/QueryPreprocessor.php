@@ -16,6 +16,8 @@ use InvalidArgumentException;
  */
 final class QueryPreprocessor {
 	/**
+	 * Create one query preprocessor.
+	 *
 	 * @param RetrievalConfig $config Retrieval hard bounds.
 	 */
 	public function __construct( private readonly RetrievalConfig $config ) {
@@ -24,6 +26,7 @@ final class QueryPreprocessor {
 	/**
 	 * Normalize one untrusted user query.
 	 *
+	 * @param string $query Untrusted query text.
 	 * @throws InvalidArgumentException When the query is empty, invalid, or exceeds bounds.
 	 */
 	public function preprocess( string $query ): RetrievalQuery {
@@ -44,7 +47,11 @@ final class QueryPreprocessor {
 			throw new InvalidArgumentException( 'Retrieval query could not be tokenized.' );
 		}
 
-		/** @var list<string> $terms */
+		/**
+		 * Ordered matched query terms.
+		 *
+		 * @var list<string> $terms
+		 */
 		$terms = $matches[0];
 		if ( count( $terms ) > $this->config->max_query_tokens ) {
 			throw new InvalidArgumentException( 'Retrieval query exceeds the token limit.' );
