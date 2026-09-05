@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Jobs;
 
 use DateTimeImmutable;
 
+// phpcs:disable WordPress.NamingConventions -- Repository methods follow the approved M09 domain contract.
 /**
  * Persistence boundary for the durable queue.
  */
@@ -94,3 +95,4 @@ interface JobRepository {
 	 */
 	public function markFailed( JobLease $lease, string $code, string $message, DateTimeImmutable $now ): void;
 }
+// phpcs:enable WordPress.NamingConventions
