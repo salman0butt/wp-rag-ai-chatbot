@@ -46,7 +46,14 @@ final class SearchProjectionDocumentIndexDependenciesTest extends TestCase {
 	 */
 	public function test_execute_projects_complete_current_document_after_primary_execution(): void {
 		$payload = $this->payload();
-		$upsert  = $this->chunk( 'a', 0, array( 'safe_key' => 'safe value', 'nested' => array( 'drop' ) ) );
+		$upsert  = $this->chunk(
+			'a',
+			0,
+			array(
+				'safe_key' => 'safe value',
+				'nested'   => array( 'drop' ),
+			)
+		);
 		$refresh = $this->chunk( 'b', 1 );
 		$stable  = $this->chunk( 'c', 2 );
 		$plan    = new IndexPlan( array( $upsert ), array( $refresh ), array(), array( $stable ), array() );
