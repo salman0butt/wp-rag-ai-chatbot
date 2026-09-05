@@ -96,7 +96,7 @@ final class ReciprocalRankFusionTest extends TestCase {
 				'lexical'  => $lexical,
 			)
 		);
-		$lexical_first = $fusion->fuse(
+		$lexical_first  = $fusion->fuse(
 			array(
 				'lexical'  => $lexical,
 				'semantic' => $semantic,
