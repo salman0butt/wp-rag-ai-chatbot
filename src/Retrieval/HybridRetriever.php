@@ -99,8 +99,8 @@ final readonly class HybridRetriever {
 		}
 
 		list( $approved, $rerank_status ) = $this->rerank( $query, $approved );
-		$approved                        = array_slice( $approved, 0, $this->config->context_candidate_limit );
-		$trace                           = new RetrievalTrace(
+		$approved                         = array_slice( $approved, 0, $this->config->context_candidate_limit );
+		$trace                            = new RetrievalTrace(
 			hash( 'sha256', $query->normalized ),
 			strlen( $query->normalized ),
 			$counts,
@@ -114,9 +114,11 @@ final readonly class HybridRetriever {
 	/**
 	 * Apply optional reranking only to the bounded access-approved prefix.
 	 *
-	 * @param RetrievalQuery              $query Preprocessed query.
-	 * @param list<RetrievalCandidate>    $approved Access-approved fused candidates.
+	 * @param RetrievalQuery $query Preprocessed query.
+	 * @param array          $approved Access-approved fused candidates.
+	 * @phpstan-param list<RetrievalCandidate> $approved
 	 * @return array{0: list<RetrievalCandidate>, 1: string}
+	 * @throws InvalidArgumentException When reranker output references an unknown candidate.
 	 * @throws RetrievalException When reranking fails and fallback is disabled.
 	 */
 	private function rerank( RetrievalQuery $query, array $approved ): array {
