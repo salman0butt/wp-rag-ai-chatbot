@@ -106,6 +106,14 @@ final readonly class ReciprocalRankFusion {
 			}
 		}
 
+		foreach ( $fused as $chunk_id => $entry ) {
+			usort(
+				$entry['evidence'],
+				static fn ( ChannelEvidence $left, ChannelEvidence $right ): int => strcmp( $left->channel, $right->channel )
+			);
+			$fused[ $chunk_id ] = $entry;
+		}
+
 		$entries = array_values( $fused );
 		usort(
 			$entries,
