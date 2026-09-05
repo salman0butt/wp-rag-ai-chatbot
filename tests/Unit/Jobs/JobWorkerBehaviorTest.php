@@ -125,6 +125,7 @@ final class JobWorkerBehaviorTest extends TestCase {
 	/**
 	 * Create one handler mock for a stable allowlisted type.
 	 *
+	 * @param string $type Stable handler type.
 	 * @return JobHandler&MockObject
 	 */
 	private function handler( string $type ): JobHandler {
@@ -136,6 +137,7 @@ final class JobWorkerBehaviorTest extends TestCase {
 	/**
 	 * Create one deterministic clock mock.
 	 *
+	 * @param DateTimeImmutable $now Fixed worker time.
 	 * @return Clock&MockObject
 	 */
 	private function clock( DateTimeImmutable $now ): Clock {
@@ -146,6 +148,11 @@ final class JobWorkerBehaviorTest extends TestCase {
 
 	/**
 	 * Build one valid running lease fixture.
+	 *
+	 * @param DateTimeImmutable $now Fixture timestamp.
+	 * @param int               $attempts Current attempt count.
+	 * @param int               $max_attempts Maximum attempts.
+	 * @param string            $type Persisted job type.
 	 */
 	private function lease( DateTimeImmutable $now, int $attempts, int $max_attempts, string $type = 'index_document' ): JobLease {
 		$owner = str_repeat( 'a', 64 );
