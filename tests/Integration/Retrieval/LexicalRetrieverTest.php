@@ -89,12 +89,47 @@ final class LexicalRetrieverTest extends TestCase {
 	}
 
 	/**
+	 * A defensive retriever never admits out-of-scope rows and never consumes rows beyond its hard candidate cap.
+	 */
+	public function test_retrieve_fails_closed_when_store_returns_restricted_or_excess_rows(): void {
+		$store = new class() implements ChunkSearchStore {
+			/** {@inheritDoc} */
+			public function replace_document_chunks( string $collection_id, string $document_key, ChunkSearchRecord ...$chunks ): void {
+			}
+
+			/** {@inheritDoc} */
+			public function delete_document( string $collection_id, string $document_key ): void {
+			}
+
+			/** {@inheritDoc} */
+			public function search( LexicalSearchRequest $request ): array {
+				return array(
+					new LexicalSearchMatch( LexicalRetrieverTest::record( '0', 'SKU-42/A guide', 'private' ) ),
+					new LexicalSearchMatch( LexicalRetrieverTest::record( 'b', 'SKU-42/A guide' ) ),
+					new LexicalSearchMatch( LexicalRetrieverTest::record( 'a', 'SKU-42/A guide' ) ),
+				);
+			}
+		};
+		$config    = new RetrievalConfig( lexical_candidate_limit: 2, fused_candidate_limit: 2 );
+		$filter    = new LexicalFilter( 'knowledge', null, 7, 'en', 'public' );
+		$query     = new RetrievalQuery( 'sku-42/a guide', array( 'sku-42/a', 'guide' ) );
+		$retriever = new LexicalRetriever( $store, new LexicalScorer(), $config );
+
+		$results = $retriever->retrieve( $query, $filter );
+
+		self::assertCount( 1, $results );
+		self::assertSame( hash( 'sha256', 'b' ), $results[0]->chunk_id );
+		self::assertSame( 'public', $results[0]->visibility );
+	}
+
+	/**
 	 * Build one projected chunk fixture.
 	 *
 	 * @param string $seed Fixture seed.
 	 * @param string $content Chunk content.
+	 * @param string $visibility Trusted visibility.
 	 */
-	public static function record( string $seed, string $content ): ChunkSearchRecord {
+	public static function record( string $seed, string $content, string $visibility = 'public' ): ChunkSearchRecord {
 		return new ChunkSearchRecord(
 			hash( 'sha256', $seed ),
 			'doc-' . $seed,
@@ -105,7 +140,7 @@ final class LexicalRetrieverTest extends TestCase {
 			$content,
 			hash( 'sha256', $content ),
 			'en',
-			'public',
+			$visibility,
 			0
 		);
 	}
