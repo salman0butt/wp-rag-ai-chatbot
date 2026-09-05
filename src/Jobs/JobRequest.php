@@ -45,6 +45,9 @@ final class JobRequest {
 		if ( array() !== $payload && array_is_list( $payload ) ) {
 			throw new JobQueueException( 'Job payload root must be a JSON object.' );
 		}
+		if ( ! self::contains_only_json_data( $payload ) ) {
+			throw new JobQueueException( 'Job payload must contain JSON data only.' );
+		}
 		if ( self::payload_depth( $payload ) > self::MAX_PAYLOAD_DEPTH ) {
 			throw new JobQueueException( 'Job payload nesting exceeds the supported depth.' );
 		}
@@ -59,6 +62,26 @@ final class JobRequest {
 		if ( strlen( $encoded ) > self::MAX_PAYLOAD_BYTES ) {
 			throw new JobQueueException( 'Job payload exceeds the maximum encoded size.' );
 		}
+	}
+
+	/**
+	 * Reject executable/runtime-only PHP values before JSON encoding.
+	 *
+	 * @param array<mixed> $value Current payload level.
+	 */
+	private static function contains_only_json_data( array $value ): bool {
+		foreach ( $value as $item ) {
+			if ( is_array( $item ) ) {
+				if ( ! self::contains_only_json_data( $item ) ) {
+					return false;
+				}
+				continue;
+			}
+			if ( null !== $item && ! is_scalar( $item ) ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**
