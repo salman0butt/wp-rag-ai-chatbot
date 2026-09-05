@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Jobs;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Jobs\JobRunner;
 use WpRagAiChatbot\Jobs\JobWorkerResult;
@@ -40,6 +41,7 @@ final class WordPressJobCronTest extends TestCase {
 	/**
 	 * Schedule the stable hook only when no existing event is registered.
 	 */
+	#[DoesNotPerformAssertions]
 	public function test_register_schedules_hook_when_absent(): void {
 		$runner = $this->runner();
 		$cron   = new WordPressJobCron( $runner );
@@ -54,6 +56,7 @@ final class WordPressJobCronTest extends TestCase {
 	/**
 	 * Existing schedules must not be duplicated.
 	 */
+	#[DoesNotPerformAssertions]
 	public function test_register_does_not_duplicate_existing_schedule(): void {
 		$runner = $this->runner();
 		$cron   = new WordPressJobCron( $runner );
@@ -80,6 +83,7 @@ final class WordPressJobCronTest extends TestCase {
 	/**
 	 * Deactivation cleanup clears every event for the stable hook.
 	 */
+	#[DoesNotPerformAssertions]
 	public function test_unschedule_clears_stable_hook(): void {
 		Functions\expect( 'wp_clear_scheduled_hook' )->once()->with( WordPressJobCron::HOOK );
 		WordPressJobCron::unschedule();
