@@ -81,7 +81,7 @@ final class LexicalRetriever {
 	 * Collection scope is enforced by the store because it is not duplicated on ChunkSearchRecord.
 	 *
 	 * @param ChunkSearchRecord $record Returned projection row.
-	 * @param LexicalFilter      $filter Trusted lexical scope.
+	 * @param LexicalFilter     $filter Trusted lexical scope.
 	 */
 	private function matches_filter( ChunkSearchRecord $record, LexicalFilter $filter ): bool {
 		if ( null !== $filter->document_key && $record->document_key !== $filter->document_key ) {
