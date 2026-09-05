@@ -92,10 +92,32 @@ Independent-review confidence fix:
 - PR #15 review threads: none.
 - Re-review result after both fixes: **0 unresolved Critical / 0 unresolved Important**.
 
+## Task 3 — Durable chunk-search projection and synchronization contract
+
+Status: **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**.
+
+Delivered:
+
+- V006 searchable chunk-projection migration and schema/bootstrap/table registration;
+- immutable bounded lexical projection records, filters, search requests, and matches;
+- prepared-SQL `WpdbChunkSearchStore` with collection/document/source/language/visibility scoping and hard candidate ceilings;
+- idempotent document replacement/deletion with real WordPress smoke assertions for stale-row removal and cross-collection isolation;
+- bounded portable scalar metadata projection only;
+- accepted M07/M08 plan synchronization so the lexical projection is derived from the same canonical upsert/metadata-refresh/unchanged chunk set as primary index execution;
+- retry-safe ordering where primary index work executes before lexical projection persistence;
+- safe retryable queue translation for local projection persistence failures.
+
+### Verification / review evidence
+
+- Exact Task 3 implementation head: `b76024065022b60a91e3b3be562006f70f31248c`.
+- Exact-head CI: `33979758980` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed.
+- Scoped review on the exact head covered migration/registration, SQL preparation and filter bounds, candidate ceilings, accepted-plan lineage synchronization, retry behavior, and real WordPress projection smoke coverage.
+- Review result: **0 Critical / 0 Important**; PR #15 has no blocking review threads.
+
 ## Review / integration state
 
-Tasks 1 and 2 are complete and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 3–8 are unfinished.
+Tasks 1, 2, and 3 are complete and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 4–8 are unfinished.
 
 ## Exact next unfinished action
 
-Begin Task 3 — durable chunk-search projection and synchronization contract — by recovering the V005 migration registry/composition and the concrete M08 accepted index-plan execution boundary, then write and push RED migration/store tests for idempotent replacement, deletion, trusted collection/document/source/language/visibility scope, bounded safe metadata, and hard candidate ceilings. Do not implement V006 or the chunk-search store until that RED is verified in WordPress integration CI.
+Begin Task 4 — lexical/exact retriever — with a test-only RED commit proving exact full-query and identifier matches outrank generic overlap, title boosts remain bounded, trusted restricted rows never appear, and configured candidate/result ceilings are enforced. Do not add `LexicalRetriever` or `LexicalScorer` production classes until exact-head CI proves the expected RED.
