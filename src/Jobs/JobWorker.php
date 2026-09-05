@@ -65,8 +65,8 @@ final class JobWorker {
 	/**
 	 * Execute one current lease and persist exactly one terminal/retry transition.
 	 *
-	 * @param JobLease      $lease Current owned lease.
-	 * @param WorkerConfig  $config Worker configuration.
+	 * @param JobLease     $lease Current owned lease.
+	 * @param WorkerConfig $config Worker configuration.
 	 */
 	private function execute_lease( JobLease $lease, WorkerConfig $config ): void {
 		try {
