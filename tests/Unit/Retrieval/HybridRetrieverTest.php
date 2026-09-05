@@ -61,7 +61,9 @@ final class HybridRetrieverTest extends TestCase {
 				return 'blocked' !== $candidate->chunk_id;
 			}
 		};
-		$config    = new RetrievalConfig( context_candidate_limit: 1 );
+
+		$config = new RetrievalConfig( context_candidate_limit: 1 );
+
 		$retriever = $this->retriever(
 			array( $this->ranked( 'blocked', 1.0 ), $this->ranked( 'allowed', 0.9 ) ),
 			array(),
@@ -112,10 +114,10 @@ final class HybridRetrieverTest extends TestCase {
 	/**
 	 * Create the orchestrator with deterministic fake channels.
 	 *
-	 * @param array|RuntimeException      $semantic Semantic channel result or failure.
-	 * @param array|RuntimeException      $lexical Lexical channel result or failure.
-	 * @param CandidateAccessPolicy|null  $policy Optional access policy.
-	 * @param RetrievalConfig|null        $config Optional retrieval configuration.
+	 * @param array|RuntimeException     $semantic Semantic channel result or failure.
+	 * @param array|RuntimeException     $lexical Lexical channel result or failure.
+	 * @param CandidateAccessPolicy|null $policy Optional access policy.
+	 * @param RetrievalConfig|null       $config Optional retrieval configuration.
 	 * @phpstan-param list<RankedCandidate>|RuntimeException $semantic
 	 * @phpstan-param list<RankedCandidate>|RuntimeException $lexical
 	 */
@@ -127,6 +129,8 @@ final class HybridRetrieverTest extends TestCase {
 	): HybridRetriever {
 		$semantic_channel = new class( $semantic ) implements SemanticRetrievalChannel {
 			/**
+			 * Create fake semantic channel.
+			 *
 			 * @param array|RuntimeException $result Semantic result or failure.
 			 * @phpstan-param list<RankedCandidate>|RuntimeException $result
 			 */
@@ -139,6 +143,7 @@ final class HybridRetrieverTest extends TestCase {
 			 * @param RetrievalQuery           $query Retrieval query.
 			 * @param SemanticRetrievalContext $context Trusted semantic context.
 			 * @return list<RankedCandidate>
+			 * @throws RuntimeException When configured failure is present.
 			 */
 			public function retrieve( RetrievalQuery $query, SemanticRetrievalContext $context ): array {
 				if ( $this->result instanceof RuntimeException ) {
@@ -147,8 +152,11 @@ final class HybridRetrieverTest extends TestCase {
 				return $this->result;
 			}
 		};
-		$lexical_channel  = new class( $lexical ) implements LexicalRetrievalChannel {
+
+		$lexical_channel = new class( $lexical ) implements LexicalRetrievalChannel {
 			/**
+			 * Create fake lexical channel.
+			 *
 			 * @param array|RuntimeException $result Lexical result or failure.
 			 * @phpstan-param list<RankedCandidate>|RuntimeException $result
 			 */
@@ -161,6 +169,7 @@ final class HybridRetrieverTest extends TestCase {
 			 * @param RetrievalQuery $query Retrieval query.
 			 * @param LexicalFilter  $filter Trusted lexical filter.
 			 * @return list<RankedCandidate>
+			 * @throws RuntimeException When configured failure is present.
 			 */
 			public function retrieve( RetrievalQuery $query, LexicalFilter $filter ): array {
 				if ( $this->result instanceof RuntimeException ) {
@@ -169,7 +178,8 @@ final class HybridRetrieverTest extends TestCase {
 				return $this->result;
 			}
 		};
-		$policy         ??= new class() implements CandidateAccessPolicy {
+
+		$policy ??= new class() implements CandidateAccessPolicy {
 			/**
 			 * Allow all fixtures.
 			 *
@@ -180,7 +190,8 @@ final class HybridRetrieverTest extends TestCase {
 				return true;
 			}
 		};
-		$config         ??= new RetrievalConfig();
+
+		$config ??= new RetrievalConfig();
 
 		return new HybridRetriever(
 			$semantic_channel,
