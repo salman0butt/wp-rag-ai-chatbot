@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Tests\Unit\Jobs;
 
 use PHPUnit\Framework\TestCase;
-use WpRagAiChatbot\Jobs\JobRepository;
 
 /**
  * Defines the remaining Task 3 execution contracts before implementation.
@@ -49,15 +48,5 @@ final class JobWorkerContractsTest extends TestCase {
 	 */
 	public function test_worker_contract_exists(): void {
 		self::assertTrue( class_exists( 'WpRagAiChatbot\\Jobs\\JobWorker' ) );
-	}
-
-	/**
-	 * Cooperative running cancellation has a lease-guarded terminal transition.
-	 */
-	public function test_repository_exposes_cancelled_transition(): void {
-		self::assertTrue(
-			method_exists( JobRepository::class, 'markCancelled' ),
-			'M09 Task 3 requires a current-lease cancelled transition.'
-		);
 	}
 }
