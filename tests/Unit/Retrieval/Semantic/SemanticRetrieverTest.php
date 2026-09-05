@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Retrieval\Semantic;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Embeddings\DistanceMetric;
 use WpRagAiChatbot\Embeddings\EmbeddingBatchConfig;
@@ -51,7 +52,7 @@ final class SemanticRetrieverTest extends TestCase {
 				$this->match( 'c', 0.71 ),
 			)
 		);
-		$records = array(
+		$records  = array(
 			$this->id( 'a' ) => $this->record( 'a' ),
 			$this->id( 'b' ) => $this->record( 'b' ),
 			$this->id( 'c' ) => $this->record( 'c' ),
@@ -70,8 +71,22 @@ final class SemanticRetrieverTest extends TestCase {
 		self::assertNotNull( $store->request );
 		self::assertSame( 2, $store->request->top_k );
 		self::assertNotNull( $store->request->filter );
-		self::assertTrue( $store->request->filter->matches( array( 'visibility' => 'public', 'language' => 'en' ) ) );
-		self::assertFalse( $store->request->filter->matches( array( 'visibility' => 'private', 'language' => 'en' ) ) );
+		self::assertTrue(
+			$store->request->filter->matches(
+				array(
+					'visibility' => 'public',
+					'language'   => 'en',
+				)
+			)
+		);
+		self::assertFalse(
+			$store->request->filter->matches(
+				array(
+					'visibility' => 'private',
+					'language'   => 'en',
+				)
+			)
+		);
 		self::assertCount( 2, $candidates );
 	}
 
@@ -88,7 +103,7 @@ final class SemanticRetrieverTest extends TestCase {
 				$this->match( 'wrong-source', 0.95, array( 'source_id' => 99 ) ),
 			)
 		);
-		$records = array(
+		$records  = array(
 			$this->id( 'a' )            => $this->record( 'a' ),
 			$this->id( 'b' )            => $this->record( 'b' ),
 			$this->id( 'wrong-source' ) => $this->record( 'wrong-source' ),
@@ -113,7 +128,7 @@ final class SemanticRetrieverTest extends TestCase {
 		$store    = $this->store( array() );
 		$context  = new SemanticRetrievalContext(
 			new RetrievalFilter( mandatory: array( 'tenant_id' => 'tenant-a' ) ),
-			static fn ( string $chunk_id ): ?ChunkSearchRecord => null
+			static fn ( string $chunk_id ): ?ChunkSearchRecord => '' === $chunk_id ? null : null
 		);
 
 		try {
@@ -122,7 +137,7 @@ final class SemanticRetrieverTest extends TestCase {
 				$context
 			);
 			self::fail( 'Expected unsupported mandatory filter failure.' );
-		} catch ( \InvalidArgumentException $exception ) {
+		} catch ( InvalidArgumentException $exception ) {
 			self::assertStringContainsString( 'Unsupported mandatory retrieval filter', $exception->getMessage() );
 		}
 
@@ -132,6 +147,10 @@ final class SemanticRetrieverTest extends TestCase {
 
 	/**
 	 * Build a semantic retriever with deterministic M08 dependencies.
+	 *
+	 * @param RecordingEmbeddingProvider $provider Recording embedding provider.
+	 * @param VectorSearchStore           $store Recording vector search store.
+	 * @param RetrievalConfig|null        $config Optional retrieval configuration.
 	 */
 	private function retriever(
 		RecordingEmbeddingProvider $provider,
@@ -151,7 +170,9 @@ final class SemanticRetrieverTest extends TestCase {
 		);
 	}
 
-	/** Build a deterministic one-query embedding provider. */
+	/**
+	 * Build a deterministic one-query embedding provider.
+	 */
 	private function provider(): RecordingEmbeddingProvider {
 		return new RecordingEmbeddingProvider(
 			array(
@@ -172,25 +193,40 @@ final class SemanticRetrieverTest extends TestCase {
 	 */
 	private function store( array $matches ): VectorSearchStore {
 		return new class($matches) implements VectorSearchStore {
+			/** Captured vector search request. */
 			public ?VectorSearchRequest $request = null;
+
+			/** Number of vector search calls. */
 			public int $search_count = 0;
 
-			/** @param VectorMatch[] $matches Deterministic returned matches. */
+			/**
+			 * Create the recording store.
+			 *
+			 * @param VectorMatch[] $matches Deterministic returned matches.
+			 */
 			public function __construct( private readonly array $matches ) {
 			}
 
+			/** Return the stable test store ID. */
 			public function store_id(): string {
 				return 'recording-semantic';
 			}
 
+			/** Return truthful test capabilities. */
 			public function capabilities(): VectorStoreCapabilities {
 				return VectorStoreCapabilities::all();
 			}
 
+			/** Return healthy test state. */
 			public function health(): VectorStoreHealth {
 				return VectorStoreHealth::healthy();
 			}
 
+			/**
+			 * Capture one bounded semantic request.
+			 *
+			 * @param VectorSearchRequest $request Semantic vector search request.
+			 */
 			public function search( VectorSearchRequest $request ): VectorSearchResult {
 				$this->request = $request;
 				++$this->search_count;
@@ -225,7 +261,11 @@ final class SemanticRetrieverTest extends TestCase {
 		return new VectorMatch( $this->id( $seed ), $score, $metadata );
 	}
 
-	/** Build one canonical local search-projection record used to hydrate semantic content. */
+	/**
+	 * Build one canonical local search-projection record used to hydrate semantic content.
+	 *
+	 * @param string $seed Stable fixture seed.
+	 */
 	private function record( string $seed ): ChunkSearchRecord {
 		$content = 'Canonical content for ' . $seed;
 		return new ChunkSearchRecord(
@@ -243,7 +283,11 @@ final class SemanticRetrieverTest extends TestCase {
 		);
 	}
 
-	/** Build a stable portable chunk ID. */
+	/**
+	 * Build a stable portable chunk ID.
+	 *
+	 * @param string $seed Stable fixture seed.
+	 */
 	private function id( string $seed ): string {
 		return hash( 'sha256', $seed );
 	}
