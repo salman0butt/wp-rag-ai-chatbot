@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Core;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Core\Lifecycle;
 use WpRagAiChatbot\Jobs\WordPressJobCron;
@@ -48,6 +49,7 @@ final class LifecycleTest extends TestCase {
 	/**
 	 * Deactivation removes the plugin-owned jobs cron schedule.
 	 */
+	#[DoesNotPerformAssertions]
 	public function test_deactivate_unschedules_jobs_cron(): void {
 		Functions\expect( 'wp_clear_scheduled_hook' )->once()->with( WordPressJobCron::HOOK );
 
