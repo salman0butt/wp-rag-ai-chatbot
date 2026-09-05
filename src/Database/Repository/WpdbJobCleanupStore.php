@@ -59,7 +59,7 @@ final class WpdbJobCleanupStore implements JobCleanupStore {
 		);
 
 		$deleted = $this->connection->query( $sql );
-		if ( false === $deleted || $deleted < 0 || $deleted > $limit ) {
+		if ( ! is_int( $deleted ) || $deleted < 0 || $deleted > $limit ) {
 			throw new JobQueueException( 'Job cleanup query failed or returned an invalid affected-row count.' );
 		}
 		return $deleted;
