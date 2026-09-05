@@ -58,17 +58,14 @@ final readonly class RetrievalCandidate {
 			throw new InvalidArgumentException( 'Retrieval candidate is invalid.' );
 		}
 
+		$validated_evidence = array();
 		foreach ( $channel_evidence as $evidence ) {
 			if ( ! $evidence instanceof ChannelEvidence ) {
 				throw new InvalidArgumentException( 'Retrieval candidate channel evidence is invalid.' );
 			}
+			$validated_evidence[] = $evidence;
 		}
 
-		/**
-		 * Runtime-validated channel evidence.
-		 *
-		 * @var list<ChannelEvidence> $channel_evidence
-		 */
-		$this->channel_evidence = array_values( $channel_evidence );
+		$this->channel_evidence = $validated_evidence;
 	}
 }
