@@ -71,7 +71,7 @@ $public_matches = $store->search(
 	new LexicalSearchRequest( new LexicalFilter( 'knowledge', null, null, 'en', 'public' ), array( 'sku-42/a' ), 10 )
 );
 $public_ids = array_map( static fn ( $match ): string => $match->record->chunk_key, $public_matches );
-if ( array( $first->chunk_key, $replacement->chunk_key ) !== $public_ids ) {
+if ( array( $replacement->chunk_key, $first->chunk_key ) !== $public_ids ) {
 	$fail( 'Idempotent replacement or public collection/language/visibility filtering failed.' );
 }
 
