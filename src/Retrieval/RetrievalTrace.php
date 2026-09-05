@@ -22,6 +22,7 @@ final readonly class RetrievalTrace {
 	 * @param int    $query_bytes Normalized query byte length.
 	 * @param array  $channel_counts Bounded per-channel candidate counts.
 	 * @param array  $channel_failures Sanitized per-channel failure reason codes.
+	 * @param string $rerank_status Sanitized reranker execution status.
 	 * @phpstan-param array<string, int> $channel_counts
 	 * @phpstan-param array<string, string> $channel_failures
 	 * @throws InvalidArgumentException When trace values are invalid.
@@ -30,7 +31,8 @@ final readonly class RetrievalTrace {
 		public string $query_hash,
 		public int $query_bytes,
 		public array $channel_counts,
-		public array $channel_failures = array()
+		public array $channel_failures = array(),
+		public string $rerank_status = 'disabled'
 	) {
 		if ( 1 !== preg_match( '/^[a-f0-9]{64}$/', $query_hash ) || $query_bytes < 0 ) {
 			throw new InvalidArgumentException( 'Retrieval trace query diagnostics are invalid.' );
@@ -49,6 +51,10 @@ final readonly class RetrievalTrace {
 			) {
 				throw new InvalidArgumentException( 'Retrieval trace failure diagnostics are invalid.' );
 			}
+		}
+
+		if ( ! in_array( $rerank_status, array( 'disabled', 'applied', 'fallback_unavailable' ), true ) ) {
+			throw new InvalidArgumentException( 'Retrieval trace rerank diagnostics are invalid.' );
 		}
 	}
 }

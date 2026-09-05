@@ -35,6 +35,7 @@ final readonly class RetrievalCandidate {
 	 * @param array                    $channel_evidence Channel ranking evidence.
 	 * @param float                    $fused_score Deterministic fused score.
 	 * @param RetrievalConfidence|null $confidence Optional deterministic retrieval confidence.
+	 * @param float|null               $rerank_score Optional finite reranker score.
 	 * @phpstan-param array<array-key, mixed> $channel_evidence
 	 * @throws InvalidArgumentException When lineage, evidence, or numeric values are invalid.
 	 */
@@ -47,7 +48,8 @@ final readonly class RetrievalCandidate {
 		public string $visibility,
 		array $channel_evidence,
 		public float $fused_score,
-		public ?RetrievalConfidence $confidence = null
+		public ?RetrievalConfidence $confidence = null,
+		public ?float $rerank_score = null
 	) {
 		if (
 			'' === trim( $chunk_id ) ||
@@ -56,7 +58,8 @@ final readonly class RetrievalCandidate {
 			'' === trim( $content ) ||
 			'' === trim( $visibility ) ||
 			! is_finite( $fused_score ) ||
-			$fused_score < 0.0
+			$fused_score < 0.0 ||
+			( null !== $rerank_score && ! is_finite( $rerank_score ) )
 		) {
 			throw new InvalidArgumentException( 'Retrieval candidate is invalid.' );
 		}

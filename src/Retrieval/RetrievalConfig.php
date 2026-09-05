@@ -28,6 +28,7 @@ final readonly class RetrievalConfig {
 	 * @param int   $rrf_k Reciprocal-rank smoothing constant.
 	 * @param float $semantic_weight Semantic channel fusion weight.
 	 * @param float $lexical_weight Lexical channel fusion weight.
+	 * @param bool  $rerank_failure_fallback Whether reranker failures fall back to fused order.
 	 * @throws InvalidArgumentException When any bound or fusion parameter is invalid.
 	 */
 	public function __construct(
@@ -40,7 +41,8 @@ final readonly class RetrievalConfig {
 		public int $context_candidate_limit = 12,
 		public int $rrf_k = 60,
 		public float $semantic_weight = 1.0,
-		public float $lexical_weight = 1.0
+		public float $lexical_weight = 1.0,
+		public bool $rerank_failure_fallback = true
 	) {
 		if (
 			$max_query_bytes < 1 ||
