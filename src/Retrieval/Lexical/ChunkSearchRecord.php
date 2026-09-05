@@ -31,7 +31,7 @@ final readonly class ChunkSearchRecord {
 	 * @param string|null $language Optional language.
 	 * @param string      $visibility Trusted visibility classification.
 	 * @param int         $sequence Deterministic chunk sequence.
-	 * @param array $metadata Safe portable source metadata.
+	 * @param array       $metadata Safe portable source metadata.
 	 * @phpstan-param array<array-key, mixed> $metadata
 	 * @throws InvalidArgumentException When projection data exceeds hard bounds.
 	 */

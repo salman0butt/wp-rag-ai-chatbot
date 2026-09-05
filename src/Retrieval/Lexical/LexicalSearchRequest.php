@@ -22,8 +22,8 @@ final readonly class LexicalSearchRequest {
 	 * Create one bounded lexical candidate request.
 	 *
 	 * @param LexicalFilter $filter Trusted search scope.
-	 * @param string[] $terms Normalized lexical terms.
-	 * @param int $limit Maximum SQL candidates returned.
+	 * @param string[]      $terms Normalized lexical terms.
+	 * @param int           $limit Maximum SQL candidates returned.
 	 * @throws InvalidArgumentException When terms or limit exceed hard bounds.
 	 */
 	public function __construct(

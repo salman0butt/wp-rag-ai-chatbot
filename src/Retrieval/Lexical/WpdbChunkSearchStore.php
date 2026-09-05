@@ -137,7 +137,7 @@ final class WpdbChunkSearchStore implements ChunkSearchStore {
 			$args[]         = $normalized;
 		}
 
-		$sql = 'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, content_hash, language, visibility, sequence, metadata_json FROM %i WHERE '
+		$sql  = 'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, content_hash, language, visibility, sequence, metadata_json FROM %i WHERE '
 			. implode( ' AND ', $clauses )
 			. ' AND (' . implode( ' OR ', $term_clauses ) . ') ORDER BY chunk_key ASC LIMIT %d';
 		$args[] = $request->limit;
@@ -156,12 +156,13 @@ final class WpdbChunkSearchStore implements ChunkSearchStore {
 	 * Rehydrate one stored projection row through the same trust-boundary validation.
 	 *
 	 * @param array<string, mixed> $row Stored projection row.
+	 * @throws DatabaseException When stored projection data is invalid.
 	 */
 	private function record_from_row( array $row ): ChunkSearchRecord {
 		try {
 			$metadata = json_decode( (string) ( $row['metadata_json'] ?? '{}' ), true, 512, JSON_THROW_ON_ERROR );
-		} catch ( JsonException $exception ) {
-			throw new DatabaseException( 'Stored chunk-search metadata is invalid.', 0, $exception );
+		} catch ( JsonException ) {
+			throw new DatabaseException( 'Stored chunk-search metadata is invalid.' );
 		}
 		if ( ! is_array( $metadata ) ) {
 			throw new DatabaseException( 'Stored chunk-search metadata is invalid.' );
