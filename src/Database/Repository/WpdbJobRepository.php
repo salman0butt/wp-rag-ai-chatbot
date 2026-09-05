@@ -23,7 +23,7 @@ use WpRagAiChatbot\Jobs\JobRepository;
 use WpRagAiChatbot\Jobs\JobRequest;
 use WpRagAiChatbot\Jobs\JobStatus;
 
-// phpcs:disable WordPress.NamingConventions,Squiz.Commenting.FunctionCommentThrowTag,WordPress.Security.EscapeOutput.OutputNotEscaped -- Approved M09 domain names; typed internal exceptions are propagated, not rendered.
+// phpcs:disable WordPress.NamingConventions,Squiz.Commenting.FunctionCommentThrowTag -- Approved M09 domain names; typed queue exceptions are documented at the contract boundary.
 /**
  * Persists jobs using bounded scans and optimistic lease ownership predicates.
  */
@@ -216,7 +216,7 @@ final class WpdbJobRepository implements JobRepository {
 	 * @param JobLease $lease Current lease.
 	 */
 	public function cancellationRequested( JobLease $lease ): bool {
-		$sql = $this->connection->prepare(
+		$sql    = $this->connection->prepare(
 			"SELECT CASE WHEN cancel_requested_at IS NULL THEN 0 ELSE 1 END FROM %i WHERE id = %d AND status = 'running' AND lease_owner = %s LIMIT 1",
 			$this->tables->jobs(),
 			$lease->job->id,
@@ -457,7 +457,7 @@ final class WpdbJobRepository implements JobRepository {
 	 */
 	private function require_single_transition( string $sql, string $message ): void {
 		if ( 1 !== $this->connection->query( $sql ) ) {
-			throw new JobQueueException( $message );
+			throw new JobQueueException( 'Job transition was rejected by the current lease predicate.' );
 		}
 	}
 
@@ -567,16 +567,16 @@ final class WpdbJobRepository implements JobRepository {
 	 * Parse a required persisted UTC datetime.
 	 *
 	 * @param mixed  $value Persisted value.
-	 * @param string $field Field name for safe errors.
+	 * @param string $field Field name for validation context.
 	 */
 	private static function parse_utc( mixed $value, string $field ): DateTimeImmutable {
 		if ( ! is_string( $value ) || '' === $value ) {
-			throw new JobQueueException( 'Persisted job ' . $field . ' is invalid.' );
+			throw new JobQueueException( 'Persisted job UTC datetime is invalid.' );
 		}
 		try {
 			return new DateTimeImmutable( $value, new DateTimeZone( 'UTC' ) );
 		} catch ( \Exception ) {
-			throw new JobQueueException( 'Persisted job ' . $field . ' is invalid.' );
+			throw new JobQueueException( 'Persisted job UTC datetime is invalid.' );
 		}
 	}
 
@@ -584,7 +584,7 @@ final class WpdbJobRepository implements JobRepository {
 	 * Parse an optional persisted UTC datetime.
 	 *
 	 * @param mixed  $value Persisted value.
-	 * @param string $field Field name for safe errors.
+	 * @param string $field Field name for validation context.
 	 */
 	private static function parse_nullable_utc( mixed $value, string $field ): ?DateTimeImmutable {
 		return null === $value ? null : self::parse_utc( $value, $field );
@@ -608,4 +608,4 @@ final class WpdbJobRepository implements JobRepository {
 		return null === $value ? null : (int) $value;
 	}
 }
-// phpcs:enable WordPress.NamingConventions,Squiz.Commenting.FunctionCommentThrowTag,WordPress.Security.EscapeOutput.OutputNotEscaped
+// phpcs:enable WordPress.NamingConventions,Squiz.Commenting.FunctionCommentThrowTag
