@@ -94,6 +94,49 @@ final class DocumentIndexJobHandlerTest extends TestCase {
 	}
 
 	/**
+	 * Provider authentication/configuration failures are terminal at the queue boundary.
+	 */
+	public function test_terminal_provider_failure_is_translated_non_retryably(): void {
+		$fixture      = $this->fixture();
+		$dependencies = $this->createMock( DocumentIndexDependencies::class );
+		$dependencies->method( 'plan' )->willThrowException(
+			new ProviderException( ProviderErrorCode::AUTHENTICATION, 'provider-main', 'credential detail must not persist' )
+		);
+
+		try {
+			( new DocumentIndexJobHandler( $dependencies ) )->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Terminal provider failure was not translated to a queue execution failure.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'index_provider_authentication', $error->safe_code() );
+			self::assertSame( 'Document indexing provider configuration is invalid.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+			self::assertStringNotContainsString( 'credential detail', $error->safe_message() );
+		}
+	}
+
+	/**
+	 * Retryable vector-store outages must reach the M09 retry state machine.
+	 */
+	public function test_retryable_vector_failure_is_translated_without_leaking_message(): void {
+		$fixture      = $this->fixture();
+		$dependencies = $this->createMock( DocumentIndexDependencies::class );
+		$dependencies->method( 'plan' )->willReturn( new IndexPlan( array(), array(), array(), array(), array() ) );
+		$dependencies->method( 'execute' )->willThrowException(
+			new VectorStoreException( VectorStoreErrorCode::UNAVAILABLE, 'private vector endpoint detail' )
+		);
+
+		try {
+			( new DocumentIndexJobHandler( $dependencies ) )->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Retryable vector failure was not translated to a queue execution failure.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'index_vector_unavailable', $error->safe_code() );
+			self::assertSame( 'Document indexing vector store is temporarily unavailable.', $error->safe_message() );
+			self::assertTrue( $error->retryable() );
+			self::assertStringNotContainsString( 'private vector', $error->safe_message() );
+		}
+	}
+
+	/**
 	 * Terminal normalized vector configuration failures must never be retried.
 	 */
 	public function test_terminal_vector_failure_is_translated_non_retryably(): void {
