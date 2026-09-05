@@ -14,7 +14,7 @@ use Throwable;
 /**
  * Claims, executes and transitions persisted jobs within explicit bounds.
  */
-final class JobWorker {
+final class JobWorker implements JobRunner {
 	private const UNKNOWN_TYPE_CODE       = 'unknown_job_type';
 	private const UNKNOWN_TYPE_MESSAGE    = 'No registered handler is available for this job type.';
 	private const UNEXPECTED_FAILURE_CODE = 'unexpected_failure';
