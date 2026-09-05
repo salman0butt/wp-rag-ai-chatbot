@@ -13,7 +13,11 @@ namespace WpRagAiChatbot\Jobs;
  * Resolves only explicitly registered handler implementations.
  */
 final class JobHandlerRegistry {
-	/** @var array<string, JobHandler> */
+	/**
+	 * Explicit stable-type handler map.
+	 *
+	 * @var array<string, JobHandler>
+	 */
 	private array $handlers = array();
 
 	/**
