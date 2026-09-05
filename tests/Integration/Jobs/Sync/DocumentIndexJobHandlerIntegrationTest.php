@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Integration\Jobs\Sync;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use WpRagAiChatbot\Documents\DocumentHasher;
 use WpRagAiChatbot\Documents\DocumentRecord;
 use WpRagAiChatbot\Embeddings\DistanceMetric;
@@ -20,6 +21,7 @@ use WpRagAiChatbot\Embeddings\EmbeddingService;
 use WpRagAiChatbot\Embeddings\IndexEmbeddingExecutor;
 use WpRagAiChatbot\Embeddings\NormalizationMode;
 use WpRagAiChatbot\Embeddings\VectorIndexProfile;
+use WpRagAiChatbot\Indexing\Chunking\ChunkRecord;
 use WpRagAiChatbot\Indexing\Chunking\ChunkingConfig;
 use WpRagAiChatbot\Indexing\Chunking\LexicalTokenCounter;
 use WpRagAiChatbot\Indexing\Chunking\StructureAwareChunker;
@@ -45,6 +47,8 @@ use WpRagAiChatbot\Tests\Support\VectorStore\InMemoryVectorStore;
 use WpRagAiChatbot\VectorStore\VectorCollection;
 use WpRagAiChatbot\VectorStore\VectorSearchRequest;
 
+// phpcs:disable WordPress.NamingConventions -- Assertions use approved M07/M08 camelCase domain contracts.
+// phpcs:disable Generic.Formatting.MultipleStatementAlignment -- Integration fixtures favor local grouping over alignment churn.
 /**
  * Verifies queued orchestration reuses the accepted M07 and M08 execution boundaries.
  */
@@ -53,8 +57,8 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 	 * A queued identifier payload can reconstruct current state and execute an M07 plan through M08.
 	 */
 	public function test_handler_runs_real_m07_plan_through_m08_executor(): void {
-		$now      = new DateTimeImmutable( '2026-09-05T10:00:00+00:00' );
-		$profile  = new VectorIndexProfile(
+		$now = new DateTimeImmutable( '2026-09-05T10:00:00+00:00' );
+		$profile = new VectorIndexProfile(
 			new EmbeddingProfile( 'test-embedding', 'embed-model', 2, NormalizationMode::NONE ),
 			DistanceMetric::COSINE
 		);
@@ -94,40 +98,80 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 				),
 			)
 		);
-		$store      = new InMemoryVectorStore( 'memory' );
+		$store = new InMemoryVectorStore( 'memory' );
 		$collection = new VectorCollection( 'collection-main', $profile );
-		$executor   = new IndexEmbeddingExecutor(
+		$executor = new IndexEmbeddingExecutor(
 			new EmbeddingService( $provider, new EmbeddingBatchConfig( 10 ) ),
 			$store,
 			$store,
 			$collection
 		);
-		$payload      = new DocumentIndexJobPayload( 'queued-doc', 42, 'collection-main', 'index-profile-default', 'generation-7' );
-		$dependencies = new class( $pipeline, $document, $executor ) implements DocumentIndexDependencies {
+		$payload = new DocumentIndexJobPayload( 'queued-doc', 42, 'collection-main', 'index-profile-default', 'generation-7' );
+		$dependencies = new class( $pipeline, $document, $executor, $profile->fingerprint() ) implements DocumentIndexDependencies {
+			/**
+			 * Create one offline reconstruction fixture.
+			 */
 			public function __construct(
 				private readonly DocumentIndexPipeline $pipeline,
 				private readonly DocumentRecord $document,
-				private readonly IndexEmbeddingExecutor $executor
+				private readonly IndexEmbeddingExecutor $executor,
+				private readonly string $compatibility_key
 			) {
 			}
 
+			/**
+			 * Reconstruct the current document and stamp the selected server-side embedding compatibility.
+			 */
 			public function plan( DocumentIndexJobPayload $payload ): IndexPlan {
 				if ( $payload->document_key !== $this->document->externalId || $payload->source_id !== $this->document->sourceId ) {
-					throw new \RuntimeException( 'Fixture payload did not resolve the expected document.' );
+					throw new RuntimeException( 'Fixture payload did not resolve the expected document.' );
 				}
-				return $this->pipeline->plan( $this->document )->indexPlan;
+				$raw = $this->pipeline->plan( $this->document )->indexPlan;
+				$upsert = array_map( fn ( ChunkRecord $chunk ): ChunkRecord => $this->compatible_chunk( $chunk ), $raw->upsert );
+				return new IndexPlan( $upsert, $raw->metadataRefresh, $raw->deleteKeys, $raw->unchanged, $raw->duplicateMap );
 			}
 
+			/**
+			 * Delegate the accepted plan to the real M08 executor.
+			 */
 			public function execute( DocumentIndexJobPayload $payload, IndexPlan $plan ): void {
 				unset( $payload );
 				$this->executor->execute( $plan );
 			}
+
+			/**
+			 * Return the same deterministic M07 chunk under the selected M08 compatibility profile.
+			 */
+			private function compatible_chunk( ChunkRecord $chunk ): ChunkRecord {
+				return new ChunkRecord(
+					$chunk->chunkKey,
+					$chunk->documentKey,
+					$chunk->sourceId,
+					$chunk->documentType,
+					$chunk->title,
+					$chunk->canonicalUrl,
+					$chunk->content,
+					$chunk->contentHash,
+					$chunk->sourceVersion,
+					$chunk->documentContentHash,
+					$chunk->language,
+					$chunk->visibility,
+					$chunk->sequence,
+					$chunk->parentChunkKey,
+					$chunk->headingPath,
+					$chunk->tokenCount,
+					$chunk->chunkingVersion,
+					$chunk->chunkingFingerprint,
+					$this->compatibility_key,
+					$chunk->sourceMetadata
+				);
+			}
 		};
 
-		$job        = $this->job( $now, $payload->to_array() );
-		$lease      = new JobLease( $job, 'worker-token' );
+		$job = $this->job( $now, $payload->to_array() );
+		$lease = new JobLease( $job, 'worker-token' );
 		$repository = $this->createMock( JobRepository::class );
-		$clock      = $this->createMock( Clock::class );
+		$clock = $this->createMock( Clock::class );
 		$clock->method( 'now' )->willReturn( $now );
 		$repository->method( 'cancellationRequested' )->willReturn( false );
 		$repository->method( 'heartbeat' )->willReturn( $lease );
@@ -173,3 +217,5 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 		);
 	}
 }
+// phpcs:enable Generic.Formatting.MultipleStatementAlignment
+// phpcs:enable WordPress.NamingConventions
