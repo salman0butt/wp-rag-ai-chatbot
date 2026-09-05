@@ -26,9 +26,15 @@ final class JobHandlerRegistryTest extends TestCase {
 	public function test_registered_handler_resolves_by_type(): void {
 		$registry = new JobHandlerRegistry();
 		$handler  = $this->handler( 'index.document' );
-		$registry->register( $handler );
+		$this->register_or_fail( $registry, $handler );
 
-		self::assertSame( $handler, $registry->for_type( 'index.document' ) );
+		try {
+			$resolved = $registry->for_type( 'index.document' );
+		} catch ( JobQueueException $exception ) {
+			self::fail( 'Registered handler resolution is not implemented: ' . $exception->getMessage() );
+		}
+
+		self::assertSame( $handler, $resolved );
 	}
 
 	/**
@@ -36,7 +42,7 @@ final class JobHandlerRegistryTest extends TestCase {
 	 */
 	public function test_duplicate_handler_registration_is_rejected(): void {
 		$registry = new JobHandlerRegistry();
-		$registry->register( $this->handler( 'index.document' ) );
+		$this->register_or_fail( $registry, $this->handler( 'index.document' ) );
 
 		$this->expectException( JobQueueException::class );
 		$registry->register( $this->handler( 'index.document' ) );
@@ -60,6 +66,20 @@ final class JobHandlerRegistryTest extends TestCase {
 
 		$this->expectException( JobQueueException::class );
 		$registry->register( $this->handler( 'Invalid Handler' ) );
+	}
+
+	/**
+	 * Register setup data while converting an unimplemented stub into a clear RED assertion.
+	 *
+	 * @param JobHandlerRegistry $registry Registry under test.
+	 * @param JobHandler         $handler Handler fixture.
+	 */
+	private function register_or_fail( JobHandlerRegistry $registry, JobHandler $handler ): void {
+		try {
+			$registry->register( $handler );
+		} catch ( JobQueueException $exception ) {
+			self::fail( 'Valid typed handler registration is not implemented: ' . $exception->getMessage() );
+		}
 	}
 
 	/**
