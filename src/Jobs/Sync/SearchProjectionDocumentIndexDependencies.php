@@ -15,6 +15,7 @@ use WpRagAiChatbot\Indexing\Planning\IndexPlan;
 use WpRagAiChatbot\Retrieval\Lexical\ChunkSearchRecord;
 use WpRagAiChatbot\Retrieval\Lexical\ChunkSearchStore;
 
+// phpcs:disable WordPress.NamingConventions -- M07 domain DTO properties intentionally use the approved camelCase contract.
 /**
  * Keeps the durable lexical projection aligned with the same accepted M07 plan used by M08 execution.
  */
@@ -78,6 +79,7 @@ final class SearchProjectionDocumentIndexDependencies implements DocumentIndexDe
 	 * @param DocumentIndexJobPayload $payload Stable queued document identity.
 	 * @param IndexPlan               $plan Accepted M07 plan.
 	 * @return ChunkSearchRecord[]
+	 * @throws InvalidArgumentException When the plan crosses its queued lineage boundary.
 	 */
 	private function projection_records( DocumentIndexJobPayload $payload, IndexPlan $plan ): array {
 		$current = array_merge( $plan->upsert, $plan->metadataRefresh, $plan->unchanged );
@@ -141,3 +143,4 @@ final class SearchProjectionDocumentIndexDependencies implements DocumentIndexDe
 		return $safe;
 	}
 }
+// phpcs:enable WordPress.NamingConventions
