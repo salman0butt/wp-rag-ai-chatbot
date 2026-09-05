@@ -8,7 +8,8 @@
 - M09 Task 1 — jobs schema and immutable queue contracts: **COMPLETE**.
 - M09 Task 2 — atomic enqueue/lease/heartbeat/progress/cancellation/recovery repository: **COMPLETE**.
 - M09 Task 3 — retry/failure state machine, typed handler registry and bounded worker: **COMPLETE**.
-- M09 Task 4 — WP-Cron, WP-CLI/server-cron execution and bounded cleanup: **NEXT**.
+- M09 Task 4 — WP-Cron, WP-CLI/server-cron execution and bounded cleanup: **COMPLETE**.
+- M09 Task 5 — M07/M08 synchronization orchestration through queued jobs: **NEXT**.
 
 ## M08 final state — COMPLETE
 
@@ -48,32 +49,37 @@ Final evidence:
 
 ### Task 3 — COMPLETE
 
-Task 3 delivered:
+Task 3 delivered deterministic bounded retry policy, explicit typed/allowlisted handlers, bounded worker count/time/lease configuration, opaque worker identities, retryable versus terminal/final-attempt transitions, constant sanitization for unexpected failures, cancellation priority/cooperation, and lease-scoped execution-context delegation.
 
-- deterministic retry delays of 30/60/120/... seconds capped at 900 seconds;
-- explicit typed/allowlisted `JobHandlerRegistry` registration and unknown-type rejection;
-- bounded `WorkerConfig`, opaque 64-hex worker identities, max-jobs and start-budget enforcement;
-- retryable versus terminal/final-attempt failure transitions;
-- constant sanitized persistence for unexpected `Throwable` values;
-- pre-execution and cooperative cancellation handling;
-- lease-scoped `JobExecutionContext` heartbeat, progress and cancellation delegation.
+Final evidence:
 
-TDD/review evidence:
-
-- handler-registry RED `429419e629021a02f10753f4dddcbe6ec8169677` / CI `33945855793`: PHPStan 0 errors; PHPUnit **444 tests / 1,975 assertions**, exactly 2 intended failures for valid registration and duplicate registration behavior;
-- worker value-boundary RED `95c648f49d3089ebf8925342a2a2e1afe004858a` / CI `33946308243`: PHPStan 0 errors; PHPUnit **452 tests / 1,983 assertions**, exactly 3 intended failures for explicit worker config, execution exception and clock boundaries;
-- closeout review RED `f4ae81a364d607bd1a7326d29ed7d9d8dd41056f` / CI `33949274962`: exactly 1 intended failure proving cancellation was checked after unknown-handler resolution;
-- minimum cancellation-priority fix `99b9f176a2d16a9214ed8d5d594be536f56ae06a`;
-- final Task 3 GREEN CI `33950927777`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN; PHPUnit **468/468**, **2,011 assertions**; PHPStan **0 errors**; Composer audit **clean**;
+- handler-registry RED `429419e629021a02f10753f4dddcbe6ec8169677` / CI `33945855793`;
+- worker value-boundary RED `95c648f49d3089ebf8925342a2a2e1afe004858a` / CI `33946308243`;
+- closeout review RED `f4ae81a364d607bd1a7326d29ed7d9d8dd41056f` / CI `33949274962` proved cancellation ran after unknown-handler resolution;
+- minimum fix `99b9f176a2d16a9214ed8d5d594be536f56ae06a`;
+- final Task 3 GREEN CI `33950927777`: all four permanent jobs GREEN; PHPUnit **468/468**, **2,011 assertions**; PHPStan **0 errors**; Composer audit **clean**;
 - package artifact `9964796928`, digest `sha256:b7c26e874ce35ddcdb2b51eea1ee31ff0cc9f7a98cfa81a38ddbc32871380bcf`;
-- independent Task 3 review `5120228931`: **Critical 0 / Important 0 unresolved**; zero unresolved inline review threads.
+- independent Task 3 review `5120228931`: **Critical 0 / Important 0 unresolved**.
+
+### Task 4 — COMPLETE
+
+Task 4 delivered the stable `wp_rag_ai_jobs_run` WP-Cron boundary, schedule-if-absent registration, deactivation unscheduling/reactivation restoration, shared bounded worker delegation, conditional WP-CLI registration and `--limit=1..100`, terminal-only cleanup capped at 500 rows per pass, real WordPress cron lifecycle and MySQL cleanup integration coverage, and documented server-cron operation for low-traffic / `DISABLE_WP_CRON` sites.
+
+TDD/recovery/final evidence:
+
+- genuine behavioral RED `92f748ae6f6287c0d492b63216797c85b24f9aae` / CI `33953938875`: PHPStan **0 errors**; PHPUnit **480 tests / 2,007 assertions** with **12 missing-boundary errors + 1 intentional bootstrap failure** for the planned cron/CLI/cleanup/runner/bootstrap behavior; other permanent jobs GREEN;
+- recovered static contract failure `b6d0ec6e02c51c56874c7d787a603131ae8a83b8` / CI `33954271488` showed the cleanup adapter could return boolean `true` despite promising an integer affected-row count; fixed fail-closed in `201738784662f7cddb6a99d2948cdbfbca301592`;
+- expectation-only PHPUnit risky-test hygiene corrected without weakening Brain Monkey expectations in `e7f14c5dec2f4a931e67b8e40cee383dd7c77757`, `5b4e43acb4b99bcd981a672bd941fc0c3037941a`, and `244b6a180694986a7fab43db505f4f470a7de789`;
+- real cleanup integration `605e2a877cf5a899921cc00d63be10aeb1bb83d1`, server-cron operations docs `e3f60a31806c078f7e9f33c1617979bf7d4d5d56`, and cron lifecycle smoke `08c1e3b5fc9c36b78135b4b5a63746ca29605152`;
+- final implementation/integration CI `33956576384`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN; PHPUnit **480/480**, **2,022 assertions**; PHPStan **0 errors**; Composer audit **clean**;
+- package artifact `9966560614`, digest `sha256:155f892e7935e2fa23cfcad536cd408447e1b3de538b2c7558981eeab8a9c4d4`;
+- independent Task 4 review `5120610581`: **Critical 0 / Important 0 unresolved**; zero unresolved inline review threads.
 
 ## Remaining M09 work
 
-- Task 4 — WP-Cron, WP-CLI/server-cron execution and bounded cleanup.
 - Task 5 — M07/M08 synchronization orchestration through queued jobs.
 - Task 6 — whole-M09 security/performance/recovery review, verification, merge and post-merge closeout.
 
 ## Exact next unfinished action
 
-Begin M09 **Task 4 — WP-Cron, WP-CLI/server-cron execution and bounded cleanup** with a lint-clean test-only behavioral RED. Cover schedule-if-absent, cron callback delegation to the same bounded worker, deactivation unscheduling, WP-CLI availability/registration, bounded `--limit` validation, shared worker semantics, and terminal-only cleanup capped at 500 rows. Establish genuine RED before production code, then implement the smallest thin WordPress entrypoints/cleanup boundary, run focused/full GREEN CI, perform independent review, fix every Critical/Important finding regression-first, and record durable Task 4 evidence before beginning Task 5.
+Begin M09 **Task 5 — M07/M08 synchronization orchestration through queued jobs**. Recover the accepted M07 `IndexPlan` / M08 `IndexEmbeddingExecutor` boundaries and add a lint-clean test-only behavioral RED for a typed synchronization payload/handler. Keep persisted payloads small and identifier-only; rebuild/load current source/chunk/plan state through existing services; delegate accepted plan execution to existing M07/M08 orchestration; report bounded progress/cancellation through `JobExecutionContext`; classify retryable versus terminal errors safely; and preserve idempotency under retry/recovery. Establish genuine RED before production code, then implement the smallest integration, run focused/full exact-SHA GREEN CI, perform independent review, resolve every Critical/Important finding regression-first, and record durable Task 5 evidence before whole-M09 Task 6 closeout.
