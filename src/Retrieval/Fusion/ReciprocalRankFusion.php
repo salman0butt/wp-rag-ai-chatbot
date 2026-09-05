@@ -32,9 +32,14 @@ final readonly class ReciprocalRankFusion {
 	 * @param array $channels Ranked candidates keyed by channel name.
 	 * @phpstan-param array<string, array<array-key, RankedCandidate>> $channels
 	 * @return list<RetrievalCandidate>
+	 * @throws InvalidArgumentException When a channel, candidate, or duplicate lineage is invalid.
 	 */
 	public function fuse( array $channels ): array {
-		/** @var array<string, array{candidate: RankedCandidate, evidence: list<ChannelEvidence>, score: float, best_rank: int}> $fused */
+		/**
+		 * Accumulated fused entries keyed by stable chunk ID.
+		 *
+		 * @var array<string, array{candidate: RankedCandidate, evidence: list<ChannelEvidence>, score: float, best_rank: int}> $fused
+		 */
 		$fused = array();
 
 		foreach ( $channels as $channel => $candidates ) {
