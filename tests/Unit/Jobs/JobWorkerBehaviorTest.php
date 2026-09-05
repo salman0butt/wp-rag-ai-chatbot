@@ -14,6 +14,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use WpRagAiChatbot\Jobs\Clock;
+use WpRagAiChatbot\Jobs\JobCancelledException;
 use WpRagAiChatbot\Jobs\JobExecutionException;
 use WpRagAiChatbot\Jobs\JobHandler;
 use WpRagAiChatbot\Jobs\JobHandlerRegistry;
@@ -48,6 +49,45 @@ final class JobWorkerBehaviorTest extends TestCase {
 		$result = ( new JobWorker( $repository, $registry, $this->clock( $now ) ) )->run( new WorkerConfig( 1, 20, 120 ) );
 
 		self::assertSame( 1, $result->started_jobs );
+	}
+
+	/**
+	 * A cancellation request observed before handler execution ends cancelled.
+	 */
+	public function test_pre_execution_cancellation_skips_handler_and_marks_cancelled(): void {
+		$now        = new DateTimeImmutable( '2026-09-05T06:00:00+00:00' );
+		$lease      = $this->lease( $now, 1, 3 );
+		$repository = $this->createMock( JobRepository::class );
+		$handler    = $this->handler( 'index_document' );
+		$registry   = new JobHandlerRegistry();
+		$registry->register( $handler );
+
+		$repository->method( 'claimNext' )->willReturn( $lease );
+		$repository->method( 'cancellationRequested' )->with( $lease )->willReturn( true );
+		$handler->expects( self::never() )->method( 'handle' );
+		$repository->expects( self::once() )->method( 'markCancelled' )->with( $lease, $now );
+
+		( new JobWorker( $repository, $registry, $this->clock( $now ) ) )->run( new WorkerConfig( 1, 20, 120 ) );
+	}
+
+	/**
+	 * Cooperative handler cancellation ends the current lease cancelled.
+	 */
+	public function test_handler_cancellation_signal_marks_current_lease_cancelled(): void {
+		$now        = new DateTimeImmutable( '2026-09-05T06:00:00+00:00' );
+		$lease      = $this->lease( $now, 1, 3 );
+		$repository = $this->createMock( JobRepository::class );
+		$handler    = $this->handler( 'index_document' );
+		$registry   = new JobHandlerRegistry();
+		$registry->register( $handler );
+
+		$repository->method( 'claimNext' )->willReturn( $lease );
+		$repository->method( 'cancellationRequested' )->willReturn( false );
+		$handler->method( 'handle' )->willThrowException( new JobCancelledException( 'Cancelled cooperatively.' ) );
+		$repository->expects( self::once() )->method( 'markCancelled' )->with( $lease, $now );
+		$repository->expects( self::never() )->method( 'markFailed' );
+
+		( new JobWorker( $repository, $registry, $this->clock( $now ) ) )->run( new WorkerConfig( 1, 20, 120 ) );
 	}
 
 	/**
@@ -120,6 +160,21 @@ final class JobWorkerBehaviorTest extends TestCase {
 			->with( $lease, 'unexpected_failure', 'Job execution failed unexpectedly.', $now );
 
 		( new JobWorker( $repository, $registry, $this->clock( $now ) ) )->run( new WorkerConfig( 1, 20, 120 ) );
+	}
+
+	/**
+	 * The start budget is checked before any new lease claim.
+	 */
+	public function test_start_budget_prevents_new_claim_when_budget_is_exhausted(): void {
+		$start      = new DateTimeImmutable( '2026-09-05T06:00:00+00:00' );
+		$repository = $this->createMock( JobRepository::class );
+		$clock      = $this->createMock( Clock::class );
+		$clock->method( 'now' )->willReturnOnConsecutiveCalls( $start, $start->modify( '+20 seconds' ) );
+		$repository->expects( self::never() )->method( 'claimNext' );
+
+		$result = ( new JobWorker( $repository, new JobHandlerRegistry(), $clock ) )->run( new WorkerConfig( 10, 20, 120 ) );
+
+		self::assertSame( 0, $result->started_jobs );
 	}
 
 	/**
