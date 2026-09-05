@@ -24,7 +24,7 @@ final class RetrievalContractsTest extends TestCase {
 	 * Candidate lineage and channel evidence remain explicit immutable values.
 	 */
 	public function test_candidate_preserves_bounded_lineage_and_evidence(): void {
-		$evidence = new ChannelEvidence( 'semantic', 0.91, 1, 1.0, 0.0163934426 );
+		$evidence  = new ChannelEvidence( 'semantic', 0.91, 1, 1.0, 0.0163934426 );
 		$candidate = new RetrievalCandidate(
 			'chunk-1',
 			'doc-1',
@@ -74,7 +74,7 @@ final class RetrievalContractsTest extends TestCase {
 	 * Result preserves deterministic ordered candidate membership and trace.
 	 */
 	public function test_result_contains_ordered_candidates_and_trace(): void {
-		$evidence = new ChannelEvidence( 'lexical', 10.0, 1, 1.0, 0.0163934426 );
+		$evidence  = new ChannelEvidence( 'lexical', 10.0, 1, 1.0, 0.0163934426 );
 		$candidate = new RetrievalCandidate(
 			'chunk-2',
 			'doc-2',
@@ -85,8 +85,8 @@ final class RetrievalContractsTest extends TestCase {
 			array( $evidence ),
 			0.0163934426
 		);
-		$trace = new RetrievalTrace( hash( 'sha256', 'SKU-42/A' ), 8, array( 'lexical' => 1 ) );
-		$result = new RetrievalResult( array( $candidate ), $trace );
+		$trace     = new RetrievalTrace( hash( 'sha256', 'SKU-42/A' ), 8, array( 'lexical' => 1 ) );
+		$result    = new RetrievalResult( array( $candidate ), $trace );
 
 		self::assertSame( array( $candidate ), $result->candidates );
 		self::assertSame( $trace, $result->trace );
