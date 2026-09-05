@@ -35,18 +35,17 @@ final class WpdbJobRepositoryTest extends TestCase {
 
 		$connection      = $this->connection();
 		$inserted_jobkey = null;
-		$connection->expects( self::once() )->method( 'insert' )->with(
-			'wp_rag_ai_jobs',
-			self::callback(
-				static function ( array $data ) use ( &$inserted_jobkey ): bool {
-					$inserted_jobkey = $data['job_key'] ?? null;
-					return is_string( $inserted_jobkey )
-						&& strlen( $inserted_jobkey ) >= 32
-						&& 'queued' === ( $data['status'] ?? null )
-						&& 0 === ( $data['attempts'] ?? null );
-				}
-			)
-		)->willReturn( 1 );
+		$connection->expects( self::once() )->method( 'insert' )->willReturnCallback(
+			static function ( string $table, array $data ) use ( &$inserted_jobkey ): int {
+				self::assertSame( 'wp_rag_ai_jobs', $table );
+				$inserted_jobkey = $data['job_key'] ?? null;
+				self::assertIsString( $inserted_jobkey );
+				self::assertGreaterThanOrEqual( 32, strlen( $inserted_jobkey ) );
+				self::assertSame( 'queued', $data['status'] ?? null );
+				self::assertSame( 0, $data['attempts'] ?? null );
+				return 1;
+			}
+		);
 		$connection->method( 'insert_id' )->willReturn( 7 );
 		$connection->method( 'prepare' )->willReturn( 'job-row' );
 		$connection->method( 'get_row' )->willReturnCallback(
