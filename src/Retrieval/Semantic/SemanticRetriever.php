@@ -68,7 +68,7 @@ final class SemanticRetriever {
 	/**
 	 * Retrieve bounded semantic candidates with trusted scope enforced before and after vector search.
 	 *
-	 * @param RetrievalQuery          $query Normalized retrieval query.
+	 * @param RetrievalQuery           $query Normalized retrieval query.
 	 * @param SemanticRetrievalContext $context Trusted scope plus bounded canonical chunk resolver.
 	 * @return list<RankedCandidate>
 	 */
@@ -93,8 +93,8 @@ final class SemanticRetriever {
 		);
 
 		$candidates = array();
-		foreach ( array_slice( $search_result->matches, 0, $this->config->semantic_top_k ) as $match ) {
-			$candidate = $this->candidate_from_match( $match, $context );
+		foreach ( array_slice( $search_result->matches, 0, $this->config->semantic_top_k ) as $vector_match ) {
+			$candidate = $this->candidate_from_match( $vector_match, $context );
 			if ( null !== $candidate ) {
 				$candidates[] = $candidate;
 			}
@@ -102,8 +102,10 @@ final class SemanticRetriever {
 
 		usort(
 			$candidates,
-			static fn ( RankedCandidate $left, RankedCandidate $right ): int =>
-				$right->native_score <=> $left->native_score ?: strcmp( $left->chunk_id, $right->chunk_id )
+			static function ( RankedCandidate $left, RankedCandidate $right ): int {
+				$score_order = $right->native_score <=> $left->native_score;
+				return 0 !== $score_order ? $score_order : strcmp( $left->chunk_id, $right->chunk_id );
+			}
 		);
 
 		return array_slice( $candidates, 0, $this->config->semantic_top_k );
@@ -112,11 +114,11 @@ final class SemanticRetriever {
 	/**
 	 * Convert one portable vector match into a canonical candidate or drop it fail-closed.
 	 *
-	 * @param VectorMatch              $match Portable vector match.
+	 * @param VectorMatch              $vector_match Portable vector match.
 	 * @param SemanticRetrievalContext $context Trusted retrieval context.
 	 */
-	private function candidate_from_match( VectorMatch $match, SemanticRetrievalContext $context ): ?RankedCandidate {
-		$metadata     = $match->metadata;
+	private function candidate_from_match( VectorMatch $vector_match, SemanticRetrievalContext $context ): ?RankedCandidate {
+		$metadata     = $vector_match->metadata;
 		$document_key = $metadata['document_key'] ?? null;
 		$source_id    = $metadata['source_id'] ?? null;
 		$visibility   = $metadata['visibility'] ?? null;
@@ -131,8 +133,8 @@ final class SemanticRetriever {
 			return null;
 		}
 
-		$record = $context->resolve_chunk( $match->id );
-		if ( null === $record || ! $this->lineage_matches( $record, $match->id, $document_key, $source_id, $visibility, $language ) ) {
+		$record = $context->resolve_chunk( $vector_match->id );
+		if ( null === $record || ! $this->lineage_matches( $record, $vector_match->id, $document_key, $source_id, $visibility, $language ) ) {
 			return null;
 		}
 		if ( ! $this->trusted_scope_matches( $record, $context->filter ) ) {
@@ -146,7 +148,7 @@ final class SemanticRetriever {
 			$record->content,
 			$record->language,
 			$record->visibility,
-			$match->score
+			$vector_match->score
 		);
 	}
 
