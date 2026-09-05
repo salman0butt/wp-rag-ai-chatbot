@@ -110,6 +110,11 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 		$dependencies = new class( $pipeline, $document, $executor, $profile->fingerprint() ) implements DocumentIndexDependencies {
 			/**
 			 * Create one offline reconstruction fixture.
+			 *
+			 * @param DocumentIndexPipeline  $pipeline Real M07 planning pipeline.
+			 * @param DocumentRecord         $document Reconstructed current document fixture.
+			 * @param IndexEmbeddingExecutor $executor Real M08 execution boundary.
+			 * @param string                 $compatibility_key Selected embedding/index compatibility fingerprint.
 			 */
 			public function __construct(
 				private readonly DocumentIndexPipeline $pipeline,
@@ -121,6 +126,9 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 
 			/**
 			 * Reconstruct the current document and stamp the selected server-side embedding compatibility.
+			 *
+			 * @param DocumentIndexJobPayload $payload Identifier-only persisted job payload.
+			 * @throws RuntimeException When the payload does not resolve the expected fixture document.
 			 */
 			public function plan( DocumentIndexJobPayload $payload ): IndexPlan {
 				if ( $payload->document_key !== $this->document->externalId || $payload->source_id !== $this->document->sourceId ) {
@@ -133,6 +141,9 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 
 			/**
 			 * Delegate the accepted plan to the real M08 executor.
+			 *
+			 * @param DocumentIndexJobPayload $payload Identifier-only persisted job payload.
+			 * @param IndexPlan               $plan Accepted M07 plan.
 			 */
 			public function execute( DocumentIndexJobPayload $payload, IndexPlan $plan ): void {
 				unset( $payload );
@@ -141,6 +152,8 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 
 			/**
 			 * Return the same deterministic M07 chunk under the selected M08 compatibility profile.
+			 *
+			 * @param ChunkRecord $chunk Planned M07 chunk.
 			 */
 			private function compatible_chunk( ChunkRecord $chunk ): ChunkRecord {
 				return new ChunkRecord(
