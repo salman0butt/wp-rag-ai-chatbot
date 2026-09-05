@@ -47,10 +47,55 @@ Independent-review fix cycle:
 - GREEN: `0db18b01a027936212477bd69ef7dfd1c845f073`, CI `33966059170` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed.
 - Scoped re-review on the GREEN head: **0 unresolved Critical / 0 unresolved Important**.
 
+## Task 2 — Deterministic weighted reciprocal-rank fusion and confidence
+
+Status: **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**.
+
+Delivered:
+
+- immutable validated `RankedCandidate` pre-fusion lineage;
+- deterministic weighted Reciprocal Rank Fusion using `weight / (rrf_k + rank)` without normalizing incomparable native channel scores;
+- native channel ordering by score descending with stable chunk-ID tie-breaks;
+- duplicate suppression within a channel and cross-channel deduplication by stable chunk ID;
+- fail-fast validation when duplicate chunk IDs carry inconsistent document/source/content/language/visibility lineage;
+- deterministic fused ordering by fused score descending, best native rank ascending, then chunk ID;
+- configured fused candidate ceiling and semantic/lexical weights;
+- canonical channel-evidence ordering independent of caller map order;
+- bounded deterministic `RetrievalConfidence` and `ConfidenceEstimator` where only distinct retrieval channels count as agreement.
+
+### Strict TDD evidence
+
+Primary Task 2 cycle:
+
+- RED: `b6f52b7d1bf639b7a650239b987d5166ecf3f39b`, CI `33966659129` — PHPStan passed, then PHPUnit ran 511 tests / 2,081 assertions and produced seven expected errors because `RankedCandidate`, `ReciprocalRankFusion`, `RetrievalConfidence`, and `ConfidenceEstimator` were not implemented. `js-quality`, `package`, and `wordpress-smoke` passed.
+- Implementation commits: `ae9aae08b9b312fa2c3cdca4fa1ad64da9dab3f0`, `51500c8b56be48a0e8991d377b069d94293ffb92`, `e0eeda30d92c45c3a36a37366952db1a2bc91173`, and `9b3dd0d99ef1afc5664e643662b3aa138d8d6360`.
+- Debug/style commits `253fa9961b53c37be565e810d650ae112ade19fc` and `d9802243d585884161c9d62afd0bca704f9bff52` corrected PHPCS documentation and made runtime member validation consistent with PHPStan rather than treating intermediate failures as GREEN.
+- Initial GREEN: `d9802243d585884161c9d62afd0bca704f9bff52`, CI `33970190290` — all four permanent CI jobs passed; PHP verification reported 511 tests / 2,102 assertions.
+
+Independent-review determinism fix:
+
+- Review finding: **Important** — diagnostic `channel_evidence` ordering depended on caller associative-map order, violating deterministic trace semantics.
+- `9177b189a51e7e44d7ba04ff8c2c311c4dc3782c` failed only PHPCS alignment and is not counted as behavioral RED.
+- Valid RED: `729adb9959a1006e9bff8eca39b2b00909a98d49`, CI `33970388941` — lint/static analysis passed, then PHPUnit failed exactly the new determinism regression because reversed channel-map input returned `lexical,semantic` instead of the canonical evidence order.
+- Fix: `fc5233e323ec51af54f83c2defc167285d08ee32` canonically sorts channel evidence; CI `33970444638` confirmed `php-quality`, `js-quality`, and `package` GREEN while the smoke job continued independently.
+
+Independent-review confidence fix:
+
+- Review finding: **Important** — confidence used evidence count rather than distinct channel count, so duplicate evidence from one channel falsely received the cross-channel agreement bonus.
+- Valid RED: `743a1b3e6d07ff20390bd8a112b3ff0cbaf5273d`, CI `33970539244` — PHPCS/PHPStan passed, then PHPUnit ran 513 tests / 2,105 assertions and failed exactly one regression: same-channel duplicate evidence produced confidence `1.0` instead of `0.65`.
+- Fix: `fa749830f6d113f00b461bc59b7f9b28fa146e08` counts distinct evidence channel names before applying the agreement bonus.
+- GREEN verification: CI `33970605061` — PHPStan reported no errors; PHPUnit passed 513 tests / 2,106 assertions; Composer audit reported no vulnerability advisories. JavaScript and package jobs also passed while WordPress smoke completed independently.
+
+### Independent re-review
+
+- Scoped Task 2 diff from `b6f52b7d1bf639b7a650239b987d5166ecf3f39b` through `fa749830f6d113f00b461bc59b7f9b28fa146e08`: four planned production primitives plus focused fusion/confidence regression tests only.
+- PR #15 review threads: none.
+- Re-review result after both fixes: **0 unresolved Critical / 0 unresolved Important**.
+
 ## Review / integration state
 
-Task 1 is complete and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 2–8 are unfinished.
+Tasks 1 and 2 are complete and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 3–8 are unfinished.
 
 ## Exact next unfinished action
 
-Begin Task 2 — deterministic weighted Reciprocal Rank Fusion and confidence — by writing and pushing test-only RED coverage for RRF contribution math, cross-channel deduplication/agreement boost, configured weights, invalid numeric inputs, result caps, deterministic tie-breaking, and confidence classification. Do not write Task 2 production code until the RED is verified in CI.
+Begin Task 3 — durable chunk-search projection and synchronization contract — by recovering the V005 migration registry/composition and the concrete M08 accepted index-plan execution boundary, then write and push RED migration/store tests for idempotent replacement, deletion, trusted collection/document/source/language/visibility scope, bounded safe metadata, and hard candidate ceilings. Do not implement V006 or the chunk-search store until that RED is verified in WordPress integration CI.
