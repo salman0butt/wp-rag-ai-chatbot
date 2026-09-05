@@ -30,14 +30,18 @@ final class LexicalRetrieverTest extends TestCase {
 	 */
 	public function test_retrieve_is_bounded_and_deterministically_ranked(): void {
 		$store = new class() implements ChunkSearchStore {
+			/** Captured bounded request. */
 			public ?LexicalSearchRequest $request = null;
 
+			/** {@inheritDoc} */
 			public function replace_document_chunks( string $collection_id, string $document_key, ChunkSearchRecord ...$chunks ): void {
 			}
 
+			/** {@inheritDoc} */
 			public function delete_document( string $collection_id, string $document_key ): void {
 			}
 
+			/** {@inheritDoc} */
 			public function search( LexicalSearchRequest $request ): array {
 				$this->request = $request;
 
@@ -66,6 +70,9 @@ final class LexicalRetrieverTest extends TestCase {
 
 	/**
 	 * Build one projected chunk fixture.
+	 *
+	 * @param string $seed Fixture seed.
+	 * @param string $content Chunk content.
 	 */
 	public static function record( string $seed, string $content ): ChunkSearchRecord {
 		return new ChunkSearchRecord(
