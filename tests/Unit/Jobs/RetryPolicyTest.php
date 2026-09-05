@@ -26,7 +26,7 @@ final class RetryPolicyTest extends TestCase {
 	 */
 	#[DataProvider( 'delayProvider' )]
 	public function test_delay_is_deterministic_and_capped( int $attempt, int $expected ): void {
-		self::assertSame( $expected, RetryPolicy::delaySeconds( $attempt ) );
+		self::assertSame( $expected, RetryPolicy::delay_seconds( $attempt ) );
 	}
 
 	/**
@@ -34,7 +34,7 @@ final class RetryPolicyTest extends TestCase {
 	 */
 	public function test_attempt_below_one_is_rejected(): void {
 		$this->expectException( JobQueueException::class );
-		RetryPolicy::delaySeconds( 0 );
+		RetryPolicy::delay_seconds( 0 );
 	}
 
 	/**
@@ -42,10 +42,12 @@ final class RetryPolicyTest extends TestCase {
 	 */
 	public function test_attempt_above_ten_is_rejected(): void {
 		$this->expectException( JobQueueException::class );
-		RetryPolicy::delaySeconds( 11 );
+		RetryPolicy::delay_seconds( 11 );
 	}
 
 	/**
+	 * Provide valid attempts and their deterministic retry delays.
+	 *
 	 * @return array<string,array{int,int}>
 	 */
 	public static function delayProvider(): array {
