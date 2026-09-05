@@ -112,6 +112,9 @@ final class ReciprocalRankFusionTest extends TestCase {
 
 	/**
 	 * Create one pre-fusion candidate with stable lineage.
+	 *
+	 * @param string $chunk_id Stable chunk identifier.
+	 * @param float  $native_score Native channel score.
 	 */
 	private function candidate( string $chunk_id, float $native_score ): RankedCandidate {
 		return new RankedCandidate(
