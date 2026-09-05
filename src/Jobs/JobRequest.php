@@ -21,10 +21,10 @@ final class JobRequest {
 	/**
 	 * Create a bounded queue request.
 	 *
-	 * @param string               $type Job-handler type.
-	 * @param array<string, mixed> $payload JSON-compatible payload object.
-	 * @param string|null          $idempotency_key Optional active-job deduplication key.
-	 * @param int                  $max_attempts Maximum execution attempts.
+	 * @param string       $type Job-handler type.
+	 * @param array<mixed> $payload JSON-compatible payload validated as an object root.
+	 * @param string|null  $idempotency_key Optional active-job deduplication key.
+	 * @param int          $max_attempts Maximum execution attempts.
 	 * @throws JobQueueException When any queue-request field is outside its safe contract.
 	 */
 	public function __construct(
