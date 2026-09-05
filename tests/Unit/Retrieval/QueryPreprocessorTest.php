@@ -18,6 +18,9 @@ use WpRagAiChatbot\Retrieval\RetrievalConfig;
  * Defines the M10 query normalization and abuse-bound contract.
  */
 final class QueryPreprocessorTest extends TestCase {
+	/**
+	 * Whitespace is normalized while exact-friendly identifiers remain intact.
+	 */
 	public function test_preprocessor_normalizes_whitespace_and_preserves_identifier_tokens(): void {
 		$preprocessor = new QueryPreprocessor( new RetrievalConfig() );
 
@@ -29,6 +32,9 @@ final class QueryPreprocessorTest extends TestCase {
 		self::assertContains( 'model.x:7', $query->lexical_terms );
 	}
 
+	/**
+	 * Empty normalized queries are rejected before retrieval work begins.
+	 */
 	public function test_preprocessor_rejects_empty_query(): void {
 		$preprocessor = new QueryPreprocessor( new RetrievalConfig() );
 
@@ -36,6 +42,9 @@ final class QueryPreprocessorTest extends TestCase {
 		$preprocessor->preprocess( " \t\n " );
 	}
 
+	/**
+	 * Query byte bounds prevent oversized provider or store requests.
+	 */
 	public function test_preprocessor_rejects_query_over_byte_limit(): void {
 		$config       = new RetrievalConfig( max_query_bytes: 8 );
 		$preprocessor = new QueryPreprocessor( $config );
@@ -44,6 +53,9 @@ final class QueryPreprocessorTest extends TestCase {
 		$preprocessor->preprocess( '123456789' );
 	}
 
+	/**
+	 * Query token bounds are enforced after deterministic tokenization.
+	 */
 	public function test_preprocessor_rejects_query_over_token_limit(): void {
 		$config       = new RetrievalConfig( max_query_tokens: 2 );
 		$preprocessor = new QueryPreprocessor( $config );
@@ -52,6 +64,9 @@ final class QueryPreprocessorTest extends TestCase {
 		$preprocessor->preprocess( 'one two three' );
 	}
 
+	/**
+	 * Retrieval configuration refuses zero or negative execution limits.
+	 */
 	public function test_config_rejects_unbounded_or_non_positive_limits(): void {
 		$this->expectException( InvalidArgumentException::class );
 		new RetrievalConfig( semantic_top_k: 0 );
