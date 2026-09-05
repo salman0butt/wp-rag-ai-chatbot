@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Core;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Core\Bootstrap;
 use WpRagAiChatbot\Core\Lifecycle;
@@ -75,6 +76,7 @@ final class BootstrapTest extends TestCase {
 	/**
 	 * Bootstrap emits the stable plugin-loaded action.
 	 */
+	#[DoesNotPerformAssertions]
 	public function test_load_emits_the_plugin_loaded_action(): void {
 		Functions\expect( 'do_action' )->once()->with( 'wp_rag_ai_chatbot_loaded' );
 		Bootstrap::load();
