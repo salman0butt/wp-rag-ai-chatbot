@@ -15,6 +15,9 @@ use InvalidArgumentException;
  * Immutable grounded chunk candidate with explicit lineage and channel evidence.
  */
 final readonly class RetrievalCandidate {
+	/** @var list<ChannelEvidence> */
+	public array $channel_evidence;
+
 	/**
 	 * Create one retrieval candidate.
 	 *
@@ -26,8 +29,7 @@ final readonly class RetrievalCandidate {
 	 * @param string      $visibility Trusted visibility classification.
 	 * @param array       $channel_evidence Channel ranking evidence.
 	 * @param float       $fused_score Deterministic fused score.
-	 * @phpstan-param list<ChannelEvidence> $channel_evidence
-	 * @throws InvalidArgumentException When lineage or numeric values are invalid.
+	 * @throws InvalidArgumentException When lineage, evidence, or numeric values are invalid.
 	 */
 	public function __construct(
 		public string $chunk_id,
@@ -36,7 +38,7 @@ final readonly class RetrievalCandidate {
 		public string $content,
 		public ?string $language,
 		public string $visibility,
-		public array $channel_evidence,
+		array $channel_evidence,
 		public float $fused_score
 	) {
 		if (
@@ -56,5 +58,8 @@ final readonly class RetrievalCandidate {
 				throw new InvalidArgumentException( 'Retrieval candidate channel evidence is invalid.' );
 			}
 		}
+
+		/** @var list<ChannelEvidence> $channel_evidence */
+		$this->channel_evidence = $channel_evidence;
 	}
 }
