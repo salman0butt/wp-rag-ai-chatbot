@@ -142,7 +142,6 @@ final class WpdbChunkSearchStore implements ChunkSearchStore {
 			. ' AND (' . implode( ' OR ', $term_clauses ) . ') ORDER BY chunk_key ASC LIMIT %d';
 		$args[] = $request->limit;
 
-		// @phpstan-ignore argument.type
 		$prepared = $this->connection->prepare( $sql, ...$args );
 		$matches  = array();
 		foreach ( $this->connection->get_results( $prepared ) as $row ) {
