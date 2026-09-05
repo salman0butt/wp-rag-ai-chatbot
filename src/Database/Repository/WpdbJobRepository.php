@@ -401,7 +401,7 @@ final class WpdbJobRepository implements JobRepository {
 	 */
 	private function find_active_idempotent_job( string $type, string $idempotency_key ): ?JobRecord {
 		$sql = $this->connection->prepare(
-			"SELECT * FROM %i WHERE type = %s AND idempotency_key = %s AND status IN ('queued', 'running', 'retry_wait') ORDER BY id ASC LIMIT 1",
+			"SELECT * FROM %i WHERE type = %s AND idempotency_key = %s AND status IN ('queued', 'running', 'retry_wait') ORDER BY id DESC LIMIT 1",
 			$this->tables->jobs(),
 			$type,
 			$idempotency_key
