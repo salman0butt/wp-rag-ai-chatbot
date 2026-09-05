@@ -8,9 +8,11 @@
  * @package WpRagAiChatbot
  */
 
+use WpRagAiChatbot\Database\Repository\WpdbJobCleanupStore;
 use WpRagAiChatbot\Database\Repository\WpdbJobRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
+use WpRagAiChatbot\Jobs\JobCleanup;
 use WpRagAiChatbot\Jobs\JobProgress;
 use WpRagAiChatbot\Jobs\JobQueueException;
 use WpRagAiChatbot\Jobs\JobRequest;
@@ -177,6 +179,70 @@ if ( null !== $repository->claimNext( $worker_b, $utc( '2026-09-05 03:00:59' ), 
 $due_retry = $repository->claimNext( $worker_b, $utc( '2026-09-05 03:01:00' ), 120 );
 if ( null === $due_retry || $retry_job->job_key !== $due_retry->job->job_key ) {
 	$fail( 'Due retry-wait job did not become claimable.' );
+}
+
+/* Terminal cleanup must remain bounded and never delete active/new history. */
+$reset_jobs();
+$insert_cleanup_job = static function ( string $job_key, JobStatus $status, ?string $completed_at ) use ( $wpdb, $jobs, $fail ): void {
+	$inserted = $wpdb->insert(
+		$jobs,
+		array(
+			'job_key'      => $job_key,
+			'type'         => 'index.document',
+			'status'       => $status->value,
+			'payload_json' => '{}',
+			'attempts'     => 1,
+			'max_attempts' => 3,
+			'available_at' => '2026-09-05 03:00:00',
+			'created_at'   => '2026-09-05 03:00:00',
+			'updated_at'   => '2026-09-05 03:00:00',
+			'completed_at' => $completed_at,
+		)
+	);
+	if ( 1 !== $inserted ) {
+		$fail( 'Could not create terminal cleanup fixture.' );
+	}
+};
+
+$insert_cleanup_job( 'cleanup-old-succeeded', JobStatus::SUCCEEDED, '2026-09-05 03:00:00' );
+$insert_cleanup_job( 'cleanup-old-failed', JobStatus::FAILED, '2026-09-05 03:01:00' );
+$insert_cleanup_job( 'cleanup-new-cancelled', JobStatus::CANCELLED, '2026-09-05 04:30:00' );
+$insert_cleanup_job( 'cleanup-active-running', JobStatus::RUNNING, '2026-09-05 03:00:00' );
+
+$cleanup       = new JobCleanup( new WpdbJobCleanupStore( $connection, $tables ) );
+$cleanup_time  = $utc( '2026-09-05 04:00:00' );
+$first_deleted = $cleanup->prune( $cleanup_time, 1 );
+if ( 1 !== $first_deleted ) {
+	$fail( 'Bounded terminal cleanup did not delete exactly one row.' );
+}
+
+$job_exists = static function ( string $job_key ) use ( $wpdb, $jobs ): bool {
+	$count = $wpdb->get_var(
+		$wpdb->prepare(
+			'SELECT COUNT(*) FROM %i WHERE job_key = %s',
+			$jobs,
+			$job_key
+		)
+	);
+	return 1 === (int) $count;
+};
+
+if ( $job_exists( 'cleanup-old-succeeded' ) ) {
+	$fail( 'Cleanup did not delete the oldest eligible terminal job first.' );
+}
+if ( ! $job_exists( 'cleanup-old-failed' ) ) {
+	$fail( 'Cleanup exceeded the requested one-row limit.' );
+}
+
+$second_deleted = $cleanup->prune( $cleanup_time );
+if ( 1 !== $second_deleted ) {
+	$fail( 'Default cleanup pass did not delete the remaining eligible terminal row.' );
+}
+if ( ! $job_exists( 'cleanup-new-cancelled' ) ) {
+	$fail( 'Cleanup deleted terminal history newer than the cutoff.' );
+}
+if ( ! $job_exists( 'cleanup-active-running' ) ) {
+	$fail( 'Cleanup deleted a non-terminal job.' );
 }
 
 $reset_jobs();
