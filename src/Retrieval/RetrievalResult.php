@@ -15,7 +15,11 @@ use InvalidArgumentException;
  * Immutable ordered retrieval candidates plus safe diagnostics.
  */
 final readonly class RetrievalResult {
-	/** @var list<RetrievalCandidate> */
+	/**
+	 * Validated ordered candidates.
+	 *
+	 * @var list<RetrievalCandidate>
+	 */
 	public array $candidates;
 
 	/**
@@ -35,7 +39,11 @@ final readonly class RetrievalResult {
 			}
 		}
 
-		/** @var list<RetrievalCandidate> $candidates */
+		/**
+		 * Runtime-validated retrieval candidates.
+		 *
+		 * @var list<RetrievalCandidate> $candidates
+		 */
 		$this->candidates = $candidates;
 	}
 }
