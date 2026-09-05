@@ -89,6 +89,20 @@ final class RetrievalContractsTest extends TestCase {
 	}
 
 	/**
+	 * Safe trace diagnostics cannot attribute one channel's failure code to another channel.
+	 */
+	public function test_trace_rejects_mismatched_channel_failure_reason(): void {
+		$this->expectException( InvalidArgumentException::class );
+
+		new RetrievalTrace(
+			hash( 'sha256', 'refund policy' ),
+			13,
+			array( 'semantic' => 0 ),
+			array( 'semantic' => 'lexical_unavailable' )
+		);
+	}
+
+	/**
 	 * Result preserves deterministic ordered candidate membership and trace.
 	 */
 	public function test_result_contains_ordered_candidates_and_trace(): void {
