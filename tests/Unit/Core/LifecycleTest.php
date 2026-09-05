@@ -11,8 +11,10 @@ namespace WpRagAiChatbot\Tests\Unit\Core;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Core\Lifecycle;
+use WpRagAiChatbot\Jobs\WordPressJobCron;
 
 /**
  * Verifies lifecycle event boundaries.
@@ -42,5 +44,15 @@ final class LifecycleTest extends TestCase {
 		Functions\expect( 'do_action' )->once()->with( 'wp_rag_ai_chatbot_activate' );
 
 		Lifecycle::activate();
+	}
+
+	/**
+	 * Deactivation removes the plugin-owned jobs cron schedule.
+	 */
+	#[DoesNotPerformAssertions]
+	public function test_deactivate_unschedules_jobs_cron(): void {
+		Functions\expect( 'wp_clear_scheduled_hook' )->once()->with( WordPressJobCron::HOOK );
+
+		Lifecycle::deactivate();
 	}
 }

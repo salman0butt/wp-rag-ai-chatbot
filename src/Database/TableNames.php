@@ -50,11 +50,18 @@ final class TableNames {
 	}
 
 	/**
+	 * Persisted jobs table.
+	 */
+	public function jobs(): string {
+		return $this->prefix . 'rag_ai_jobs';
+	}
+
+	/**
 	 * All plugin tables in safe deletion order.
 	 *
 	 * @return string[]
 	 */
 	public function all(): array {
-		return array( $this->vectors(), $this->vector_collections(), $this->documents(), $this->sources() );
+		return array( $this->jobs(), $this->vectors(), $this->vector_collections(), $this->documents(), $this->sources() );
 	}
 }

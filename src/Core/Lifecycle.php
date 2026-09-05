@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Core;
 
+use WpRagAiChatbot\Jobs\WordPressJobCron;
+
 /**
  * Owns activation and deactivation callbacks.
  */
@@ -21,10 +23,9 @@ final class Lifecycle {
 	}
 
 	/**
-	 * Run plugin deactivation work.
-	 *
-	 * M02 intentionally has no deactivation side effects.
+	 * Remove plugin-owned schedules on deactivation.
 	 */
 	public static function deactivate(): void {
+		WordPressJobCron::unschedule();
 	}
 }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Core;
 
 use WpRagAiChatbot\Database\DatabaseBootstrap;
+use WpRagAiChatbot\Jobs\JobWorkerBootstrap;
 use WpRagAiChatbot\Knowledge\KnowledgeBootstrap;
 use WpRagAiChatbot\Providers\ProviderBootstrap;
 
@@ -29,6 +30,7 @@ final class Bootstrap {
 		add_action( 'plugins_loaded', array( DatabaseBootstrap::class, 'on_plugins_loaded' ), 5 );
 		add_action( 'plugins_loaded', array( ProviderBootstrap::class, 'register' ), 10 );
 		add_action( 'plugins_loaded', array( KnowledgeBootstrap::class, 'register' ), 10 );
+		add_action( 'plugins_loaded', array( JobWorkerBootstrap::class, 'register' ), 20 );
 		add_action( 'plugins_loaded', array( self::class, 'load' ) );
 	}
 

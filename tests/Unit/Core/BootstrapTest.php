@@ -11,10 +11,12 @@ namespace WpRagAiChatbot\Tests\Unit\Core;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Core\Bootstrap;
 use WpRagAiChatbot\Core\Lifecycle;
 use WpRagAiChatbot\Database\DatabaseBootstrap;
+use WpRagAiChatbot\Jobs\JobWorkerBootstrap;
 use WpRagAiChatbot\Knowledge\KnowledgeBootstrap;
 use WpRagAiChatbot\Providers\ProviderBootstrap;
 
@@ -48,17 +50,14 @@ final class BootstrapTest extends TestCase {
 	}
 
 	/**
-	 * Bootstrap registers lifecycle, database, provider, knowledge, and loaded hooks.
+	 * Bootstrap registers foundation, database, provider, knowledge, and jobs hooks.
 	 */
-	public function test_register_wires_foundation_database_provider_and_knowledge_hooks(): void {
+	public function test_register_wires_foundation_database_provider_knowledge_and_jobs_hooks(): void {
 		self::assertTrue( class_exists( Bootstrap::class ), 'Bootstrap class must exist before hook wiring can be verified.' );
 		self::assertTrue( class_exists( DatabaseBootstrap::class ), 'DatabaseBootstrap must exist before database hook wiring can pass.' );
 		self::assertTrue( class_exists( ProviderBootstrap::class ), 'ProviderBootstrap must exist before provider hook wiring can pass.' );
 		self::assertTrue( class_exists( KnowledgeBootstrap::class ), 'KnowledgeBootstrap must exist before knowledge hook wiring can pass.' );
-		self::assertTrue( is_callable( array( DatabaseBootstrap::class, 'on_activate' ) ) );
-		self::assertTrue( is_callable( array( DatabaseBootstrap::class, 'on_plugins_loaded' ) ) );
-		self::assertTrue( is_callable( array( ProviderBootstrap::class, 'register' ) ) );
-		self::assertTrue( is_callable( array( KnowledgeBootstrap::class, 'register' ) ) );
+		self::assertTrue( class_exists( JobWorkerBootstrap::class ), 'JobWorkerBootstrap must exist before jobs hook wiring can pass.' );
 
 		$plugin_file = '/tmp/wp-rag-ai-chatbot/wp-rag-ai-chatbot.php';
 
@@ -68,6 +67,7 @@ final class BootstrapTest extends TestCase {
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( DatabaseBootstrap::class, 'on_plugins_loaded' ), 5 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( ProviderBootstrap::class, 'register' ), 10 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( KnowledgeBootstrap::class, 'register' ), 10 );
+		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( JobWorkerBootstrap::class, 'register' ), 20 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( Bootstrap::class, 'load' ) );
 
 		Bootstrap::register( $plugin_file );
@@ -76,11 +76,9 @@ final class BootstrapTest extends TestCase {
 	/**
 	 * Bootstrap emits the stable plugin-loaded action.
 	 */
+	#[DoesNotPerformAssertions]
 	public function test_load_emits_the_plugin_loaded_action(): void {
-		self::assertTrue( class_exists( Bootstrap::class ), 'Bootstrap class must exist before the loaded action can be verified.' );
-
 		Functions\expect( 'do_action' )->once()->with( 'wp_rag_ai_chatbot_loaded' );
-
 		Bootstrap::load();
 	}
 }

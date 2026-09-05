@@ -28,11 +28,12 @@ $sources            = $prefix . 'rag_ai_sources';
 $documents          = $prefix . 'rag_ai_documents';
 $vector_collections = $prefix . 'rag_ai_vector_collections';
 $vectors            = $prefix . 'rag_ai_vectors';
+$jobs               = $prefix . 'rag_ai_jobs';
 
-if ( 4 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
-	$fail( 'Schema version is not 4.' );
+if ( 5 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
+	$fail( 'Schema version is not 5.' );
 }
-foreach ( array( $sources, $documents, $vector_collections, $vectors ) as $table ) {
+foreach ( array( $sources, $documents, $vector_collections, $vectors, $jobs ) as $table ) {
 	$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
 	if ( $found !== $table ) {
 		$fail( 'Missing table: ' . $table );
@@ -47,6 +48,8 @@ $doc_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$documents}`", ARRAY_A );
 $vector_collection_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$vector_collections}`", ARRAY_A );
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifiers are derived from $wpdb->prefix only.
 $vector_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$vectors}`", ARRAY_A );
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
+$job_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$jobs}`", ARRAY_A );
 $index_names = static fn ( array $rows ): array => array_values( array_unique( array_column( $rows, 'Key_name' ) ) );
 if ( ! in_array( 'source_key', $index_names( $source_indexes ), true ) ) {
 	$fail( 'Missing source_key index.' );
@@ -60,6 +63,11 @@ if ( ! in_array( 'collection_key', $index_names( $vector_collection_indexes ), t
 if ( ! in_array( 'collection_vector', $index_names( $vector_indexes ), true ) || ! in_array( 'collection_fingerprint', $index_names( $vector_indexes ), true ) ) {
 	$fail( 'Missing vector indexes.' );
 }
+foreach ( array( 'job_key', 'queue_scan', 'lease_recovery', 'idempotency_lookup', 'terminal_cleanup' ) as $job_index ) {
+	if ( ! in_array( $job_index, $index_names( $job_indexes ), true ) ) {
+		$fail( 'Missing jobs index: ' . $job_index );
+	}
+}
 
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
 $visibility = $wpdb->get_var( "SHOW COLUMNS FROM `{$documents}` LIKE 'visibility'", 1 );
@@ -70,7 +78,7 @@ if ( 'varchar(32)' !== $visibility ) {
 if ( MigrationStatus::UP_TO_DATE !== DatabaseBootstrap::migrate() ) {
 	$fail( 'Repeat migration was not idempotent.' );
 }
-foreach ( array( 'rag_ai_chunks', 'rag_ai_jobs', 'rag_ai_conversations' ) as $suffix ) {
+foreach ( array( 'rag_ai_chunks', 'rag_ai_conversations' ) as $suffix ) {
 	$table = $prefix . $suffix;
 	if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table ) {
 		$fail( 'Unexpected future table: ' . $table );
