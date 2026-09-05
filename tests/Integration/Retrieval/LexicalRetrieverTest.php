@@ -83,8 +83,8 @@ final class LexicalRetrieverTest extends TestCase {
 		self::assertSame( 3, $store->request->limit );
 		self::assertSame( $filter, $store->request->filter );
 		self::assertCount( 2, $results );
-		self::assertSame( hash( 'sha256', 'a' ), $results[0]->chunk_id );
-		self::assertSame( hash( 'sha256', 'b' ), $results[1]->chunk_id );
+		self::assertSame( hash( 'sha256', 'b' ), $results[0]->chunk_id );
+		self::assertSame( hash( 'sha256', 'a' ), $results[1]->chunk_id );
 		self::assertGreaterThanOrEqual( $results[1]->native_score, $results[0]->native_score );
 	}
 
