@@ -83,6 +83,34 @@ final class ReciprocalRankFusionTest extends TestCase {
 	}
 
 	/**
+	 * Diagnostic evidence ordering is independent of caller channel-map ordering.
+	 */
+	public function test_fusion_channel_evidence_order_is_deterministic(): void {
+		$fusion   = new ReciprocalRankFusion( new RetrievalConfig() );
+		$semantic = array( $this->candidate( 'chunk-a', 0.90 ) );
+		$lexical  = array( $this->candidate( 'chunk-a', 12.0 ) );
+
+		$semantic_first = $fusion->fuse(
+			array(
+				'semantic' => $semantic,
+				'lexical'  => $lexical,
+			)
+		);
+		$lexical_first = $fusion->fuse(
+			array(
+				'lexical'  => $lexical,
+				'semantic' => $semantic,
+			)
+		);
+
+		self::assertSame(
+			array_column( $semantic_first[0]->channel_evidence, 'channel' ),
+			array_column( $lexical_first[0]->channel_evidence, 'channel' )
+		);
+		self::assertEqualsWithDelta( $semantic_first[0]->fused_score, $lexical_first[0]->fused_score, 0.000000001 );
+	}
+
+	/**
 	 * Fused output cannot exceed the configured hard candidate ceiling.
 	 */
 	public function test_fusion_applies_fused_candidate_limit(): void {
