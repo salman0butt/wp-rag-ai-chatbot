@@ -36,6 +36,24 @@ final class ConfidenceEstimatorTest extends TestCase {
 	}
 
 	/**
+	 * Duplicate evidence from one channel is not cross-channel agreement.
+	 */
+	public function test_duplicate_same_channel_evidence_does_not_increase_confidence(): void {
+		$estimator = new ConfidenceEstimator();
+
+		$semantic = new ChannelEvidence( 'semantic', 0.92, 1, 1.0, 1.0 / 61.0 );
+
+		$duplicate = new ChannelEvidence( 'semantic', 0.91, 2, 1.0, 1.0 / 62.0 );
+
+		$single = $estimator->estimate( $this->candidate( array( $semantic ) ) );
+
+		$same_channel = $estimator->estimate( $this->candidate( array( $semantic, $duplicate ) ) );
+
+		self::assertSame( $single->score, $same_channel->score );
+		self::assertSame( $single->level, $same_channel->level );
+	}
+
+	/**
 	 * Weak tail-only evidence remains explicitly low confidence.
 	 */
 	public function test_tail_only_evidence_is_low_confidence(): void {
