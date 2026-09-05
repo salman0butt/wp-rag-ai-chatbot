@@ -19,7 +19,7 @@ final class RetryPolicy {
 	 * @param int $attempt Current persisted attempt number.
 	 * @throws JobQueueException When the attempt is outside the queue contract.
 	 */
-	public static function delaySeconds( int $attempt ): int {
+	public static function delay_seconds( int $attempt ): int {
 		if ( $attempt < 1 || $attempt > 10 ) {
 			throw new JobQueueException( 'Job attempt must be between 1 and 10.' );
 		}
