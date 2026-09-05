@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Tests\Unit\Database;
 
 use PHPUnit\Framework\TestCase;
-use WpRagAiChatbot\Database\DatabaseSchema;
 use WpRagAiChatbot\Database\Migrations\V005CreateJobsTable;
 use WpRagAiChatbot\Database\TableNames;
 
@@ -19,12 +18,11 @@ use WpRagAiChatbot\Database\TableNames;
  */
 final class JobsMigrationContractTest extends TestCase {
 	/**
-	 * M09 advances the versioned database schema exactly once.
+	 * The jobs table remains owned by migration V5 even as later migrations advance the schema.
 	 */
-	public function test_jobs_table_is_schema_version_five(): void {
+	public function test_jobs_table_is_owned_by_schema_version_five(): void {
 		$migration = new V005CreateJobsTable( new TableNames( 'wp_' ) );
 
-		self::assertSame( 5, DatabaseSchema::VERSION );
 		self::assertSame( 5, $migration->version() );
 	}
 

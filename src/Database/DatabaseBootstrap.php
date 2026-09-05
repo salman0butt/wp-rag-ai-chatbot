@@ -14,6 +14,7 @@ use WpRagAiChatbot\Database\Migrations\V002CreateDocumentsTable;
 use WpRagAiChatbot\Database\Migrations\V003CreateVectorCollectionsTable;
 use WpRagAiChatbot\Database\Migrations\V004CreateVectorsTable;
 use WpRagAiChatbot\Database\Migrations\V005CreateJobsTable;
+use WpRagAiChatbot\Database\Migrations\V006CreateChunkSearchTable;
 
 /**
  * Composes and executes database migrations at WordPress lifecycle boundaries.
@@ -73,6 +74,7 @@ final class DatabaseBootstrap {
 				new V003CreateVectorCollectionsTable( $tables ),
 				new V004CreateVectorsTable( $tables ),
 				new V005CreateJobsTable( $tables ),
+				new V006CreateChunkSearchTable( $tables ),
 			)
 		);
 	}
