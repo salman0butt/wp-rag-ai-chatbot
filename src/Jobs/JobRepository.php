@@ -67,6 +67,14 @@ interface JobRepository {
 	public function requestCancellation( string $job_key, DateTimeImmutable $now ): JobRecord;
 
 	/**
+	 * Complete the current running lease as cancelled.
+	 *
+	 * @param JobLease          $lease Current lease.
+	 * @param DateTimeImmutable $now Current UTC time.
+	 */
+	public function markCancelled( JobLease $lease, DateTimeImmutable $now ): void;
+
+	/**
 	 * Complete a running job owned by the current lease.
 	 *
 	 * @param JobLease          $lease Current lease.
