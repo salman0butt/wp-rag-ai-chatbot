@@ -15,16 +15,18 @@ use InvalidArgumentException;
  * Immutable ordered retrieval candidates plus safe diagnostics.
  */
 final readonly class RetrievalResult {
+	/** @var list<RetrievalCandidate> */
+	public array $candidates;
+
 	/**
 	 * Create one retrieval result.
 	 *
 	 * @param array          $candidates Ordered retrieval candidates.
 	 * @param RetrievalTrace $trace Safe retrieval trace.
-	 * @phpstan-param list<RetrievalCandidate> $candidates
 	 * @throws InvalidArgumentException When candidate members are invalid.
 	 */
 	public function __construct(
-		public array $candidates,
+		array $candidates,
 		public RetrievalTrace $trace
 	) {
 		foreach ( $candidates as $candidate ) {
@@ -32,5 +34,8 @@ final readonly class RetrievalResult {
 				throw new InvalidArgumentException( 'Retrieval result candidate is invalid.' );
 			}
 		}
+
+		/** @var list<RetrievalCandidate> $candidates */
+		$this->candidates = $candidates;
 	}
 }
