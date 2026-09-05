@@ -117,7 +117,9 @@ final class SemanticRetrieverTest extends TestCase {
 			)
 		);
 
-		self::assertSame( array( $this->id( 'a' ), $this->id( 'b' ) ), array_column( $candidates, 'chunk_id' ) );
+		$expected_ids = array( $this->id( 'a' ), $this->id( 'b' ) );
+		sort( $expected_ids, SORT_STRING );
+		self::assertSame( $expected_ids, array_column( $candidates, 'chunk_id' ) );
 	}
 
 	/**
