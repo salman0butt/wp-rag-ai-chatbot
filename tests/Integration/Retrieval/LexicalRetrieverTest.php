@@ -92,16 +92,32 @@ final class LexicalRetrieverTest extends TestCase {
 	 * A defensive retriever never admits out-of-scope rows and never consumes rows beyond its hard candidate cap.
 	 */
 	public function test_retrieve_fails_closed_when_store_returns_restricted_or_excess_rows(): void {
-		$store = new class() implements ChunkSearchStore {
-			/** {@inheritDoc} */
+		$store     = new class() implements ChunkSearchStore {
+			/**
+			 * Ignore fixture replacement.
+			 *
+			 * @param string            $collection_id Collection scope.
+			 * @param string            $document_key Document scope.
+			 * @param ChunkSearchRecord ...$chunks Replacement chunks.
+			 */
 			public function replace_document_chunks( string $collection_id, string $document_key, ChunkSearchRecord ...$chunks ): void {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Ignore fixture deletion.
+			 *
+			 * @param string $collection_id Collection scope.
+			 * @param string $document_key Document scope.
+			 */
 			public function delete_document( string $collection_id, string $document_key ): void {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return an intentionally invalid store result to prove defensive bounds.
+			 *
+			 * @param LexicalSearchRequest $request Bounded trusted request.
+			 * @return LexicalSearchMatch[]
+			 */
 			public function search( LexicalSearchRequest $request ): array {
 				return array(
 					new LexicalSearchMatch( LexicalRetrieverTest::record( '0', 'SKU-42/A guide', 'private' ) ),
