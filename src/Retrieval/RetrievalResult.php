@@ -27,6 +27,7 @@ final readonly class RetrievalResult {
 	 *
 	 * @param array          $candidates Ordered retrieval candidates.
 	 * @param RetrievalTrace $trace Safe retrieval trace.
+	 * @phpstan-param array<array-key, mixed> $candidates
 	 * @throws InvalidArgumentException When candidate members are invalid.
 	 */
 	public function __construct(
@@ -44,6 +45,6 @@ final readonly class RetrievalResult {
 		 *
 		 * @var list<RetrievalCandidate> $candidates
 		 */
-		$this->candidates = $candidates;
+		$this->candidates = array_values( $candidates );
 	}
 }
