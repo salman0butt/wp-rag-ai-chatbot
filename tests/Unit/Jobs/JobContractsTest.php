@@ -90,6 +90,15 @@ final class JobContractsTest extends TestCase {
 	}
 
 	/**
+	 * The persisted payload contract requires an object at the root.
+	 */
+	public function test_job_request_rejects_non_empty_list_root_payload(): void {
+		$this->expectException( JobQueueException::class );
+
+		new JobRequest( 'index.document', array( 42, 43 ) );
+	}
+
+	/**
 	 * Retry attempts are explicitly bounded to protect worker execution.
 	 */
 	public function test_job_request_rejects_more_than_ten_attempts(): void {
