@@ -18,14 +18,14 @@ final readonly class RetrievalCandidate {
 	/**
 	 * Create one retrieval candidate.
 	 *
-	 * @param string $chunk_id Stable chunk identifier.
-	 * @param string $document_id Stable document identifier.
-	 * @param int    $source_id Stable source identifier.
-	 * @param string $content Untrusted retrieved chunk content.
+	 * @param string      $chunk_id Stable chunk identifier.
+	 * @param string      $document_id Stable document identifier.
+	 * @param int         $source_id Stable source identifier.
+	 * @param string      $content Untrusted retrieved chunk content.
 	 * @param string|null $language Optional normalized language.
-	 * @param string $visibility Trusted visibility classification.
-	 * @param array  $channel_evidence Channel ranking evidence.
-	 * @param float  $fused_score Deterministic fused score.
+	 * @param string      $visibility Trusted visibility classification.
+	 * @param array       $channel_evidence Channel ranking evidence.
+	 * @param float       $fused_score Deterministic fused score.
 	 * @phpstan-param list<ChannelEvidence> $channel_evidence
 	 * @throws InvalidArgumentException When lineage or numeric values are invalid.
 	 */
