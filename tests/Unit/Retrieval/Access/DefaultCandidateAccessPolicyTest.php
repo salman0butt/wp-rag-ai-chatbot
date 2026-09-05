@@ -49,6 +49,20 @@ final class DefaultCandidateAccessPolicyTest extends TestCase {
 	}
 
 	/**
+	 * Constraints that cannot be evaluated from fused lineage fail closed.
+	 */
+	public function test_unverifiable_mandatory_filter_is_rejected_fail_closed(): void {
+		$policy = new DefaultCandidateAccessPolicy();
+
+		self::assertFalse(
+			$policy->allows(
+				$this->candidate(),
+				new RetrievalFilter( 'public', 'en', array( 8 ), array( 'doc-allowed' ), array( 'tenant_id' => 'tenant-a' ) )
+			)
+		);
+	}
+
+	/**
 	 * Create a valid fused candidate fixture.
 	 */
 	private function candidate(): RetrievalCandidate {
