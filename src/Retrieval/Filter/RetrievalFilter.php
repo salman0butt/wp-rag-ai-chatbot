@@ -26,6 +26,9 @@ final readonly class RetrievalFilter {
 	 * @param array       $source_ids Optional allowed source IDs.
 	 * @param array       $document_keys Optional allowed document keys.
 	 * @param array       $mandatory Mandatory constraints not represented by the portable baseline.
+	 * @phpstan-param array<array-key, mixed> $source_ids
+	 * @phpstan-param array<array-key, mixed> $document_keys
+	 * @phpstan-param array<array-key, mixed> $mandatory
 	 * @throws InvalidArgumentException When trusted filter values are malformed or unbounded.
 	 */
 	public function __construct(
