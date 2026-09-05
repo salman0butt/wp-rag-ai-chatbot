@@ -114,10 +114,42 @@ Delivered:
 - Scoped review on the exact head covered migration/registration, SQL preparation and filter bounds, candidate ceilings, accepted-plan lineage synchronization, retry behavior, and real WordPress projection smoke coverage.
 - Review result: **0 Critical / 0 Important**; PR #15 has no blocking review threads.
 
+## Task 4 — Lexical/exact retriever
+
+Status: **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**.
+
+Delivered:
+
+- deterministic `LexicalScorer` with strongest exact full-query evidence, strong identifier-like token evidence, normalized term coverage, and a bounded title boost;
+- identifier-friendly ranking for terms such as `SKU-42/A` without requiring fuzzy matching or external calls;
+- bounded `LexicalRetriever` that forwards trusted lexical scope to the prepared store, consumes at most `lexical_candidate_limit` returned rows, rechecks available document/source/language/visibility lineage fail-closed, sorts native scores descending with stable chunk-ID tie-breaks, and returns at most `fused_candidate_limit` candidates;
+- defensive scope/candidate-cap enforcement even if a store implementation returns excess or mismatched rows; collection scope remains store-enforced because `ChunkSearchRecord` intentionally does not duplicate `collection_id`;
+- deterministic equivalent-evidence scoring so downstream tie-breaking remains stable.
+
+### Strict TDD evidence
+
+Primary Task 4 cycle:
+
+- Test-only commits: `bb31147bf10ea75b4d8c6cba4a5dd515138679f3` and `2842f3611fa2eb33c5e348752a8d62b462c9c775` defined lexical scoring and retriever behavior. Early CI was stopped by test-file coding standards and is not claimed as behavioral RED.
+- RED cleanup commits: `0ecd4cbeaa9425108eebcc9b77c01119f1e22ffe`, `8b75dd1ecefc571f56d03824a50ac56c8dbe30c4`, and `c0a6184f3b06fa0db7547fb62384403bc4a9d2a0` changed only test formatting/documentation.
+- Valid RED: `c0a6184f3b06fa0db7547fb62384403bc4a9d2a0`, CI `33982304341` — PHPCS/PHPStan passed, then PHPUnit ran 527 tests / 2,140 assertions and produced exactly five expected missing-class errors for `LexicalScorer` and `LexicalRetriever`.
+- Implementation: `b333ea40cd404769e10cdefad6a42e609f3a43ba` (`LexicalScorer`) and `f8d316502d3929355270edf3ef16949dad6026c5` (`LexicalRetriever`).
+- `1af06f5a5adde9b6285216a86e3653090dec3b35` fixed production doc alignment; CI `33982448979` then reached PHPUnit and exposed one test-fixture error in the expected SHA-256 chunk-ID ordering, not a production ordering defect.
+- `bf3004effb4145cd3a8f0558c007e6aa22e9129b` corrected that expectation to the actual stable chunk-ID ordering; `php-quality`, `js-quality`, and `package` passed on CI `33982515681` before later review work superseded that head.
+
+Independent-review fail-closed fix cycle:
+
+- Scoped review found **0 Critical / 1 Important**: the initial retriever relied entirely on `ChunkSearchStore` to honor scope and returned-row candidate count, while Task 4 requires restricted rows never appear and hard candidate ceilings be enforced.
+- Regression test commit `b4b7a4bf2233f6995ed6fca2e4e4c0537d2803a5` was followed by lint-only cleanup `3085d4239146d8faa573d87d7551c07bc6524827`.
+- Valid RED: `3085d4239146d8faa573d87d7551c07bc6524827`, CI `33982751932` — PHPStan passed, then PHPUnit ran 528 tests / 2,153 assertions and failed exactly one regression because two candidates escaped where only one in-scope, within-cap candidate was permitted.
+- Fix: `d0728630c56ecd9954cd991ef58fdf832d8514bb` enforces the returned-row hard cap before scoring and rechecks document/source/language/visibility scope; `be72422d848dd027d9e9c260cb26bd9f32909ef2` is doc-only coding-standard cleanup.
+- GREEN: `be72422d848dd027d9e9c260cb26bd9f32909ef2`, CI `33982906694` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed; PHPStan reported no errors, PHPUnit passed 528 tests / 2,155 assertions, and Composer audit reported no security advisories.
+- Independent re-review on the GREEN exact head: **0 unresolved Critical / 0 unresolved Important**; PR #15 has no blocking review threads.
+
 ## Review / integration state
 
-Tasks 1, 2, and 3 are complete and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 4–8 are unfinished.
+Tasks 1, 2, 3, and 4 are complete, GREEN, and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 5–8 are unfinished.
 
 ## Exact next unfinished action
 
-Begin Task 4 — lexical/exact retriever — with a test-only RED commit proving exact full-query and identifier matches outrank generic overlap, title boosts remain bounded, trusted restricted rows never appear, and configured candidate/result ceilings are enforced. Do not add `LexicalRetriever` or `LexicalScorer` production classes until exact-head CI proves the expected RED.
+Begin Task 5 — semantic retriever over M08 contracts — by recovering the accepted `EmbeddingService`, `EmbeddingProfile`, `VectorCollection`, and `VectorSearchStore` interfaces plus required vector metadata lineage, then write test-only RED coverage for one-query embedding, bounded semantic top-K, portable trusted filter mapping, missing-lineage drop, deterministic rank tie-break, and unsupported mandatory-filter failure-before-search. Do not add `SemanticRetriever`, `SemanticRetrievalContext`, `RetrievalFilter`, or `VectorFilterMapper` production classes until exact-head CI proves the expected RED.
