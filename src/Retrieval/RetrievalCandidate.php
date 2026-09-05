@@ -50,5 +50,11 @@ final readonly class RetrievalCandidate {
 		) {
 			throw new InvalidArgumentException( 'Retrieval candidate is invalid.' );
 		}
+
+		foreach ( $channel_evidence as $evidence ) {
+			if ( ! $evidence instanceof ChannelEvidence ) {
+				throw new InvalidArgumentException( 'Retrieval candidate channel evidence is invalid.' );
+			}
+		}
 	}
 }
