@@ -54,9 +54,9 @@ use WpRagAiChatbot\VectorStore\VectorSearchRequest;
  */
 final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 	/**
-	 * A queued identifier payload can reconstruct current state and execute an M07 plan through M08.
+	 * A queued identifier payload executes real M07/M08 work and safely reruns by stable identities.
 	 */
-	public function test_handler_runs_real_m07_plan_through_m08_executor(): void {
+	public function test_handler_runs_real_m07_plan_through_m08_executor_and_reruns_idempotently(): void {
 		$now = new DateTimeImmutable( '2026-09-05T10:00:00+00:00' );
 		$profile = new VectorIndexProfile(
 			new EmbeddingProfile( 'test-embedding', 'embed-model', 2, NormalizationMode::NONE ),
@@ -88,16 +88,13 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 		$planned = $pipeline->plan( $document );
 		self::assertCount( 1, $planned->indexPlan->upsert );
 
-		$provider = new RecordingEmbeddingProvider(
-			array(
-				new EmbeddingResult(
-					'test-embedding',
-					'embed-model',
-					array( new EmbeddingVector( 0, array( 1.0, 0.0 ) ) ),
-					EmbeddingUsage::input_tokens( 8 )
-				),
-			)
+		$embedding_result = new EmbeddingResult(
+			'test-embedding',
+			'embed-model',
+			array( new EmbeddingVector( 0, array( 1.0, 0.0 ) ) ),
+			EmbeddingUsage::input_tokens( 8 )
 		);
+		$provider = new RecordingEmbeddingProvider( array( $embedding_result, $embedding_result ) );
 		$store = new InMemoryVectorStore( 'memory' );
 		$collection = new VectorCollection( 'collection-main', $profile );
 		$executor = new IndexEmbeddingExecutor(
@@ -106,7 +103,13 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 			$store,
 			$collection
 		);
-		$payload = new DocumentIndexJobPayload( 'queued-doc', 42, 'collection-main', 'index-profile-default', 'generation-7' );
+		$payload = new DocumentIndexJobPayload(
+			$document->documentKey,
+			$document->sourceId,
+			'collection-main',
+			'index-profile-default',
+			'generation-7'
+		);
 		$dependencies = new class( $pipeline, $document, $executor, $profile->fingerprint() ) implements DocumentIndexDependencies {
 			/**
 			 * Create one offline reconstruction fixture.
@@ -131,7 +134,7 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 			 * @throws RuntimeException When the payload does not resolve the expected fixture document.
 			 */
 			public function plan( DocumentIndexJobPayload $payload ): IndexPlan {
-				if ( $payload->document_key !== $this->document->externalId || $payload->source_id !== $this->document->sourceId ) {
+				if ( $payload->document_key !== $this->document->documentKey || $payload->source_id !== $this->document->sourceId ) {
 					throw new RuntimeException( 'Fixture payload did not resolve the expected document.' );
 				}
 				$raw = $this->pipeline->plan( $this->document )->indexPlan;
@@ -190,12 +193,20 @@ final class DocumentIndexJobHandlerIntegrationTest extends TestCase {
 		$repository->method( 'heartbeat' )->willReturn( $lease );
 
 		$handler = new DocumentIndexJobHandler( $dependencies );
-		$handler->handle( $job, new JobExecutionContext( $repository, $lease, $clock, 120 ) );
+		$context = new JobExecutionContext( $repository, $lease, $clock, 120 );
+		$handler->handle( $job, $context );
 
 		self::assertCount( 1, $provider->requests );
-		$result = $store->search( new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 5, $profile->fingerprint() ) );
-		self::assertCount( 1, $result->matches );
-		self::assertSame( $planned->indexPlan->upsert[0]->chunkKey, $result->matches[0]->id );
+		$first_result = $store->search( new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 5, $profile->fingerprint() ) );
+		self::assertCount( 1, $first_result->matches );
+		self::assertSame( $planned->indexPlan->upsert[0]->chunkKey, $first_result->matches[0]->id );
+
+		$handler->handle( $job, $context );
+
+		self::assertCount( 2, $provider->requests );
+		$rerun_result = $store->search( new VectorSearchRequest( $collection, array( 1.0, 0.0 ), 5, $profile->fingerprint() ) );
+		self::assertCount( 1, $rerun_result->matches );
+		self::assertSame( $first_result->matches[0]->id, $rerun_result->matches[0]->id );
 	}
 
 	/**
