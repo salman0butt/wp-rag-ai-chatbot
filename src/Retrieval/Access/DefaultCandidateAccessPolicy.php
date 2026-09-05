@@ -23,6 +23,9 @@ final readonly class DefaultCandidateAccessPolicy implements CandidateAccessPoli
 	 * @param RetrievalFilter    $filter Trusted server-side retrieval constraints.
 	 */
 	public function allows( RetrievalCandidate $candidate, RetrievalFilter $filter ): bool {
+		if ( array() !== $filter->mandatory ) {
+			return false;
+		}
 		if ( null !== $filter->visibility && $candidate->visibility !== $filter->visibility ) {
 			return false;
 		}
