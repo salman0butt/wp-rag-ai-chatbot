@@ -44,8 +44,10 @@ final readonly class RetrievalTrace {
 
 		foreach ( $channel_failures as $channel => $reason ) {
 			if (
+				! is_string( $channel ) ||
+				! is_string( $reason ) ||
 				! in_array( $channel, array( 'semantic', 'lexical' ), true ) ||
-				! in_array( $reason, array( 'semantic_unavailable', 'lexical_unavailable' ), true )
+				$reason !== $channel . '_unavailable'
 			) {
 				throw new InvalidArgumentException( 'Retrieval trace failure diagnostics are invalid.' );
 			}
