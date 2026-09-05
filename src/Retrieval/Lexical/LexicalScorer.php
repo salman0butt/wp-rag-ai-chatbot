@@ -25,7 +25,7 @@ final class LexicalScorer {
 	/**
 	 * Score one projected chunk against a preprocessed query.
 	 *
-	 * @param RetrievalQuery   $query Preprocessed retrieval query.
+	 * @param RetrievalQuery    $query Preprocessed retrieval query.
 	 * @param ChunkSearchRecord $record Candidate projection record.
 	 */
 	public function score( RetrievalQuery $query, ChunkSearchRecord $record ): float {
