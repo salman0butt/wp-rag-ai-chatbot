@@ -29,19 +29,39 @@ final class LexicalRetrieverTest extends TestCase {
 	 * and returns deterministic score-desc/chunk-ID ordering.
 	 */
 	public function test_retrieve_is_bounded_and_deterministically_ranked(): void {
-		$store = new class() implements ChunkSearchStore {
-			/** Captured bounded request. */
+		$store     = new class() implements ChunkSearchStore {
+			/**
+			 * Captured bounded request.
+			 *
+			 * @var LexicalSearchRequest|null
+			 */
 			public ?LexicalSearchRequest $request = null;
 
-			/** {@inheritDoc} */
+			/**
+			 * Ignore fixture replacement.
+			 *
+			 * @param string            $collection_id Collection scope.
+			 * @param string            $document_key Document scope.
+			 * @param ChunkSearchRecord ...$chunks Replacement chunks.
+			 */
 			public function replace_document_chunks( string $collection_id, string $document_key, ChunkSearchRecord ...$chunks ): void {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Ignore fixture deletion.
+			 *
+			 * @param string $collection_id Collection scope.
+			 * @param string $document_key Document scope.
+			 */
 			public function delete_document( string $collection_id, string $document_key ): void {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return a bounded lexical fixture set.
+			 *
+			 * @param LexicalSearchRequest $request Captured search request.
+			 * @return LexicalSearchMatch[]
+			 */
 			public function search( LexicalSearchRequest $request ): array {
 				$this->request = $request;
 
