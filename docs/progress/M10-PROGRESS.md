@@ -175,10 +175,33 @@ Delivered:
 - Scoped review from `53025a37835c8ae8ea8da2648d6b85abfb621e8a` through `3c8063a303f308df322ab9acfe74ecbb8c3f91a1` checked one-query embedding, bounded semantic top-K, profile/collection compatibility, portable trusted filters, mandatory-filter fail-closed-before-search behavior, canonical lineage hydration, post-search trusted scope, deterministic tie ordering, and candidate/result caps.
 - Result: **0 Critical / 0 Important**. PR #15 has no unresolved review threads.
 
+## Task 6 — Hybrid orchestration and final safety filter
+
+Status: **IN PROGRESS — ACCESS GUARD SUB-UNIT COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**.
+
+Delivered so far:
+
+- explicit `CandidateAccessPolicy` boundary for post-fusion trusted-scope enforcement;
+- `DefaultCandidateAccessPolicy` fail-closed checks for visibility, language, source membership, and document membership;
+- unverifiable non-empty mandatory constraints are rejected rather than silently admitted;
+- focused unit coverage for matching scope, every represented lineage mismatch, and mandatory-filter fail-closed behavior.
+
+### Strict TDD evidence
+
+- Primary RED: `085db48a019f982c1816de81d999ac03d814aefb`, CI `33991167769` — PHPStan passed, then PHPUnit ran 536 tests / 2,184 assertions and produced exactly two expected errors because `DefaultCandidateAccessPolicy` did not exist.
+- Implementation: `2bb1210f45ec974848bf9fdd96eb80293046bea4` added the policy contract and `c0667d96c9be71cf2ef635d47e0bba3164cdfb48` added represented trusted-scope enforcement.
+- Independent review found **0 Critical / 1 Important**: a non-empty `mandatory` filter could not be evaluated from fused candidate lineage but was implicitly accepted, violating fail-closed semantics.
+- Review-fix RED: `34a95b856a12066e7e6adaab558ec0ab73a41057`, CI `33991297657` — PHPStan passed, then PHPUnit ran 537 tests / 2,191 assertions and failed exactly one regression because the unverifiable mandatory filter was accepted.
+- Fix: `478868c2e77e61aa7ad8a8d87371025514d15a10` rejects non-empty mandatory constraints at the post-fusion access boundary.
+- GREEN: `478868c2e77e61aa7ad8a8d87371025514d15a10`, CI `33991359814` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed; PHP verification passed 537 tests / 2,191 assertions and Composer audit reported no security advisories.
+- Scoped re-review: **0 unresolved Critical / 0 unresolved Important**. PR #15 has no review threads.
+
+Task 6 remains open: `HybridRetriever` orchestration, channel-failure/degradation policy, post-fusion policy invocation, final configured result limiting, confidence surfacing, and sanitized trace reasons are not yet implemented.
+
 ## Review / integration state
 
-Tasks 1, 2, 3, 4, and 5 are complete, GREEN, and independently reviewed. M10 remains intentionally draft and is not merge-ready because Tasks 6–8 are unfinished.
+Tasks 1, 2, 3, 4, and 5 are complete, GREEN, and independently reviewed. Task 6 is in progress with its access-guard sub-unit complete and independently reviewed. M10 remains intentionally draft and is not merge-ready because Task 6 orchestration and Tasks 7–8 are unfinished.
 
 ## Exact next unfinished action
 
-Begin Task 6 — hybrid orchestration and final safety filter — with a test-only RED commit covering: hybrid evidence can change lexical-only ordering; lexical-only fallback is deterministic when semantic retrieval is unavailable but not required; the final trusted scope filter runs after fusion; deterministic confidence is surfaced without fabricating certainty; and no result exceeds the configured final limit. Do not add `HybridRetriever` or `FinalSafetyFilter` until exact-head CI proves that behavioral RED.
+Continue Task 6 with a test-only RED commit for `HybridRetriever`: prove both-channel fusion and duplicate collapse; deterministic single-channel degradation only when explicitly enabled; both-channel failure fails; the post-fusion `CandidateAccessPolicy` executes before final result limiting/reranking; confidence is deterministic without fabricated certainty; trace failure/degradation reasons are sanitized; and no result exceeds the configured final limit. Do not add `HybridRetriever` or `RetrievalException` production code until exact-head CI proves that behavioral RED.
