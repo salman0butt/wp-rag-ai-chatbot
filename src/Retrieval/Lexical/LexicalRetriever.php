@@ -46,8 +46,13 @@ final class LexicalRetriever {
 		);
 
 		$candidates = array();
-		foreach ( $this->store->search( $request ) as $match ) {
-			$record       = $match->record;
+		$matches    = array_slice( $this->store->search( $request ), 0, $this->config->lexical_candidate_limit );
+		foreach ( $matches as $match ) {
+			$record = $match->record;
+			if ( ! $this->matches_filter( $record, $filter ) ) {
+				continue;
+			}
+
 			$candidates[] = new RankedCandidate(
 				$record->chunk_key,
 				$record->document_key,
@@ -68,5 +73,30 @@ final class LexicalRetriever {
 		);
 
 		return array_slice( $candidates, 0, $this->config->fused_candidate_limit );
+	}
+
+	/**
+	 * Recheck projected lineage that is available on each returned row.
+	 *
+	 * Collection scope is enforced by the store because it is not duplicated on ChunkSearchRecord.
+	 *
+	 * @param ChunkSearchRecord $record Returned projection row.
+	 * @param LexicalFilter      $filter Trusted lexical scope.
+	 */
+	private function matches_filter( ChunkSearchRecord $record, LexicalFilter $filter ): bool {
+		if ( null !== $filter->document_key && $record->document_key !== $filter->document_key ) {
+			return false;
+		}
+		if ( null !== $filter->source_id && $record->source_id !== $filter->source_id ) {
+			return false;
+		}
+		if ( null !== $filter->language && $record->language !== $filter->language ) {
+			return false;
+		}
+		if ( null !== $filter->visibility && $record->visibility !== $filter->visibility ) {
+			return false;
+		}
+
+		return true;
 	}
 }
