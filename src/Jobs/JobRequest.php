@@ -25,6 +25,7 @@ final class JobRequest {
 	 * @param array<string, mixed> $payload JSON-compatible payload object.
 	 * @param string|null          $idempotency_key Optional active-job deduplication key.
 	 * @param int                  $max_attempts Maximum execution attempts.
+	 * @throws JobQueueException When any queue-request field is outside its safe contract.
 	 */
 	public function __construct(
 		public readonly string $type,
@@ -46,9 +47,10 @@ final class JobRequest {
 		}
 
 		try {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- This pure domain contract runs without a WordPress runtime.
 			$encoded = json_encode( $payload, JSON_THROW_ON_ERROR );
-		} catch ( JsonException $exception ) {
-			throw new JobQueueException( 'Job payload must contain JSON-compatible values.', 0, $exception );
+		} catch ( JsonException ) {
+			throw new JobQueueException( 'Job payload must contain JSON-compatible values.' );
 		}
 
 		if ( strlen( $encoded ) > self::MAX_PAYLOAD_BYTES ) {
