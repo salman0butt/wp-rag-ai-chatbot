@@ -27,6 +27,7 @@ final class UnavailableDocumentIndexDependencies implements DocumentIndexDepende
 	 */
 	public function plan( DocumentIndexJobPayload $payload ): IndexPlan {
 		unset( $payload );
+		// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- This is a bounded internal queue diagnostic, not rendered output.
 		throw new JobExecutionException( self::CODE, self::MESSAGE, false );
 	}
 
@@ -39,6 +40,7 @@ final class UnavailableDocumentIndexDependencies implements DocumentIndexDepende
 	 */
 	public function execute( DocumentIndexJobPayload $payload, IndexPlan $plan ): void {
 		unset( $payload, $plan );
+		// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- This is a bounded internal queue diagnostic, not rendered output.
 		throw new JobExecutionException( self::CODE, self::MESSAGE, false );
 	}
 }
