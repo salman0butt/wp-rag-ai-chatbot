@@ -27,7 +27,7 @@ use WpRagAiChatbot\VectorStore\VectorSearchStore;
 /**
  * Embeds one normalized query, performs bounded portable vector search, and hydrates safe canonical candidates.
  */
-final class SemanticRetriever {
+final class SemanticRetriever implements SemanticRetrievalChannel {
 	/** Maximum portable top-K accepted by the M08 vector request contract. */
 	private const MAX_TOP_K = 100;
 

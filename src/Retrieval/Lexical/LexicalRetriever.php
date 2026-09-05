@@ -16,7 +16,7 @@ use WpRagAiChatbot\Retrieval\RetrievalQuery;
 /**
  * Converts bounded lexical projection matches into native ranked candidates.
  */
-final class LexicalRetriever {
+final class LexicalRetriever implements LexicalRetrievalChannel {
 	/**
 	 * Create the lexical retriever.
 	 *
