@@ -49,7 +49,9 @@ final class WpdbJobRepositoryTest extends TestCase {
 		$connection->method( 'insert_id' )->willReturn( 7 );
 		$connection->method( 'prepare' )->willReturn( 'job-row' );
 		$connection->method( 'get_row' )->willReturnCallback(
-			static fn (): array => self::row( 7, (string) $inserted_jobkey, JobStatus::QUEUED )
+			static function () use ( &$inserted_jobkey ): array {
+				return self::row( 7, (string) $inserted_jobkey, JobStatus::QUEUED );
+			}
 		);
 
 		$record = $this->repository( $connection )->enqueue(
