@@ -13,29 +13,36 @@ namespace WpRagAiChatbot\Jobs;
  * Resolves only explicitly registered handler implementations.
  */
 final class JobHandlerRegistry {
+	/** @var array<string, JobHandler> */
+	private array $handlers = array();
+
 	/**
 	 * Register one explicit stable job type.
 	 *
 	 * @param JobHandler $handler Typed handler implementation.
-	 * @throws JobQueueException Until behavioral registration is implemented.
+	 * @throws JobQueueException When the handler type is invalid or already registered.
 	 */
 	public function register( JobHandler $handler ): void {
-		if ( '' === $handler->type() ) {
-			throw new JobQueueException( 'Job handler type is required.' );
+		$type = $handler->type();
+		if ( 1 !== preg_match( '/^[a-z0-9][a-z0-9_.-]{0,99}$/', $type ) ) {
+			throw new JobQueueException( 'Job handler type must use the stable lowercase queue grammar.' );
 		}
-		throw new JobQueueException( 'Job handler registration is not implemented yet.' );
+		if ( isset( $this->handlers[ $type ] ) ) {
+			throw new JobQueueException( 'Job handler type is already registered.' );
+		}
+		$this->handlers[ $type ] = $handler;
 	}
 
 	/**
 	 * Resolve one explicitly registered stable job type.
 	 *
 	 * @param string $type Persisted job type.
-	 * @throws JobQueueException Until behavioral resolution is implemented.
+	 * @throws JobQueueException When no allowlisted handler is registered for the type.
 	 */
 	public function for_type( string $type ): JobHandler {
-		if ( '' === $type ) {
-			throw new JobQueueException( 'Job handler type is required.' );
+		if ( ! isset( $this->handlers[ $type ] ) ) {
+			throw new JobQueueException( 'No handler is registered for this job type.' );
 		}
-		throw new JobQueueException( 'Job handler resolution is not implemented yet.' );
+		return $this->handlers[ $type ];
 	}
 }
