@@ -33,6 +33,7 @@ final readonly class RetrievalCandidate {
 	 * @param string      $visibility Trusted visibility classification.
 	 * @param array       $channel_evidence Channel ranking evidence.
 	 * @param float       $fused_score Deterministic fused score.
+	 * @phpstan-param array<array-key, mixed> $channel_evidence
 	 * @throws InvalidArgumentException When lineage, evidence, or numeric values are invalid.
 	 */
 	public function __construct(
@@ -68,6 +69,6 @@ final readonly class RetrievalCandidate {
 		 *
 		 * @var list<ChannelEvidence> $channel_evidence
 		 */
-		$this->channel_evidence = $channel_evidence;
+		$this->channel_evidence = array_values( $channel_evidence );
 	}
 }
