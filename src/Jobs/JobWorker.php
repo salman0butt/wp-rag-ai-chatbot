@@ -69,6 +69,11 @@ final class JobWorker {
 	 * @param WorkerConfig $config Worker configuration.
 	 */
 	private function execute_lease( JobLease $lease, WorkerConfig $config ): void {
+		if ( $this->repository->cancellationRequested( $lease ) ) {
+			$this->repository->markCancelled( $lease, $this->clock->now() );
+			return;
+		}
+
 		try {
 			$handler = $this->registry->for_type( $lease->job->type );
 		} catch ( JobQueueException ) {
@@ -78,11 +83,6 @@ final class JobWorker {
 				self::UNKNOWN_TYPE_MESSAGE,
 				$this->clock->now()
 			);
-			return;
-		}
-
-		if ( $this->repository->cancellationRequested( $lease ) ) {
-			$this->repository->markCancelled( $lease, $this->clock->now() );
 			return;
 		}
 
