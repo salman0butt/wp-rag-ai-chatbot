@@ -61,14 +61,14 @@ final class HybridRetrievalAcceptanceTest extends TestCase {
 		);
 		$exact      = $this->record( 'exact', 'Install SKU-42/A by locking the controller bracket.' );
 		$paraphrase = $this->record( 'paraphrase', 'Mount the control unit by aligning the rear bracket.' );
-		$private    = $this->record( 'private', 'SKU-42/A confidential service calibration.', 'private' );
+		$restricted = $this->record( 'private', 'SKU-42/A confidential service calibration.', 'private' );
 		$records    = array(
 			$exact->chunk_key      => $exact,
 			$paraphrase->chunk_key => $paraphrase,
-			$private->chunk_key    => $private,
+			$restricted->chunk_key => $restricted,
 		);
 		$lexical    = new LexicalRetriever(
-			$this->lexical_store( $exact, $paraphrase, $private ),
+			$this->lexical_store( $exact, $paraphrase, $restricted ),
 			new LexicalScorer(),
 			$config
 		);
@@ -76,7 +76,7 @@ final class HybridRetrievalAcceptanceTest extends TestCase {
 			new EmbeddingService( $this->embedding_provider(), new EmbeddingBatchConfig( 8 ) ),
 			$this->embedding_profile(),
 			$this->vector_collection(),
-			$this->vector_store( $paraphrase, $exact, $private ),
+			$this->vector_store( $paraphrase, $exact, $restricted ),
 			new VectorFilterMapper(),
 			$config
 		);
@@ -100,7 +100,7 @@ final class HybridRetrievalAcceptanceTest extends TestCase {
 		);
 
 		self::assertCount( 2, $result->candidates );
-		self::assertNotContains( $private->chunk_key, array_column( $result->candidates, 'chunk_id' ) );
+		self::assertNotContains( $restricted->chunk_key, array_column( $result->candidates, 'chunk_id' ) );
 		self::assertSame( array( 'public' ), array_values( array_unique( array_column( $result->candidates, 'visibility' ) ) ) );
 
 		$by_id = array_column( $result->candidates, null, 'chunk_id' );
@@ -149,19 +149,40 @@ final class HybridRetrievalAcceptanceTest extends TestCase {
 	 */
 	private function lexical_store( ChunkSearchRecord ...$records ): ChunkSearchStore {
 		return new class($records) implements ChunkSearchStore {
-			/** @param list<ChunkSearchRecord> $records Fixture records. */
+			/**
+			 * Create the bounded lexical fixture store.
+			 *
+			 * @param array $records Fixture records.
+			 * @phpstan-param list<ChunkSearchRecord> $records
+			 */
 			public function __construct( private readonly array $records ) {
 			}
 
-			/** @param ChunkSearchRecord ...$chunks Replacement rows. */
+			/**
+			 * Ignore replacement in the read-only acceptance fixture.
+			 *
+			 * @param string            $collection_id Collection scope.
+			 * @param string            $document_key Document scope.
+			 * @param ChunkSearchRecord ...$chunks Replacement rows.
+			 */
 			public function replace_document_chunks( string $collection_id, string $document_key, ChunkSearchRecord ...$chunks ): void {
 			}
 
-			/** Delete one document projection. */
+			/**
+			 * Ignore deletion in the read-only acceptance fixture.
+			 *
+			 * @param string $collection_id Collection scope.
+			 * @param string $document_key Document scope.
+			 */
 			public function delete_document( string $collection_id, string $document_key ): void {
 			}
 
-			/** @return list<LexicalSearchMatch> */
+			/**
+			 * Return only the request-bounded deterministic fixture prefix.
+			 *
+			 * @param LexicalSearchRequest $request Bounded lexical request.
+			 * @return list<LexicalSearchMatch>
+			 */
 			public function search( LexicalSearchRequest $request ): array {
 				return array_map(
 					static fn ( ChunkSearchRecord $record ): LexicalSearchMatch => new LexicalSearchMatch( $record ),
@@ -203,21 +224,26 @@ final class HybridRetrievalAcceptanceTest extends TestCase {
 	 *
 	 * @param ChunkSearchRecord $paraphrase Semantic-first public fixture.
 	 * @param ChunkSearchRecord $exact Shared exact fixture.
-	 * @param ChunkSearchRecord $private Restricted high-score fixture.
+	 * @param ChunkSearchRecord $restricted Restricted high-score fixture.
 	 */
 	private function vector_store(
 		ChunkSearchRecord $paraphrase,
 		ChunkSearchRecord $exact,
-		ChunkSearchRecord $private
+		ChunkSearchRecord $restricted
 	): VectorSearchStore {
 		$matches = array(
-			$this->vector_match( $private, 0.99 ),
+			$this->vector_match( $restricted, 0.99 ),
 			$this->vector_match( $paraphrase, 0.95 ),
 			$this->vector_match( $exact, 0.80 ),
 		);
 
 		return new class($matches) implements VectorSearchStore {
-			/** @param list<VectorMatch> $matches Deterministic matches. */
+			/**
+			 * Create the deterministic vector fixture store.
+			 *
+			 * @param array $matches Deterministic matches.
+			 * @phpstan-param list<VectorMatch> $matches
+			 */
 			public function __construct( private readonly array $matches ) {
 			}
 
@@ -236,14 +262,23 @@ final class HybridRetrievalAcceptanceTest extends TestCase {
 				return VectorStoreHealth::healthy();
 			}
 
-			/** Execute one bounded deterministic search. */
+			/**
+			 * Execute one bounded deterministic search.
+			 *
+			 * @param VectorSearchRequest $request Bounded vector request.
+			 */
 			public function search( VectorSearchRequest $request ): VectorSearchResult {
 				return new VectorSearchResult( array_slice( $this->matches, 0, $request->top_k ) );
 			}
 		};
 	}
 
-	/** Build one portable vector match from canonical trusted lineage. */
+	/**
+	 * Build one portable vector match from canonical trusted lineage.
+	 *
+	 * @param ChunkSearchRecord $record Canonical chunk record.
+	 * @param float             $score Deterministic native score.
+	 */
 	private function vector_match( ChunkSearchRecord $record, float $score ): VectorMatch {
 		return new VectorMatch(
 			$record->chunk_key,
