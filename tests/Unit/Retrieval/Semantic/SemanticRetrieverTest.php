@@ -149,8 +149,8 @@ final class SemanticRetrieverTest extends TestCase {
 	 * Build a semantic retriever with deterministic M08 dependencies.
 	 *
 	 * @param RecordingEmbeddingProvider $provider Recording embedding provider.
-	 * @param VectorSearchStore           $store Recording vector search store.
-	 * @param RetrievalConfig|null        $config Optional retrieval configuration.
+	 * @param VectorSearchStore          $store    Recording vector search store.
+	 * @param RetrievalConfig|null       $config   Optional retrieval configuration.
 	 */
 	private function retriever(
 		RecordingEmbeddingProvider $provider,
@@ -193,10 +193,10 @@ final class SemanticRetrieverTest extends TestCase {
 	 */
 	private function store( array $matches ): VectorSearchStore {
 		return new class($matches) implements VectorSearchStore {
-			/** Captured vector search request. */
+			/** @var VectorSearchRequest|null Captured vector search request. */
 			public ?VectorSearchRequest $request = null;
 
-			/** Number of vector search calls. */
+			/** @var int Number of vector search calls. */
 			public int $search_count = 0;
 
 			/**
@@ -238,8 +238,8 @@ final class SemanticRetrieverTest extends TestCase {
 	/**
 	 * Build one vector match using the actual M08 persisted metadata keys.
 	 *
-	 * @param string $seed Stable fixture seed.
-	 * @param float  $score Native vector score.
+	 * @param string $seed     Stable fixture seed.
+	 * @param float  $score    Native vector score.
 	 * @param array  $override Metadata overrides; null removes a key.
 	 * @phpstan-param array<string, scalar|null> $override
 	 */
