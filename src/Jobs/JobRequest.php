@@ -42,6 +42,9 @@ final class JobRequest {
 		if ( $max_attempts < 1 || $max_attempts > 10 ) {
 			throw new JobQueueException( 'Maximum attempts must be between 1 and 10.' );
 		}
+		if ( array() !== $payload && array_is_list( $payload ) ) {
+			throw new JobQueueException( 'Job payload root must be a JSON object.' );
+		}
 		if ( self::payload_depth( $payload ) > self::MAX_PAYLOAD_DEPTH ) {
 			throw new JobQueueException( 'Job payload nesting exceeds the supported depth.' );
 		}
