@@ -72,6 +72,10 @@ final class LexicalScorerTest extends TestCase {
 
 	/**
 	 * Build one valid projected chunk fixture.
+	 *
+	 * @param string $seed Fixture seed.
+	 * @param string $content Chunk content.
+	 * @param string $title Document title.
 	 */
 	private function record( string $seed, string $content, string $title = 'Example' ): ChunkSearchRecord {
 		return new ChunkSearchRecord(
