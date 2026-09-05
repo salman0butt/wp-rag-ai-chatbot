@@ -12,6 +12,9 @@ namespace WpRagAiChatbot\Jobs;
 use WpRagAiChatbot\Database\Repository\WpdbJobRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
+use WpRagAiChatbot\Jobs\Sync\DocumentIndexDependencies;
+use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobHandler;
+use WpRagAiChatbot\Jobs\Sync\UnavailableDocumentIndexDependencies;
 
 /**
  * Composes one shared worker for cron and WP-CLI entrypoints.
@@ -26,10 +29,22 @@ final class JobWorkerBootstrap {
 		$connection = new WpdbConnection( $wpdb );
 		$tables     = new TableNames( $connection->prefix() );
 		$repository = new WpdbJobRepository( $connection, $tables );
-		$worker     = new JobWorker( $repository, new JobHandlerRegistry(), new SystemClock() );
+		$worker     = new JobWorker( $repository, self::handler_registry(), new SystemClock() );
 
 		$cron = new WordPressJobCron( $worker );
 		$cron->register();
 		WordPressCliJobsCommand::register_if_available( $worker );
+	}
+
+	/**
+	 * Build the explicit allowlisted handler registry used by production workers.
+	 *
+	 * @param DocumentIndexDependencies|null $document_index_dependencies Optional reconstructed document-index dependencies.
+	 */
+	public static function handler_registry( ?DocumentIndexDependencies $document_index_dependencies = null ): JobHandlerRegistry {
+		$registry     = new JobHandlerRegistry();
+		$dependencies = $document_index_dependencies ?? new UnavailableDocumentIndexDependencies();
+		$registry->register( new DocumentIndexJobHandler( $dependencies ) );
+		return $registry;
 	}
 }
