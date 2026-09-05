@@ -81,12 +81,19 @@ final class JobWorker {
 			return;
 		}
 
+		if ( $this->repository->cancellationRequested( $lease ) ) {
+			$this->repository->markCancelled( $lease, $this->clock->now() );
+			return;
+		}
+
 		try {
 			$handler->handle(
 				$lease->job,
 				new JobExecutionContext( $this->repository, $lease, $this->clock, $config->lease_seconds )
 			);
 			$this->repository->complete( $lease, $this->clock->now() );
+		} catch ( JobCancelledException ) {
+			$this->repository->markCancelled( $lease, $this->clock->now() );
 		} catch ( JobExecutionException $error ) {
 			$this->persist_execution_failure( $lease, $error );
 		} catch ( Throwable ) {
