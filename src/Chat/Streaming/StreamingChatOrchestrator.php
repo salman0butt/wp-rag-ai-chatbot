@@ -81,7 +81,11 @@ final class StreamingChatOrchestrator {
 		} catch ( Throwable ) {
 			yield new StreamEvent( $sequence, StreamEventType::ERROR, null, null, ChatFailureReason::GENERATION_FAILED );
 		} finally {
-			$stream->close();
+			try {
+				$stream->close();
+			} catch ( Throwable ) {
+				// Cleanup diagnostics are provider-owned and must never cross the client-safe stream boundary.
+			}
 		}
 	}
 
