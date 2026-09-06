@@ -15,6 +15,9 @@ namespace WpRagAiChatbot\Citations;
 final class CitationValidator {
 	/**
 	 * Validate bracketed citation markers in an answer.
+	 *
+	 * @param string           $answer Model-authored answer text.
+	 * @param CitationRegistry $registry Request-local trusted citation registry.
 	 */
 	public function validate( string $answer, CitationRegistry $registry ): CitationValidationResult {
 		preg_match_all( '/\[(C[^\]]*)\]/', $answer, $matches );
