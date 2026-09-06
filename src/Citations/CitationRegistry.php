@@ -88,6 +88,8 @@ final readonly class CitationRegistry {
 
 	/**
 	 * Resolve one request-local citation identifier.
+	 *
+	 * @param string $id Request-local citation identifier.
 	 */
 	public function get( string $id ): ?Citation {
 		return $this->citations_by_id[ $id ] ?? null;
