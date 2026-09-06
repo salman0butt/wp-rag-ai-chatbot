@@ -26,11 +26,7 @@ final class CitationValidator {
 		$invalid_markers = array();
 		$seen            = array();
 
-		foreach ( $matches[1] ?? array() as $marker ) {
-			if ( ! is_string( $marker ) ) {
-				continue;
-			}
-
+		foreach ( $matches[1] as $marker ) {
 			if ( 1 !== preg_match( '/^C[1-9][0-9]*$/', $marker ) ) {
 				$invalid_markers[] = $marker;
 				continue;
