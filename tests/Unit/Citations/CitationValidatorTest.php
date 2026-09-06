@@ -62,6 +62,18 @@ final class CitationValidatorTest extends TestCase {
 	}
 
 	/**
+	 * Ordinary bracketed prose must not be interpreted as a citation marker.
+	 */
+	public function test_validator_ignores_non_citation_bracketed_prose(): void {
+		$result = $this->validator()->validate( 'Keep [Context] separate from grounded markers [C1].', $this->registry() );
+
+		self::assertTrue( $result->valid );
+		self::assertSame( array(), $result->invalid_markers );
+		self::assertCount( 1, $result->citations );
+		self::assertSame( 'C1', $result->citations[0]->id );
+	}
+
+	/**
 	 * A model-authored URL never becomes authoritative citation metadata.
 	 */
 	public function test_validator_does_not_trust_model_authored_urls(): void {
