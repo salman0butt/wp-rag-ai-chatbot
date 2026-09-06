@@ -57,9 +57,6 @@ final class StreamingChatOrchestrator {
 				}
 
 				foreach ( $this->bounded_deltas( $delta ) as $bounded_delta ) {
-					if ( $cancellation->is_cancelled() ) {
-						break 2;
-					}
 					$answer .= $bounded_delta;
 					yield new StreamEvent( $sequence++, StreamEventType::MESSAGE_DELTA, $bounded_delta );
 				}
