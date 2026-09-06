@@ -88,6 +88,30 @@ final class StreamingChatOrchestratorTest extends TestCase {
 	}
 
 	/**
+	 * Cancellation after a bounded chunk must prevent remaining chunks from the same provider delta.
+	 */
+	public function test_cancellation_stops_remaining_chunks_from_current_provider_delta(): void {
+		$cancellation = new Cancellation();
+		$stream       = $this->stream( array( str_repeat( 'a', 5000 ) ) );
+		$events       = array();
+
+		foreach ( ( new StreamingChatOrchestrator() )->stream( $stream, CitationRegistry::from_candidates( array() ), $cancellation ) as $event ) {
+			$events[] = $event;
+			if ( StreamEventType::MESSAGE_DELTA === $event->type ) {
+				$cancellation->cancel();
+			}
+		}
+
+		self::assertSame(
+			array( StreamEventType::MESSAGE_START, StreamEventType::MESSAGE_DELTA, StreamEventType::ERROR ),
+			array_map( static fn ( StreamEvent $event ): StreamEventType => $event->type, $events )
+		);
+		self::assertSame( ChatFailureReason::CANCELLED, $events[2]->error_reason );
+		self::assertSame( 1, $stream->next_calls );
+		self::assertTrue( $stream->closed );
+	}
+
+	/**
 	 * Unknown citations fail closed without a completion event.
 	 */
 	public function test_invalid_citation_is_terminal_error_without_completion(): void {
