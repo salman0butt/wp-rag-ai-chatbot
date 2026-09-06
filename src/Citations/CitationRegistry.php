@@ -77,8 +77,8 @@ final readonly class CitationRegistry {
 				throw new InvalidArgumentException( 'Citation registry candidate is invalid.' );
 			}
 
-			$id          = 'C' . ( $index + 1 );
-			$citations[] = new Citation(
+			$id                = 'C' . ( $index + 1 );
+			$citations[]       = new Citation(
 				$id,
 				$candidate->chunk_id,
 				$candidate->document_id,
