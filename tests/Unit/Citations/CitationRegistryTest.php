@@ -33,7 +33,7 @@ final class CitationRegistryTest extends TestCase {
 		$registry_class = 'WpRagAiChatbot\\Citations\\CitationRegistry';
 		self::assertTrue( class_exists( $registry_class ), 'CitationRegistry contract is missing.' );
 
-		$registry = ( new ReflectionClass( $registry_class ) )
+		$registry  = ( new ReflectionClass( $registry_class ) )
 			->getMethod( 'from_candidates' )
 			->invoke(
 				null,
@@ -74,6 +74,10 @@ final class CitationRegistryTest extends TestCase {
 
 	/**
 	 * Build one valid M10 retrieval candidate fixture.
+	 *
+	 * @param string $chunk_id Chunk identifier.
+	 * @param string $document_id Document identifier.
+	 * @param int    $source_id Source identifier.
 	 */
 	private function candidate( string $chunk_id, string $document_id, int $source_id ): RetrievalCandidate {
 		return new RetrievalCandidate(
