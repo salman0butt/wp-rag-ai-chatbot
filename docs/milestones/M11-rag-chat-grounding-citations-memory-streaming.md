@@ -28,7 +28,7 @@ Strict no-answer deterministic tests pass; citations only reference selected sou
 1. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — chat request, grounding mode, failure/result contracts, and hard request bounds.
 2. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — ownership-scoped conversation persistence, V007–V009 migrations, prepared-SQL repositories, cross-owner denial, persistence bounds, and real WordPress lifecycle verification.
 3. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — deterministic bounded memory assembly with owner-scoped history, newest-message retention, hard 12-message / 24 KiB ceilings, chronological output, and one bounded versioned summary.
-4. PENDING — citation registry and validator.
+4. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — deterministic bounded citation registry and fail-closed validator over trusted final retrieval lineage.
 5. PENDING — prompt/context builder with evidence isolation.
 6. PENDING — grounding policy and deterministic strict no-answer.
 7. PENDING — non-streaming ChatOrchestrator.
@@ -60,128 +60,101 @@ Strict no-answer deterministic tests pass; citations only reference selected sou
 - `MemoryAssembler` requests no more than 12 messages, retains the newest contiguous window, drops older messages first to remain within a 24 KiB total text budget, and preserves chronological output order.
 - Summary inclusion requires a positive version, non-empty trimmed text, and room within the same 24 KiB summary + message budget.
 
+## Task 4 Delivered Behavior
+- `Citation` carries request-local application-owned IDs plus trusted chunk/document/source lineage.
+- `CitationRegistry` deterministically assigns `C1..Cn` in final context order and rejects more than 12 candidates.
+- `CitationValidator` resolves only registry-backed markers in first-use answer order.
+- Unknown, duplicate, leading-zero, and trailing-junk numeric citation markers fail closed.
+- Ordinary bracketed prose such as `[Context]` is ignored rather than misclassified as a citation.
+- Model-authored URLs never become canonical citation metadata; M10 does not currently expose canonical title/URL fields on `RetrievalCandidate`, so registry-created display title/URL values remain null rather than being invented.
+
 ## TDD Evidence
 ### Task 1
-Primary behavioral RED:
-- `2b6b708d5f8e11249630f2417c67cfb9ff416ebc`
-- CI `34002442391` — behavior suite failed because planned M11 request contracts did not yet exist.
-
-Review regression RED:
-- `65e93ba3d55295cf950c8687ca07ba751ec40fa0`
-- CI `34003104992` — proved caller-controlled identifiers lacked a hard bound.
-- fix `c624a90669692876bec1546e1582a10db8acc335`.
-
-Verified implementation head:
-- `993ed2705d4dc3665c238c01038deb0a9669b9f9`
-- CI `34003238289` — SUCCESS.
+- Primary behavioral RED `2b6b708d5f8e11249630f2417c67cfb9ff416ebc`, CI `34002442391`.
+- Review regression RED `65e93ba3d55295cf950c8687ca07ba751ec40fa0`, CI `34003104992`; fix `c624a90669692876bec1546e1582a10db8acc335`.
+- Verified head `993ed2705d4dc3665c238c01038deb0a9669b9f9`, CI `34003238289` — SUCCESS.
 
 ### Task 2
-Schema/contract behavioral RED:
-- `b7bc8f57c1b6197d63a6412e1fed2dc51e976222`
-- CI `34007381906` — 563-test suite reached behavior and failed exactly the new missing persistence-contract assertions.
-
-SQL-repository behavioral RED:
-- initial `c1f81cbb3f75627620f5f1afb235fca602f28f51` stopped at PHPCS and is not counted as RED.
-- `9102bce1dfcc6df50f9e117c3f693ca41758a1dc`
-- CI `34010133168` — PHPStan passed, then PHPUnit reached 570 tests / 2,263 assertions with seven expected missing repository-class errors.
-
-Production sequence:
-- `9e3996605a07925e8b18e16bc02aacc2c93b2ba6` — V007–V009/schema/contracts.
-- `27a7ff05a95b278c67b4277aeb8c0960296f5e7d` — owner-scoped conversation repository.
-- `5839cbed2d9ff21b8c34bbec7e8772179fea2423` — atomic owner-scoped message repository.
-- standards/static-analysis corrections through `5970ad7d3b5fde1e629047493415564fe0a2abda`.
-- `0e947f78802266b6d5c455a15077f6af3cfe15fb` / `34182b7144cc99417bb1cd2df6213cfaa146909b` — real WordPress persistence/lifecycle verification.
-
-Task 2 integration CI:
-- `34010412433` on `34182b7144cc99417bb1cd2df6213cfaa146909b` — SUCCESS across php-quality, js-quality, package, and wordpress-smoke.
-- reviewed head `b20798c14ec6169b8ffddfed2a8e03199c1fd822` passed CI `34010581646`.
+- Schema/contract RED `b7bc8f57c1b6197d63a6412e1fed2dc51e976222`, CI `34007381906`.
+- SQL-repository RED `9102bce1dfcc6df50f9e117c3f693ca41758a1dc`, CI `34010133168`: PHPStan passed, PHPUnit reached 570 tests / 2,263 assertions with seven expected missing-class errors.
+- Production sequence: `9e399660...`, `27a7ff05...`, `5839cbed...`, corrections through `5970ad7d...`, real WordPress persistence/lifecycle through `34182b7144cc99417bb1cd2df6213cfaa146909b`.
+- Integration CI `34010412433` — SUCCESS; reviewed-head CI `34010581646` — SUCCESS.
 
 ### Task 3
-Initial test-only commit:
-- `68d05fa4bc87c7fdfcc7d311891686e810c71d80`.
-- CI `34020220657` stopped in PHPCS before behavior and is not counted as behavioral RED.
+- Initial test-only `68d05fa4...` stopped at PHPCS and is not counted as RED.
+- Valid behavioral RED `2e063c2fd59334d454d7b17d7399a8f796d52cab`, CI `34020263699`: PHPStan passed; PHPUnit 575 tests / 2,301 assertions with exactly five expected Task 3 failures.
+- Production sequence through `ac4b99aa6921db0f0fcc6dd5571497a352237fa3`.
+- Implementation CI `34020490179` — SUCCESS: PHPStan 0 errors, PHPUnit 575/575 / 2,320 assertions, Composer audit clean, JS/package/WordPress smoke GREEN.
+- Task 3 closeout documentation head `7cf8e5e6841d18c3f3268abe3bf9c2f55a6553db`, CI `34022929538` — SUCCESS; artifact `9986107488`, digest `sha256:83f1c6f20037960eb3f638bf2d4ac1472cc3fd35649bf76de202d0f6f474f0c0`.
 
-Valid behavioral RED:
-- `2e063c2fd59334d454d7b17d7399a8f796d52cab`.
-- CI `34020263699` — static analysis passed; PHPUnit ran 575 tests / 2,301 assertions and failed exactly five new Task 3 assertions because `ConversationHistory` / memory contracts did not yet exist.
-
-Production sequence:
-- `5d640763de1d6d4c48e9d2301bb41f9591e196dc` — bounded memory implementation.
-- `153c2e62021950ae06073341cf0bd6f144a9458c`, `699370c7349ed5f6ec909d8eb61087ace2d5cbe3`, `bddd28a6bf8ddb94d46c16641ba86bc22501746b` — standards/type alignment.
-- `ac4b99aa6921db0f0fcc6dd5571497a352237fa3` — final static-analysis correction without intended behavior change.
-
-Verified implementation head:
-- `ac4b99aa6921db0f0fcc6dd5571497a352237fa3`.
-- CI `34020490179` — SUCCESS; PHPStan 0 errors; PHPUnit 575/575 tests / 2,320 assertions; Composer audit clean; JS/package/WordPress smoke GREEN.
-- artifact `9985321552`, 842,459 bytes, digest `sha256:533e633d00a5a14d553aef7a7add97403ffc8b76766a47ff154401910f84824d`.
-- documentation head `89a9f42efb685cba2bab17794b5ffba9a1034421` passed exact-head CI `34020724462`.
+### Task 4
+- Initial test-only heads through `7dd0aa9313d8732d393221d2bae49507c583a0bf` stopped in PHPCS and are not counted as behavioral RED.
+- Valid primary RED `e7cdc6e93d88cef558013fa9eeee0ad3210424d5`, CI `34023154402`: PHPStan 0 errors; PHPUnit 582 tests / 2,327 assertions with exactly seven expected failures because citation contracts did not exist.
+- Production sequence: `5612d80e...` citation value; `c2b937cb...` bounded registry; `14298eef...` validation result; `b4f0b857...` validator; readonly/standards/static-analysis corrections through `f21cc9ba21219be94a635fc552228229d3a6ef31`.
+- Review regression RED `26037f6e58b1c41285d66f13e7971144d0b4d93a`, CI `34023530100`: PHPStan 0 errors; PHPUnit 583 tests / 2,363 assertions; exactly one failure proving `[Context]` was falsely treated as a citation. Fix `ba4781dfddfcba7d6a83f4067480e9682f743b0d`.
+- Follow-up regression RED `8d5195cb73861e5540a2cde4cdaf440911ae27d5`, CI `34023684049`: PHPStan 0 errors; PHPUnit 583 tests / 2,367 assertions; exactly one failure proving `[C1x]` was ignored instead of rejected. Fix `11e9ed3d71d40e94b054ad881416344359250356`.
+- Final implementation CI `34023743426` on `11e9ed3d71d40e94b054ad881416344359250356` — SUCCESS across php-quality, js-quality, package, and wordpress-smoke. PHPStan 0 errors; PHPUnit 583/583 / 2,368 assertions; Composer audit clean. Artifact `9986372467`, digest `sha256:6bddafe631d3a609488efacb61c806efb6a7a7d624f4dc1a92c193beaff8f617`.
 
 ## Integration Test Evidence
-Task 2 persistence is exercised against real WordPress/MySQL in addition to unit contracts. Full indexed-fixture -> retrieval -> answer/citation integration remains Task 9. Task 3 is deterministic application logic and is covered by focused unit tests plus the full repository CI/smoke suite.
+Task 2 persistence is exercised against real WordPress/MySQL. Tasks 3–4 are deterministic application logic covered by focused unit tests plus the full repository CI/WordPress smoke suite. Full indexed-fixture → retrieval → answer/citation integration remains Task 9.
 
 ## E2E / Visual Verification
 Backend streaming smoke remains later M11 work; visual widget remains M14.
 
 ## Security Review
-Task 1 reviewed SHA `993ed2705d4dc3665c238c01038deb0a9669b9f9`: **0 Critical / 0 Important**. PR review `5123774888`.
-
-Task 2 reviewed SHA `b20798c14ec6169b8ffddfed2a8e03199c1fd822`: **0 Critical / 0 Important**. PR review `5124482278`.
-
-Task 3 reviewed implementation SHA `ac4b99aa6921db0f0fcc6dd5571497a352237fa3`: **0 Critical / 0 Important**. Review covered owner-scope propagation, transcript privacy, newest-message retention, chronological ordering, 12-message / 24 KiB ceilings, summary budgeting, type safety, bounded work, and test adequacy. PR review `5124784589`.
-
-No unresolved blocking inline review threads exist.
+- Task 1 reviewed SHA `993ed2705...`: **0 Critical / 0 Important**. PR review `5123774888`.
+- Task 2 reviewed SHA `b20798c14...`: **0 Critical / 0 Important**. PR review `5124482278`.
+- Task 3 reviewed SHA `ac4b99aa...`: **0 Critical / 0 Important**. PR review `5124784589`.
+- Task 4 initial review `5124813259` found one Important `[Context]` false-positive; follow-up review `5124819766` found one Important trailing-junk gap. Both were fixed through fresh regression RED/GREEN cycles. Final review on SHA `11e9ed3d71d40e94b054ad881416344359250356`: **0 unresolved Critical / 0 unresolved Important**. PR review `5124827141`.
+- No blocking inline review threads exist.
 
 ## Performance Review where relevant
 - Task 1 bounds question bytes, identifiers, and generation output tokens before later dispatch.
 - Task 2 uses bounded indexed owner-scoped reads and one atomic authorization/write SQL statement.
-- Task 3 requests at most 12 recent messages and performs bounded in-memory assembly against a 24 KiB text ceiling; no external calls are introduced.
+- Task 3 requests at most 12 recent messages and performs bounded in-memory assembly against a 24 KiB text ceiling.
+- Task 4 creates at most 12 registry entries and performs linear parsing over the already-bounded generated answer with no network/database calls.
 
 ## Code Review Findings
-- Task 1 had one Important identifier-bound issue; fixed by `c624a90669692876bec1546e1582a10db8acc335`.
-- Task 2 review: 0 Critical / 0 Important; no regression fix required.
-- Task 3 review: 0 Critical / 0 Important; no regression fix required.
+- Task 1: one Important identifier-bound issue; fixed with regression TDD.
+- Task 2: 0 Critical / 0 Important.
+- Task 3: 0 Critical / 0 Important.
+- Task 4: two Important parser-boundary findings; both fixed with regression TDD; final review 0 unresolved Critical / 0 unresolved Important.
 
 ## Fresh Verification Results
-- Task 1 reviewed head CI `34003238289` — SUCCESS.
-- Task 2 real integration CI `34010412433` — SUCCESS; reviewed-head CI `34010581646` — SUCCESS.
-- Task 3 implementation CI `34020490179` — SUCCESS; prior documentation-head CI `34020724462` — SUCCESS.
-- A fresh exact-head CI run is required for the Task 3 closeout documentation commit before Task 4 production work begins.
+- Task 1 reviewed-head CI `34003238289` — SUCCESS.
+- Task 2 reviewed/integration CI `34010581646` / `34010412433` — SUCCESS.
+- Task 3 closeout CI `34022929538` — SUCCESS.
+- Task 4 implementation CI `34023743426` — SUCCESS.
+- A fresh exact-head CI run is required for the Task 4 closeout documentation head before Task 5 production work begins.
 
-## Files Changed Through Task 3
-Task 1:
-- `src/Chat/ChatRequest.php`
-- `src/Chat/ChatResult.php`
-- `src/Chat/ChatFailureReason.php`
-- `src/RAG/GroundingMode.php`
-- `tests/Unit/Chat/ChatRequestContractTest.php`
-- `tests/Unit/Chat/ChatResultContractTest.php`
+## Files Changed Through Task 4
+Task 1: `src/Chat/*` request/result/failure contracts, `src/RAG/GroundingMode.php`, unit contracts.
 
-Task 2:
-- V007–V009 migration/schema/table-name files.
-- conversation/message domain + repository contracts.
-- `src/Database/Repository/WpdbConversationRepository.php`.
-- `src/Database/Repository/WpdbMessageRepository.php`.
-- unit/WordPress persistence fixtures and lifecycle smoke.
+Task 2: V007–V009 migration/schema/table-name files; conversation/message domain and repositories; WordPress persistence/lifecycle fixtures.
 
-Task 3:
-- `src/Memory/ConversationHistory.php`.
-- `src/Memory/ConversationMemory.php`.
-- `src/Memory/MemoryAssembler.php`.
-- `tests/Unit/Memory/MemoryAssemblerTest.php`.
-- `docs/progress/M11-TASK3-PROGRESS.md`.
+Task 3: `src/Memory/ConversationHistory.php`, `ConversationMemory.php`, `MemoryAssembler.php`, unit tests, Task 3 progress record.
+
+Task 4:
+- `src/Citations/Citation.php`
+- `src/Citations/CitationRegistry.php`
+- `src/Citations/CitationValidationResult.php`
+- `src/Citations/CitationValidator.php`
+- `tests/Unit/Citations/CitationRegistryTest.php`
+- `tests/Unit/Citations/CitationValidatorTest.php`
+- `docs/progress/M11-TASK4-CLOSEOUT.md`
 - this milestone ledger.
 
 ## Known Limitations
-Citation validation, prompt construction, deterministic grounding policy, generation orchestration, streaming, persistence/analytics composition, and milestone-wide acceptance remain Tasks 4–9. General conversation-listing/UI semantics remain outside this milestone scope.
+Prompt construction, deterministic grounding policy, generation orchestration, streaming, persistence/analytics composition, and milestone-wide acceptance remain Tasks 5–9. Canonical citation title/URL enrichment requires a trusted retrieval contract that actually exposes those fields; model-authored display links are intentionally not trusted.
 
 ## Documentation Updated
-The M11 ledger and Task 3 progress record now match actual Git/code/CI/review evidence through Task 3 without overstating later work.
+The M11 ledger plus Task 3/Task 4 progress records now match actual Git/code/CI/review evidence through Task 4 without overstating later work.
 
 ## Completion Checklist
-M11 remains incomplete until Tasks 4–9 and all milestone-wide security/performance/integration/merge gates pass.
+M11 remains incomplete until Tasks 5–9 and all milestone-wide security/performance/integration/merge gates pass.
 
 ## Exact Next Unfinished Action
-After exact-head CI passes on the Task 3 closeout documentation head, begin **Task 4 — citation registry and validator** with a test-only behavioral RED proving deterministic `C1..Cn` IDs in final context order, unknown citation rejection, duplicate/ill-formed marker handling, model-authored URL non-authority, canonical lineage preservation, and the registry hard limit. Do not add citation production classes until that RED reaches the behavior suite for the expected missing-contract reason.
+After exact-head CI passes on the Task 4 closeout documentation head, begin **Task 5 — prompt/context builder with evidence isolation** with a test-only behavioral RED. Prove retrieved text is wrapped in explicit untrusted-evidence delimiters, cannot modify system/application policy, memory/evidence ordering is deterministic, only registry-backed citation IDs are exposed to the model, request-local context remains bounded, and provider secrets/raw diagnostics cannot enter the prompt. Do not add Task 5 production classes until that test-only SHA reaches the behavior suite and fails for the expected missing-contract reason.
 
 ## Next Milestone
 M12 — Admin Onboarding/Bot Management.
