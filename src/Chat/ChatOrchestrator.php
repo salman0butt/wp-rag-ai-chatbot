@@ -73,6 +73,7 @@ final class ChatOrchestrator {
 				$access->allow_single_channel_degradation
 			);
 		} catch ( RetrievalException ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::RETRIEVAL_UNAVAILABLE, 'Retrieval is unavailable.' );
 		}
 
@@ -80,6 +81,7 @@ final class ChatOrchestrator {
 		if ( ! $grounding->may_generate ) {
 			$no_answer = $grounding->no_answer;
 			if ( null === $no_answer ) {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 				throw new ChatException( ChatFailureReason::INSUFFICIENT_EVIDENCE, 'Selected evidence is insufficient.' );
 			}
 
@@ -96,16 +98,19 @@ final class ChatOrchestrator {
 			$registry           = CitationRegistry::from_candidates( $retrieval->candidates );
 			$generation_request = $this->prompt_builder->build( $request, $memory, $registry );
 		} catch ( InvalidArgumentException ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::INVALID_REQUEST, 'Chat context is invalid or exceeds its bounds.' );
 		}
 
 		try {
 			$generation = $this->provider->generate( $generation_request );
 		} catch ( Throwable ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'Generation failed.' );
 		}
 
 		if ( GenerationStatus::COMPLETED !== $generation->status ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'Generation failed.' );
 		}
 
@@ -114,6 +119,7 @@ final class ChatOrchestrator {
 			! $validation->valid ||
 			( GroundingMode::STRICT === $request->grounding_mode && array() !== $registry->all() && array() === $validation->citations )
 		) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::INVALID_CITATIONS, 'Generated citations are invalid.' );
 		}
 

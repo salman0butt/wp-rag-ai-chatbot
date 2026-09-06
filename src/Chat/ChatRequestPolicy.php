@@ -35,12 +35,14 @@ final class ChatRequestPolicy {
 	 */
 	public function prepare( ChatRequest $request, GenerationProvider $provider ): RetrievalQuery {
 		if ( ! $provider->available() ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::GENERATION_UNAVAILABLE, 'Generation is unavailable.' );
 		}
 
 		try {
 			return $this->query_preprocessor->preprocess( $request->question );
 		} catch ( InvalidArgumentException ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::INVALID_REQUEST, 'Chat request is invalid.' );
 		}
 	}
