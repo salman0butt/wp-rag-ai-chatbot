@@ -1,5 +1,25 @@
 # Global Status
 
+## Live autonomous checkpoint
+
+- Completed milestones on `main`: **M00-M10**.
+- Current milestone: **M11 — RAG Chat Orchestration, Grounding, Citations, Memory & Streaming**.
+- Current task: **Task 7 — non-streaming `ChatOrchestrator`**.
+- Active branch: `feat/m11-rag-chat-orchestration`.
+- Active PR: **#16** — draft, in progress.
+- Active head: `fa0605cb470d01483536e90f7d72a0d64ba71c40`.
+- Current gate: **Task 7 review regression — pre-test gate failure / invalid RED**.
+- Last valid Task 7 implementation head: `7a0d6753ed1eea3a633fcc22edb21d04696454db`.
+- Last valid exact-head CI on that implementation: push `34032130910` and PR `34032132670` — **SUCCESS**.
+- Independent Task 7 review `5125257980`: **Critical 0 / Important 1** — successful validated output can return without invoking owner-scoped persistence.
+- Review regression head `fa0605cb470d01483536e90f7d72a0d64ba71c40` adds only `tests/Unit/Chat/ChatOrchestratorPersistenceTest.php`.
+- Exact-head CI `34032358421` (push) and `34032360620` (PR) both stopped in `php-quality` at PHPCS before PHPUnit; JS quality, package, and WordPress smoke passed. This is **not** valid behavioral RED evidence.
+- Blocker/wait state: **none external**; the next action is executable immediately.
+- Exact next executable action: fix only the Task 7 persistence regression test's PHPCS/docblock/formatting violations without changing production behavior, rerun exact-head CI until PHPUnit executes and fails for the intended missing scoped-persistence behavior, record that genuine RED, then implement the minimum owner-scoped persistence hook, verify GREEN, and obtain a fresh independent Task 7 re-review with 0 unresolved Critical/Important findings.
+- Last meaningful progress represented here: `2026-09-06T12:11:10Z`.
+
+The live checkpoint is a recovery index, not stronger evidence than Git/code/tests/PR/reviews/exact-SHA CI. Reconcile it on every fresh run and update it at meaningful task gates.
+
 - Completed milestones on `main`: **M00-M10**.
 - M10 feature merge SHA: `4c1f54e667b36c6c8ec09b1dffc81fb20c2034de`.
 - M10 post-merge `main` CI: `34000242280` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN.
@@ -45,4 +65,4 @@ M09 remains complete on `main` at feature merge SHA `0a4ba0d3133e41d28812d5ddb81
 
 ## Exact next unfinished action
 
-Recover **M11 — RAG Chat Orchestration** from its milestone/roadmap documentation and current code/tests. Apply the repository architecture classification gate. If M11 is architectural, run Brainstorm -> design/spec -> implementation plan under Scheduled Mode auto-approval, persist those docs, and only then begin the first implementation task with a strict test-only RED commit. Do not skip M11 design/spec/plan recovery simply because M10 is complete.
+Resume M11 Task 7 from PR #16. The current test-only head `fa0605cb470d01483536e90f7d72a0d64ba71c40` is **not** genuine RED because PHPCS stopped before PHPUnit. Fix only the new persistence regression test's standards violations first, rerun exact-head CI until the intended test executes and fails for the missing owner-scoped persistence behavior, then implement the minimum production persistence hook, verify focused/broad GREEN, and obtain a fresh independent Task 7 re-review with 0 unresolved Critical/Important findings before proceeding to Task 8.
