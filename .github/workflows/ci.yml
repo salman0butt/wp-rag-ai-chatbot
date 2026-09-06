@@ -135,3 +135,100 @@ jobs:
         with:
           name: wp-rag-ai-chatbot
           path: wp-rag-ai-chatbot.zip
+
+  autonomous-ci-status:
+    if: ${{ always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+    needs:
+      - php-quality
+      - js-quality
+      - wordpress-smoke
+      - package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Publish autonomous CI status
+        uses: actions/github-script@v7
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const marker = '<!-- autonomous-ci-status -->';
+            const needs = JSON.parse(process.env.NEEDS_JSON);
+            const jobResults = Object.entries(needs)
+              .map(([name, value]) => ({ name, result: value.result }))
+              .sort((a, b) => a.name.localeCompare(b.name));
+
+            const unsuccessful = jobResults.filter(({ result }) => result !== 'success');
+            const hasFailure = unsuccessful.some(({ result }) => result === 'failure');
+            const hasCancelled = unsuccessful.some(({ result }) => result === 'cancelled');
+            const status = unsuccessful.length === 0
+              ? 'SUCCESS'
+              : hasFailure
+                ? 'FAILURE'
+                : hasCancelled
+                  ? 'CANCELLED'
+                  : 'FAILURE';
+
+            const failedJobs = unsuccessful.length === 0
+              ? 'none'
+              : unsuccessful.map(({ name, result }) => `${name} (${result})`).join(', ');
+            const jobLines = jobResults
+              .map(({ name, result }) => `- \`${name}\`: \`${result}\``)
+              .join('\n');
+
+            const body = [
+              marker,
+              '',
+              '## Autonomous CI Status',
+              '',
+              `head_sha: \`${process.env.HEAD_SHA}\``,
+              `workflow_run: \`${process.env.RUN_ID}\``,
+              `workflow_attempt: \`${process.env.RUN_ATTEMPT}\``,
+              `status: **${status}**`,
+              `failed_jobs: \`${failedJobs}\``,
+              `updated_at: \`${new Date().toISOString()}\``,
+              `run_url: ${process.env.RUN_URL}`,
+              '',
+              '### Job results',
+              jobLines,
+              '',
+              'This comment is a control-plane wake-up signal for autonomous development. ' +
+                'Workers must confirm that `head_sha` still matches the current PR head before acting.'
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = Number(process.env.PR_NUMBER);
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const existing = comments.find(
+              (comment) => typeof comment.body === 'string' && comment.body.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
+
