@@ -13,6 +13,8 @@ use InvalidArgumentException;
 use Throwable;
 use WpRagAiChatbot\Citations\CitationRegistry;
 use WpRagAiChatbot\Citations\CitationValidator;
+use WpRagAiChatbot\Conversations\ConversationMessage;
+use WpRagAiChatbot\Conversations\MessageRepository;
 use WpRagAiChatbot\Memory\ConversationMemory;
 use WpRagAiChatbot\Memory\MemoryAssembler;
 use WpRagAiChatbot\Providers\GenerationProvider;
@@ -30,13 +32,14 @@ final class ChatOrchestrator {
 	/**
 	 * Create one non-streaming orchestrator.
 	 *
-	 * @param ChatRequestPolicy  $request_policy Deterministic pre-generation request policy.
-	 * @param MemoryAssembler    $memory_assembler Owner-scoped bounded memory assembler.
-	 * @param HybridRetriever    $retriever Existing M10 retrieval boundary.
-	 * @param GroundingPolicy    $grounding_policy Deterministic grounding decision boundary.
-	 * @param PromptBuilder      $prompt_builder Bounded prompt/context builder.
-	 * @param GenerationProvider $provider Existing M03 provider-neutral generation boundary.
-	 * @param CitationValidator  $citation_validator Request-local citation validator.
+	 * @param ChatRequestPolicy     $request_policy Deterministic pre-generation request policy.
+	 * @param MemoryAssembler       $memory_assembler Owner-scoped bounded memory assembler.
+	 * @param HybridRetriever       $retriever Existing M10 retrieval boundary.
+	 * @param GroundingPolicy       $grounding_policy Deterministic grounding decision boundary.
+	 * @param PromptBuilder         $prompt_builder Bounded prompt/context builder.
+	 * @param GenerationProvider    $provider Existing M03 provider-neutral generation boundary.
+	 * @param CitationValidator     $citation_validator Request-local citation validator.
+	 * @param MessageRepository|null $message_repository Optional owner-scoped assistant-message persistence boundary.
 	 */
 	public function __construct(
 		private readonly ChatRequestPolicy $request_policy,
@@ -45,15 +48,16 @@ final class ChatOrchestrator {
 		private readonly GroundingPolicy $grounding_policy,
 		private readonly PromptBuilder $prompt_builder,
 		private readonly GenerationProvider $provider,
-		private readonly CitationValidator $citation_validator
+		private readonly CitationValidator $citation_validator,
+		private readonly ?MessageRepository $message_repository = null
 	) {
 	}
 
 	/**
 	 * Run one bounded non-streaming RAG chat request.
 	 *
-	 * Trusted owner/retrieval scope is consumed only by memory and retrieval and never passed to PromptBuilder.
-	 * Persistence/analytics hooks remain the explicitly deferred Task 9 boundary.
+	 * Trusted owner/retrieval scope is consumed only by memory, retrieval, and scoped persistence and is never passed to PromptBuilder.
+	 * Validated assistant output is persisted only when a conversation and persistence boundary are present.
 	 *
 	 * @param ChatRequest       $request Normalized application request.
 	 * @param ChatAccessContext $access Trusted server-side owner and retrieval scope.
@@ -121,6 +125,14 @@ final class ChatOrchestrator {
 		) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::INVALID_CITATIONS, 'Generated citations are invalid.' );
+		}
+
+		if ( null !== $request->conversation_id && null !== $this->message_repository ) {
+			$this->message_repository->append_for_owner(
+				$request->conversation_id,
+				$access->owner_scope,
+				new ConversationMessage( 'assistant', $generation->output_text )
+			);
 		}
 
 		return new ChatResult(
