@@ -4,6 +4,7 @@
  *
  * @package WpRagAiChatbot
  */
+
 declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Conversations;
