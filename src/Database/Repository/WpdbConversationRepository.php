@@ -64,7 +64,6 @@ final class WpdbConversationRepository implements ConversationRepository {
 	 * Create one owner-scoped conversation.
 	 *
 	 * @param string $owner_scope Trusted owner scope.
-	 * @throws InvalidArgumentException When owner scope is invalid.
 	 * @throws DatabaseException When persistence fails.
 	 */
 	public function create_for_owner( string $owner_scope ): Conversation {
