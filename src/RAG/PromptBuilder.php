@@ -37,7 +37,7 @@ final class PromptBuilder {
 			. "\n"
 			. $context->render()
 			. "\n<QUESTION>\n"
-			. $request->question
+			. self::escape_untrusted( $request->question )
 			. "\n</QUESTION>";
 
 		return new GenerationRequest(
@@ -57,13 +57,22 @@ final class PromptBuilder {
 		$output = "<MEMORY>\n";
 
 		if ( null !== $memory->summary_version && null !== $memory->summary_text ) {
-			$output .= '[SUMMARY v' . $memory->summary_version . "]\n" . $memory->summary_text . "\n";
+			$output .= '[SUMMARY v' . $memory->summary_version . "]\n" . self::escape_untrusted( $memory->summary_text ) . "\n";
 		}
 
 		foreach ( $memory->messages as $message ) {
-			$output .= '[' . $message->role . "]\n" . $message->content . "\n";
+			$output .= '[' . self::escape_untrusted( $message->role ) . "]\n" . self::escape_untrusted( $message->content ) . "\n";
 		}
 
 		return $output . '</MEMORY>';
+	}
+
+	/**
+	 * Escape untrusted text so it cannot impersonate machine-generated section delimiters.
+	 *
+	 * @param string $text Untrusted text.
+	 */
+	private static function escape_untrusted( string $text ): string {
+		return htmlspecialchars( $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false );
 	}
 }
