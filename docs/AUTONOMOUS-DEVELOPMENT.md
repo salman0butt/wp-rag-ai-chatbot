@@ -257,20 +257,102 @@ After integration, verify fresh default-branch CI before marking the milestone c
 
 ## 12. Concurrency and duplicate-run safety
 
-Hourly schedules can overlap with CI or another long-running invocation.
+Hourly schedules, event-triggered runs, manual Work runs, and CI-triggered continuations can overlap. Autonomous workers must serialize repository writes for the same active unit.
 
 Before writing:
 
 1. inspect active automation/feature branches and PRs;
 2. inspect whether CI is already running for the same task;
 3. inspect recent commits for the same milestone/task;
-4. reuse/resume existing work instead of creating a parallel implementation.
+4. reuse/resume existing work instead of creating a parallel implementation;
+5. when an active PR exists, obey the canonical PR lease protocol below before the first repository write.
 
-Treat another worker as active only when there is fresh objective evidence, such as a recent conflicting commit, a currently running CI/check tied to the same unit, or an explicit unexpired repository-approved lease/ownership signal. A stale branch, old status text, historical CI, or merely open PR is not sufficient evidence of an active conflicting worker.
+### 12.1 Canonical PR worker lease
 
-If another active run is clearly modifying the same unit and conflicting writes cannot be safely avoided, make no competing implementation changes. Record/report the state and exit that invocation.
+For active PR work, keep exactly one top-level PR conversation comment containing:
 
-If work appears abandoned — no fresh conflicting commits, no running CI for the unit, and no explicit active ownership signal — recover from Git/PR/CI and resume rather than waiting indefinitely.
+`<!-- autonomous-worker-lease -->`
+
+That comment is the canonical advisory lease for autonomous repository writes on that PR. Do not create a committed lock file merely to represent worker ownership.
+
+The lease records at least:
+
+- `state`: `ACTIVE` or `RELEASED`;
+- `milestone`;
+- `task`;
+- `branch`;
+- `owner`;
+- `lease_id`;
+- `head_sha`;
+- `acquired_at`;
+- `expires_at`;
+- `last_checkpoint_at`.
+
+Default lease lifetime: **30 minutes** from acquisition or renewal.
+
+### 12.2 Lease acquisition
+
+Before the first repository write on an active PR:
+
+1. fetch the PR and the canonical lease comment;
+2. reconcile the lease `head_sha`, milestone, and task against current Git/PR state;
+3. if `state: RELEASED`, the worker may attempt acquisition;
+4. if `state: ACTIVE` and `expires_at` is in the past, treat the lease as stale and the worker may recover/take over;
+5. if `state: ACTIVE` and unexpired for the same unit, do not make competing repository writes;
+6. immediately before claiming, re-fetch the lease and PR head;
+7. acquire only if the lease is still eligible and the head/task have not changed unexpectedly;
+8. write a unique `lease_id`, owner identity for the invocation, current head SHA, acquisition time, and a new expiry.
+
+The re-read-before-write step is mandatory. The lease is advisory rather than a transactional database lock, so fresh objective Git/PR evidence remains part of the collision check.
+
+### 12.3 Lease renewal and transfer
+
+Renew the lease after meaningful progress checkpoints, including:
+
+- genuine behavioral RED established;
+- production implementation commit;
+- focused/broad GREEN established;
+- review completed;
+- Critical/Important finding fixed;
+- exact-head CI transition requiring continued work;
+- merge/closeout transition when the same invocation will continue.
+
+A renewal updates at least `head_sha`, `last_checkpoint_at`, and `expires_at = now + 30 minutes`.
+
+When one task or milestone completes and the same invocation immediately continues to the next legitimate unit, **transfer/renew the existing lease** to the new milestone/task instead of releasing it between units.
+
+### 12.4 Lease release and crash recovery
+
+Release the lease only when the invocation genuinely ends or no further write work will be performed by that invocation.
+
+On release:
+
+- set `state: RELEASED`;
+- set `owner: none`;
+- set `lease_id: none`;
+- set `acquired_at: none`;
+- set `expires_at: none`;
+- preserve the latest milestone, task, branch, head SHA, and checkpoint timestamp for recovery context.
+
+A crashed/terminated worker requires no manual cleanup. Once an ACTIVE lease expires, a later worker may recover current Git/PR/CI state and take it over.
+
+An expired lease must never permanently block development.
+
+### 12.5 Conflict and stale-worker rules
+
+Treat another worker as active only when there is fresh objective evidence, such as:
+
+- an unexpired canonical lease for the same unit;
+- a recent conflicting commit combined with evidence the writer is still progressing;
+- a currently running write-sensitive workflow explicitly associated with that worker/unit.
+
+A stale branch, old status text, historical CI, merely open PR, or expired lease is not sufficient evidence of an active conflicting worker.
+
+If another active worker owns the same unit and conflicting writes cannot be safely avoided, make no competing implementation changes. Safe read-only/non-conflicting analysis may continue; otherwise record/report the collision and end that invocation.
+
+If work appears abandoned — no fresh conflicting commits, no relevant running work, and no unexpired ownership signal — recover from Git/PR/CI and resume rather than waiting indefinitely.
+
+Lease-comment updates are control-plane activity. Event-triggered automation must not recursively start duplicate coding work solely because the lease comment itself was created, renewed, transferred, or released.
 
 Do not create repeated specs/plans for an already-selected design simply because a new scheduled session starts.
 
