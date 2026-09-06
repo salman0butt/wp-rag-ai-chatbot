@@ -7,8 +7,9 @@
 - Current task: **Task 7 — non-streaming `ChatOrchestrator`**.
 - Active branch: `feat/m11-rag-chat-orchestration`.
 - Active PR: **#16** — draft, in progress.
-- Canonical autonomous lease comment: PR #16 comment `5559419698` — **RELEASED** while automation is paused.
+- Canonical autonomous lease comment: PR #16 comment `5559419698` — last recorded state **RELEASED**; every worker must re-fetch the comment before writes.
 - Active head: `fa0605cb470d01483536e90f7d72a0d64ba71c40`.
+- CI wake-up signal: installed on `main` by commit `71153c7ddfcfda26cdbfe06fbd0f02aeacace3d6`; same-repository PR CI updates one sticky `<!-- autonomous-ci-status -->` comment after the permanent jobs complete.
 - Current gate: **Task 7 review regression — pre-test gate failure / invalid RED**.
 - Last valid Task 7 implementation head: `7a0d6753ed1eea3a633fcc22edb21d04696454db`.
 - Last valid exact-head CI on that implementation: push `34032130910` and PR `34032132670` — **SUCCESS**.
