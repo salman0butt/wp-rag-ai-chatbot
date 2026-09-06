@@ -108,8 +108,9 @@ final class DeterministicGroundingPolicyTest extends TestCase {
 	/**
 	 * Invoke the Task 6 policy without statically depending on production contracts before RED is proven.
 	 *
-	 * @param GroundingMode                   $mode Grounding mode.
-	 * @param list<RetrievalCandidate>        $candidates Selected retrieval candidates.
+	 * @param GroundingMode $mode Grounding mode.
+	 * @param array         $candidates Selected retrieval candidates.
+	 * @phpstan-param list<RetrievalCandidate> $candidates
 	 */
 	private function decide( GroundingMode $mode, array $candidates ): object {
 		$class = 'WpRagAiChatbot\\RAG\\DeterministicGroundingPolicy';
@@ -135,6 +136,8 @@ final class DeterministicGroundingPolicyTest extends TestCase {
 
 	/**
 	 * Build one selected retrieval candidate using an existing M10 deterministic confidence value.
+	 *
+	 * @param RetrievalConfidence $confidence Existing deterministic retrieval confidence.
 	 */
 	private function candidate( RetrievalConfidence $confidence ): RetrievalCandidate {
 		return new RetrievalCandidate(
