@@ -68,6 +68,7 @@ final class ChatResultContractTest extends TestCase {
 			'generation_unavailable',
 			'generation_failed',
 			'invalid_citations',
+			'persistence_failed',
 			'cancelled',
 		);
 		$actual   = array_map(
