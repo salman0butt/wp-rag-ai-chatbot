@@ -43,15 +43,15 @@ The review was explicitly recorded as a coordinator review and is **not** being 
 
 ## Verification
 
-Exact fixed implementation SHA `15f90f9d1014576e57ad1f3e9ab6a31bb842a0a1` is under push CI `34026283976`.
-
-Verified so far on that exact SHA:
+Exact fixed implementation SHA `15f90f9d1014576e57ad1f3e9ab6a31bb842a0a1` passed push CI `34026283976` across all four permanent jobs:
 
 - `php-quality` — SUCCESS: PHPStan 0 errors; PHPUnit 589/589 tests / 2,423 assertions; Composer audit reports no security vulnerability advisories.
 - `js-quality` — SUCCESS.
 - `package` — SUCCESS.
-- `wordpress-smoke` — still completing at the time this progress record was created; this record must not be treated as final exact-head verification until that permanent job is GREEN.
+- `wordpress-smoke` — SUCCESS, including activation, V009 database lifecycle, providers, knowledge, file-ingestion, and WooCommerce knowledge checks.
 - Package artifact `9987153515`, 847,563 bytes, digest `sha256:49b3cb6f756f39c1d43beb7945c426a22939e73457a16fb7df4bd2e063a916bc`, tied to exact implementation SHA `15f90f9d...`.
+
+A fresh exact-head CI run is still required on the final documentation head before this run can claim final branch-head verification.
 
 ## Independent Review Status
 
