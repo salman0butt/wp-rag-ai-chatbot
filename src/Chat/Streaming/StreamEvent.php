@@ -26,6 +26,7 @@ final readonly class StreamEvent {
 	 * @param string|null            $text Normalized text payload when applicable.
 	 * @param string|null            $citation_id Request-local citation ID when applicable.
 	 * @param ChatFailureReason|null $error_reason Stable safe error reason when applicable.
+	 * @throws InvalidArgumentException When event bounds or type invariants are invalid.
 	 */
 	public function __construct(
 		public int $sequence,
