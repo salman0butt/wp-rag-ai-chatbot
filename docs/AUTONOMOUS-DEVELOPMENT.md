@@ -388,6 +388,59 @@ If work appears abandoned — no fresh conflicting commits, no relevant running 
 
 Lease-comment updates are control-plane activity. Event-triggered automation must not recursively start duplicate coding work solely because the lease comment itself was created, renewed, transferred, or released.
 
+### 12.6 Worker health states
+
+The live checkpoint may summarize autonomous worker health with one of these advisory states:
+
+- `ACTIVE` — an unexpired lease and fresh progress evidence indicate a worker currently owns the unit;
+- `WAITING_CI` — the current relevant head has required CI still running and no immediate write is justified;
+- `IDLE_READY` — no active conflicting worker exists and the recorded next action is immediately executable;
+- `STALLED` — roadmap work remains, no active lease/relevant CI is running, and meaningful progress has not advanced despite an executable next action;
+- `BLOCKED_EXTERNAL` — a true credential, permission, service, contradiction, or other external blocker prevents safe progress;
+- `COMPLETE` — the defined roadmap has passed final completion verification.
+
+These states are recovery hints, not stronger evidence than the current PR, lease, Git graph, reviews, code/tests, and exact-SHA CI.
+
+### 12.7 Hourly watchdog and stale-worker recovery
+
+The event-triggered autonomous task is the normal fast continuation path. The hourly scheduled task is a recovery watchdog and must not blindly create a second writer.
+
+At the beginning of every watchdog run:
+
+1. read the current default-branch controller documents and recover the live checkpoint;
+2. verify default-branch/post-merge health before feature work;
+3. discover the active PR/branch, if any;
+4. re-fetch the canonical worker lease;
+5. re-fetch the current PR head SHA, exact-head CI/checks, autonomous CI-status signal if present, unresolved reviews/threads, recent commits, and the exact next task;
+6. reconcile all of that evidence before deciding whether a repository write is allowed.
+
+Apply this decision order:
+
+1. **broken default branch/post-merge CI** — repair first;
+2. **unexpired ACTIVE lease for the same unit** — do not compete; perform only safe read-only/non-conflicting work, then end if no independent work is useful;
+3. **current exact-head CI failure** with no active conflicting lease — acquire/recover the lease and debug/fix;
+4. **unresolved Critical/Important finding** with no active conflicting lease — acquire/recover the lease and run the required regression/fix/re-review loop;
+5. **expired lease** — treat the prior worker as stale, recover current Git/PR/CI state, acquire a fresh lease, and continue;
+6. **RELEASED/no lease + executable unfinished work** — acquire the lease and resume immediately;
+7. **current exact-head CI still running** — mark/recover as `WAITING_CI`; use the invocation only for safe non-conflicting review/docs/analysis unless new evidence justifies a new SHA;
+8. **no active PR but roadmap incomplete** — recover the next unfinished milestone/task from default-branch state and begin/resume it according to the normal controller;
+9. **roadmap complete** — run the repository-wide completion gate before recording `COMPLETE`.
+
+Work is considered **stalled/abandoned and must be resumed** when all of the following are true after fresh recovery:
+
+- the defined roadmap is incomplete;
+- no unexpired worker lease protects the current unit;
+- no relevant required CI is currently running;
+- no true external blocker exists;
+- an exact next action is executable;
+- there is no fresh objective evidence that another worker is actively progressing the same unit.
+
+Do not use a fixed elapsed-time threshold as the sole proof of a stall. Timestamps such as `last_progress_at` help recovery, but current lease/CI/PR/commit/review evidence decides whether takeover is safe.
+
+A watchdog takeover must still perform the normal re-read-before-lease-acquisition rule and must never overwrite a newer PR head or newly acquired lease observed during acquisition.
+
+If a watchdog discovers that the event-driven chain is healthy, it should leave it alone rather than manufacture work.
+
 Do not create repeated specs/plans for an already-selected design simply because a new scheduled session starts.
 
 ## 13. Architectural decision defaults
@@ -419,12 +472,16 @@ After meaningful checkpoints, and always before ending a productive run, update 
 - current milestone and current task;
 - active branch and PR;
 - exact active head SHA;
+- `worker_state` using the advisory health states above;
+- current `lease_state`, lease ID/owner/expiry when applicable;
 - current engineering gate/state, such as design, test-only RED, implementation GREEN candidate, review-fix, exact-head CI, merge, or post-merge verification;
 - latest **valid** exact-SHA CI evidence and whether it is still current;
+- latest observed CI state for the current head, including running/failed/success when known;
 - unresolved Critical/Important review findings;
 - current blocker/wait condition, if any;
 - exact next executable action;
-- last meaningful progress timestamp when useful.
+- `last_progress_at` for the last meaningful repository progress checkpoint when useful;
+- `watchdog_observed_at` or equivalent recovery-observation timestamp when the checkpoint itself is refreshed without new engineering progress.
 
 For active feature work, maintain the freshest checkpoint on the active branch at meaningful task gates. The default-branch checkpoint may act as a recovery index that points to the active PR/head until that work is integrated.
 
