@@ -24,24 +24,13 @@ use WpRagAiChatbot\Retrieval\RetrievalCandidate;
  * Proves deterministic event ordering, bounds, citation validation, errors, and cancellation cleanup.
  */
 final class StreamingChatOrchestratorTest extends TestCase {
-	/**
-	 * Valid output emits ordered deltas, trusted citations, and one terminal completion.
-	 */
+	/** Valid output emits ordered deltas, trusted citations, and one terminal completion. */
 	public function test_valid_stream_emits_monotonic_normalized_events(): void {
 		$stream = $this->stream( array( 'Hello ', 'world [C1]' ) );
-		$events = iterator_to_array(
-			( new StreamingChatOrchestrator() )->stream( $stream, $this->registry(), new Cancellation() ),
-			false
-		);
+		$events = iterator_to_array( ( new StreamingChatOrchestrator() )->stream( $stream, $this->registry(), new Cancellation() ), false );
 
 		self::assertSame(
-			array(
-				StreamEventType::MESSAGE_START,
-				StreamEventType::MESSAGE_DELTA,
-				StreamEventType::MESSAGE_DELTA,
-				StreamEventType::CITATION,
-				StreamEventType::MESSAGE_COMPLETE,
-			),
+			array( StreamEventType::MESSAGE_START, StreamEventType::MESSAGE_DELTA, StreamEventType::MESSAGE_DELTA, StreamEventType::CITATION, StreamEventType::MESSAGE_COMPLETE ),
 			array_map( static fn ( StreamEvent $event ): StreamEventType => $event->type, $events )
 		);
 		self::assertSame( array( 0, 1, 2, 3, 4 ), array_map( static fn ( StreamEvent $event ): int => $event->sequence, $events ) );
@@ -49,20 +38,13 @@ final class StreamingChatOrchestratorTest extends TestCase {
 		self::assertTrue( $stream->closed );
 	}
 
-	/**
-	 * Oversized provider deltas are split before client-visible emission.
-	 */
+	/** Oversized provider deltas are split before client-visible emission. */
 	public function test_oversized_delta_is_split_into_bounded_events(): void {
 		$text   = str_repeat( 'a', 5000 );
 		$stream = $this->stream( array( $text ) );
-		$events = iterator_to_array(
-			( new StreamingChatOrchestrator() )->stream( $stream, CitationRegistry::from_candidates( array() ), new Cancellation() ),
-			false
-		);
+		$events = iterator_to_array( ( new StreamingChatOrchestrator() )->stream( $stream, CitationRegistry::from_candidates( array() ), new Cancellation() ), false );
+		$deltas = array_values( array_filter( $events, static fn ( StreamEvent $event ): bool => StreamEventType::MESSAGE_DELTA === $event->type ) );
 
-		$deltas = array_values(
-			array_filter( $events, static fn ( StreamEvent $event ): bool => StreamEventType::MESSAGE_DELTA === $event->type )
-		);
 		self::assertCount( 2, $deltas );
 		self::assertSame( $text, implode( '', array_map( static fn ( StreamEvent $event ): string => (string) $event->text, $deltas ) ) );
 		foreach ( $deltas as $delta ) {
@@ -71,15 +53,10 @@ final class StreamingChatOrchestratorTest extends TestCase {
 		self::assertSame( StreamEventType::MESSAGE_COMPLETE, $events[ count( $events ) - 1 ]->type );
 	}
 
-	/**
-	 * Provider failures are normalized without leaking raw exception text.
-	 */
+	/** Provider failures are normalized without leaking raw exception text. */
 	public function test_provider_exception_emits_one_sanitized_terminal_error(): void {
 		$stream = $this->throwing_stream();
-		$events = iterator_to_array(
-			( new StreamingChatOrchestrator() )->stream( $stream, CitationRegistry::from_candidates( array() ), new Cancellation() ),
-			false
-		);
+		$events = iterator_to_array( ( new StreamingChatOrchestrator() )->stream( $stream, CitationRegistry::from_candidates( array() ), new Cancellation() ), false );
 
 		self::assertCount( 2, $events );
 		self::assertSame( StreamEventType::MESSAGE_START, $events[0]->type );
@@ -89,18 +66,12 @@ final class StreamingChatOrchestratorTest extends TestCase {
 		self::assertTrue( $stream->closed );
 	}
 
-	/**
-	 * Cancellation prevents provider consumption and closes stream resources.
-	 */
+	/** Cancellation prevents provider consumption and closes stream resources. */
 	public function test_pre_cancelled_stream_is_not_consumed_and_is_closed(): void {
 		$cancellation = new Cancellation();
 		$cancellation->cancel();
 		$stream = $this->stream( array( 'must not be consumed' ) );
-
-		$events = iterator_to_array(
-			( new StreamingChatOrchestrator() )->stream( $stream, CitationRegistry::from_candidates( array() ), $cancellation ),
-			false
-		);
+		$events = iterator_to_array( ( new StreamingChatOrchestrator() )->stream( $stream, CitationRegistry::from_candidates( array() ), $cancellation ), false );
 
 		self::assertSame( array( StreamEventType::MESSAGE_START, StreamEventType::ERROR ), array_map( static fn ( StreamEvent $event ): StreamEventType => $event->type, $events ) );
 		self::assertSame( ChatFailureReason::CANCELLED, $events[1]->error_reason );
@@ -108,30 +79,30 @@ final class StreamingChatOrchestratorTest extends TestCase {
 		self::assertTrue( $stream->closed );
 	}
 
-	/**
-	 * Unknown citations fail closed without a completion event.
-	 */
+	/** Unknown citations fail closed without a completion event. */
 	public function test_invalid_citation_is_terminal_error_without_completion(): void {
 		$stream = $this->stream( array( 'Unsupported [C9]' ) );
-		$events = iterator_to_array(
-			( new StreamingChatOrchestrator() )->stream( $stream, $this->registry(), new Cancellation() ),
-			false
-		);
+		$events = iterator_to_array( ( new StreamingChatOrchestrator() )->stream( $stream, $this->registry(), new Cancellation() ), false );
 
 		self::assertSame( StreamEventType::ERROR, $events[ count( $events ) - 1 ]->type );
 		self::assertSame( ChatFailureReason::INVALID_CITATIONS, $events[ count( $events ) - 1 ]->error_reason );
 		self::assertNotContains( StreamEventType::MESSAGE_COMPLETE, array_map( static fn ( StreamEvent $event ): StreamEventType => $event->type, $events ) );
 	}
 
-	/**
-	 * Build a trusted one-citation registry.
-	 */
-	private function registry(): CitationRegistry {
-		return CitationRegistry::from_candidates(
-			array(
-				new RetrievalCandidate( 'chunk-1', 'doc-1', 1, 'Trusted evidence.', 'en', 'public', array(), 1.0 ),
-			)
+	/** Cleanup failures must not escape after a terminal event. */
+	public function test_cleanup_exception_does_not_escape_or_add_second_terminal_event(): void {
+		$events = iterator_to_array(
+			( new StreamingChatOrchestrator() )->stream( $this->cleanup_throwing_stream(), CitationRegistry::from_candidates( array() ), new Cancellation() ),
+			false
 		);
+
+		self::assertSame( StreamEventType::MESSAGE_COMPLETE, $events[ count( $events ) - 1 ]->type );
+		self::assertCount( 1, array_filter( $events, static fn ( StreamEvent $event ): bool => in_array( $event->type, array( StreamEventType::MESSAGE_COMPLETE, StreamEventType::ERROR ), true ) ) );
+	}
+
+	/** Build a trusted one-citation registry. */
+	private function registry(): CitationRegistry {
+		return CitationRegistry::from_candidates( array( new RetrievalCandidate( 'chunk-1', 'doc-1', 1, 'Trusted evidence.', 'en', 'public', array(), 1.0 ) ) );
 	}
 
 	/**
@@ -142,25 +113,11 @@ final class StreamingChatOrchestratorTest extends TestCase {
 	 */
 	private function stream( array $deltas ): GenerationStream {
 		return new class( $deltas ) implements GenerationStream {
-			/**
-			 * Remaining normalized deltas.
-			 *
-			 * @var list<string>
-			 */
+			/** @var list<string> Remaining normalized deltas. */
 			private array $deltas;
-
-			/**
-			 * Number of attempted reads.
-			 *
-			 * @var int
-			 */
+			/** @var int Number of attempted reads. */
 			public int $next_calls = 0;
-
-			/**
-			 * Whether cleanup ran.
-			 *
-			 * @var bool
-			 */
+			/** @var bool Whether cleanup ran. */
 			public bool $closed = false;
 
 			/**
@@ -173,47 +130,48 @@ final class StreamingChatOrchestratorTest extends TestCase {
 				$this->deltas = $deltas;
 			}
 
-			/**
-			 * Read the next deterministic delta.
-			 */
+			/** Read the next deterministic delta. */
 			public function next_delta(): ?string {
 				++$this->next_calls;
 				return array_shift( $this->deltas );
 			}
 
-			/**
-			 * Record provider stream cleanup.
-			 */
+			/** Record provider stream cleanup. */
 			public function close(): void {
 				$this->closed = true;
 			}
 		};
 	}
 
-	/**
-	 * Build a stream fake that throws a raw provider diagnostic.
-	 */
+	/** Build a stream fake that throws a raw provider diagnostic. */
 	private function throwing_stream(): GenerationStream {
 		return new class() implements GenerationStream {
-			/**
-			 * Whether cleanup ran.
-			 *
-			 * @var bool
-			 */
+			/** @var bool Whether cleanup ran. */
 			public bool $closed = false;
 
-			/**
-			 * Throw the deterministic raw provider failure.
-			 */
+			/** Throw the deterministic raw provider failure. */
 			public function next_delta(): ?string {
 				throw new RuntimeException( 'raw vendor diagnostic must not be exposed' );
 			}
 
-			/**
-			 * Record provider stream cleanup.
-			 */
+			/** Record provider stream cleanup. */
 			public function close(): void {
 				$this->closed = true;
+			}
+		};
+	}
+
+	/** Build a stream whose cleanup throws a raw provider diagnostic. */
+	private function cleanup_throwing_stream(): GenerationStream {
+		return new class() implements GenerationStream {
+			/** Return immediate clean completion. */
+			public function next_delta(): ?string {
+				return null;
+			}
+
+			/** Throw a raw cleanup failure. */
+			public function close(): void {
+				throw new RuntimeException( 'raw cleanup diagnostic must not be exposed' );
 			}
 		};
 	}
