@@ -32,7 +32,7 @@ final class MemoryAssembler {
 	 */
 	public function assemble( string $conversation_id, string $owner_scope ): ConversationMemory {
 		$messages = $this->history->recent_for_owner( $conversation_id, $owner_scope, self::MAX_MESSAGES );
-		$messages = array_slice( array_values( $messages ), -self::MAX_MESSAGES );
+		$messages = array_slice( $messages, -self::MAX_MESSAGES );
 
 		$selected = array();
 		$bytes    = 0;
