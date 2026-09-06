@@ -206,6 +206,40 @@ Do not waste an invocation merely waiting for CI when safe, non-conflicting work
 
 Never treat that parallel work as a substitute for CI evidence. Do not merge until required exact-final-SHA CI is green. If a new commit changes the candidate SHA, prior CI evidence becomes stale and the new SHA must be verified.
 
+### 9.1 Autonomous CI completion wake-up signal
+
+For same-repository pull requests, the permanent `.github/workflows/ci.yml` workflow publishes one sticky top-level PR conversation comment after the four permanent CI jobs reach terminal states.
+
+The comment contains the marker:
+
+`<!-- autonomous-ci-status -->`
+
+The CI workflow must update the existing marker comment rather than create a new status comment for every run. The signal records at least:
+
+- the real PR head SHA from `github.event.pull_request.head.sha`;
+- workflow run ID and attempt;
+- aggregate status;
+- non-successful job names/results;
+- individual permanent-job results;
+- update timestamp and workflow-run URL.
+
+The wake-up job must:
+
+1. depend on all permanent CI jobs and use `always()` so failure/cancellation can still be signaled;
+2. run only for `pull_request` events whose head repository is this repository;
+3. use narrowly scoped permissions, with write access only to the PR conversation comment;
+4. never expose secrets or raw logs in the signal;
+5. never use the synthetic PR merge SHA as the autonomous action SHA;
+6. preserve the existing CI jobs and their results unchanged.
+
+Autonomous workers may treat an `autonomous-ci-status` comment update as a wake-up signal only when its `head_sha` matches the current PR head and the represented workflow result is new/relevant to the current gate.
+
+A stale signal for an older head SHA is not actionable evidence. Re-fetch the current PR, exact-head CI, reviews, and lease before repository writes.
+
+The CI-status comment is control-plane activity. Updating it must not by itself justify duplicate work, and workers must not recursively rewrite it.
+
+For fork-origin pull requests, this repository does not publish the write-capable status comment; normal CI remains authoritative.
+
 ## 10. Branch, commit, PR, and merge authorization
 
 Scheduled mode explicitly authorizes the agent to:
