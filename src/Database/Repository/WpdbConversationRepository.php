@@ -40,10 +40,11 @@ final class WpdbConversationRepository implements ConversationRepository {
 	 *
 	 * @param string $conversation_id Stable conversation identifier.
 	 * @param string $owner_scope Trusted owner scope.
+	 * @throws InvalidArgumentException When either persisted identifier is invalid.
 	 */
 	public function find_for_owner( string $conversation_id, string $owner_scope ): ?Conversation {
-		$conversation_id = $this->boundedIdentifier( $conversation_id, 'Conversation identifier' );
-		$owner_scope     = $this->boundedIdentifier( $owner_scope, 'Owner scope' );
+		$conversation_id = $this->boundedConversationId( $conversation_id );
+		$owner_scope     = $this->boundedOwnerScope( $owner_scope );
 		$sql             = $this->connection->prepare(
 			'SELECT conversation_id, owner_scope FROM %i WHERE conversation_id = %s AND owner_scope = %s LIMIT 1',
 			$this->tables->conversations(),
@@ -56,20 +57,18 @@ final class WpdbConversationRepository implements ConversationRepository {
 			return null;
 		}
 
-		return new Conversation(
-			(string) $row['conversation_id'],
-			(string) $row['owner_scope']
-		);
+		return new Conversation( (string) $row['conversation_id'], (string) $row['owner_scope'] );
 	}
 
 	/**
 	 * Create one owner-scoped conversation.
 	 *
 	 * @param string $owner_scope Trusted owner scope.
+	 * @throws InvalidArgumentException When owner scope is invalid.
 	 * @throws DatabaseException When persistence fails.
 	 */
 	public function create_for_owner( string $owner_scope ): Conversation {
-		$owner_scope     = $this->boundedIdentifier( $owner_scope, 'Owner scope' );
+		$owner_scope     = $this->boundedOwnerScope( $owner_scope );
 		$conversation_id = bin2hex( random_bytes( 16 ) );
 		$now             = gmdate( 'Y-m-d H:i:s' );
 		$result          = $this->connection->insert(
@@ -91,20 +90,36 @@ final class WpdbConversationRepository implements ConversationRepository {
 	}
 
 	/**
-	 * Normalize and hard-bound one persisted identifier.
+	 * Normalize and hard-bound a conversation identifier.
 	 *
 	 * @param string $value Raw identifier.
-	 * @param string $label Safe validation label.
+	 * @throws InvalidArgumentException When the identifier is blank or oversized.
 	 */
-	private function boundedIdentifier( string $value, string $label ): string {
+	private function boundedConversationId( string $value ): string {
 		$value = trim( $value );
 		if ( '' === $value ) {
-			throw new InvalidArgumentException( $label . ' must not be blank.' );
+			throw new InvalidArgumentException( 'Conversation identifier must not be blank.' );
 		}
 		if ( strlen( $value ) > self::MAX_IDENTIFIER_BYTES ) {
-			throw new InvalidArgumentException( $label . ' exceeds the persistence limit.' );
+			throw new InvalidArgumentException( 'Conversation identifier exceeds the persistence limit.' );
 		}
+		return $value;
+	}
 
+	/**
+	 * Normalize and hard-bound trusted owner scope.
+	 *
+	 * @param string $value Raw owner scope.
+	 * @throws InvalidArgumentException When owner scope is blank or oversized.
+	 */
+	private function boundedOwnerScope( string $value ): string {
+		$value = trim( $value );
+		if ( '' === $value ) {
+			throw new InvalidArgumentException( 'Owner scope must not be blank.' );
+		}
+		if ( strlen( $value ) > self::MAX_IDENTIFIER_BYTES ) {
+			throw new InvalidArgumentException( 'Owner scope exceeds the persistence limit.' );
+		}
 		return $value;
 	}
 }
