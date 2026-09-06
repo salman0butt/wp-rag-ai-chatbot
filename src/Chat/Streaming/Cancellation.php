@@ -29,8 +29,6 @@ final class Cancellation {
 
 	/**
 	 * Whether cancellation has been requested.
-	 *
-	 * @phpstan-impure
 	 */
 	public function is_cancelled(): bool {
 		return $this->cancelled;
