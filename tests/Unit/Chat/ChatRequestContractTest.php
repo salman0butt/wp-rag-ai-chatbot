@@ -43,6 +43,34 @@ final class ChatRequestContractTest extends TestCase {
 	}
 
 	/**
+	 * Caller-selected model identifiers are hard-bounded before provider dispatch.
+	 */
+	public function test_request_rejects_oversized_model_identifier(): void {
+		$request_class = 'WpRagAiChatbot\\Chat\\ChatRequest';
+		$mode_class    = 'WpRagAiChatbot\\RAG\\GroundingMode';
+
+		$request = new ReflectionClass( $request_class );
+		$mode    = constant( $mode_class . '::STRICT' );
+
+		$this->expectException( InvalidArgumentException::class );
+		$request->newInstance( 'Question?', str_repeat( 'm', 256 ), $mode );
+	}
+
+	/**
+	 * Caller-supplied conversation identifiers are bounded before repository use.
+	 */
+	public function test_request_rejects_oversized_conversation_identifier(): void {
+		$request_class = 'WpRagAiChatbot\\Chat\\ChatRequest';
+		$mode_class    = 'WpRagAiChatbot\\RAG\\GroundingMode';
+
+		$request = new ReflectionClass( $request_class );
+		$mode    = constant( $mode_class . '::STRICT' );
+
+		$this->expectException( InvalidArgumentException::class );
+		$request->newInstance( 'Question?', 'test-model', $mode, str_repeat( 'c', 256 ) );
+	}
+
+	/**
 	 * A valid request preserves normalized application inputs and the default output ceiling.
 	 */
 	public function test_valid_request_preserves_normalized_inputs(): void {
