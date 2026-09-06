@@ -43,11 +43,12 @@ final class WpdbMessageRepository implements MessageRepository {
 	 * @param string              $conversation_id Stable conversation identifier.
 	 * @param string              $owner_scope Trusted owner scope.
 	 * @param ConversationMessage $message Message to append.
+	 * @throws InvalidArgumentException When a persisted field is invalid.
 	 * @throws DatabaseException When the append fails or owner scope does not match.
 	 */
 	public function append_for_owner( string $conversation_id, string $owner_scope, ConversationMessage $message ): void {
-		$conversation_id = $this->boundedIdentifier( $conversation_id, 'Conversation identifier' );
-		$owner_scope     = $this->boundedIdentifier( $owner_scope, 'Owner scope' );
+		$conversation_id = $this->boundedConversationId( $conversation_id );
+		$owner_scope     = $this->boundedOwnerScope( $owner_scope );
 		$role            = strtolower( trim( $message->role ) );
 		$content         = $message->content;
 
@@ -86,20 +87,36 @@ final class WpdbMessageRepository implements MessageRepository {
 	}
 
 	/**
-	 * Normalize and hard-bound one persisted identifier.
+	 * Normalize and hard-bound a conversation identifier.
 	 *
 	 * @param string $value Raw identifier.
-	 * @param string $label Safe validation label.
+	 * @throws InvalidArgumentException When the identifier is blank or oversized.
 	 */
-	private function boundedIdentifier( string $value, string $label ): string {
+	private function boundedConversationId( string $value ): string {
 		$value = trim( $value );
 		if ( '' === $value ) {
-			throw new InvalidArgumentException( $label . ' must not be blank.' );
+			throw new InvalidArgumentException( 'Conversation identifier must not be blank.' );
 		}
 		if ( strlen( $value ) > self::MAX_IDENTIFIER_BYTES ) {
-			throw new InvalidArgumentException( $label . ' exceeds the persistence limit.' );
+			throw new InvalidArgumentException( 'Conversation identifier exceeds the persistence limit.' );
 		}
+		return $value;
+	}
 
+	/**
+	 * Normalize and hard-bound trusted owner scope.
+	 *
+	 * @param string $value Raw owner scope.
+	 * @throws InvalidArgumentException When owner scope is blank or oversized.
+	 */
+	private function boundedOwnerScope( string $value ): string {
+		$value = trim( $value );
+		if ( '' === $value ) {
+			throw new InvalidArgumentException( 'Owner scope must not be blank.' );
+		}
+		if ( strlen( $value ) > self::MAX_IDENTIFIER_BYTES ) {
+			throw new InvalidArgumentException( 'Owner scope exceeds the persistence limit.' );
+		}
 		return $value;
 	}
 }
