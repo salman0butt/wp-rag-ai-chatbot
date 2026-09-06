@@ -20,7 +20,7 @@ final class CitationValidator {
 	 * @param CitationRegistry $registry Request-local trusted citation registry.
 	 */
 	public function validate( string $answer, CitationRegistry $registry ): CitationValidationResult {
-		preg_match_all( '/\[(C[^\]]*)\]/', $answer, $matches );
+		preg_match_all( '/\[(C[0-9]+)\]/', $answer, $matches );
 
 		$citations       = array();
 		$invalid_markers = array();
