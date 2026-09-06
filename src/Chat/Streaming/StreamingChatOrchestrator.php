@@ -83,8 +83,9 @@ final class StreamingChatOrchestrator {
 		} finally {
 			try {
 				$stream->close();
-			// phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Provider cleanup diagnostics are intentionally swallowed at the client-safe boundary.
-			} catch ( Throwable ) {
+			} catch ( Throwable $cleanup_exception ) {
+				// Provider cleanup diagnostics are intentionally discarded at the client-safe boundary.
+				unset( $cleanup_exception );
 			}
 		}
 	}
