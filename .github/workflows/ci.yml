@@ -147,7 +147,7 @@ jobs:
     permissions:
       contents: read
       issues: write
-      pull-requests: read
+      pull-requests: write
     steps:
       - name: Publish autonomous CI status
         uses: actions/github-script@v7
