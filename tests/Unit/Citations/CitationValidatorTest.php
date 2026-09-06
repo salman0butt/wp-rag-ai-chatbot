@@ -103,6 +103,10 @@ final class CitationValidatorTest extends TestCase {
 
 	/**
 	 * Build one valid retrieval candidate fixture.
+	 *
+	 * @param string $chunk_id Chunk identifier.
+	 * @param string $document_id Document identifier.
+	 * @param int    $source_id Source identifier.
 	 */
 	private function candidate( string $chunk_id, string $document_id, int $source_id ): RetrievalCandidate {
 		return new RetrievalCandidate(
