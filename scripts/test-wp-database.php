@@ -29,11 +29,12 @@ $documents          = $prefix . 'rag_ai_documents';
 $vector_collections = $prefix . 'rag_ai_vector_collections';
 $vectors            = $prefix . 'rag_ai_vectors';
 $jobs               = $prefix . 'rag_ai_jobs';
+$chunk_search       = $prefix . 'rag_ai_chunk_search';
 
-if ( 5 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
-	$fail( 'Schema version is not 5.' );
+if ( 6 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
+	$fail( 'Schema version is not 6.' );
 }
-foreach ( array( $sources, $documents, $vector_collections, $vectors, $jobs ) as $table ) {
+foreach ( array( $sources, $documents, $vector_collections, $vectors, $jobs, $chunk_search ) as $table ) {
 	$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
 	if ( $found !== $table ) {
 		$fail( 'Missing table: ' . $table );
@@ -50,6 +51,8 @@ $vector_collection_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$vector_coll
 $vector_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$vectors}`", ARRAY_A );
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
 $job_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$jobs}`", ARRAY_A );
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
+$chunk_search_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$chunk_search}`", ARRAY_A );
 $index_names = static fn ( array $rows ): array => array_values( array_unique( array_column( $rows, 'Key_name' ) ) );
 if ( ! in_array( 'source_key', $index_names( $source_indexes ), true ) ) {
 	$fail( 'Missing source_key index.' );
@@ -66,6 +69,11 @@ if ( ! in_array( 'collection_vector', $index_names( $vector_indexes ), true ) ||
 foreach ( array( 'job_key', 'queue_scan', 'lease_recovery', 'idempotency_lookup', 'terminal_cleanup' ) as $job_index ) {
 	if ( ! in_array( $job_index, $index_names( $job_indexes ), true ) ) {
 		$fail( 'Missing jobs index: ' . $job_index );
+	}
+}
+foreach ( array( 'collection_chunk', 'collection_visibility', 'collection_language', 'collection_document', 'collection_source' ) as $chunk_search_index ) {
+	if ( ! in_array( $chunk_search_index, $index_names( $chunk_search_indexes ), true ) ) {
+		$fail( 'Missing chunk-search index: ' . $chunk_search_index );
 	}
 }
 

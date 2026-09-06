@@ -99,11 +99,15 @@ Use a database-backed WordPress queue with batching, leases, retries/backoff, fa
 
 ## Retrieval
 
-Query flow:
+Finalized M10 query flow:
 
-User Message -> validation/rate/cost checks -> ownership/context -> query processing -> query embedding -> semantic retrieval + lexical/exact retrieval -> score normalization/fusion -> metadata/access filters -> optional reranking -> confidence threshold -> context selection.
+User Message -> bounded query preprocessing -> bounded semantic retrieval + lexical/exact retrieval -> deterministic weighted Reciprocal Rank Fusion -> fail-closed trusted post-fusion access recheck -> optional bounded reranking -> bounded context candidates + safe trace.
 
-Lexical retrieval is mandatory because SKUs, model numbers, proper nouns, IDs, error codes, and exact phrases are often poorly served by vectors alone. Initial hybrid fusion should be simple and explainable (for example weighted normalized scoring or RRF) and observable in the debugger.
+Lexical/exact retrieval is mandatory because SKUs, model numbers, proper nouns, IDs, error codes, and exact phrases are often poorly served by vectors alone. Searchable chunk text is persisted in a dedicated local projection synchronized from the same accepted indexing plan used by vector indexing. Semantic vector matches are hydrated through canonical local chunk lineage and trusted scope is rechecked after vector search and again after fusion.
+
+Default fusion uses deterministic weighted RRF rather than normalizing incomparable native channel scores. All query, semantic, lexical, fused, rerank, and final-context sizes are hard-bounded. Single-channel degradation is explicit opt-in. Retrieval traces store normalized diagnostics such as query hash/byte count, bounded channel counts, sanitized channel failures, and rerank status rather than raw query/provider exception content.
+
+Optional reranking receives only an access-approved bounded prefix and cannot replace candidate content/lineage or inject unknown candidates. Retrieved content and metadata remain untrusted data and never authorize access or become instructions.
 
 ## RAG orchestration
 

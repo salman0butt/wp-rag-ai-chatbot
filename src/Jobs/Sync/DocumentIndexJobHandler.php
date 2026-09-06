@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Jobs\Sync;
 
+use WpRagAiChatbot\Database\DatabaseException;
 use WpRagAiChatbot\Jobs\JobCancelledException;
 use WpRagAiChatbot\Jobs\JobExecutionContext;
 use WpRagAiChatbot\Jobs\JobExecutionException;
@@ -66,6 +67,9 @@ final class DocumentIndexJobHandler implements JobHandler {
 		} catch ( VectorStoreException $error ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal queue exception contains only constant sanitized text plus a fixed enum-derived code.
 			throw $this->vector_failure( $error );
+		} catch ( DatabaseException ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal queue exception contains only constant sanitized text.
+			throw $this->projection_failure();
 		}
 	}
 
@@ -116,6 +120,17 @@ final class DocumentIndexJobHandler implements JobHandler {
 				? 'Document indexing vector store is temporarily unavailable.'
 				: 'Document indexing vector configuration is invalid.',
 			$retryable
+		);
+	}
+
+	/**
+	 * Translate local search-projection persistence failures into a safe retryable queue failure.
+	 */
+	private function projection_failure(): JobExecutionException {
+		return new JobExecutionException(
+			'index_projection_unavailable',
+			'Document search projection is temporarily unavailable.',
+			true
 		);
 	}
 

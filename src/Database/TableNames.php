@@ -57,11 +57,18 @@ final class TableNames {
 	}
 
 	/**
+	 * Searchable chunk projection table.
+	 */
+	public function chunk_search(): string {
+		return $this->prefix . 'rag_ai_chunk_search';
+	}
+
+	/**
 	 * All plugin tables in safe deletion order.
 	 *
 	 * @return string[]
 	 */
 	public function all(): array {
-		return array( $this->jobs(), $this->vectors(), $this->vector_collections(), $this->documents(), $this->sources() );
+		return array( $this->chunk_search(), $this->jobs(), $this->vectors(), $this->vector_collections(), $this->documents(), $this->sources() );
 	}
 }
