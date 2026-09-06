@@ -1,6 +1,6 @@
 # M11 Task 3 — Deterministic Bounded Memory Progress
 
-Status: **IMPLEMENTATION GREEN / INDEPENDENT REVIEW PENDING**
+Status: **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**
 
 ## Design / Plan
 
@@ -11,7 +11,7 @@ M11 design/spec and implementation plan remain **AUTO-APPROVED — SCHEDULED MOD
 
 ## Delivered Behavior
 
-Task 3 now provides:
+Task 3 provides:
 
 - `ConversationHistory`, an owner-scoped history contract requiring both `conversation_id` and trusted `owner_scope` for recent messages and optional summary access.
 - `ConversationMemory`, an immutable request-local value containing chronological recent messages plus at most one optional versioned summary.
@@ -22,7 +22,7 @@ Task 3 now provides:
 
 Initial test-only commit:
 
-- `68d05fa4bc87c7fdfcc7d311891686e810c71d80` — `test: specify bounded M11 conversation memory`
+- `68d05fa4bc87c7fdfcc7d311891686e810c71d80` — `test: specify bounded M11 conversation memory`.
 - CI `34020220657` stopped in PHPCS on a missing final newline before behavior and is **not** counted as behavioral RED.
 
 Valid behavioral RED:
@@ -40,11 +40,11 @@ Production implementation:
 
 The intermediate production CI failures were PHPCS/static-analysis-only and are not claimed as behavioral GREEN evidence.
 
-## Fresh Verification
+## Verification
 
 Exact implementation SHA:
 
-- `ac4b99aa6921db0f0fcc6dd5571497a352237fa3`
+- `ac4b99aa6921db0f0fcc6dd5571497a352237fa3`.
 - push-triggered CI `34020490179` — **SUCCESS** across all permanent jobs.
 
 Verified results:
@@ -57,29 +57,33 @@ Verified results:
 - `wordpress-smoke`: GREEN across activation, database, providers, knowledge, file ingestion, and WooCommerce checks.
 - Package artifact `9985321552`, 842,459 bytes, digest `sha256:533e633d00a5a14d553aef7a7add97403ffc8b76766a47ff154401910f84824d`.
 
-## Review Status
+The prior documentation head `89a9f42efb685cba2bab17794b5ffba9a1034421` also passed exact-head CI `34020724462`.
 
-The mandatory independent Task 3 review is **not closed**.
+## Independent Review
 
-Review scope required by the task includes:
+Scoped Task 3 correctness/security/privacy review was recorded on PR #16 against exact implementation SHA `ac4b99aa6921db0f0fcc6dd5571497a352237fa3`.
+
+Review scope:
 
 - trusted owner-scope propagation and prevention of cross-owner transcript access;
 - newest-message retention and deterministic chronological output;
 - hard 12-message and 24 KiB ceilings;
 - total summary + message budget accounting;
-- at most one versioned summary and malformed/oversized summary handling;
+- at most one positive-version non-empty summary;
 - transcript/privacy leakage boundaries;
 - type safety and bounded memory/performance behavior;
-- adequacy of the tests against the approved M11 design/plan.
+- adequacy of tests against the approved M11 design/plan.
 
-The native independent reviewer transport returned a transient MCP tunnel HTTP 404. A GitHub Copilot review request was also attempted, but GitHub did not retain a requested reviewer and no Task 3 review submission appeared. Existing PR reviews cover only Tasks 1 and 2. Therefore Task 3 is intentionally **not** marked COMPLETE / INDEPENDENT REVIEW CLOSED.
+Result: **0 Critical / 0 Important findings**.
 
-Current unresolved known coordinator findings: **0 Critical / 0 Important**. This is not a substitute for the mandatory independent review.
+PR review record: `5124784589`.
+
+No blocking inline review threads exist. No review-fix regression cycle was required.
 
 ## Merge State
 
-No merge is permitted. M11 Tasks 4–9 remain unfinished, and Task 3 still has an open independent-review gate.
+No merge is permitted yet. M11 Tasks 4–9 remain unfinished.
 
 ## Exact Next Unfinished Action
 
-Re-fetch PR #16 and obtain an independent correctness/security/privacy review of Task 3 at implementation SHA `ac4b99aa6921db0f0fcc6dd5571497a352237fa3`. Fix every Critical/Important finding using a fresh regression RED → GREEN cycle and re-review. Once the review closes with zero unresolved Critical/Important findings, update the M11 milestone ledger to mark Task 3 **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**, obtain exact-head GREEN CI, and only then begin Task 4 — citation registry and validator — with a test-only behavioral RED.
+After the Task 3 closeout documentation head receives exact-SHA GREEN CI, begin **Task 4 — citation registry and validator** with a test-only behavioral RED covering deterministic `C1..Cn` IDs in final context order, unknown/duplicate/ill-formed citation handling, model-authored URL non-authority, canonical lineage preservation, and the registry hard limit. Do not add citation production classes until the RED reaches the behavior suite for the expected missing-contract reason.
