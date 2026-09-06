@@ -83,6 +83,10 @@ Do not intentionally stop because a design/spec/plan, task, commit, PR update, g
 
 Before repository writes on an active PR, every autonomous worker must obey the canonical PR worker-lease protocol in `docs/AUTONOMOUS-DEVELOPMENT.md`. An unexpired lease for the same unit blocks competing writes; an expired lease is recoverable and must not permanently block progress.
 
+## Event worker and hourly watchdog
+
+Treat the GitHub event-triggered worker as the normal fast continuation path. Treat the hourly scheduled worker as a recovery watchdog: it must recover current lease/PR/CI/review state, avoid competing with a healthy active worker, and take over stalled executable work only when the repository watchdog rules in `docs/AUTONOMOUS-DEVELOPMENT.md` permit it.
+
 ## Durable memory
 
 Maintain the repository's existing durable progress records after meaningful checkpoints and before an invocation ends so the next completely fresh run can recover without conversational memory.
