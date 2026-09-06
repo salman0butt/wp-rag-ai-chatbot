@@ -33,12 +33,21 @@ final readonly class CitationRegistry {
 	private array $citations_by_id;
 
 	/**
-	 * Create the registry from validated citations.
+	 * Prompt-safe selected evidence in final context order.
+	 *
+	 * @var list<array{id: string, content: string}>
+	 */
+	private array $prompt_evidence;
+
+	/**
+	 * Create the registry from validated citations and prompt-safe evidence.
 	 *
 	 * @param array $citations Ordered citations.
+	 * @param array $prompt_evidence Prompt-safe selected evidence.
 	 * @phpstan-param list<Citation> $citations
+	 * @phpstan-param list<array{id: string, content: string}> $prompt_evidence
 	 */
-	private function __construct( array $citations ) {
+	private function __construct( array $citations, array $prompt_evidence ) {
 		$citations_by_id = array();
 		foreach ( $citations as $citation ) {
 			$citations_by_id[ $citation->id ] = $citation;
@@ -46,6 +55,7 @@ final readonly class CitationRegistry {
 
 		$this->citations       = $citations;
 		$this->citations_by_id = $citations_by_id;
+		$this->prompt_evidence = $prompt_evidence;
 	}
 
 	/**
@@ -60,21 +70,27 @@ final readonly class CitationRegistry {
 			throw new InvalidArgumentException( 'Citation registry exceeds the hard limit.' );
 		}
 
-		$citations = array();
+		$citations       = array();
+		$prompt_evidence = array();
 		foreach ( array_values( $retrieval_candidates ) as $index => $candidate ) {
 			if ( ! $candidate instanceof RetrievalCandidate ) {
 				throw new InvalidArgumentException( 'Citation registry candidate is invalid.' );
 			}
 
+			$id          = 'C' . ( $index + 1 );
 			$citations[] = new Citation(
-				'C' . ( $index + 1 ),
+				$id,
 				$candidate->chunk_id,
 				$candidate->document_id,
 				$candidate->source_id
 			);
+			$prompt_evidence[] = array(
+				'id'      => $id,
+				'content' => $candidate->content,
+			);
 		}
 
-		return new self( $citations );
+		return new self( $citations, $prompt_evidence );
 	}
 
 	/**
@@ -84,6 +100,17 @@ final readonly class CitationRegistry {
 	 */
 	public function all(): array {
 		return $this->citations;
+	}
+
+	/**
+	 * Return only the selected fields needed for prompt construction.
+	 *
+	 * Raw retrieval metadata, visibility, scores, and authorization state are intentionally excluded.
+	 *
+	 * @return list<array{id: string, content: string}>
+	 */
+	public function prompt_evidence(): array {
+		return $this->prompt_evidence;
 	}
 
 	/**
