@@ -84,17 +84,17 @@ final class PromptBuilderTest extends TestCase {
 		$generation = ( new ReflectionClass( $builder_class ) )->newInstance()->build( $request, $memory, $registry );
 		$input      = $generation->input;
 
-		$memory_start   = strpos( $input, '<MEMORY>' );
+		$memory_start    = strpos( $input, '<MEMORY>' );
 		$summary         = strpos( $input, 'Bounded summary' );
 		$first_message   = strpos( $input, 'First memory message' );
 		$second_message  = strpos( $input, 'Second memory message' );
-		$evidence_start = strpos( $input, '<EVIDENCE>' );
-		$first_citation = strpos( $input, '[C1]' );
-		$first_evidence = strpos( $input, 'First evidence' );
+		$evidence_start  = strpos( $input, '<EVIDENCE>' );
+		$first_citation  = strpos( $input, '[C1]' );
+		$first_evidence  = strpos( $input, 'First evidence' );
 		$second_citation = strpos( $input, '[C2]' );
 		$second_evidence = strpos( $input, 'Second evidence' );
-		$question_start = strpos( $input, '<QUESTION>' );
-		$question       = strpos( $input, 'Current question' );
+		$question_start  = strpos( $input, '<QUESTION>' );
+		$question        = strpos( $input, 'Current question' );
 
 		self::assertIsInt( $memory_start );
 		self::assertIsInt( $summary );
