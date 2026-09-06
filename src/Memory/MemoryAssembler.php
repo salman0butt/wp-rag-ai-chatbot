@@ -9,13 +9,11 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Memory;
 
-use WpRagAiChatbot\Conversations\ConversationMessage;
-
 /**
  * Builds the request-local bounded memory window.
  */
 final class MemoryAssembler {
-	private const MAX_MESSAGES = 12;
+	private const MAX_MESSAGES   = 12;
 	private const MAX_TEXT_BYTES = 24576;
 
 	/**
