@@ -27,17 +27,11 @@ final class DeterministicGroundingPolicy implements GroundingPolicy {
 	 * @param GroundingMode $mode Grounding mode.
 	 * @param array         $selected_candidates Final bounded retrieval candidates.
 	 * @phpstan-param list<RetrievalCandidate> $selected_candidates
-	 * @throws InvalidArgumentException When selected candidate input exceeds bounds or is invalid.
+	 * @throws InvalidArgumentException When selected candidate input exceeds the hard limit.
 	 */
 	public function decide( GroundingMode $mode, array $selected_candidates ): GroundingDecision {
 		if ( count( $selected_candidates ) > self::MAX_SELECTED_CANDIDATES ) {
 			throw new InvalidArgumentException( 'Grounding candidate limit exceeded.' );
-		}
-
-		foreach ( $selected_candidates as $candidate ) {
-			if ( ! $candidate instanceof RetrievalCandidate ) {
-				throw new InvalidArgumentException( 'Grounding candidates are invalid.' );
-			}
 		}
 
 		if ( GroundingMode::ASSISTED === $mode ) {
