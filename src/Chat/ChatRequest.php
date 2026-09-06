@@ -31,19 +31,39 @@ final readonly class ChatRequest {
 	 */
 	private const MAX_OUTPUT_TOKENS = 4096;
 
-	/** @var string Current user question. */
+	/**
+	 * Current user question.
+	 *
+	 * @var string
+	 */
 	public string $question;
 
-	/** @var string Provider-neutral model identifier. */
+	/**
+	 * Provider-neutral model identifier.
+	 *
+	 * @var string
+	 */
 	public string $model_id;
 
-	/** @var GroundingMode Grounding policy mode. */
+	/**
+	 * Grounding policy mode.
+	 *
+	 * @var GroundingMode
+	 */
 	public GroundingMode $grounding_mode;
 
-	/** @var string|null Optional existing conversation identifier. */
+	/**
+	 * Optional existing conversation identifier.
+	 *
+	 * @var string|null
+	 */
 	public ?string $conversation_id;
 
-	/** @var int Maximum requested generation output tokens. */
+	/**
+	 * Maximum requested generation output tokens.
+	 *
+	 * @var int
+	 */
 	public int $max_output_tokens;
 
 	/**
