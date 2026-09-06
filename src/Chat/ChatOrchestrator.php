@@ -32,13 +32,13 @@ final class ChatOrchestrator {
 	/**
 	 * Create one non-streaming orchestrator.
 	 *
-	 * @param ChatRequestPolicy     $request_policy Deterministic pre-generation request policy.
-	 * @param MemoryAssembler       $memory_assembler Owner-scoped bounded memory assembler.
-	 * @param HybridRetriever       $retriever Existing M10 retrieval boundary.
-	 * @param GroundingPolicy       $grounding_policy Deterministic grounding decision boundary.
-	 * @param PromptBuilder         $prompt_builder Bounded prompt/context builder.
-	 * @param GenerationProvider    $provider Existing M03 provider-neutral generation boundary.
-	 * @param CitationValidator     $citation_validator Request-local citation validator.
+	 * @param ChatRequestPolicy      $request_policy Deterministic pre-generation request policy.
+	 * @param MemoryAssembler        $memory_assembler Owner-scoped bounded memory assembler.
+	 * @param HybridRetriever        $retriever Existing M10 retrieval boundary.
+	 * @param GroundingPolicy        $grounding_policy Deterministic grounding decision boundary.
+	 * @param PromptBuilder          $prompt_builder Bounded prompt/context builder.
+	 * @param GenerationProvider     $provider Existing M03 provider-neutral generation boundary.
+	 * @param CitationValidator      $citation_validator Request-local citation validator.
 	 * @param MessageRepository|null $message_repository Optional owner-scoped assistant-message persistence boundary.
 	 */
 	public function __construct(
