@@ -69,4 +69,4 @@ M09 remains complete on `main` at feature merge SHA `0a4ba0d3133e41d28812d5ddb81
 
 ## Exact next unfinished action
 
-Recover **M11 — RAG Chat Orchestration** from its milestone/roadmap documentation and current code/tests. Apply the repository architecture classification gate. If M11 is architectural, run Brainstorm -> design/spec -> implementation plan under Scheduled Mode auto-approval, persist those docs, and only then begin the first implementation task with a strict test-only RED commit. Do not skip M11 design/spec/plan recovery simply because M10 is complete.
+Resume M11 Task 7 from PR #16. The current test-only head `fa0605cb470d01483536e90f7d72a0d64ba71c40` is **not** genuine RED because PHPCS stopped before PHPUnit. Fix only the new persistence regression test's standards violations first, rerun exact-head CI until the intended test executes and fails for the missing owner-scoped persistence behavior, then implement the minimum production persistence hook, verify focused/broad GREEN, and obtain a fresh independent Task 7 re-review with 0 unresolved Critical/Important findings before proceeding to Task 8.
