@@ -61,7 +61,7 @@ final class ChatOrchestrator {
 	 *
 	 * @param ChatRequest       $request Normalized application request.
 	 * @param ChatAccessContext $access Trusted server-side owner and retrieval scope.
-	 * @throws ChatException When retrieval, generation, prompt construction, citation validation, or persistence fails.
+	 * @throws ChatException When retrieval, generation, prompt construction, or citation validation fails.
 	 */
 	public function respond( ChatRequest $request, ChatAccessContext $access ): ChatResult {
 		$query  = $this->request_policy->prepare( $request, $this->provider );
@@ -128,16 +128,11 @@ final class ChatOrchestrator {
 		}
 
 		if ( null !== $request->conversation_id && null !== $this->message_repository ) {
-			try {
-				$this->message_repository->append_for_owner(
-					$request->conversation_id,
-					$access->owner_scope,
-					new ConversationMessage( 'assistant', $generation->output_text )
-				);
-			} catch ( Throwable ) {
-				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
-				throw new ChatException( ChatFailureReason::PERSISTENCE_FAILED, 'Conversation persistence failed.' );
-			}
+			$this->message_repository->append_for_owner(
+				$request->conversation_id,
+				$access->owner_scope,
+				new ConversationMessage( 'assistant', $generation->output_text )
+			);
 		}
 
 		return new ChatResult(
