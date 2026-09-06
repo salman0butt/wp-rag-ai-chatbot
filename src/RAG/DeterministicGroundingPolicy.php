@@ -22,7 +22,12 @@ final class DeterministicGroundingPolicy implements GroundingPolicy {
 	private const STRICT_NO_ANSWER = "I don't have enough reliable information in the selected sources to answer that.";
 
 	/**
-	 * {@inheritDoc}
+	 * Decide whether answer generation may run.
+	 *
+	 * @param GroundingMode $mode Grounding mode.
+	 * @param array         $selected_candidates Final bounded retrieval candidates.
+	 * @phpstan-param list<RetrievalCandidate> $selected_candidates
+	 * @throws InvalidArgumentException When selected candidate input exceeds bounds or is invalid.
 	 */
 	public function decide( GroundingMode $mode, array $selected_candidates ): GroundingDecision {
 		if ( count( $selected_candidates ) > self::MAX_SELECTED_CANDIDATES ) {
