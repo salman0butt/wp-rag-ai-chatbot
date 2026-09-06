@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Chat;
 
 use ArrayObject;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use WpRagAiChatbot\Chat\ChatAccessContext;
 use WpRagAiChatbot\Chat\ChatException;
 use WpRagAiChatbot\Chat\ChatOrchestrator;
@@ -97,6 +98,32 @@ final class ChatOrchestratorPersistenceTest extends TestCase {
 
 		self::assertSame( 0, $persistence->append_calls ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Test double mirrors call count semantics.
 		self::assertSame( 1, $provider->generate_calls ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Test double mirrors call count semantics.
+	}
+
+	/**
+	 * Persistence failures must not leak database diagnostics or retry generation.
+	 */
+	public function test_persistence_failure_is_sanitized_without_second_generation(): void {
+		$log          = new ArrayObject();
+		$persistence  = $this->message_repository( $log, 'wpdb secret SQL SELECT api_key FROM private_table' );
+		$provider     = $this->provider( $log, 'Supported answer. [C1]' );
+		$orchestrator = $this->orchestrator( $log, $provider, $persistence );
+
+		try {
+			$orchestrator->respond(
+				new ChatRequest( 'What is supported?', 'model-test', GroundingMode::STRICT, 'conversation-1' ),
+				new ChatAccessContext( 'owner-secret', $this->semantic_context(), $this->lexical_filter() )
+			);
+			self::fail( 'Expected sanitized persistence failure.' );
+		} catch ( ChatException $exception ) {
+			self::assertSame( 'persistence_failed', $exception->reason->value );
+			self::assertStringNotContainsString( 'wpdb', $exception->getMessage() );
+			self::assertStringNotContainsString( 'api_key', $exception->getMessage() );
+			self::assertStringNotContainsString( 'private_table', $exception->getMessage() );
+		}
+
+		self::assertSame( 1, $persistence->append_calls ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Test double mirrors attempted write count.
+		self::assertSame( 1, $provider->generate_calls ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Persistence failure must never trigger regeneration.
 	}
 
 	/**
@@ -306,10 +333,11 @@ final class ChatOrchestratorPersistenceTest extends TestCase {
 	 * Create owner-scoped message persistence fake.
 	 *
 	 * @param ArrayObject $log Observable call order.
+	 * @param string|null $failure Optional raw failure text.
 	 * @phpstan-param ArrayObject<int,string> $log
 	 */
-	private function message_repository( ArrayObject $log ): MessageRepository {
-		return new class( $log ) implements MessageRepository {
+	private function message_repository( ArrayObject $log, ?string $failure = null ): MessageRepository {
+		return new class( $log, $failure ) implements MessageRepository {
 			/**
 			 * Number of append calls.
 			 *
@@ -342,9 +370,10 @@ final class ChatOrchestratorPersistenceTest extends TestCase {
 			 * Create persistence fake.
 			 *
 			 * @param ArrayObject $log Observable call order.
+			 * @param string|null $failure Optional raw failure text.
 			 * @phpstan-param ArrayObject<int,string> $log
 			 */
-			public function __construct( private ArrayObject $log ) {
+			public function __construct( private ArrayObject $log, private ?string $failure ) {
 			}
 
 			/**
@@ -360,6 +389,10 @@ final class ChatOrchestratorPersistenceTest extends TestCase {
 				$this->owner_scope     = $owner_scope;
 				$this->message         = $message;
 				$this->log->append( 'persistence' );
+
+				if ( null !== $this->failure ) {
+					throw new RuntimeException( $this->failure );
+				}
 			}
 		};
 	}
