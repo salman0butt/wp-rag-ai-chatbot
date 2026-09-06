@@ -7,6 +7,7 @@
 - Current task: **Task 7 — non-streaming `ChatOrchestrator`**.
 - Active branch: `feat/m11-rag-chat-orchestration`.
 - Active PR: **#16** — draft, in progress.
+- Canonical autonomous lease comment: PR #16 comment `5559419698` — **RELEASED** while automation is paused.
 - Active head: `fa0605cb470d01483536e90f7d72a0d64ba71c40`.
 - Current gate: **Task 7 review regression — pre-test gate failure / invalid RED**.
 - Last valid Task 7 implementation head: `7a0d6753ed1eea3a633fcc22edb21d04696454db`.
