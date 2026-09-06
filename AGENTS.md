@@ -14,9 +14,11 @@ Read and follow `docs/AUTONOMOUS-DEVELOPMENT.md` before making changes.
 
 Every run must reconstruct state from GitHub. Do not rely on prior chat memory.
 
+The current default-branch versions of `AGENTS.md` and `docs/AUTONOMOUS-DEVELOPMENT.md` are the controller policy for scheduled runs, even when resuming an older feature branch whose copies may predate the latest process policy.
+
 Use the current default branch, active feature branches, open pull requests, recent commits, CI results, artifacts, source/tests, milestone ledgers, progress docs, Superpowers specs/plans, and repository decisions to determine the actual state.
 
-Git + current code + fresh CI evidence take precedence over stale progress text.
+For active work, inspect the active PR/branch checkpoint before trusting the default-branch status summary. Git + current code + fresh exact-SHA CI + current PR/review state take precedence over stale progress text.
 
 ## Superpowers
 
@@ -71,22 +73,31 @@ Always continue existing unfinished work before starting new work:
 
 Do not duplicate work already present on another active branch or PR.
 
+## Continuous execution
+
+A coherent unit is a transaction/checkpoint boundary, not an invocation boundary.
+
+Do not intentionally stop because a design/spec/plan, task, commit, PR update, green CI run, merge, post-merge verification, or milestone completed. After a verified checkpoint, recover the immediately relevant state, select the next legitimate ready unit, and continue in the same invocation for as much safe productive work as the execution environment permits.
+
 ## Durable memory
 
-Before ending a run, update the repository's existing durable progress records so the next completely fresh run can recover without conversational memory.
+Maintain the repository's existing durable progress records after meaningful checkpoints and before an invocation ends so the next completely fresh run can recover without conversational memory.
+
+`docs/progress/STATUS.md` must expose a compact live autonomous checkpoint for the active work: milestone, task, branch, PR, head SHA, current gate, latest valid CI/review evidence, blocker/wait state, and exact next executable action. Detailed historical evidence belongs in milestone/task closeout records rather than bloating the live checkpoint.
 
 Do not create redundant status files when existing milestone/progress ledgers already serve the purpose.
 
 ## Stop conditions
 
-Do not stop merely because a design, spec, plan, review, commit, PR, or merge step would normally request confirmation. Those steps are pre-authorized in scheduled mode.
+Do not stop merely because an ordinary workflow gate or convenient handoff point was reached.
 
-Stop only when safe autonomous progress is genuinely impossible, for example:
+Intentional stopping is allowed only when the defined roadmap is genuinely complete or safe productive progress is impossible, for example:
 
 - a required secret/credential is unavailable;
 - an external service or dependency required for the task is unavailable and no repository-approved fallback exists;
 - GitHub permissions or branch protection require a human action the agent cannot perform;
 - two active runs would create conflicting writes and the conflict cannot be safely avoided;
-- requirements are logically contradictory and repository evidence cannot resolve them.
+- requirements are logically contradictory and repository evidence cannot resolve them;
+- the current execution/tool/runtime environment prevents further productive work.
 
-Record the blocker and exact next action in durable project state when appropriate.
+If runtime/tool limits end a run while work remains, preserve the exact continuation point durably. Record the blocker or stop reason and exact next action when appropriate.
