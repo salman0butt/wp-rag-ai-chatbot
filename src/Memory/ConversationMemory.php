@@ -24,11 +24,15 @@ final class ConversationMemory {
 
 	/**
 	 * Optional summary version.
+	 *
+	 * @var int|null
 	 */
 	public readonly ?int $summary_version;
 
 	/**
 	 * Optional summary text.
+	 *
+	 * @var string|null
 	 */
 	public readonly ?string $summary_text;
 
