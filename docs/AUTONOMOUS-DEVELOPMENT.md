@@ -19,13 +19,14 @@ Assume every invocation starts with no reliable memory of earlier runs.
 Start with a fast, evidence-driven recovery:
 
 1. fetch/inspect the current default branch;
-2. read `AGENTS.md` and this file;
-3. read `docs/progress/STATUS.md`;
-4. inspect the current milestone document and its active design/spec and implementation plan;
-5. inspect the active feature branch/PR, latest relevant commits, exact-head CI, and unresolved review threads/findings;
-6. inspect the source/tests directly relevant to the current task;
-7. reconcile the durable state against Git, code, tests, CI, and PR evidence;
-8. determine the first legitimate unfinished task and continue immediately when the state is consistent.
+2. read the **default-branch** versions of `AGENTS.md` and this file as the current controller policy;
+3. inspect active feature branches and open PRs before deciding which status checkpoint is current;
+4. read `docs/progress/STATUS.md` from the active work branch when it contains a newer live checkpoint; otherwise use the default-branch checkpoint as the recovery index;
+5. inspect the current milestone document and its active design/spec and implementation plan;
+6. inspect the active branch/PR head, latest relevant commits, exact-head CI, and unresolved review threads/findings;
+7. inspect the source/tests directly relevant to the current task;
+8. reconcile the durable state against Git, code, tests, CI, and PR evidence;
+9. determine the first legitimate unfinished task and continue immediately when the state is consistent.
 
 Escalate to broader repository recovery only when evidence is inconsistent or the transition requires it, including when:
 
@@ -265,7 +266,11 @@ Before writing:
 3. inspect recent commits for the same milestone/task;
 4. reuse/resume existing work instead of creating a parallel implementation.
 
+Treat another worker as active only when there is fresh objective evidence, such as a recent conflicting commit, a currently running CI/check tied to the same unit, or an explicit unexpired repository-approved lease/ownership signal. A stale branch, old status text, historical CI, or merely open PR is not sufficient evidence of an active conflicting worker.
+
 If another active run is clearly modifying the same unit and conflicting writes cannot be safely avoided, make no competing implementation changes. Record/report the state and exit that invocation.
+
+If work appears abandoned — no fresh conflicting commits, no running CI for the unit, and no explicit active ownership signal — recover from Git/PR/CI and resume rather than waiting indefinitely.
 
 Do not create repeated specs/plans for an already-selected design simply because a new scheduled session starts.
 
@@ -289,6 +294,27 @@ Do not invent missing product requirements merely to make a decision easier.
 ## 14. Durable repository memory
 
 After meaningful checkpoints, and always before ending a productive run, update the appropriate existing durable ledgers so another completely fresh session can recover accurately.
+
+### 14.1 Live autonomous checkpoint
+
+`docs/progress/STATUS.md` must keep a compact, easy-to-scan live checkpoint near the top of the file for the active work. Record, when applicable:
+
+- completed milestone range on the default branch;
+- current milestone and current task;
+- active branch and PR;
+- exact active head SHA;
+- current engineering gate/state, such as design, test-only RED, implementation GREEN candidate, review-fix, exact-head CI, merge, or post-merge verification;
+- latest **valid** exact-SHA CI evidence and whether it is still current;
+- unresolved Critical/Important review findings;
+- current blocker/wait condition, if any;
+- exact next executable action;
+- last meaningful progress timestamp when useful.
+
+For active feature work, maintain the freshest checkpoint on the active branch at meaningful task gates. The default-branch checkpoint may act as a recovery index that points to the active PR/head until that work is integrated.
+
+Never let status prose override stronger evidence from Git, source/tests, the active PR, reviews, or exact-SHA CI.
+
+Distinguish genuine TDD evidence from pre-test failures. A lint/static-analysis/setup failure that prevents the intended test from executing is **not** a behavioral RED and must be recorded as an invalid RED/pre-test gate failure. Claim genuine RED only when the intended test actually executes and fails for the expected missing/incorrect behavior.
 
 Keep synchronized as applicable:
 
