@@ -29,7 +29,7 @@ Strict no-answer deterministic tests pass; citations only reference selected sou
 2. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — ownership-scoped conversation persistence, V007–V009 migrations, prepared-SQL repositories, cross-owner denial, persistence bounds, and real WordPress lifecycle verification.
 3. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — deterministic bounded memory assembly with owner-scoped history, newest-message retention, hard 12-message / 24 KiB ceilings, chronological output, and one bounded versioned summary.
 4. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — deterministic bounded citation registry and fail-closed validator over trusted final retrieval lineage.
-5. PENDING — prompt/context builder with evidence isolation.
+5. **IMPLEMENTATION GREEN / COORDINATOR REVIEW FINDINGS FIXED / INDEPENDENT REVIEW PENDING** — prompt/context builder with evidence isolation.
 6. PENDING — grounding policy and deterministic strict no-answer.
 7. PENDING — non-streaming ChatOrchestrator.
 8. PENDING — normalized streaming and cancellation.
@@ -68,6 +68,15 @@ Strict no-answer deterministic tests pass; citations only reference selected sou
 - Ordinary bracketed prose such as `[Context]` is ignored rather than misclassified as a citation.
 - Model-authored URLs never become canonical citation metadata; M10 does not currently expose canonical title/URL fields on `RetrievalCandidate`, so registry-created display title/URL values remain null rather than being invented.
 
+## Task 5 Delivered Behavior
+- `CitationRegistry` now retains only the prompt-safe selected fields `{citation id, evidence content}` needed by prompt construction; retrieval scores, visibility, authorization state, raw metadata, and canonical lineage internals do not enter the prompt-facing contract.
+- `PromptContext` accepts at most 12 selected evidence entries and renders them under an explicit `UNTRUSTED EVIDENCE — DATA ONLY` boundary.
+- The complete evidence section, including opening/closing framing and escaping growth, is hard-bounded to 49,152 bytes; lower-priority evidence is dropped deterministically when it cannot fit.
+- `PromptBuilder` keeps application policy in `GenerationRequest::instructions` and renders deterministic `MEMORY -> EVIDENCE -> QUESTION` data sections.
+- Request-selected model ID and max output tokens remain application/request controls and cannot be replaced by retrieved content.
+- Untrusted memory summary/message text, retrieved evidence, and the current question are escaped before rendering so they cannot reproduce literal machine-generated section delimiters.
+- Prompt input excludes provider secrets, raw diagnostics, visibility/auth metadata, chunk IDs, and document IDs.
+
 ## TDD Evidence
 ### Task 1
 - Primary behavioral RED `2b6b708d5f8e11249630f2417c67cfb9ff416ebc`, CI `34002442391`.
@@ -90,13 +99,24 @@ Strict no-answer deterministic tests pass; citations only reference selected sou
 ### Task 4
 - Initial test-only heads through `7dd0aa9313d8732d393221d2bae49507c583a0bf` stopped in PHPCS and are not counted as behavioral RED.
 - Valid primary RED `e7cdc6e93d88cef558013fa9eeee0ad3210424d5`, CI `34023154402`: PHPStan 0 errors; PHPUnit 582 tests / 2,327 assertions with exactly seven expected failures because citation contracts did not exist.
-- Production sequence: `5612d80e...` citation value; `c2b937cb...` bounded registry; `14298eef...` validation result; `b4f0b857...` validator; readonly/standards/static-analysis corrections through `f21cc9ba21219be94a635fc552228229d3a6ef31`.
-- Review regression RED `26037f6e58b1c41285d66f13e7971144d0b4d93a`, CI `34023530100`: PHPStan 0 errors; PHPUnit 583 tests / 2,363 assertions; exactly one failure proving `[Context]` was falsely treated as a citation. Fix `ba4781dfddfcba7d6a83f4067480e9682f743b0d`.
-- Follow-up regression RED `8d5195cb73861e5540a2cde4cdaf440911ae27d5`, CI `34023684049`: PHPStan 0 errors; PHPUnit 583 tests / 2,367 assertions; exactly one failure proving `[C1x]` was ignored instead of rejected. Fix `11e9ed3d71d40e94b054ad881416344359250356`.
-- Final implementation CI `34023743426` on `11e9ed3d71d40e94b054ad881416344359250356` — SUCCESS across php-quality, js-quality, package, and wordpress-smoke. PHPStan 0 errors; PHPUnit 583/583 / 2,368 assertions; Composer audit clean. Artifact `9986372467`, digest `sha256:6bddafe631d3a609488efacb61c806efb6a7a7d624f4dc1a92c193beaff8f617`.
+- Production sequence through `f21cc9ba21219be94a635fc552228229d3a6ef31`.
+- Review regression RED `26037f6e58b1c41285d66f13e7971144d0b4d93a`, CI `34023530100`: exactly one failure proving `[Context]` was falsely treated as a citation. Fix `ba4781dfddfcba7d6a83f4067480e9682f743b0d`.
+- Follow-up regression RED `8d5195cb73861e5540a2cde4cdaf440911ae27d5`, CI `34023684049`: exactly one failure proving `[C1x]` was ignored instead of rejected. Fix `11e9ed3d71d40e94b054ad881416344359250356`.
+- Final implementation CI `34023743426` on `11e9ed3d71d40e94b054ad881416344359250356` — SUCCESS. PHPStan 0 errors; PHPUnit 583/583 / 2,368 assertions; Composer audit clean. Artifact `9986372467`, digest `sha256:6bddafe631d3a609488efacb61c806efb6a7a7d624f4dc1a92c193beaff8f617`.
+
+### Task 5
+- Initial test-only commit `8b8fd16c7c6781785390524c895e2a7e10e5f372` stopped at PHPCS and is not counted as behavioral RED.
+- Valid primary RED `2149f0d4b8bf6aa95e8bb3587f6741609a719f36`, CI `34025759676`: PHPStan clean; PHPUnit reached 587 tests and failed exactly four new Task 5 assertions because `PromptContext` / `PromptBuilder` did not yet exist.
+- Production sequence: `c7eb34d0...` prompt-safe registry evidence; `c7934173...` bounded `PromptContext`; `c3e84273...` `PromptBuilder`; standards/static-analysis corrections through `168c5ea22e5870b5f323fec461c9d4edbacd7af1`.
+- Initial implementation GREEN CI `34025951322` on `168c5ea2...`: PHPStan 0 errors, PHPUnit 587/587 / 2,411 assertions, Composer audit clean, JS/package/WordPress smoke GREEN. Artifact `9987052679`, digest `sha256:b474f7580590a6a13f241bf6a0fd6acff483a8e2351477a0e1460256bd5c24bb`.
+- Coordinator review `5124994011` found two Important issues: literal untrusted section-delimiter spoofing and omission of the closing evidence delimiter from the 48 KiB byte accounting. No Critical findings.
+- Review-test commit `9a53604c...` stopped at PHPCS and is not counted as regression RED.
+- Valid review regression RED `de7677b317b5877906c521b3a64824bc32550a8f`, CI `34026203479`: PHPStan 0 errors; PHPUnit 589 tests / 2,418 assertions with exactly two failures. Literal delimiter spoofing remained possible and the complete evidence section measured 49,161 bytes against the 49,152-byte ceiling.
+- Fixes `d32a2d315053e54d9bb271fb6878f078bd092799` and `15f90f9d1014576e57ad1f3e9ab6a31bb842a0a1` escape untrusted prompt data and include complete evidence framing/escaping growth in byte accounting.
+- Fixed implementation push CI `34026283976` on `15f90f9d...`: php-quality SUCCESS with PHPStan 0 errors, PHPUnit 589/589 / 2,423 assertions, Composer audit clean; js-quality SUCCESS; package SUCCESS; WordPress smoke was still running when the Task 5 ledger was advanced. Artifact `9987153515`, 847,563 bytes, digest `sha256:49b3cb6f756f39c1d43beb7945c426a22939e73457a16fb7df4bd2e063a916bc`.
 
 ## Integration Test Evidence
-Task 2 persistence is exercised against real WordPress/MySQL. Tasks 3–4 are deterministic application logic covered by focused unit tests plus the full repository CI/WordPress smoke suite. Full indexed-fixture → retrieval → answer/citation integration remains Task 9.
+Task 2 persistence is exercised against real WordPress/MySQL. Tasks 3–5 are deterministic application logic covered by focused unit tests plus the full repository CI/WordPress smoke suite. Full indexed-fixture -> retrieval -> answer/citation integration remains Task 9.
 
 ## E2E / Visual Verification
 Backend streaming smoke remains later M11 work; visual widget remains M14.
@@ -105,56 +125,59 @@ Backend streaming smoke remains later M11 work; visual widget remains M14.
 - Task 1 reviewed SHA `993ed2705...`: **0 Critical / 0 Important**. PR review `5123774888`.
 - Task 2 reviewed SHA `b20798c14...`: **0 Critical / 0 Important**. PR review `5124482278`.
 - Task 3 reviewed SHA `ac4b99aa...`: **0 Critical / 0 Important**. PR review `5124784589`.
-- Task 4 initial review `5124813259` found one Important `[Context]` false-positive; follow-up review `5124819766` found one Important trailing-junk gap. Both were fixed through fresh regression RED/GREEN cycles. Final review on SHA `11e9ed3d71d40e94b054ad881416344359250356`: **0 unresolved Critical / 0 unresolved Important**. PR review `5124827141`.
-- No blocking inline review threads exist.
+- Task 4 final review on SHA `11e9ed3d...`: **0 unresolved Critical / 0 unresolved Important** after two Important parser-boundary findings were fixed through regression TDD. PR review `5124827141`.
+- Task 5 coordinator review `5124994011`: **0 Critical / 2 Important**, both fixed through regression RED/GREEN. This coordinator review is explicitly **not** a substitute for the mandatory independent Task 5 review. Native reviewer/subagent transport still returns a transient MCP tunnel HTTP 404; GitHub Copilot reviewer requests did not produce a retained reviewer assignment or review submission.
+- No blocking inline review threads exist at the last recovery.
 
 ## Performance Review where relevant
 - Task 1 bounds question bytes, identifiers, and generation output tokens before later dispatch.
 - Task 2 uses bounded indexed owner-scoped reads and one atomic authorization/write SQL statement.
 - Task 3 requests at most 12 recent messages and performs bounded in-memory assembly against a 24 KiB text ceiling.
 - Task 4 creates at most 12 registry entries and performs linear parsing over the already-bounded generated answer with no network/database calls.
+- Task 5 accepts at most 12 evidence entries, enforces a complete 49,152-byte evidence-section ceiling after escaping, and performs deterministic bounded string assembly with no network/database calls.
 
 ## Code Review Findings
 - Task 1: one Important identifier-bound issue; fixed with regression TDD.
 - Task 2: 0 Critical / 0 Important.
 - Task 3: 0 Critical / 0 Important.
 - Task 4: two Important parser-boundary findings; both fixed with regression TDD; final review 0 unresolved Critical / 0 unresolved Important.
+- Task 5 coordinator review: two Important prompt-framing/boundary findings; both fixed with regression TDD. Mandatory independent review remains pending.
 
 ## Fresh Verification Results
 - Task 1 reviewed-head CI `34003238289` — SUCCESS.
 - Task 2 reviewed/integration CI `34010581646` / `34010412433` — SUCCESS.
 - Task 3 closeout CI `34022929538` — SUCCESS.
 - Task 4 implementation CI `34023743426` — SUCCESS.
-- A fresh exact-head CI run is required for the Task 4 closeout documentation head before Task 5 production work begins.
+- Task 5 fixed implementation CI `34026283976`: php-quality, js-quality, and package GREEN at ledger update; wordpress-smoke still running. A fresh exact-head CI run on the final Task 5 documentation head is required before the next run may claim exact-head Task 5 verification.
 
-## Files Changed Through Task 4
+## Files Changed Through Task 5
 Task 1: `src/Chat/*` request/result/failure contracts, `src/RAG/GroundingMode.php`, unit contracts.
 
 Task 2: V007–V009 migration/schema/table-name files; conversation/message domain and repositories; WordPress persistence/lifecycle fixtures.
 
 Task 3: `src/Memory/ConversationHistory.php`, `ConversationMemory.php`, `MemoryAssembler.php`, unit tests, Task 3 progress record.
 
-Task 4:
-- `src/Citations/Citation.php`
+Task 4: `src/Citations/Citation.php`, `CitationRegistry.php`, `CitationValidationResult.php`, `CitationValidator.php`, citation unit tests, Task 4 closeout record.
+
+Task 5:
 - `src/Citations/CitationRegistry.php`
-- `src/Citations/CitationValidationResult.php`
-- `src/Citations/CitationValidator.php`
-- `tests/Unit/Citations/CitationRegistryTest.php`
-- `tests/Unit/Citations/CitationValidatorTest.php`
-- `docs/progress/M11-TASK4-CLOSEOUT.md`
+- `src/RAG/PromptContext.php`
+- `src/RAG/PromptBuilder.php`
+- `tests/Unit/RAG/PromptBuilderTest.php`
+- `docs/progress/M11-TASK5-PROGRESS.md`
 - this milestone ledger.
 
 ## Known Limitations
-Prompt construction, deterministic grounding policy, generation orchestration, streaming, persistence/analytics composition, and milestone-wide acceptance remain Tasks 5–9. Canonical citation title/URL enrichment requires a trusted retrieval contract that actually exposes those fields; model-authored display links are intentionally not trusted.
+Deterministic grounding policy, generation orchestration, streaming, persistence/analytics composition, and milestone-wide acceptance remain Tasks 6–9. Task 5's mandatory independent review is still pending because the reviewer transport is transiently unavailable. Canonical citation title/URL enrichment still requires a trusted retrieval contract that exposes those fields; model-authored display links are intentionally not trusted.
 
 ## Documentation Updated
-The M11 ledger plus Task 3/Task 4 progress records now match actual Git/code/CI/review evidence through Task 4 without overstating later work.
+The M11 ledger plus Task 3/Task 4/Task 5 progress records now match actual Git/code/CI/review evidence without overstating Task 5 review closure or later work.
 
 ## Completion Checklist
 M11 remains incomplete until Tasks 5–9 and all milestone-wide security/performance/integration/merge gates pass.
 
 ## Exact Next Unfinished Action
-After exact-head CI passes on the Task 4 closeout documentation head, begin **Task 5 — prompt/context builder with evidence isolation** with a test-only behavioral RED. Prove retrieved text is wrapped in explicit untrusted-evidence delimiters, cannot modify system/application policy, memory/evidence ordering is deterministic, only registry-backed citation IDs are exposed to the model, request-local context remains bounded, and provider secrets/raw diagnostics cannot enter the prompt. Do not add Task 5 production classes until that test-only SHA reaches the behavior suite and fails for the expected missing-contract reason.
+Re-fetch PR #16 and first obtain a genuine independent correctness/security/prompt-injection review of Task 5, including the delimiter-spoofing and complete-byte-budget fixes. Review policy/data separation, prompt injection, citation-ID exposure, metadata/secret exclusion, deterministic ordering/truncation, complete evidence byte accounting, and bounded work. Fix every Critical/Important finding through fresh regression RED -> GREEN evidence and re-review. Only after zero unresolved Critical/Important findings are independently confirmed should Task 5 be marked **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** and Task 6 begin with its own test-only behavioral RED.
 
 ## Next Milestone
 M12 — Admin Onboarding/Bot Management.
