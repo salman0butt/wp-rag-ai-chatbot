@@ -113,9 +113,7 @@ final class StreamingChatOrchestrator {
 			}
 			$current .= $character;
 		}
-		if ( '' !== $current ) {
-			$chunks[] = $current;
-		}
+		$chunks[] = $current;
 
 		return $chunks;
 	}
