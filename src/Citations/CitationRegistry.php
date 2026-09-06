@@ -39,12 +39,13 @@ final readonly class CitationRegistry {
 	 * @phpstan-param list<Citation> $citations
 	 */
 	private function __construct( array $citations ) {
-		$this->citations       = $citations;
-		$this->citations_by_id = array();
-
+		$citations_by_id = array();
 		foreach ( $citations as $citation ) {
-			$this->citations_by_id[ $citation->id ] = $citation;
+			$citations_by_id[ $citation->id ] = $citation;
 		}
+
+		$this->citations       = $citations;
+		$this->citations_by_id = $citations_by_id;
 	}
 
 	/**
