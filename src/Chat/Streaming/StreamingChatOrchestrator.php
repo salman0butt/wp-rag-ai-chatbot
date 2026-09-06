@@ -57,6 +57,8 @@ final class StreamingChatOrchestrator {
 				}
 
 				foreach ( $this->bounded_deltas( $delta ) as $bounded_delta ) {
+					// The generator may resume after its caller mutates Cancellation between yielded chunks.
+					// @phpstan-ignore if.alwaysFalse
 					if ( $cancellation->is_cancelled() ) {
 						break;
 					}
