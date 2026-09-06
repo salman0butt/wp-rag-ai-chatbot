@@ -23,5 +23,6 @@ enum ChatFailureReason: string {
 	case GENERATION_UNAVAILABLE = 'generation_unavailable';
 	case GENERATION_FAILED      = 'generation_failed';
 	case INVALID_CITATIONS      = 'invalid_citations';
+	case PERSISTENCE_FAILED     = 'persistence_failed';
 	case CANCELLED              = 'cancelled';
 }
