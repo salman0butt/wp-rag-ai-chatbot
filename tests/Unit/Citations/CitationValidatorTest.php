@@ -59,6 +59,10 @@ final class CitationValidatorTest extends TestCase {
 		$malformed = $validator->validate( 'Malformed [C01] marker.', $registry );
 		self::assertFalse( $malformed->valid );
 		self::assertSame( array( 'C01' ), $malformed->invalid_markers );
+
+		$trailing_junk = $validator->validate( 'Malformed [C1x] marker.', $registry );
+		self::assertFalse( $trailing_junk->valid );
+		self::assertSame( array( 'C1x' ), $trailing_junk->invalid_markers );
 	}
 
 	/**
