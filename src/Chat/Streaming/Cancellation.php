@@ -13,6 +13,11 @@ namespace WpRagAiChatbot\Chat\Streaming;
  * Mutable, idempotent cancellation flag checked between stream reads.
  */
 final class Cancellation {
+	/**
+	 * Whether cancellation has been requested.
+	 *
+	 * @var bool
+	 */
 	private bool $cancelled = false;
 
 	/**
