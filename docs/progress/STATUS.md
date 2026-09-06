@@ -7,18 +7,20 @@
 - Current task: **Task 7 — non-streaming `ChatOrchestrator`**.
 - Active branch: `feat/m11-rag-chat-orchestration`.
 - Active PR: **#16** — draft, in progress.
-- Canonical autonomous lease comment: PR #16 comment `5559419698` — last recorded state **RELEASED**; every worker must re-fetch the comment before writes.
 - Active head: `fa0605cb470d01483536e90f7d72a0d64ba71c40`.
-- CI wake-up signal: installed on `main` by commit `71153c7ddfcfda26cdbfe06fbd0f02aeacace3d6`; same-repository PR CI updates one sticky `<!-- autonomous-ci-status -->` comment after the permanent jobs complete.
+- Worker state: **IDLE_READY** — no active conflicting lease/relevant CI is running and the next action is executable.
+- Lease state: **RELEASED**; canonical PR #16 lease comment `5559419698`; `lease_id: none`; `owner: none`; `expires_at: none`. Every worker must re-fetch the comment immediately before writes.
 - Current gate: **Task 7 review regression — pre-test gate failure / invalid RED**.
 - Last valid Task 7 implementation head: `7a0d6753ed1eea3a633fcc22edb21d04696454db`.
-- Last valid exact-head CI on that implementation: push `34032130910` and PR `34032132670` — **SUCCESS**.
-- Independent Task 7 review `5125257980`: **Critical 0 / Important 1** — successful validated output can return without invoking owner-scoped persistence.
+- Latest valid exact-head CI: push `34032130910` and PR `34032132670` on `7a0d6753...` — **SUCCESS**.
+- Latest observed CI for the current head: push `34032358421` and PR `34032360620` on `fa0605cb...` — **FAILURE** in `php-quality` at PHPCS before PHPUnit; JS quality, package, and WordPress smoke passed. This is **not** valid behavioral RED evidence.
+- CI wake-up signal: installed on `main` by commit `71153c7ddfcfda26cdbfe06fbd0f02aeacace3d6`; no `<!-- autonomous-ci-status -->` comment exists yet because PR #16 has not had a new PR CI run since installation.
+- Review findings: **Critical 0 / Important 1**. Independent Task 7 review `5125257980` requires owner-scoped persistence after successful citation validation and no persistence on strict-no-answer/invalid-citation paths.
 - Review regression head `fa0605cb470d01483536e90f7d72a0d64ba71c40` adds only `tests/Unit/Chat/ChatOrchestratorPersistenceTest.php`.
-- Exact-head CI `34032358421` (push) and `34032360620` (PR) both stopped in `php-quality` at PHPCS before PHPUnit; JS quality, package, and WordPress smoke passed. This is **not** valid behavioral RED evidence.
-- Blocker/wait state: **none external**; the next action is executable immediately.
+- Blocked reason: **none**.
 - Exact next executable action: fix only the Task 7 persistence regression test's PHPCS/docblock/formatting violations without changing production behavior, rerun exact-head CI until PHPUnit executes and fails for the intended missing scoped-persistence behavior, record that genuine RED, then implement the minimum owner-scoped persistence hook, verify GREEN, and obtain a fresh independent Task 7 re-review with 0 unresolved Critical/Important findings.
-- Last meaningful progress represented here: `2026-09-06T12:11:10Z`.
+- `last_progress_at`: `2026-09-06T12:11:10Z` — last meaningful M11 branch progress.
+- `watchdog_observed_at`: `2026-09-06T13:27:30Z` — controller recovery state refreshed; this timestamp does not claim new M11 engineering progress.
 
 The live checkpoint is a recovery index, not stronger evidence than Git/code/tests/PR/reviews/exact-SHA CI. Reconcile it on every fresh run and update it at meaningful task gates.
 
