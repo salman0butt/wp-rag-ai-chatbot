@@ -1,6 +1,6 @@
 # M10 — Hybrid Retrieval Closeout
 
-Status: **PRE-MERGE VERIFIED / MERGE PENDING**
+Status: **COMPLETE / MERGED / POST-MERGE CI GREEN**
 
 Milestone: M10 — Semantic + Keyword + Hybrid Retrieval, Filters & Reranking.
 
@@ -8,11 +8,9 @@ Design/spec: `docs/superpowers/specs/2026-09-05-m10-hybrid-retrieval-reranking-d
 
 Implementation plan: `docs/superpowers/plans/2026-09-05-m10-hybrid-retrieval-reranking.md` — **AUTO-APPROVED — SCHEDULED MODE**.
 
-This closeout records the pre-merge M10 state only. It does not claim M10 merged or complete on `main`; those claims require expected-head merge protection plus a fresh GREEN post-merge `main` CI run.
-
 ## Delivered scope
 
-M10 now provides:
+M10 provides:
 
 - bounded UTF-8 query preprocessing with identifier-preserving lexical terms;
 - immutable validated retrieval configuration, candidate, evidence, result, confidence, and safe trace contracts;
@@ -30,7 +28,7 @@ M10 now provides:
 
 ## Task 8 acceptance fixture
 
-Task 8 adds `tests/Integration/Retrieval/HybridRetrievalAcceptanceTest.php` and composes the actual M10 adapters rather than replacing orchestration with a fake:
+Task 8 added `tests/Integration/Retrieval/HybridRetrievalAcceptanceTest.php` and composes the actual M10 adapters rather than replacing orchestration with a fake:
 
 - real `QueryPreprocessor`;
 - real `LexicalRetriever` + `LexicalScorer`;
@@ -53,14 +51,13 @@ The fixture proves:
 
 - Test-only acceptance commit `1a2c1ace58b270a5ef83d126533771578c75c438`, CI `33999819218`, was stopped by PHPCS before PHPUnit due only to test documentation/type-comment violations. It is **not** counted as behavioral RED.
 - Test-only standards correction `19ab7eea5262369e8ced90238605a354e87ba6f6` changed fixture documentation/type annotations only.
-- On exact head `19ab7eea5262369e8ced90238605a354e87ba6f6`, `php-quality` reached the full behavior suite: PHPStan **0 errors**; PHPUnit **552/552 tests, 2,230 assertions**; Composer audit **no security vulnerability advisories**.
-- `js-quality` and `package` also passed on CI `33999864905`.
-- The WordPress smoke suite completed activation, database, providers, knowledge, file-ingestion, and WooCommerce-knowledge assertions successfully before cleanup; final workflow conclusion is still a required merge gate and must be rechecked before merge.
-- The acceptance fixture passed against existing M10 production composition. Therefore no missing production wiring existed, and no artificial production failure/change was manufactured solely to create a RED.
+- Exact acceptance head `19ab7eea5262369e8ced90238605a354e87ba6f6`, CI `33999864905`: all permanent jobs GREEN; PHPStan **0 errors**; PHPUnit **552/552 tests, 2,230 assertions**; Composer audit **no security vulnerability advisories**; WordPress activation/database/providers/knowledge/file-ingestion/WooCommerce smoke checks all passed.
+- Acceptance artifact: `9979163515`, 830,993 bytes, digest `sha256:c9bd54c124bedaaa99c421e6a292a0ed0397a6a92317237ae677b25bc9a645c5`.
+- The acceptance fixture passed against existing M10 production composition. No missing production wiring existed, and no artificial production failure/change was manufactured solely to create a RED.
 
 ## Security and performance review
 
-Final scoped Task 8 review `5123489610` on implementation/acceptance head `19ab7eea5262369e8ced90238605a354e87ba6f6` reviewed:
+Final scoped Task 8 review `5123489610` reviewed:
 
 - prepared lexical SQL and identifier-safe table-name preparation;
 - trusted collection/document/source/language/visibility constraints;
@@ -77,7 +74,25 @@ Final scoped Task 8 review `5123489610` on implementation/acceptance head `19ab7
 - sanitized trace/failure diagnostics with no raw query/provider exception bodies;
 - no mandatory paid/external provider calls in normal CI.
 
-Review result: **0 Critical / 0 Important**. No production behavior fix was requested by the final review.
+Review result: **0 Critical / 0 Important**. PR #15 had zero unresolved review threads at merge time.
+
+## Final pre-merge verification
+
+Final PR head: `83bad6f16e45bd67f9658487ab5b030064d00da2`.
+
+Exact-head CI: `34000059826` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN.
+
+Artifact: `9979220629`, 830,998 bytes, digest `sha256:c7b0e16edc315f1aaf02d378bdc5235a1fb77dd0d2327546422d0e3c7eff027c`.
+
+## Merge and post-merge verification
+
+PR #15 was marked ready only after exact-head GREEN CI and merged with expected-head protection against `83bad6f16e45bd67f9658487ab5b030064d00da2`.
+
+Merge SHA: `4c1f54e667b36c6c8ec09b1dffc81fb20c2034de`.
+
+Fresh push-triggered `main` CI: `34000242280` on the exact merge SHA — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN.
+
+Post-merge artifact: `9979266115`, 830,989 bytes, digest `sha256:d4674298b858b70de5181883f824974ababf3580fc990b0b15cfd67452db7c66`.
 
 ## Earlier task evidence
 
@@ -87,20 +102,10 @@ Tasks 1–7 are **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**. Their strict R
 - `docs/progress/M10-TASK6-CLOSEOUT.md`;
 - `docs/progress/M10-TASK7-CLOSEOUT.md`.
 
-## Merge state
+## Final state
 
-PR #15 remains intentionally unmerged at this pre-merge closeout point.
-
-Required remaining gates:
-
-1. verify the final documentation PR-head SHA with all permanent CI jobs GREEN;
-2. confirm no unresolved Critical/Important review finding/thread exists;
-3. mark PR #15 ready only after those gates pass;
-4. merge with expected-head protection;
-5. verify a fresh GREEN `main` CI run on the merge SHA;
-6. finalize global status/feature/milestone closeout on `main` with exact merge/post-merge evidence;
-7. only then declare M10 complete and identify the exact M11 starting action.
+M10 is **COMPLETE** on `main`. All milestone implementation, acceptance, security/performance review, pre-merge verification, protected merge, and post-merge verification gates are satisfied.
 
 ## Exact next unfinished action
 
-Verify exact-head CI on the final M10 documentation head. If all permanent jobs are GREEN and no blocking review finding exists, make PR #15 merge-ready and merge only with expected-head protection. Then verify fresh post-merge `main` CI on the merge SHA before changing M10 status to COMPLETE or starting M11.
+Recover **M11 — RAG Chat Orchestration** from its milestone/roadmap documentation and repository state. If M11 is architectural under repository rules, perform the Scheduled Mode design/spec/plan sequence first with auto-approval and durable docs; only then begin the first implementation task with a test-only RED commit.
