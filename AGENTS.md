@@ -79,6 +79,10 @@ A coherent unit is a transaction/checkpoint boundary, not an invocation boundary
 
 Do not intentionally stop because a design/spec/plan, task, commit, PR update, green CI run, merge, post-merge verification, or milestone completed. After a verified checkpoint, recover the immediately relevant state, select the next legitimate ready unit, and continue in the same invocation for as much safe productive work as the execution environment permits.
 
+## Autonomous write lease
+
+Before repository writes on an active PR, every autonomous worker must obey the canonical PR worker-lease protocol in `docs/AUTONOMOUS-DEVELOPMENT.md`. An unexpired lease for the same unit blocks competing writes; an expired lease is recoverable and must not permanently block progress.
+
 ## Durable memory
 
 Maintain the repository's existing durable progress records after meaningful checkpoints and before an invocation ends so the next completely fresh run can recover without conversational memory.
