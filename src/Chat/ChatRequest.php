@@ -27,6 +27,41 @@ final readonly class ChatRequest {
 	private const MAX_OUTPUT_TOKENS = 4096;
 
 	/**
+	 * Current user question.
+	 *
+	 * @var string
+	 */
+	public string $question;
+
+	/**
+	 * Provider-neutral model identifier.
+	 *
+	 * @var string
+	 */
+	public string $model_id;
+
+	/**
+	 * Grounding policy mode.
+	 *
+	 * @var GroundingMode
+	 */
+	public GroundingMode $grounding_mode;
+
+	/**
+	 * Optional existing conversation identifier.
+	 *
+	 * @var string|null
+	 */
+	public ?string $conversation_id;
+
+	/**
+	 * Maximum requested generation output tokens.
+	 *
+	 * @var int
+	 */
+	public int $max_output_tokens;
+
+	/**
 	 * Create a normalized chat request.
 	 *
 	 * @param string        $question Current user question.
@@ -37,11 +72,11 @@ final readonly class ChatRequest {
 	 * @throws InvalidArgumentException When request invariants are invalid.
 	 */
 	public function __construct(
-		public string $question,
-		public string $model_id,
-		public GroundingMode $grounding_mode,
-		public ?string $conversation_id = null,
-		public int $max_output_tokens = self::MAX_OUTPUT_TOKENS
+		string $question,
+		string $model_id,
+		GroundingMode $grounding_mode,
+		?string $conversation_id = null,
+		int $max_output_tokens = self::MAX_OUTPUT_TOKENS
 	) {
 		$question        = trim( $question );
 		$model_id        = trim( $model_id );
@@ -65,6 +100,7 @@ final readonly class ChatRequest {
 
 		$this->question          = $question;
 		$this->model_id          = $model_id;
+		$this->grounding_mode    = $grounding_mode;
 		$this->conversation_id   = $conversation_id;
 		$this->max_output_tokens = $max_output_tokens;
 	}
