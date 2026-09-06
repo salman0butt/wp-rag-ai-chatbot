@@ -1,5 +1,29 @@
 # Global Status
 
+## Live autonomous checkpoint
+
+- Completed milestones on `main`: **M00-M10**.
+- Current milestone: **M11 — RAG Chat Orchestration, Grounding, Citations, Memory & Streaming**.
+- Current task: **Task 7 — non-streaming `ChatOrchestrator`**.
+- Active branch: `feat/m11-rag-chat-orchestration`.
+- Active PR: **#16** — draft, in progress.
+- Pre-checkpoint head: `b8820cfc09bdf789bc62343a62b21eb4638dcbef`.
+- Worker state: **ACTIVE** for bounded end-to-end pipeline verification and durable checkpoint refresh.
+- Lease: PR #16 comment `5559419698`, owner `chatgpt-e2e-20260906T1355Z`, lease `m11-t7-e2e-20260906T1355Z-b8820cf`, expires `2026-09-06T14:25:36Z`.
+- Current engineering gate: **Task 7 production-fix candidate is GREEN on all four permanent PR CI jobs; scoped independent re-review is pending**.
+- Genuine behavioral RED: test-only head `479c78afec5caa43ba188665ab451bfcebd60697` / CI `34037178445` reached PHPUnit with exactly one expected persistence failure.
+- Production persistence fix: `25478b7cc7b23e513fda2bb81c46f4f2f94c4b16`; style-only follow-up: `b8820cfc09bdf789bc62343a62b21eb4638dcbef`.
+- Exact-head PR CI `34037305221` on `b8820cfc...`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all **SUCCESS**.
+- The same workflow run concluded FAILURE only because the control-plane `autonomous-ci-status` job received GitHub API 403 while creating the PR status comment; this does **not** invalidate the four permanent product-quality jobs.
+- CI wake-up bridge fixes are on `main`: `1706de7d39d0a3db345fff310de25e7c3d7a9303` hardens sticky-comment ownership/marker matching; `47dbbb9ec4dfbcd6bee6433e970ff25743c79395` grants the status job `pull-requests: write`. A fresh PR run is required to verify the bridge end to end.
+- Prior Task 7 review `5125257980`: **Critical 0 / Important 1**; the Important scoped-persistence finding now has RED/fix/GREEN evidence but still requires fresh independent re-review.
+- Blocked reason: **none**.
+- Exact next action: verify the fresh PR CI triggered by this durable checkpoint uses the corrected status-comment path and creates/updates one bot-authored autonomous CI status comment for the current head; then perform scoped independent Task 7 re-review, fix any Critical/Important findings via regression TDD, close Task 7 durably, and continue immediately to Task 8.
+- `last_progress_at`: `2026-09-06T13:53:54Z` — all four permanent PR CI jobs green on `b8820cfc...`.
+- `watchdog_observed_at`: `2026-09-06T13:55:36Z`.
+
+The live checkpoint is a recovery index, not stronger evidence than Git/code/tests/PR/reviews/exact-SHA CI. Reconcile it on every fresh run and update it at meaningful task gates.
+
 - Completed milestones on `main`: **M00-M10**.
 - M10 feature merge SHA: `4c1f54e667b36c6c8ec09b1dffc81fb20c2034de`.
 - M10 post-merge `main` CI: `34000242280` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN.
