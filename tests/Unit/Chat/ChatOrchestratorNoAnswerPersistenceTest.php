@@ -159,7 +159,11 @@ final class ChatOrchestratorNoAnswerPersistenceTest extends TestCase {
 	 */
 	private function provider(): GenerationProvider {
 		return new class() implements GenerationProvider {
-			/** Number of generation calls. */
+			/**
+			 * Number of generation calls.
+			 *
+			 * @var int
+			 */
 			public int $generate_calls = 0;
 
 			/** {@inheritDoc} */
@@ -191,7 +195,11 @@ final class ChatOrchestratorNoAnswerPersistenceTest extends TestCase {
 	 */
 	private function persistence(): MessageRepository {
 		return new class() implements MessageRepository {
-			/** Number of append calls. */
+			/**
+			 * Number of append calls.
+			 *
+			 * @var int
+			 */
 			public int $append_calls = 0;
 
 			/**
