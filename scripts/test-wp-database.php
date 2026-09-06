@@ -30,11 +30,14 @@ $vector_collections = $prefix . 'rag_ai_vector_collections';
 $vectors            = $prefix . 'rag_ai_vectors';
 $jobs               = $prefix . 'rag_ai_jobs';
 $chunk_search       = $prefix . 'rag_ai_chunk_search';
+$conversations      = $prefix . 'rag_ai_conversations';
+$messages           = $prefix . 'rag_ai_messages';
+$message_citations  = $prefix . 'rag_ai_message_citations';
 
-if ( 6 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
-	$fail( 'Schema version is not 6.' );
+if ( 9 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
+	$fail( 'Schema version is not 9.' );
 }
-foreach ( array( $sources, $documents, $vector_collections, $vectors, $jobs, $chunk_search ) as $table ) {
+foreach ( array( $sources, $documents, $vector_collections, $vectors, $jobs, $chunk_search, $conversations, $messages, $message_citations ) as $table ) {
 	$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
 	if ( $found !== $table ) {
 		$fail( 'Missing table: ' . $table );
@@ -53,6 +56,12 @@ $vector_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$vectors}`", ARRAY_A );
 $job_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$jobs}`", ARRAY_A );
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
 $chunk_search_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$chunk_search}`", ARRAY_A );
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
+$conversation_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$conversations}`", ARRAY_A );
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
+$message_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$messages}`", ARRAY_A );
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
+$citation_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$message_citations}`", ARRAY_A );
 $index_names = static fn ( array $rows ): array => array_values( array_unique( array_column( $rows, 'Key_name' ) ) );
 if ( ! in_array( 'source_key', $index_names( $source_indexes ), true ) ) {
 	$fail( 'Missing source_key index.' );
@@ -76,6 +85,19 @@ foreach ( array( 'collection_chunk', 'collection_visibility', 'collection_langua
 		$fail( 'Missing chunk-search index: ' . $chunk_search_index );
 	}
 }
+foreach ( array( 'owner_conversation', 'owner_updated' ) as $conversation_index ) {
+	if ( ! in_array( $conversation_index, $index_names( $conversation_indexes ), true ) ) {
+		$fail( 'Missing conversations index: ' . $conversation_index );
+	}
+}
+if ( ! in_array( 'conversation_owner_id', $index_names( $message_indexes ), true ) ) {
+	$fail( 'Missing messages conversation-owner index.' );
+}
+foreach ( array( 'message_citation', 'message_id' ) as $citation_index ) {
+	if ( ! in_array( $citation_index, $index_names( $citation_indexes ), true ) ) {
+		$fail( 'Missing message-citations index: ' . $citation_index );
+	}
+}
 
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
 $visibility = $wpdb->get_var( "SHOW COLUMNS FROM `{$documents}` LIKE 'visibility'", 1 );
@@ -86,7 +108,7 @@ if ( 'varchar(32)' !== $visibility ) {
 if ( MigrationStatus::UP_TO_DATE !== DatabaseBootstrap::migrate() ) {
 	$fail( 'Repeat migration was not idempotent.' );
 }
-foreach ( array( 'rag_ai_chunks', 'rag_ai_conversations' ) as $suffix ) {
+foreach ( array( 'rag_ai_chunks' ) as $suffix ) {
 	$table = $prefix . $suffix;
 	if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table ) {
 		$fail( 'Unexpected future table: ' . $table );
@@ -99,11 +121,11 @@ $wpdb->query( "DELETE FROM `{$documents}`" );
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
 $wpdb->query( "DELETE FROM `{$sources}`" );
 
-$connection          = new WpdbConnection( $wpdb );
-$tables              = new TableNames( $wpdb->prefix );
-$source_repository   = new WpdbKnowledgeSourceRepository( $connection, $tables );
-$document_repository = new WpdbDocumentRepository( $connection, $tables );
-$timestamp           = new DateTimeImmutable( '2026-09-02 00:00:00', new DateTimeZone( 'UTC' ) );
+$connection           = new WpdbConnection( $wpdb );
+$tables               = new TableNames( $wpdb->prefix );
+$source_repository    = new WpdbKnowledgeSourceRepository( $connection, $tables );
+$document_repository  = new WpdbDocumentRepository( $connection, $tables );
+$timestamp            = new DateTimeImmutable( '2026-09-02 00:00:00', new DateTimeZone( 'UTC' ) );
 $malicious_source_key = "source-' OR 1=1 --";
 $source_records       = array();
 
@@ -130,8 +152,8 @@ for ( $i = 1; $i <= 25; $i++ ) {
 	$source_records[] = $saved;
 }
 
-$source_a = $source_records[12];
-$source_b = $source_records[13];
+$source_a     = $source_records[12];
+$source_b     = $source_records[13];
 $found_source = $source_repository->findByKey( $malicious_source_key );
 if ( null === $found_source || $found_source->sourceKey !== $malicious_source_key || $found_source->id !== $source_a->id ) {
 	$fail( 'Malicious-looking source key did not round trip exactly.' );
