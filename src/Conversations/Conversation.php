@@ -14,12 +14,14 @@ namespace WpRagAiChatbot\Conversations;
  */
 final class Conversation {
 	/**
-	 * @param string $conversationId Stable conversation identifier.
-	 * @param string $ownerScope Trusted owner scope.
+	 * Create a conversation identity.
+	 *
+	 * @param string $conversation_id Stable conversation identifier.
+	 * @param string $owner_scope Trusted owner scope.
 	 */
 	public function __construct(
-		public readonly string $conversationId,
-		public readonly string $ownerScope
+		public readonly string $conversation_id,
+		public readonly string $owner_scope
 	) {
 	}
 }

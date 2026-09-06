@@ -16,7 +16,11 @@ use WpRagAiChatbot\Database\TableNames;
 
 /** Creates canonical citations attached to persisted assistant messages. */
 final class V009CreateMessageCitationsTable implements Migration {
-	/** @param TableNames $tables Table-name resolver. */
+	/**
+	 * Create the migration.
+	 *
+	 * @param TableNames $tables Table-name resolver.
+	 */
 	public function __construct( private readonly TableNames $tables ) {
 	}
 
@@ -25,7 +29,12 @@ final class V009CreateMessageCitationsTable implements Migration {
 		return 9;
 	}
 
-	/** @param Connection $connection Database connection. */
+	/**
+	 * Create the message-citations table.
+	 *
+	 * @param Connection $connection Database connection.
+	 * @throws DatabaseException When the table remains missing after dbDelta().
+	 */
 	public function up( Connection $connection ): void {
 		$table = $this->tables->message_citations();
 		$sql   = "CREATE TABLE {$table} (\n"

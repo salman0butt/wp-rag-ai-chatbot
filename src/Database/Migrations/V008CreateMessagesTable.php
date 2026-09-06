@@ -16,7 +16,11 @@ use WpRagAiChatbot\Database\TableNames;
 
 /** Creates ownership-scoped conversation messages. */
 final class V008CreateMessagesTable implements Migration {
-	/** @param TableNames $tables Table-name resolver. */
+	/**
+	 * Create the migration.
+	 *
+	 * @param TableNames $tables Table-name resolver.
+	 */
 	public function __construct( private readonly TableNames $tables ) {
 	}
 
@@ -25,7 +29,12 @@ final class V008CreateMessagesTable implements Migration {
 		return 8;
 	}
 
-	/** @param Connection $connection Database connection. */
+	/**
+	 * Create the messages table.
+	 *
+	 * @param Connection $connection Database connection.
+	 * @throws DatabaseException When the table remains missing after dbDelta().
+	 */
 	public function up( Connection $connection ): void {
 		$table = $this->tables->messages();
 		$sql   = "CREATE TABLE {$table} (\n"

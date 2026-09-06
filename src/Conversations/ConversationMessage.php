@@ -14,6 +14,8 @@ namespace WpRagAiChatbot\Conversations;
  */
 final class ConversationMessage {
 	/**
+	 * Create a persisted message payload.
+	 *
 	 * @param string $role Message role.
 	 * @param string $content Message content.
 	 */

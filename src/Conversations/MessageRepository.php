@@ -14,7 +14,13 @@ namespace WpRagAiChatbot\Conversations;
  * Persists messages only through explicit conversation and owner scope.
  */
 interface MessageRepository {
-	/** Append one message to an owner-scoped conversation. */
+	/**
+	 * Append one message to an owner-scoped conversation.
+	 *
+	 * @param string              $conversation_id Stable conversation identifier.
+	 * @param string              $owner_scope Trusted owner scope.
+	 * @param ConversationMessage $message Message to append.
+	 */
 	public function append_for_owner( string $conversation_id, string $owner_scope, ConversationMessage $message ): void;
 }
 // phpcs:enable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
