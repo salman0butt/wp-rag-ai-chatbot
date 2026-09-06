@@ -1,6 +1,6 @@
 # M10 — Semantic + Keyword + Hybrid Retrieval, Filters & Reranking
 
-Status: **PRE-MERGE VERIFIED / MERGE PENDING**
+Status: **COMPLETE / MERGED / POST-MERGE CI GREEN**
 
 ## Goal
 
@@ -50,7 +50,7 @@ Tasks 1–7 retain their exact strict RED/GREEN evidence in `docs/progress/M10-P
 Task 8 acceptance sequence:
 
 - `1a2c1ace58b270a5ef83d126533771578c75c438` / CI `33999819218`: test-only acceptance fixture was stopped by PHPCS before PHPUnit due only to test documentation/type-comment defects, so this is **not** counted as behavioral RED.
-- `19ab7eea5262369e8ced90238605a354e87ba6f6` / CI `33999864905`: test-only standards correction reached the full PHP behavior suite. PHPStan reported **0 errors**, PHPUnit passed **552/552 tests with 2,230 assertions**, Composer audit reported no security advisories, and JavaScript/package jobs passed. The WordPress smoke functional assertions also passed through WooCommerce knowledge before cleanup; final workflow status remains a required pre-merge gate.
+- `19ab7eea5262369e8ced90238605a354e87ba6f6` / CI `33999864905`: all permanent jobs GREEN; PHPStan 0 errors; PHPUnit 552/552 tests with 2,230 assertions; Composer audit clean; WordPress smoke GREEN.
 - Existing production composition already satisfied the Task 8 acceptance fixture. No unnecessary production wiring was added and no artificial RED was manufactured.
 
 ## Integration verification
@@ -80,7 +80,21 @@ Lexical persistence/search uses indexed trusted scope fields and prepared SQL. S
 
 ## Code review findings
 
-Task-level independent review findings and RED/GREEN fixes are durably recorded in the M10 progress/Task 6/Task 7 closeouts. Final Task 8 review: **0 Critical / 0 Important**. No blocking finding is known at this pre-merge point.
+Task-level independent review findings and RED/GREEN fixes are durably recorded in the M10 progress/Task 6/Task 7 closeouts. Final Task 8 review: **0 Critical / 0 Important**. No blocking review thread remained at merge.
+
+## Merge verification
+
+Final PR head: `83bad6f16e45bd67f9658487ab5b030064d00da2`.
+
+Final pre-merge exact-head CI: `34000059826` — all four permanent jobs GREEN.
+
+PR #15 merged with expected-head protection.
+
+Merge SHA: `4c1f54e667b36c6c8ec09b1dffc81fb20c2034de`.
+
+Fresh post-merge `main` CI: `34000242280` on the exact merge SHA — all four permanent jobs GREEN.
+
+Post-merge package artifact: `9979266115`, digest `sha256:d4674298b858b70de5181883f824974ababf3580fc990b0b15cfd67452db7c66`.
 
 ## Known limitations
 
@@ -103,11 +117,11 @@ Detailed evidence:
 - [x] Tasks 1–7 implementation and independent review gates.
 - [x] Task 8 end-to-end acceptance fixture reaches real M10 adapters.
 - [x] Final scoped security/performance review: 0 Critical / 0 Important.
-- [ ] Final documentation head exact-SHA CI GREEN.
-- [ ] PR #15 ready/merge with expected-head protection.
-- [ ] Fresh post-merge `main` CI GREEN on merge SHA.
-- [ ] Global status/feature closeout finalized on `main` with merge evidence.
+- [x] Final documentation head exact-SHA CI GREEN.
+- [x] PR #15 ready/merged with expected-head protection.
+- [x] Fresh post-merge `main` CI GREEN on merge SHA.
+- [x] Durable M10 closeout contains exact merge/post-merge evidence.
 
 ## Next milestone
 
-M11 — RAG Chat Orchestration, but it must not begin until M10 is genuinely merged, post-merge `main` CI is GREEN, and durable M10 global closeout evidence is finalized.
+M11 — RAG Chat Orchestration. Recover its milestone/roadmap state and perform any required Scheduled Mode design/spec/plan sequence before implementation.
