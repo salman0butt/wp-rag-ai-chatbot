@@ -11,7 +11,6 @@ namespace WpRagAiChatbot\RAG;
 
 use WpRagAiChatbot\Chat\ChatRequest;
 use WpRagAiChatbot\Citations\CitationRegistry;
-use WpRagAiChatbot\Conversations\ConversationMessage;
 use WpRagAiChatbot\Memory\ConversationMemory;
 use WpRagAiChatbot\Providers\GenerationRequest;
 
@@ -62,10 +61,6 @@ final class PromptBuilder {
 		}
 
 		foreach ( $memory->messages as $message ) {
-			if ( ! $message instanceof ConversationMessage ) {
-				continue;
-			}
-
 			$output .= '[' . $message->role . "]\n" . $message->content . "\n";
 		}
 
