@@ -18,10 +18,10 @@ Legend: PLANNED = approved product target, IMPLEMENTED = verified implementation
 | Chroma | adapter | PLANNED | M08 |
 | OpenAI Vector Store | adapter | PLANNED | M08 |
 | DB job queue | leases/retries/backoff/recovery/progress | PLANNED | M09 |
-| Semantic retrieval | vector similarity | PLANNED | M10 |
-| Lexical/exact retrieval | identifiers/SKUs/phrases | PLANNED | M10 |
-| Hybrid fusion | explainable score fusion | PLANNED | M10 |
-| Optional reranking | provider/adapter based | PLANNED | M10 |
+| Semantic retrieval | vector similarity | IMPLEMENTED | M10 |
+| Lexical/exact retrieval | identifiers/SKUs/phrases | IMPLEMENTED | M10 |
+| Hybrid fusion | explainable score fusion | IMPLEMENTED | M10 |
+| Optional reranking | provider/adapter based | IMPLEMENTED | M10 |
 | Grounded chat | strict/preferred/general modes | PLANNED | M11 |
 | Citations | source-linked + validated | PLANNED | M11 |
 | Conversation memory | recent + summary + fresh RAG | PLANNED | M11 |
