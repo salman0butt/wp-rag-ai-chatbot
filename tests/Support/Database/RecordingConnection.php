@@ -4,6 +4,7 @@
  *
  * @package WpRagAiChatbot
  */
+
 declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Support\Database;
@@ -49,19 +50,32 @@ final class RecordingConnection implements Connection {
 	 */
 	public array $db_delta_queries = array();
 
-	/** Row returned by get_row().
+	/**
+	 * Row returned by get_row().
 	 *
 	 * @var array<string, mixed>|null
 	 */
 	public ?array $get_row_result = null;
 
-	/** Result returned by query(). */
+	/**
+	 * Result returned by query().
+	 *
+	 * @var int|bool
+	 */
 	public int|bool $query_result = 0;
 
-	/** Result returned by insert(). */
+	/**
+	 * Result returned by insert().
+	 *
+	 * @var int|bool
+	 */
 	public int|bool $insert_result = 1;
 
-	/** Insert identifier returned by insert_id(). */
+	/**
+	 * Insert identifier returned by insert_id().
+	 *
+	 * @var int
+	 */
 	public int $insert_id_result = 1;
 
 	/**
