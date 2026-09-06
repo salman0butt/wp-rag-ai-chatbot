@@ -22,43 +22,28 @@ final readonly class ChatRequest {
 	private const MAX_QUESTION_BYTES = 16384;
 
 	/**
+	 * Maximum caller-controlled identifier size in bytes.
+	 */
+	private const MAX_IDENTIFIER_BYTES = 255;
+
+	/**
 	 * Default and maximum M11 output-token request.
 	 */
 	private const MAX_OUTPUT_TOKENS = 4096;
 
-	/**
-	 * Current user question.
-	 *
-	 * @var string
-	 */
+	/** @var string Current user question. */
 	public string $question;
 
-	/**
-	 * Provider-neutral model identifier.
-	 *
-	 * @var string
-	 */
+	/** @var string Provider-neutral model identifier. */
 	public string $model_id;
 
-	/**
-	 * Grounding policy mode.
-	 *
-	 * @var GroundingMode
-	 */
+	/** @var GroundingMode Grounding policy mode. */
 	public GroundingMode $grounding_mode;
 
-	/**
-	 * Optional existing conversation identifier.
-	 *
-	 * @var string|null
-	 */
+	/** @var string|null Optional existing conversation identifier. */
 	public ?string $conversation_id;
 
-	/**
-	 * Maximum requested generation output tokens.
-	 *
-	 * @var int
-	 */
+	/** @var int Maximum requested generation output tokens. */
 	public int $max_output_tokens;
 
 	/**
@@ -91,8 +76,14 @@ final readonly class ChatRequest {
 		if ( '' === $model_id ) {
 			throw new InvalidArgumentException( 'Model ID must not be empty.' );
 		}
+		if ( strlen( $model_id ) > self::MAX_IDENTIFIER_BYTES ) {
+			throw new InvalidArgumentException( 'Model ID must not exceed 255 bytes.' );
+		}
 		if ( null !== $conversation_id && '' === $conversation_id ) {
 			throw new InvalidArgumentException( 'Conversation ID must not be empty when supplied.' );
+		}
+		if ( null !== $conversation_id && strlen( $conversation_id ) > self::MAX_IDENTIFIER_BYTES ) {
+			throw new InvalidArgumentException( 'Conversation ID must not exceed 255 bytes.' );
 		}
 		if ( $max_output_tokens < 1 || $max_output_tokens > self::MAX_OUTPUT_TOKENS ) {
 			throw new InvalidArgumentException( 'Maximum output tokens must be between 1 and 4096.' );
