@@ -256,7 +256,11 @@ final class ChatOrchestratorPersistenceTest extends TestCase {
 	 */
 	private function provider( ArrayObject $log, string $answer ): GenerationProvider {
 		return new class( $log, $answer ) implements GenerationProvider {
-			/** @var int Number of generation calls. */
+			/**
+			 * Number of generation calls.
+			 *
+			 * @var int
+			 */
 			public int $generate_calls = 0;
 
 			/**
@@ -306,16 +310,32 @@ final class ChatOrchestratorPersistenceTest extends TestCase {
 	 */
 	private function message_repository( ArrayObject $log ): MessageRepository {
 		return new class( $log ) implements MessageRepository {
-			/** @var int Number of append calls. */
+			/**
+			 * Number of append calls.
+			 *
+			 * @var int
+			 */
 			public int $append_calls = 0;
 
-			/** @var string|null Captured conversation identifier. */
+			/**
+			 * Captured conversation identifier.
+			 *
+			 * @var string|null
+			 */
 			public ?string $conversation_id = null;
 
-			/** @var string|null Captured trusted owner scope. */
+			/**
+			 * Captured trusted owner scope.
+			 *
+			 * @var string|null
+			 */
 			public ?string $owner_scope = null;
 
-			/** @var ConversationMessage|null Captured assistant message. */
+			/**
+			 * Captured assistant message.
+			 *
+			 * @var ConversationMessage|null
+			 */
 			public ?ConversationMessage $message = null;
 
 			/**
