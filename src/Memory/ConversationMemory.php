@@ -16,16 +16,33 @@ use WpRagAiChatbot\Conversations\ConversationMessage;
  */
 final class ConversationMemory {
 	/**
+	 * Recent messages in chronological order.
+	 *
+	 * @var list<ConversationMessage>
+	 */
+	public readonly array $messages;
+
+	/**
+	 * Optional summary version.
+	 */
+	public readonly ?int $summary_version;
+
+	/**
+	 * Optional summary text.
+	 */
+	public readonly ?string $summary_text;
+
+	/**
 	 * Create bounded memory.
 	 *
-	 * @param list<ConversationMessage> $messages Recent messages in chronological order.
-	 * @param int|null                  $summary_version Optional summary version.
-	 * @param string|null               $summary_text Optional summary text.
+	 * @param array       $messages Recent messages in chronological order.
+	 * @param int|null    $summary_version Optional summary version.
+	 * @param string|null $summary_text Optional summary text.
+	 * @phpstan-param list<ConversationMessage> $messages
 	 */
-	public function __construct(
-		public readonly array $messages,
-		public readonly ?int $summary_version = null,
-		public readonly ?string $summary_text = null
-	) {
+	public function __construct( array $messages, ?int $summary_version = null, ?string $summary_text = null ) {
+		$this->messages        = $messages;
+		$this->summary_version = $summary_version;
+		$this->summary_text    = $summary_text;
 	}
 }
