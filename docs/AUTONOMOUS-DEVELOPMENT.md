@@ -16,27 +16,28 @@ The agent must still perform every required stage. Pre-authorization removes wai
 
 Assume every invocation starts with no reliable memory of earlier runs.
 
-Before modifying anything:
+Start with a fast, evidence-driven recovery:
 
 1. fetch/inspect the current default branch;
-2. inspect active feature branches;
-3. inspect open pull requests and unresolved review threads;
-4. inspect recent commits and branch divergence;
-5. inspect relevant GitHub Actions runs, job results, and artifacts;
-6. inspect the actual source and tests for the current milestone;
-7. read the relevant durable documentation, including:
-   - `README.md` and `readme.txt`;
-   - `docs/PRODUCT.md`;
-   - `docs/ARCHITECTURE.md`;
-   - `docs/DECISIONS.md`;
-   - `docs/FEATURE-MATRIX.md`;
-   - `docs/milestones/**`;
-   - `docs/progress/**`;
-   - `docs/superpowers/specs/**`;
-   - `docs/superpowers/plans/**`;
-   - this file and `AGENTS.md`;
-8. reconcile documentation claims against Git, code, tests, CI, and artifacts;
-9. determine the first legitimate unfinished task.
+2. read `AGENTS.md` and this file;
+3. read `docs/progress/STATUS.md`;
+4. inspect the current milestone document and its active design/spec and implementation plan;
+5. inspect the active feature branch/PR, latest relevant commits, exact-head CI, and unresolved review threads/findings;
+6. inspect the source/tests directly relevant to the current task;
+7. reconcile the durable state against Git, code, tests, CI, and PR evidence;
+8. determine the first legitimate unfinished task and continue immediately when the state is consistent.
+
+Escalate to broader repository recovery only when evidence is inconsistent or the transition requires it, including when:
+
+- durable status disagrees with Git or code;
+- an active branch/PR changed unexpectedly;
+- a merge occurred;
+- CI evidence is stale or ambiguous;
+- another autonomous worker changed the same area;
+- milestone transition requires broader product/architecture context;
+- documentation appears stale or contradictory.
+
+A broader recovery may include `README.md`, `readme.txt`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/DECISIONS.md`, `docs/FEATURE-MATRIX.md`, milestone/progress ledgers, Superpowers specs/plans, relevant CI artifacts, and neighboring source/tests.
 
 Do not redo completed work simply because a scheduled run starts fresh.
 
@@ -148,15 +149,26 @@ Each run selects work in this order:
 
 Do not jump ahead because later work appears easier or more interesting.
 
-## 6. One coherent unit per invocation
+## 6. Continuous coherent execution per invocation
 
-A schedule controls when a run starts; it does not require the agent to spend exactly one hour working.
+A schedule controls when a run starts; it does not require the agent to spend exactly one hour working or to stop after one unit.
 
-For each invocation, complete the largest coherent unit that can be safely implemented, verified, reviewed, documented, and integrated with available tools/evidence.
+A coherent unit is a transaction/checkpoint boundary, not an invocation boundary.
 
-Do not begin a large second unit simply to consume remaining time.
+For each invocation:
 
-If a milestone can be safely completed in one invocation, complete it. If not, leave precise durable state for the next run.
+1. recover the highest-priority ready unit;
+2. implement, verify, review, document, and integrate it safely;
+3. update durable state when appropriate;
+4. recover the immediately relevant branch/PR/CI state;
+5. select the next legitimate ready unit;
+6. continue in the same invocation.
+
+Completing a design, spec, plan, task, commit, PR update, green CI run, merge, post-merge verification, coherent unit, or milestone is **not** an intentional stop condition.
+
+Do not start speculative or conflicting work merely to consume time. Continue only with legitimate ready work that preserves milestone boundaries and repository safety.
+
+If the current execution environment ends before all ready work is exhausted, leave precise durable state for the next fresh run.
 
 ## 7. Required engineering loop
 
@@ -188,6 +200,10 @@ When the active runtime cannot execute dependency-backed tests locally, use the 
 Always associate verification with the exact SHA being evaluated.
 
 Do not reuse stale CI from an older SHA as proof for newer code.
+
+Do not waste an invocation merely waiting for CI when safe, non-conflicting work remains. While exact-SHA CI is running, the agent may perform review, security/performance/accessibility analysis, documentation reconciliation, unresolved-thread inspection, coverage analysis, milestone acceptance checks, or preparation of the next bounded unit.
+
+Never treat that parallel work as a substitute for CI evidence. Do not merge until required exact-final-SHA CI is green. If a new commit changes the candidate SHA, prior CI evidence becomes stale and the new SHA must be verified.
 
 ## 10. Branch, commit, PR, and merge authorization
 
@@ -272,7 +288,7 @@ Do not invent missing product requirements merely to make a decision easier.
 
 ## 14. Durable repository memory
 
-Before ending a productive run, update the appropriate existing durable ledgers so another completely fresh session can recover accurately.
+After meaningful checkpoints, and always before ending a productive run, update the appropriate existing durable ledgers so another completely fresh session can recover accurately.
 
 Keep synchronized as applicable:
 
@@ -289,24 +305,28 @@ Keep synchronized as applicable:
 
 Record only evidence that actually exists.
 
-## 15. True blocker policy
+## 15. True stop/blocker policy
 
-Scheduled runs must not pause for ordinary internal approvals.
+Scheduled runs must not pause for ordinary internal approvals or convenient handoff points.
 
-A run may stop when safe progress is genuinely impossible, including:
+A run may intentionally stop only when safe productive progress is genuinely impossible or the defined project is complete, including:
 
+- the currently defined repository roadmap is genuinely complete;
 - missing credentials/secrets required for the selected work;
 - GitHub permissions/branch protection requiring an action the agent cannot perform;
 - required external service unavailable with no approved fallback;
-- infrastructure failure that prevents required verification;
+- infrastructure failure that prevents required verification and leaves no safe independent work;
 - logically contradictory requirements not resolvable from repository evidence;
-- unavoidable concurrent-write conflict with another active run.
+- unavoidable concurrent-write conflict with another active run;
+- the current execution/tool/runtime environment actually prevents further productive work.
 
-When blocked:
+Task completion, PR completion, merge completion, post-merge verification, and milestone completion are not stop conditions.
+
+When blocked or runtime-limited:
 
 1. do not fabricate completion;
 2. preserve safe partial work only if it is coherent and clearly documented;
-3. record the blocker in the appropriate durable location when it affects project state;
+3. record the blocker or exact continuation point in the appropriate durable location when it affects project state;
 4. report the exact condition and next action;
 5. let the next scheduled invocation recover from GitHub again.
 
@@ -315,10 +335,15 @@ When blocked:
 When the current milestone satisfies every repository completion gate:
 
 1. mark it complete in durable ledgers;
-2. record exact final SHA and required CI/artifact evidence;
+2. record exact final SHA and required CI/artifact/review evidence;
 3. integrate using the repository finishing-development-branch workflow;
 4. verify fresh default-branch CI;
-5. begin the next milestone in the same invocation only if doing so remains a coherent, safely bounded unit; otherwise leave the exact next action for the next scheduled run.
+5. recover the next unfinished milestone immediately;
+6. run its architecture classification and required design/spec/plan workflow under Scheduled Mode auto-approval;
+7. begin its first legitimate implementation unit with strict TDD;
+8. continue in the same invocation for as much safe productive work as the execution environment permits.
+
+Milestone completion is a checkpoint, not a stop condition. Do not wait for the next scheduled run solely because a milestone completed.
 
 No separate human "approved" message is required in scheduled mode.
 
@@ -341,6 +366,7 @@ Every invocation should report, as available:
 - post-merge default-branch CI status;
 - overall milestone status;
 - blockers, if any;
-- exact next unfinished task.
+- exact next unfinished task;
+- reason the invocation actually stopped.
 
 The next scheduled invocation must independently recover state from GitHub and continue from the resulting repository state.
