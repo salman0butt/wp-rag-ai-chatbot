@@ -82,11 +82,11 @@ final class ChatOrchestratorTest extends TestCase {
 	 * Successful orchestration uses bounded collaborators once and keeps trusted owner scope out of model input.
 	 */
 	public function test_success_calls_generation_once_and_excludes_owner_scope_from_prompt(): void {
-		$log          = new ArrayObject();
-		$provider     = $this->provider( $log, 'Refunds are available within 30 days. [C1]' );
-		$owner_secret = 'owner-secret-do-not-send';
-		$candidate    = $this->ranked( 'refund-policy', 1.0 );
-		$result       = $this->respond(
+		$log                = new ArrayObject();
+		$provider           = $this->provider( $log, 'Refunds are available within 30 days. [C1]' );
+		$owner_secret       = 'owner-secret-do-not-send';
+		$candidate          = $this->ranked( 'refund-policy', 1.0 );
+		$result             = $this->respond(
 			new ChatRequest( 'What is the refund policy?', 'model-test', GroundingMode::STRICT, 'conversation-1' ),
 			$log,
 			$provider,
@@ -207,9 +207,9 @@ final class ChatOrchestratorTest extends TestCase {
 		self::assertTrue( class_exists( $access_class ), 'ChatAccessContext contract is missing.' );
 		self::assertTrue( class_exists( $policy_class ), 'ChatRequestPolicy contract is missing.' );
 
-		$config  = new RetrievalConfig();
-		$policy  = ( new ReflectionClass( $policy_class ) )->newInstance( new QueryPreprocessor( $config ) );
-		$history = new class( $log ) implements ConversationHistory {
+		$config       = new RetrievalConfig();
+		$policy       = ( new ReflectionClass( $policy_class ) )->newInstance( new QueryPreprocessor( $config ) );
+		$history      = new class( $log ) implements ConversationHistory {
 			/**
 			 * Create deterministic owner-scoped history.
 			 *
@@ -219,20 +219,33 @@ final class ChatOrchestratorTest extends TestCase {
 			public function __construct( private ArrayObject $log ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return no messages while recording owner-scoped access.
+			 *
+			 * @param string $conversation_id Stable conversation identifier.
+			 * @param string $owner_scope Trusted owner scope.
+			 * @param int    $limit Hard recent-message limit.
+			 * @return list<\WpRagAiChatbot\Conversations\ConversationMessage>
+			 */
 			public function recent_for_owner( string $conversation_id, string $owner_scope, int $limit ): array {
 				$this->log->append( 'memory.recent' );
 				return array();
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return no summary while recording owner-scoped access.
+			 *
+			 * @param string $conversation_id Stable conversation identifier.
+			 * @param string $owner_scope Trusted owner scope.
+			 * @return array{version:int,text:string}|null
+			 */
 			public function summary_for_owner( string $conversation_id, string $owner_scope ): ?array {
 				$this->log->append( 'memory.summary' );
 				return null;
 			}
 		};
-		$memory  = new MemoryAssembler( $history );
-		$access  = ( new ReflectionClass( $access_class ) )->newInstance(
+		$memory       = new MemoryAssembler( $history );
+		$access       = ( new ReflectionClass( $access_class ) )->newInstance(
 			$owner_scope,
 			$this->semantic_context(),
 			$this->lexical_filter(),
@@ -247,7 +260,7 @@ final class ChatOrchestratorTest extends TestCase {
 			$provider,
 			new CitationValidator()
 		);
-		$result = ( new ReflectionMethod( $orchestrator_class, 'respond' ) )->invoke( $orchestrator, $request, $access );
+		$result       = ( new ReflectionMethod( $orchestrator_class, 'respond' ) )->invoke( $orchestrator, $request, $access );
 		self::assertIsObject( $result );
 
 		return $result;
@@ -269,10 +282,18 @@ final class ChatOrchestratorTest extends TestCase {
 		?RuntimeException $failure = null
 	): GenerationProvider {
 		return new class( $log, $answer, $available, $failure ) implements GenerationProvider {
-			/** Number of generation calls. */
+			/**
+			 * Number of generation calls.
+			 *
+			 * @var int
+			 */
 			public int $generate_calls = 0;
 
-			/** Last normalized generation request. */
+			/**
+			 * Last normalized generation request.
+			 *
+			 * @var GenerationRequest|null
+			 */
 			public ?GenerationRequest $last_request = null;
 
 			/**
@@ -428,7 +449,7 @@ final class ChatOrchestratorTest extends TestCase {
 				return $this->result;
 			}
 		};
-		$access_policy   = new class() implements CandidateAccessPolicy {
+		$access_policy    = new class() implements CandidateAccessPolicy {
 			/**
 			 * Permit fixtures already constrained by trusted scope.
 			 *
