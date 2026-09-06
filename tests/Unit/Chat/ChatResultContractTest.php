@@ -71,7 +71,7 @@ final class ChatResultContractTest extends TestCase {
 			'cancelled',
 		);
 		$actual   = array_map(
-			static fn ( object $case ): string => $case->value,
+			static fn ( object $reason ): string => $reason->value,
 			$reason_class::cases()
 		);
 
