@@ -26,7 +26,7 @@ Strict no-answer deterministic tests pass; citations only reference selected sou
 
 ## Tasks
 1. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — chat request, grounding mode, failure/result contracts, and hard request bounds.
-2. **IN PROGRESS — SQL REPOSITORY + REAL WORDPRESS VERIFICATION GREEN / INDEPENDENT REVIEW PENDING** — ownership-scoped conversation persistence. V007–V009 migrations, schema/lifecycle coverage, owner-scoped contracts, prepared-SQL repositories, cross-owner denial, hard persistence bounds, malicious-identifier checks, and real WordPress repository verification are delivered. Independent Task 2 review remains the only closeout gate before Task 3.
+2. **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED** — ownership-scoped conversation persistence. V007–V009 migrations, schema/lifecycle coverage, owner-scoped contracts, prepared-SQL repositories, cross-owner denial, hard persistence bounds, malicious-identifier checks, real WordPress repository verification, and scoped correctness/security review are complete.
 3. PENDING — deterministic bounded memory assembly.
 4. PENDING — citation registry and validator.
 5. PENDING — prompt/context builder with evidence isolation.
@@ -59,8 +59,7 @@ Strict no-answer deterministic tests pass; citations only reference selected sou
 - Cross-owner append fails with an application-owned generic persistence error and does not reveal whether the conversation exists for another owner.
 - Malicious-looking identifiers/content are bound as values and round-trip without widening SQL scope.
 - Real WordPress database smoke covers clean install, V1→V9 automatic upgrade, migration idempotency, indexes, default uninstall retention, opt-in deletion, clean reinstall, owner-scoped create/find/append, cross-owner read/write denial, exact malicious-looking content round-trip, and unchanged persisted message count after a denied append.
-
-Task 2 is not yet closed: the mandatory independent correctness/security review remains pending. Do not begin Task 3 until that review reports zero unresolved Critical/Important findings, or every such finding is fixed with regression RED/GREEN evidence and re-reviewed.
+- Scoped correctness/security review at exact head `b20798c14ec6169b8ffddfed2a8e03199c1fd822` closed with **0 Critical / 0 Important** findings. PR review record: `5124482278`.
 
 ## TDD Evidence
 Task 1 primary behavioral RED:
@@ -105,7 +104,7 @@ Task 2 real WordPress repository verification:
 - CI `34010412433` on `34182b7144cc99417bb1cd2df6213cfaa146909b` — SUCCESS across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`; the database step specifically passed the owner-scoped repository assertions before the remaining provider/knowledge/file/WooCommerce smoke checks also passed.
 
 ## Integration Test Evidence
-Task 2 persistence is now exercised against a real WordPress/MySQL environment in addition to unit-contract coverage. The fixture proves owner-scoped create/find/append, cross-owner read/write denial, SQL-looking owner/content round-trip, and no persisted-state change after a denied append. Full indexed-fixture -> retrieval -> answer/citation integration remains Task 9.
+Task 2 persistence is exercised against a real WordPress/MySQL environment in addition to unit-contract coverage. The fixture proves owner-scoped create/find/append, cross-owner read/write denial, SQL-looking owner/content round-trip, and no persisted-state change after a denied append. Full indexed-fixture -> retrieval -> answer/citation integration remains Task 9.
 
 ## E2E / Visual Verification
 Backend streaming smoke remains later M11 work; visual widget remains M14.
@@ -115,9 +114,9 @@ Task 1 scoped review covered caller-controlled authorization leakage, question/o
 
 Task 1 result at reviewed SHA `993ed2705d4dc3665c238c01038deb0a9669b9f9`: **0 Critical / 0 Important**. PR review record: `5123774888`.
 
-Task 2 implementation now has prepared value binding, mandatory owner predicates on every declared conversation/message read/write path, atomic append authorization, hard persisted-field bounds, generic cross-owner failure, exact SQL-looking-value tests, schema indexes for owner/conversation access paths, and real WordPress verification.
+Task 2 review covered V007–V009 migrations, prepared value binding, mandatory owner predicates, IDOR/cross-owner fail-closed behavior, atomic append authorization, hard persisted-field bounds, malicious-looking values, sensitive-data boundaries, uninstall/upgrade behavior, and indexed owner/conversation access paths.
 
-Mandatory independent Task 2 review remains open. No claim of Task 2 completion is permitted until that gate is closed.
+Task 2 result at reviewed SHA `b20798c14ec6169b8ffddfed2a8e03199c1fd822`: **0 Critical / 0 Important**. PR review record: `5124482278`.
 
 ## Performance Review where relevant
 Task 1 enforces construction-time hard ceilings for question bytes, caller-controlled identifiers, and requested generation output tokens before later orchestration/provider dispatch.
@@ -129,7 +128,7 @@ Task 1 review history includes one Important issue already resolved before close
 
 Current unresolved Task 1 findings: **0 Critical / 0 Important**.
 
-No Critical/Important defect has been identified during coordinator verification of the Task 2 SQL repository slice. This is not a substitute for the mandatory independent review; Task 2's independent review gate remains open.
+Task 2 scoped review found **0 Critical / 0 Important** findings; no review-fix regression cycle was required.
 
 ## Fixes
 - `c624a90669692876bec1546e1582a10db8acc335` — bound M11 request identifiers to 255 bytes.
@@ -143,7 +142,9 @@ Task 1 reviewed head `993ed2705d4dc3665c238c01038deb0a9669b9f9` passed CI `34003
 
 Task 2 real-repository integration head `34182b7144cc99417bb1cd2df6213cfaa146909b` passed CI `34010412433`: PHPStan 0 errors; PHPUnit 570 tests / 2296 assertions; Composer audit clean; JavaScript verification GREEN; package GREEN; WordPress activation/database/providers/knowledge/file-ingestion/WooCommerce smoke GREEN. Artifact `9982282541`, 840703 bytes, digest `sha256:521dfcac64a207611aa0298075f49eafd4dd43949048ffed7dc8d7bc4a65d1fc`.
 
-A fresh exact-head CI run on this documentation commit is required before this ledger head can claim exact-head GREEN.
+Task 2 reviewed exact head `b20798c14ec6169b8ffddfed2a8e03199c1fd822` passed CI `34010581646` across all permanent jobs. Artifact `9982326787`, 840704 bytes, digest `sha256:ab15f8879949e72283e84da4a1dc78b4e02a5c8c01fef2a6ad3799d804e8818b`.
+
+A fresh exact-head CI run on this Task 2 closeout documentation commit is required before advancing Task 3.
 
 ## Commits
 Task 1 and Task 2 implementation/history are retained on PR #16 (`feat/m11-rag-chat-orchestration`).
@@ -180,16 +181,16 @@ Task 2:
 - this milestone ledger.
 
 ## Known Limitations
-Task 2 implementation and real-database verification are GREEN, but Task 2 intentionally remains open until mandatory independent review closes with zero unresolved Critical/Important findings. Memory, retrieval orchestration, citation validation, prompt construction, generation orchestration, and streaming remain Tasks 3–9.
+Memory, retrieval orchestration, citation validation, prompt construction, generation orchestration, and streaming remain Tasks 3–9. Task 2's persistence foundation is complete and reviewed; no general conversation-listing/UI semantics are added outside M11 scope.
 
 ## Documentation Updated
-This ledger reflects the actual M11 Task 1 closeout and Task 2 schema/contracts/SQL-repository/real-WordPress verification evidence without overstating the still-open independent review gate.
+This ledger reflects the actual M11 Task 1 and Task 2 closeout evidence without overstating later memory/citation/orchestration work.
 
 ## Completion Checklist
-M11 remains incomplete until Tasks 2–9 and all milestone-wide security/performance/integration/merge gates pass.
+M11 remains incomplete until Tasks 3–9 and all milestone-wide security/performance/integration/merge gates pass.
 
 ## Exact Next Unfinished Action
-Obtain the mandatory independent Task 2 review over `WpdbConversationRepository`, `WpdbMessageRepository`, V007–V009, repository tests, and real WordPress persistence smoke. Review prepared SQL, mandatory owner predicates, cross-owner fail-closed behavior, hard persisted-field/result bounds, atomic append semantics, malicious-looking value handling, sensitive-data persistence, and indexed query paths. Fix every Critical/Important finding with a fresh regression RED/GREEN cycle and re-review. If the review closes at zero unresolved Critical/Important, mark Task 2 **COMPLETE / GREEN / INDEPENDENT REVIEW CLOSED**, obtain exact-head GREEN CI, and only then begin Task 3 with a test-only bounded-memory RED.
+After exact-head CI passes on this Task 2 closeout commit, begin **Task 3 — deterministic bounded memory assembly** with a test-only behavioral RED proving newest-message retention, deterministic oldest-first truncation, at most 12 messages, at most 24 KiB memory text, at most one versioned summary, stable chronological output ordering, and no cross-owner history access. Do not add production memory classes until that RED reaches the behavior suite for the expected missing-contract reason.
 
 ## Next Milestone
 M12 — Admin Onboarding/Bot Management.
