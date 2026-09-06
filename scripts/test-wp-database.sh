@@ -7,6 +7,7 @@ $WP plugin deactivate wp-rag-ai-chatbot --quiet || true
 $WP eval '$p=$GLOBALS["wpdb"]->prefix; $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_message_citations"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_messages"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_conversations"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_chunk_search"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_jobs"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_vectors"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_vector_collections"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_documents"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_sources"); delete_option("wp_rag_ai_db_version"); delete_option("wp_rag_ai_delete_data_on_uninstall");'
 $WP plugin activate wp-rag-ai-chatbot --quiet
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-database.php
+$WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-conversations.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-job-queue.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-chunk-search.php
 
@@ -15,6 +16,7 @@ $WP eval '$p=$GLOBALS["wpdb"]->prefix; $GLOBALS["wpdb"]->query("DROP TABLE IF EX
 # A new WP-CLI process loads active plugins and must perform the normal plugins_loaded upgrade through the current schema.
 $WP eval 'if ((int) get_option("wp_rag_ai_db_version", 0) !== 9) { fwrite(STDERR, "Automatic V1 to V9 upgrade failed\n"); exit(1); }'
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-database.php
+$WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-conversations.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-job-queue.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-chunk-search.php
 
@@ -32,5 +34,6 @@ $WP eval 'define("WP_UNINSTALL_PLUGIN", "wp-rag-ai-chatbot/wp-rag-ai-chatbot.php
 # A clean reinstall must recreate the schema and repositories successfully.
 $WP plugin activate wp-rag-ai-chatbot --quiet
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-database.php
+$WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-conversations.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-job-queue.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-chunk-search.php
