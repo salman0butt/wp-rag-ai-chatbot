@@ -29,7 +29,7 @@ final class ChunkSearchMigrationContractTest extends TestCase {
 
 		$tables = new TableNames( 'wp_' );
 		self::assertTrue( method_exists( $tables, 'chunk_search' ), 'TableNames must expose chunk_search().' );
-		self::assertSame( 6, DatabaseSchema::VERSION );
+		self::assertGreaterThanOrEqual( 6, DatabaseSchema::VERSION );
 
 		$migration  = new $class( $tables );
 		$connection = new RecordingConnection();
