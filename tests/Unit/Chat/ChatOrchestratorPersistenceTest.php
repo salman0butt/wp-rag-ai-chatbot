@@ -382,6 +382,7 @@ final class ChatOrchestratorPersistenceTest extends TestCase {
 			 * @param string              $conversation_id Conversation identifier.
 			 * @param string              $owner_scope Trusted owner scope.
 			 * @param ConversationMessage $message Assistant message.
+			 * @throws RuntimeException When the fake is configured to expose a raw repository failure.
 			 */
 			public function append_for_owner( string $conversation_id, string $owner_scope, ConversationMessage $message ): void {
 				++$this->append_calls;
@@ -391,6 +392,7 @@ final class ChatOrchestratorPersistenceTest extends TestCase {
 				$this->log->append( 'persistence' );
 
 				if ( null !== $this->failure ) {
+					// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test intentionally simulates raw repository diagnostics.
 					throw new RuntimeException( $this->failure );
 				}
 			}
