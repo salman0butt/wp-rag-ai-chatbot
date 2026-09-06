@@ -43,9 +43,6 @@ final readonly class PromptContext {
 
 		foreach ( $evidence as $entry ) {
 			if (
-				! isset( $entry['id'], $entry['content'] ) ||
-				! is_string( $entry['id'] ) ||
-				! is_string( $entry['content'] ) ||
 				1 !== preg_match( '/^C[1-9][0-9]*$/', $entry['id'] ) ||
 				'' === trim( $entry['content'] )
 			) {
