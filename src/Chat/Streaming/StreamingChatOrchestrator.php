@@ -18,7 +18,8 @@ use WpRagAiChatbot\Citations\CitationValidator;
  * Normalizes provider stream deltas into stable bounded application events.
  */
 final class StreamingChatOrchestrator {
-	private const MAX_DELTA_BYTES = 4096;
+	private const MAX_DELTA_BYTES  = 4096;
+	private const MAX_ANSWER_BYTES = 65536;
 
 	/**
 	 * Create the streaming normalizer.
@@ -41,8 +42,10 @@ final class StreamingChatOrchestrator {
 		CitationRegistry $registry,
 		Cancellation $cancellation
 	): \Generator {
-		$sequence = 0;
-		$answer   = '';
+		$sequence        = 0;
+		$answer          = '';
+		$answer_bytes    = 0;
+		$limit_exceeded  = false;
 
 		yield new StreamEvent( $sequence++, StreamEventType::MESSAGE_START );
 
@@ -64,13 +67,25 @@ final class StreamingChatOrchestrator {
 						break;
 					}
 
-					$answer .= $bounded_delta;
+					$bounded_bytes = strlen( $bounded_delta );
+					if ( $answer_bytes + $bounded_bytes > self::MAX_ANSWER_BYTES ) {
+						$limit_exceeded = true;
+						break 2;
+					}
+
+					$answer       .= $bounded_delta;
+					$answer_bytes += $bounded_bytes;
 					yield new StreamEvent( $sequence++, StreamEventType::MESSAGE_DELTA, $bounded_delta );
 				}
 			}
 
 			if ( $cancellation->is_cancelled() ) {
 				yield new StreamEvent( $sequence, StreamEventType::ERROR, null, null, ChatFailureReason::CANCELLED );
+				return;
+			}
+
+			if ( $limit_exceeded ) {
+				yield new StreamEvent( $sequence, StreamEventType::ERROR, null, null, ChatFailureReason::GENERATION_FAILED );
 				return;
 			}
 
