@@ -88,3 +88,56 @@ export const createAdminApiClient = (
 		},
 	};
 };
+
+export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
+
+export interface AdminShellProps {
+	state: AdminShellState;
+}
+
+type ElementFactory = (
+	type: string,
+	props: Record< string, unknown > | null,
+	...children: unknown[]
+) => unknown;
+
+declare global {
+	interface Window {
+		wp: {
+			element: {
+				createElement: ElementFactory;
+			};
+		};
+	}
+}
+
+export const AdminShell = ( { state }: AdminShellProps ): unknown => {
+	const createElement = window.wp.element.createElement;
+
+	if ( state === 'loading' ) {
+		return createElement(
+			'div',
+			{ role: 'status', 'aria-live': 'polite' },
+			'Loading administration data…'
+		);
+	}
+
+	if ( state === 'error' ) {
+		return createElement(
+			'div',
+			{ role: 'alert' },
+			'Administration data could not be loaded.'
+		);
+	}
+
+	if ( state === 'empty' ) {
+		return createElement(
+			'section',
+			{ 'data-admin-state': 'empty' },
+			createElement( 'h2', null, 'Bots' ),
+			createElement( 'p', null, 'No bots configured yet.' )
+		);
+	}
+
+	return createElement( 'div', { 'data-admin-state': 'ready' } );
+};
