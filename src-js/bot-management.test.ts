@@ -105,7 +105,10 @@ describe( 'BotManagementScreen', () => {
 
 	it( 'renders bot rows and deterministic pagination from the Task 3 list contract', () => {
 		const root = renderBotManagement( {
-			items: [ bot( 'bot-alpha', 'Support Bot' ), bot( 'bot-beta', 'Sales Bot' ) ],
+			items: [
+				bot( 'bot-alpha', 'Support Bot' ),
+				bot( 'bot-beta', 'Sales Bot' ),
+			],
 			total: 3,
 			page: 1,
 			per_page: 2,
@@ -120,8 +123,8 @@ describe( 'BotManagementScreen', () => {
 			'Support Bot',
 			'Sales Bot',
 		] );
-		expect( root.querySelector( '[aria-label="Bot list pagination"]' )?.textContent ).toContain(
-			'Page 1 of 2'
-		);
+		expect(
+			root.querySelector( '[aria-label="Bot list pagination"]' )?.textContent
+		).toContain( 'Page 1 of 2' );
 	} );
 } );
