@@ -55,6 +55,7 @@ const configureAdminRuntime = ( fetcher: jest.Mock ): HTMLElement => {
 describe( 'bootstrapAdminApp server-derived state', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
+		window.location.hash = '';
 		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
 		Reflect.deleteProperty( window, 'fetch' );
 	} );
@@ -111,5 +112,30 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 		expect( root.textContent ).not.toContain(
 			'provider-secret-upstream-detail'
 		);
+	} );
+
+	it( 'rerenders the ready shell on hash navigation without refetching readiness', async () => {
+		const fetcher = jest.fn().mockResolvedValue( {
+			ok: true,
+			status: 200,
+			json: async () => ( { ready: true, next_step: 'complete' } ),
+		} );
+		const root = configureAdminRuntime( fetcher );
+
+		window.location.hash = '#/onboarding';
+		expect( bootstrapAdminApp() ).toBe( true );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( root.querySelector( 'main h1' )?.textContent ).toBe(
+			'Onboarding'
+		);
+
+		window.location.hash = '#/providers';
+		window.dispatchEvent( new HashChangeEvent( 'hashchange' ) );
+
+		expect( root.querySelector( 'main h1' )?.textContent ).toBe(
+			'Providers'
+		);
+		expect( fetcher ).toHaveBeenCalledTimes( 1 );
 	} );
 } );
