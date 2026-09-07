@@ -15,35 +15,30 @@ use WpRagAiChatbot\Database\Migrations\V003CreateVectorCollectionsTable;
 use WpRagAiChatbot\Database\Migrations\V004CreateVectorsTable;
 use WpRagAiChatbot\Database\Migrations\V005CreateJobsTable;
 use WpRagAiChatbot\Database\Migrations\V006CreateChunkSearchTable;
+use WpRagAiChatbot\Database\Migrations\V007CreateConversationsTable;
+use WpRagAiChatbot\Database\Migrations\V008CreateMessagesTable;
+use WpRagAiChatbot\Database\Migrations\V009CreateMessageCitationsTable;
 
 /**
  * Composes and executes database migrations at WordPress lifecycle boundaries.
  */
 final class DatabaseBootstrap {
-	/**
-	 * WordPress activation action callback.
-	 */
+	/** WordPress activation action callback. */
 	public static function on_activate(): void {
 		self::migrate();
 	}
 
-	/**
-	 * Early plugins_loaded callback for automatic upgrades.
-	 */
+	/** Early plugins_loaded callback for automatic upgrades. */
 	public static function on_plugins_loaded(): void {
 		self::migrate_if_needed();
 	}
 
-	/**
-	 * Run pending migrations and return the execution status.
-	 */
+	/** Run pending migrations and return the execution status. */
 	public static function migrate(): MigrationStatus {
 		return self::runner()->run();
 	}
 
-	/**
-	 * Avoid migration composition when the stored version is already current.
-	 */
+	/** Avoid migration composition when the stored version is already current. */
 	public static function migrate_if_needed(): MigrationStatus {
 		$versions = new WordPressSchemaVersionStore();
 		if ( $versions->current() >= DatabaseSchema::VERSION ) {
@@ -75,6 +70,9 @@ final class DatabaseBootstrap {
 				new V004CreateVectorsTable( $tables ),
 				new V005CreateJobsTable( $tables ),
 				new V006CreateChunkSearchTable( $tables ),
+				new V007CreateConversationsTable( $tables ),
+				new V008CreateMessagesTable( $tables ),
+				new V009CreateMessageCitationsTable( $tables ),
 			)
 		);
 	}

@@ -21,46 +21,49 @@ final class TableNames {
 	public function __construct( private readonly string $prefix ) {
 	}
 
-	/**
-	 * Sources table.
-	 */
+	/** Sources table. */
 	public function sources(): string {
 		return $this->prefix . 'rag_ai_sources';
 	}
 
-	/**
-	 * Documents table.
-	 */
+	/** Documents table. */
 	public function documents(): string {
 		return $this->prefix . 'rag_ai_documents';
 	}
 
-	/**
-	 * Local vector collections table.
-	 */
+	/** Local vector collections table. */
 	public function vector_collections(): string {
 		return $this->prefix . 'rag_ai_vector_collections';
 	}
 
-	/**
-	 * Local vectors table.
-	 */
+	/** Local vectors table. */
 	public function vectors(): string {
 		return $this->prefix . 'rag_ai_vectors';
 	}
 
-	/**
-	 * Persisted jobs table.
-	 */
+	/** Persisted jobs table. */
 	public function jobs(): string {
 		return $this->prefix . 'rag_ai_jobs';
 	}
 
-	/**
-	 * Searchable chunk projection table.
-	 */
+	/** Searchable chunk projection table. */
 	public function chunk_search(): string {
 		return $this->prefix . 'rag_ai_chunk_search';
+	}
+
+	/** Conversations table. */
+	public function conversations(): string {
+		return $this->prefix . 'rag_ai_conversations';
+	}
+
+	/** Conversation messages table. */
+	public function messages(): string {
+		return $this->prefix . 'rag_ai_messages';
+	}
+
+	/** Persisted message citations table. */
+	public function message_citations(): string {
+		return $this->prefix . 'rag_ai_message_citations';
 	}
 
 	/**
@@ -69,6 +72,16 @@ final class TableNames {
 	 * @return string[]
 	 */
 	public function all(): array {
-		return array( $this->chunk_search(), $this->jobs(), $this->vectors(), $this->vector_collections(), $this->documents(), $this->sources() );
+		return array(
+			$this->message_citations(),
+			$this->messages(),
+			$this->conversations(),
+			$this->chunk_search(),
+			$this->jobs(),
+			$this->vectors(),
+			$this->vector_collections(),
+			$this->documents(),
+			$this->sources(),
+		);
 	}
 }

@@ -23,6 +23,20 @@ final class RecordingConnection implements Connection {
 	public array $prepared_calls = array();
 
 	/**
+	 * Queries received by query().
+	 *
+	 * @var string[]
+	 */
+	public array $queries = array();
+
+	/**
+	 * Insert calls.
+	 *
+	 * @var array<int, array{table: string, data: array<string, mixed>, format: string[]}>
+	 */
+	public array $insert_calls = array();
+
+	/**
 	 * Scalar queries received by get_var().
 	 *
 	 * @var string[]
@@ -35,6 +49,34 @@ final class RecordingConnection implements Connection {
 	 * @var string[]
 	 */
 	public array $db_delta_queries = array();
+
+	/**
+	 * Row returned by get_row().
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public ?array $get_row_result = null;
+
+	/**
+	 * Result returned by query().
+	 *
+	 * @var int|bool
+	 */
+	public int|bool $query_result = 0;
+
+	/**
+	 * Result returned by insert().
+	 *
+	 * @var int|bool
+	 */
+	public int|bool $insert_result = 1;
+
+	/**
+	 * Insert identifier returned by insert_id().
+	 *
+	 * @var int
+	 */
+	public int $insert_id_result = 1;
 
 	/**
 	 * Create the recording connection.
@@ -88,7 +130,8 @@ final class RecordingConnection implements Connection {
 	 * @param string $query SQL statement.
 	 */
 	public function query( string $query ): int|bool {
-		return 0;
+		$this->queries[] = $query;
+		return $this->query_result;
 	}
 
 	/**
@@ -102,13 +145,13 @@ final class RecordingConnection implements Connection {
 	}
 
 	/**
-	 * Return no row.
+	 * Return the configured row.
 	 *
 	 * @param string $query SQL statement.
 	 * @return array<string, mixed>|null
 	 */
 	public function get_row( string $query ): ?array {
-		return null;
+		return $this->get_row_result;
 	}
 
 	/**
@@ -122,14 +165,19 @@ final class RecordingConnection implements Connection {
 	}
 
 	/**
-	 * Simulate insert success.
+	 * Record and simulate an insert.
 	 *
 	 * @param string               $table Table name.
 	 * @param array<string, mixed> $data Row values.
-	 * @param string[]             $format Value formats.
+	 * @param string[]             $format WordPress value formats.
 	 */
 	public function insert( string $table, array $data, array $format = array() ): int|bool {
-		return 1;
+		$this->insert_calls[] = array(
+			'table'  => $table,
+			'data'   => $data,
+			'format' => $format,
+		);
+		return $this->insert_result;
 	}
 
 	/**
@@ -156,9 +204,9 @@ final class RecordingConnection implements Connection {
 		return 1;
 	}
 
-	/** Return a fixture insert identifier. */
+	/** Return the configured insert identifier. */
 	public function insert_id(): int {
-		return 1;
+		return $this->insert_id_result;
 	}
 
 	/**

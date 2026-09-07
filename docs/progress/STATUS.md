@@ -4,69 +4,31 @@
 
 - Completed milestones on `main`: **M00-M10**.
 - Current milestone: **M11 — RAG Chat Orchestration, Grounding, Citations, Memory & Streaming**.
-- Current task: **Task 7 — non-streaming `ChatOrchestrator`**.
+- Current task: **Task 9 — closeout documentation, final exact-head CI, merge, and post-merge verification**.
 - Active branch: `feat/m11-rag-chat-orchestration`.
-- Active PR: **#16** — draft, in progress.
-- Active head: `fa0605cb470d01483536e90f7d72a0d64ba71c40`.
-- Worker state: **IDLE_READY** — no active conflicting lease/relevant CI is running and the next action is executable.
-- Lease state: **RELEASED**; canonical PR #16 lease comment `5559419698`; `lease_id: none`; `owner: none`; `expires_at: none`. Every worker must re-fetch the comment immediately before writes.
-- Current gate: **Task 7 review regression — pre-test gate failure / invalid RED**.
-- Last valid Task 7 implementation head: `7a0d6753ed1eea3a633fcc22edb21d04696454db`.
-- Latest valid exact-head CI: push `34032130910` and PR `34032132670` on `7a0d6753...` — **SUCCESS**.
-- Latest observed CI for the current head: push `34032358421` and PR `34032360620` on `fa0605cb...` — **FAILURE** in `php-quality` at PHPCS before PHPUnit; JS quality, package, and WordPress smoke passed. This is **not** valid behavioral RED evidence.
-- CI wake-up signal: installed on `main` by commit `71153c7ddfcfda26cdbfe06fbd0f02aeacace3d6`; no `<!-- autonomous-ci-status -->` comment exists yet because PR #16 has not had a new PR CI run since installation.
-- Review findings: **Critical 0 / Important 1**. Independent Task 7 review `5125257980` requires owner-scoped persistence after successful citation validation and no persistence on strict-no-answer/invalid-citation paths.
-- Review regression head `fa0605cb470d01483536e90f7d72a0d64ba71c40` adds only `tests/Unit/Chat/ChatOrchestratorPersistenceTest.php`.
-- Blocked reason: **none**.
-- Exact next executable action: fix only the Task 7 persistence regression test's PHPCS/docblock/formatting violations without changing production behavior, rerun exact-head CI until PHPUnit executes and fails for the intended missing scoped-persistence behavior, record that genuine RED, then implement the minimum owner-scoped persistence hook, verify GREEN, and obtain a fresh independent Task 7 re-review with 0 unresolved Critical/Important findings.
-- `last_progress_at`: `2026-09-06T12:11:10Z` — last meaningful M11 branch progress.
-- `watchdog_observed_at`: `2026-09-06T13:27:30Z` — controller recovery state refreshed; this timestamp does not claim new M11 engineering progress.
+- Active PR: **#16** — draft until the final documentation-head CI gate is green.
+- Tasks 1-8: **COMPLETE / GREEN / REVIEW CLOSED** with durable task evidence retained in the M11 milestone/progress records.
+- Task 9 acceptance composition is implemented and verified: real M10 retrieval + M11 orchestration exercises grounded evidence/citations, strict no-answer, owner-scoped persistence, citation failure, and provider-diagnostic redaction.
+- Task 9 analytics/hooks are implemented: sanitized text-free metrics occur after successful persistence or on controlled strict no-answer; analytics transport or malformed analytics metadata is explicitly non-critical.
+- Initial Task 9 analytics behavioral RED: `99a966753041cb998622b398acbb22e138367a04`, CI `34084745950` — PHPStan 0 errors; PHPUnit executed 625 tests and failed exactly three intended missing-wiring assertions.
+- Initial analytics implementation: `47c6504a43c5c22921b55f1c5796e256bad19b4b`, CI `34084880416` — PHP verification GREEN.
+- Task 9 review `5128177983` found **0 Critical / 1 Important**: analytics event construction could throw outside the non-critical containment boundary after a valid persisted answer.
+- Genuine review regression RED: `c649185ac6a33d9fb33c2a692c5105c1c05a9606`, CI `34085098367` — PHPStan 0 errors; PHPUnit executed 626 tests and errored exactly once at `ChatAnalyticsEvent` construction for malformed provider analytics metadata.
+- Review fix: `b249759d1282a87170230fcef34f2da648f6a200` — analytics event construction and hook transport now share one `Throwable` containment boundary.
+- Follow-up review `5128205770`: **0 Critical / 0 Important unresolved** in the analytics slice.
+- Full Task 9 acceptance/security/performance closeout review `5128215473`: **0 Critical / 0 Important unresolved**.
+- Exact implementation-head CI: `34085227550` on `b249759d1282a87170230fcef34f2da648f6a200` — `php-quality`, `js-quality`, `package`, `wordpress-smoke`, and `autonomous-ci-status` **SUCCESS**; PHPStan 0 errors; PHPUnit **626/626**, **2,631 assertions**; Composer audit clean.
+- Verified package artifact: `wp-rag-ai-chatbot`, artifact `10004978082`, digest `sha256:63791339fd0915be35387922d0ce9b14810bd435fade61c11f55d8a0ccde7d47`.
+- Security/performance result: owner-scoped memory/retrieval/persistence remains fail-closed; prompt/citation/output/context/provider-call/persistence/streaming bounds remain enforced; analytics contains no question, transcript, evidence, owner scope, credentials, or raw provider diagnostics; no unresolved Critical/Important review finding remains.
+- Known non-blocking scope limitations: normal CI uses deterministic fake provider/vector boundaries rather than paid live-provider calls; public REST/widget integration, debugger/evals UX, and durable analytics aggregation belong to later milestones.
+- `worker_state`: **ACTIVE**.
+- `lease_state`: **ACTIVE**; canonical PR comment `5559419698`; current owner `chatgpt-hourly-20260907T0449Z`.
+- Exact next action: finish M11 closeout/feature documentation on the current branch; require all permanent CI jobs GREEN on that exact documentation head; re-check current head + lease + review threads; mark PR #16 ready, merge only with expected-head SHA protection, then verify a fresh post-merge `main` CI before declaring M11 complete on `main` and advancing immediately to M12.
+- `last_progress_at`: `2026-09-07T05:29:00Z` — Task 9 implementation, regression review fix, full security/performance review, exact implementation-head CI, and package digest are all verified.
+- `watchdog_observed_at`: `2026-09-07T05:29:00Z`.
 
 The live checkpoint is a recovery index, not stronger evidence than Git/code/tests/PR/reviews/exact-SHA CI. Reconcile it on every fresh run and update it at meaningful task gates.
 
-- Completed milestones on `main`: **M00-M10**.
-- M10 feature merge SHA: `4c1f54e667b36c6c8ec09b1dffc81fb20c2034de`.
-- M10 post-merge `main` CI: `34000242280` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN.
-- M10 post-merge artifact: `9979266115`, digest `sha256:d4674298b858b70de5181883f824974ababf3580fc990b0b15cfd67452db7c66`.
-- Current milestone: **M11 — RAG Chat Orchestration**.
-- M10 implementation PR #15: **MERGED**.
+## Latest completed milestone
 
-## M10 final state — COMPLETE
-
-M10 is fully integrated on `main`. Detailed evidence is in `docs/milestones/M10-hybrid-retrieval-reranking.md`, `docs/progress/M10-CLOSEOUT.md`, the task ledgers, and merged PR #15.
-
-Architecture/spec and implementation plan were completed and **AUTO-APPROVED — SCHEDULED MODE**:
-
-- `docs/superpowers/specs/2026-09-05-m10-hybrid-retrieval-reranking-design.md`
-- `docs/superpowers/plans/2026-09-05-m10-hybrid-retrieval-reranking.md`
-
-Completed scope:
-
-- **Task 1:** bounded retrieval query/config/result/trace contracts and identifier-preserving query preprocessing — independent review closed.
-- **Task 2:** deterministic weighted Reciprocal Rank Fusion, duplicate collapse, stable ordering, and deterministic confidence — independent review findings fixed through RED/GREEN evidence.
-- **Task 3:** durable V006 chunk-search projection, prepared bounded SQL, accepted-plan synchronization, and retry-safe persistence — independent review closed.
-- **Task 4:** lexical/exact retrieval with SKU/model/error-code evidence, trusted scope rechecks, and hard candidate ceilings — independent review finding fixed through RED/GREEN evidence.
-- **Task 5:** one-query bounded semantic retrieval over M08 contracts, portable trusted filter mapping, canonical lineage hydration/revalidation, and deterministic ranking — independent review closed.
-- **Task 6:** hybrid orchestration, explicit controlled degradation, fail-closed post-fusion access policy, deterministic confidence, and safe channel diagnostics — independent review findings fixed through RED/GREEN evidence.
-- **Task 7:** optional bounded post-access reranking with preserved lineage, finite-score/unknown-ID validation, deterministic fallback/ties, and final context ceilings — independent review closed.
-- **Task 8:** end-to-end hybrid acceptance, whole-M10 security/performance review, milestone documentation, exact-head CI, protected merge, and post-merge verification — final review `5123489610`, Critical 0 / Important 0.
-
-Key final verification:
-
-- Task 8 acceptance head `19ab7eea5262369e8ced90238605a354e87ba6f6` / CI `33999864905`: all four permanent jobs GREEN; PHPStan 0 errors; PHPUnit **552/552**, **2,230 assertions**; Composer audit clean; artifact `9979163515`, digest `sha256:c9bd54c124bedaaa99c421e6a292a0ed0397a6a92317237ae677b25bc9a645c5`.
-- Final pre-merge head `83bad6f16e45bd67f9658487ab5b030064d00da2` / CI `34000059826`: all four permanent jobs GREEN; artifact `9979220629`, digest `sha256:c7b0e16edc315f1aaf02d378bdc5235a1fb77dd0d2327546422d0e3c7eff027c`.
-- PR #15 merged with expected-head-SHA protection to `4c1f54e667b36c6c8ec09b1dffc81fb20c2034de`.
-- Fresh post-merge `main` CI `34000242280`: all four permanent jobs GREEN; artifact `9979266115`, digest `sha256:d4674298b858b70de5181883f824974ababf3580fc990b0b15cfd67452db7c66`.
-- Final Task 8 security/performance review `5123489610`: **0 Critical / 0 Important**; zero unresolved PR review threads at merge.
-
-## M10 durable behavior
-
-M10 provides bounded semantic and lexical/exact retrieval, deterministic weighted RRF, trusted fail-closed filtering, durable local lexical projection, safe diagnostics, controlled single-channel degradation, deterministic confidence, and optional bounded post-filter reranking. Query/provider diagnostic data are redacted, retrieval work is hard-bounded, semantic lineage is revalidated through canonical local chunks, and normal CI does not require paid provider calls.
-
-## Prior milestone evidence
-
-M09 remains complete on `main` at feature merge SHA `0a4ba0d3133e41d28812d5ddb81abad8266b0c26`, with post-merge CI `33961341720` GREEN and artifact `9968035763` (`sha256:de944bc71d41444cab9f4974ce4f81788536d3769b347d7391905a8c587f96d8`). Detailed M09 evidence remains in `docs/milestones/M09-job-queue-sync-recovery.md` and `docs/progress/M09-CLOSEOUT.md`.
-
-## Exact next unfinished action
-
-Resume M11 Task 7 from PR #16. The current test-only head `fa0605cb470d01483536e90f7d72a0d64ba71c40` is **not** genuine RED because PHPCS stopped before PHPUnit. Fix only the new persistence regression test's standards violations first, rerun exact-head CI until the intended test executes and fails for the missing owner-scoped persistence behavior, then implement the minimum production persistence hook, verify focused/broad GREEN, and obtain a fresh independent Task 7 re-review with 0 unresolved Critical/Important findings before proceeding to Task 8.
+M10 remains complete on `main` at feature merge SHA `4c1f54e667b36c6c8ec09b1dffc81fb20c2034de`, with post-merge CI `34000242280` GREEN. M11 is implementation-complete on its feature branch but does not become a completed `main` milestone until PR #16 merges at an exact verified head and fresh post-merge `main` CI is GREEN.
