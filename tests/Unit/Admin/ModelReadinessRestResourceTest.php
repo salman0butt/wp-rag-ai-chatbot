@@ -138,6 +138,7 @@ final class ModelReadinessRestResourceTest extends TestCase {
 		$unconfigured = $this->resource( $registry, false, $bots );
 		self::assertSame( 'provider', $unconfigured->readiness()['next_step'] );
 		self::assertFalse( $unconfigured->readiness()['ready'] );
+		self::assertSame( 'missing_credential', $unconfigured->readiness()['issue'] );
 	}
 
 	/**
