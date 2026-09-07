@@ -115,13 +115,21 @@ final class ChatAnalyticsWiringTest extends TestCase {
 		$log  = new ArrayObject();
 		$hook = new class( $log ) implements ChatAnalyticsHook {
 			/**
+			 * Store the observable event order.
+			 *
 			 * @param ArrayObject $log Observable order.
 			 * @phpstan-param ArrayObject<int,string> $log
 			 */
 			public function __construct( private ArrayObject $log ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Record an analytics event and simulate a transport failure.
+			 *
+			 * @param ChatAnalyticsEvent $event Analytics event.
+			 *
+			 * @throws RuntimeException Always, to verify containment.
+			 */
 			public function record( ChatAnalyticsEvent $event ): void {
 				$this->log->append( 'analytics' );
 				throw new RuntimeException( 'analytics api_key=secret raw body' );
@@ -148,35 +156,60 @@ final class ChatAnalyticsWiringTest extends TestCase {
 		$candidate = new RankedCandidate( 'chunk-1', 'doc-1', 8, 'Grounded evidence.', 'en', 'public', 1.0 );
 		$fixtures  = $with_evidence ? array( $candidate ) : array();
 		$history   = new class() implements ConversationHistory {
-			/** {@inheritDoc} */
+			/**
+			 * Return recent owner-scoped history.
+			 *
+			 * @param string $conversation_id Conversation identifier.
+			 * @param string $owner_scope Owner scope.
+			 * @param int    $limit Maximum messages.
+			 *
+			 * @return array<int,ConversationMessage>
+			 */
 			public function recent_for_owner( string $conversation_id, string $owner_scope, int $limit ): array {
 				return array();
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return an owner-scoped summary.
+			 *
+			 * @param string $conversation_id Conversation identifier.
+			 * @param string $owner_scope Owner scope.
+			 *
+			 * @return array<string,mixed>|null
+			 */
 			public function summary_for_owner( string $conversation_id, string $owner_scope ): ?array {
 				return null;
 			}
 		};
 		$provider  = new class( $log ) implements GenerationProvider {
 			/**
+			 * Store the observable event order.
+			 *
 			 * @param ArrayObject $log Observable order.
 			 * @phpstan-param ArrayObject<int,string> $log
 			 */
 			public function __construct( private ArrayObject $log ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return the deterministic provider identifier.
+			 */
 			public function provider_id(): string {
 				return 'analytics-fake';
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Report that the fake provider is available.
+			 */
 			public function available(): bool {
 				return true;
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Generate the deterministic grounded answer.
+			 *
+			 * @param GenerationRequest $request Generation request.
+			 */
 			public function generate( GenerationRequest $request ): GenerationResult {
 				$this->log->append( 'generation' );
 				return new GenerationResult(
@@ -190,13 +223,21 @@ final class ChatAnalyticsWiringTest extends TestCase {
 		};
 		$persistence = new class( $log ) implements MessageRepository {
 			/**
+			 * Store the observable event order.
+			 *
 			 * @param ArrayObject $log Observable order.
 			 * @phpstan-param ArrayObject<int,string> $log
 			 */
 			public function __construct( private ArrayObject $log ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Persist an owner-scoped message.
+			 *
+			 * @param string              $conversation_id Conversation identifier.
+			 * @param string              $owner_scope Owner scope.
+			 * @param ConversationMessage $message Conversation message.
+			 */
 			public function append_for_owner( string $conversation_id, string $owner_scope, ConversationMessage $message ): void {
 				$this->log->append( 'persistence' );
 			}
@@ -236,6 +277,8 @@ final class ChatAnalyticsWiringTest extends TestCase {
 	private function hook( ArrayObject $log, ArrayObject $events ): ChatAnalyticsHook {
 		return new class( $log, $events ) implements ChatAnalyticsHook {
 			/**
+			 * Store observable order and captured analytics events.
+			 *
 			 * @param ArrayObject $log Observable order.
 			 * @param ArrayObject $events Captured events.
 			 * @phpstan-param ArrayObject<int,string> $log
@@ -244,7 +287,11 @@ final class ChatAnalyticsWiringTest extends TestCase {
 			public function __construct( private ArrayObject $log, private ArrayObject $events ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Record the analytics event.
+			 *
+			 * @param ChatAnalyticsEvent $event Analytics event.
+			 */
 			public function record( ChatAnalyticsEvent $event ): void {
 				$this->log->append( 'analytics' );
 				$this->events->append( $event );
@@ -262,32 +309,55 @@ final class ChatAnalyticsWiringTest extends TestCase {
 	private function retriever( array $fixtures, RetrievalConfig $config ): HybridRetriever {
 		$semantic = new class( $fixtures ) implements SemanticRetrievalChannel {
 			/**
+			 * Store deterministic ranked fixtures.
+			 *
 			 * @param array $fixtures Ranked fixtures.
 			 * @phpstan-param list<RankedCandidate> $fixtures
 			 */
 			public function __construct( private array $fixtures ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return deterministic semantic fixtures.
+			 *
+			 * @param RetrievalQuery           $query Retrieval query.
+			 * @param SemanticRetrievalContext $context Semantic context.
+			 *
+			 * @return list<RankedCandidate>
+			 */
 			public function retrieve( RetrievalQuery $query, SemanticRetrievalContext $context ): array {
 				return $this->fixtures;
 			}
 		};
 		$lexical  = new class( $fixtures ) implements LexicalRetrievalChannel {
 			/**
+			 * Store deterministic ranked fixtures.
+			 *
 			 * @param array $fixtures Ranked fixtures.
 			 * @phpstan-param list<RankedCandidate> $fixtures
 			 */
 			public function __construct( private array $fixtures ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return deterministic lexical fixtures.
+			 *
+			 * @param RetrievalQuery $query Retrieval query.
+			 * @param LexicalFilter  $filter Lexical filter.
+			 *
+			 * @return list<RankedCandidate>
+			 */
 			public function retrieve( RetrievalQuery $query, LexicalFilter $filter ): array {
 				return $this->fixtures;
 			}
 		};
-		$access   = new class() implements CandidateAccessPolicy {
-			/** {@inheritDoc} */
+		$access = new class() implements CandidateAccessPolicy {
+			/**
+			 * Allow the deterministic test candidate.
+			 *
+			 * @param RetrievalCandidate $candidate Retrieval candidate.
+			 * @param RetrievalFilter    $filter Retrieval filter.
+			 */
 			public function allows( RetrievalCandidate $candidate, RetrievalFilter $filter ): bool {
 				return true;
 			}
