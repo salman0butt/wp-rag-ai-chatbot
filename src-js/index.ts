@@ -252,7 +252,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	const config = window.wpRagAiChatbotAdminConfig;
 	const fetcher = window.fetch;
 
-	if ( config === undefined || typeof fetcher !== 'function' ) {
+	if ( config === undefined ) {
+		renderState( 'error' );
+		return true;
+	}
+
+	if ( typeof fetcher !== 'function' ) {
 		renderState( 'ready' );
 		return true;
 	}
