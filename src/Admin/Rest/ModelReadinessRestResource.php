@@ -120,15 +120,21 @@ final class ModelReadinessRestResource {
 			);
 		}
 
-		$page = $this->bots->list( 1, 100 );
-		foreach ( $page['items'] as $bot ) {
-			if ( isset( $compatible[ $bot->provider_id ][ $bot->model_id ] ) ) {
-				return array(
-					'ready'     => true,
-					'next_step' => 'complete',
-				);
+		$page_number = 1;
+		$per_page    = 100;
+		do {
+			$page = $this->bots->list( $page_number, $per_page );
+			foreach ( $page['items'] as $bot ) {
+				if ( isset( $compatible[ $bot->provider_id ][ $bot->model_id ] ) ) {
+					return array(
+						'ready'     => true,
+						'next_step' => 'complete',
+					);
+				}
 			}
-		}
+
+			++$page_number;
+		} while ( ( $page_number - 1 ) * $per_page < $page['total'] );
 
 		return array(
 			'ready'     => false,
