@@ -14,6 +14,10 @@ use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
+use WpRagAiChatbot\Providers\Credentials\AuthenticatedCredentialCipher;
+use WpRagAiChatbot\Providers\Credentials\RuntimeCredentialSourceReader;
+use WpRagAiChatbot\Providers\Credentials\RuntimeCryptoCapabilities;
+use WpRagAiChatbot\Providers\Credentials\WordPressCredentialStore;
 
 /**
  * Registers the plugin administration REST resources.
@@ -72,6 +76,28 @@ final class AdminRestBootstrap {
 				array(
 					'methods'             => 'DELETE',
 					'callback'            => array( self::class, 'delete_bot' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/providers/(?P<provider_id>[^/]+)/credential',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( self::class, 'get_provider_credential' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( self::class, 'put_provider_credential' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => array( self::class, 'delete_provider_credential' ),
 					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 				),
 			)
@@ -158,6 +184,44 @@ final class AdminRestBootstrap {
 	}
 
 	/**
+	 * Read safe credential configuration state for one direct provider.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function get_provider_credential( WP_REST_Request $request ): array {
+		return self::provider_credentials()->read( (string) $request->get_param( 'provider_id' ) );
+	}
+
+	/**
+	 * Store or replace one direct-provider credential without echoing it.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function put_provider_credential( WP_REST_Request $request ): array {
+		$payload = $request->get_json_params();
+		if ( null === $payload ) {
+			return self::invalid_request();
+		}
+
+		return self::provider_credentials()->write(
+			(string) $request->get_param( 'provider_id' ),
+			$payload
+		);
+	}
+
+	/**
+	 * Reset only the plugin-managed credential for one direct provider.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function delete_provider_credential( WP_REST_Request $request ): array {
+		return self::provider_credentials()->delete( (string) $request->get_param( 'provider_id' ) );
+	}
+
+	/**
 	 * Build the repository-backed bot resource from WordPress services.
 	 */
 	private static function bots(): BotRestResource {
@@ -171,6 +235,17 @@ final class AdminRestBootstrap {
 				new TableNames( $connection->prefix() )
 			)
 		);
+	}
+
+	/**
+	 * Build the provider credential resource from the established M03 secure storage seams.
+	 */
+	private static function provider_credentials(): ProviderCredentialRestResource {
+		$store = new WordPressCredentialStore(
+			new AuthenticatedCredentialCipher( new RuntimeCryptoCapabilities() )
+		);
+
+		return new ProviderCredentialRestResource( new RuntimeCredentialSourceReader(), $store );
 	}
 
 	/**
