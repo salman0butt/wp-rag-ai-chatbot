@@ -77,7 +77,7 @@ final class WpdbBotRepositoryTest extends TestCase {
 				self::assertSame( 4, $data['version'] ?? null );
 				self::assertSame(
 					array(
-						'bot_id' => '0123456789abcdef0123456789abcdef',
+						'bot_id'  => '0123456789abcdef0123456789abcdef',
 						'version' => 3,
 					),
 					$where
@@ -166,7 +166,11 @@ final class WpdbBotRepositoryTest extends TestCase {
 		return $this->createMock( Connection::class );
 	}
 
-	/** Create the repository under test. */
+	/**
+	 * Create the repository under test.
+	 *
+	 * @param Connection $connection Mocked persistence connection.
+	 */
 	private function repository( Connection $connection ): WpdbBotRepository {
 		return new WpdbBotRepository( $connection, new TableNames( 'wp_' ) );
 	}
