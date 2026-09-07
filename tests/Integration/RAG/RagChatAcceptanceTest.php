@@ -218,6 +218,8 @@ final class RagChatAcceptanceTest extends TestCase {
 		$config           = new RetrievalConfig();
 		$semantic_channel = new class( $log, $semantic ) implements SemanticRetrievalChannel {
 			/**
+			 * Create a deterministic semantic retrieval channel.
+			 *
 			 * @param ArrayObject $log Observable call order.
 			 * @param array       $fixtures Ranked fixtures.
 			 * @phpstan-param ArrayObject<int,string> $log
@@ -226,7 +228,13 @@ final class RagChatAcceptanceTest extends TestCase {
 			public function __construct( private ArrayObject $log, private array $fixtures ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return configured semantic fixtures.
+			 *
+			 * @param RetrievalQuery           $query Normalized retrieval query.
+			 * @param SemanticRetrievalContext $context Trusted semantic scope.
+			 * @return list<RankedCandidate>
+			 */
 			public function retrieve( RetrievalQuery $query, SemanticRetrievalContext $context ): array {
 				$this->log->append( 'retrieval.semantic' );
 				return $this->fixtures;
@@ -234,6 +242,8 @@ final class RagChatAcceptanceTest extends TestCase {
 		};
 		$lexical_channel  = new class( $log, $lexical ) implements LexicalRetrievalChannel {
 			/**
+			 * Create a deterministic lexical retrieval channel.
+			 *
 			 * @param ArrayObject $log Observable call order.
 			 * @param array       $fixtures Ranked fixtures.
 			 * @phpstan-param ArrayObject<int,string> $log
@@ -242,14 +252,25 @@ final class RagChatAcceptanceTest extends TestCase {
 			public function __construct( private ArrayObject $log, private array $fixtures ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return configured lexical fixtures.
+			 *
+			 * @param RetrievalQuery $query Normalized retrieval query.
+			 * @param LexicalFilter  $filter Trusted lexical scope.
+			 * @return list<RankedCandidate>
+			 */
 			public function retrieve( RetrievalQuery $query, LexicalFilter $filter ): array {
 				$this->log->append( 'retrieval.lexical' );
 				return $this->fixtures;
 			}
 		};
 		$access_policy    = new class() implements CandidateAccessPolicy {
-			/** {@inheritDoc} */
+			/**
+			 * Recheck each fused candidate against trusted portable scope.
+			 *
+			 * @param RetrievalCandidate $candidate Fused retrieval candidate.
+			 * @param RetrievalFilter    $filter Trusted access filter.
+			 */
 			public function allows( RetrievalCandidate $candidate, RetrievalFilter $filter ): bool {
 				if ( null !== $filter->visibility && $candidate->visibility !== $filter->visibility ) {
 					return false;
@@ -280,19 +301,34 @@ final class RagChatAcceptanceTest extends TestCase {
 	private function history( ArrayObject $log ): ConversationHistory {
 		return new class( $log ) implements ConversationHistory {
 			/**
+			 * Create owner-scoped history double.
+			 *
 			 * @param ArrayObject $log Observable call order.
 			 * @phpstan-param ArrayObject<int,string> $log
 			 */
 			public function __construct( private ArrayObject $log ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return one bounded recent message.
+			 *
+			 * @param string $conversation_id Stable conversation identifier.
+			 * @param string $owner_scope Trusted owner scope.
+			 * @param int    $limit Requested hard limit.
+			 * @return list<ConversationMessage>
+			 */
 			public function recent_for_owner( string $conversation_id, string $owner_scope, int $limit ): array {
 				$this->log->append( 'memory.recent' );
 				return array( new ConversationMessage( 'user', 'Earlier bounded question.' ) );
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Return no persisted summary.
+			 *
+			 * @param string $conversation_id Stable conversation identifier.
+			 * @param string $owner_scope Trusted owner scope.
+			 * @return array{summary:string,version:int}|null
+			 */
 			public function summary_for_owner( string $conversation_id, string $owner_scope ): ?array {
 				$this->log->append( 'memory.summary' );
 				return null;
@@ -318,6 +354,8 @@ final class RagChatAcceptanceTest extends TestCase {
 	): GenerationProvider {
 		return new class( $log, $capture, $answer, $failure ) implements GenerationProvider {
 			/**
+			 * Create deterministic provider double.
+			 *
 			 * @param ArrayObject           $log Observable call order.
 			 * @param ArrayObject           $capture Captured normalized request.
 			 * @param string                $answer Deterministic answer.
@@ -343,7 +381,12 @@ final class RagChatAcceptanceTest extends TestCase {
 				return true;
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Generate configured deterministic output and capture only provider-visible request fields.
+			 *
+			 * @param GenerationRequest $request Normalized generation request.
+			 * @throws RuntimeException When the configured provider failure is present.
+			 */
 			public function generate( GenerationRequest $request ): GenerationResult {
 				$this->log->append( 'generation' );
 				$this->capture['input']        = $request->input;
@@ -372,13 +415,21 @@ final class RagChatAcceptanceTest extends TestCase {
 	private function persistence( ArrayObject $log ): MessageRepository {
 		return new class( $log ) implements MessageRepository {
 			/**
+			 * Create persistence double.
+			 *
 			 * @param ArrayObject $log Observable call order.
 			 * @phpstan-param ArrayObject<int,string> $log
 			 */
 			public function __construct( private ArrayObject $log ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Record one owner-scoped assistant-message append.
+			 *
+			 * @param string              $conversation_id Stable conversation identifier.
+			 * @param string              $owner_scope Trusted owner scope.
+			 * @param ConversationMessage $message Validated message crossing persistence boundary.
+			 */
 			public function append_for_owner( string $conversation_id, string $owner_scope, ConversationMessage $message ): void {
 				$this->log->append( 'persistence:' . $conversation_id . ':' . $owner_scope );
 			}
@@ -387,6 +438,8 @@ final class RagChatAcceptanceTest extends TestCase {
 
 	/**
 	 * Build trusted access scope allowing only public English source 8 evidence.
+	 *
+	 * @param string $owner_scope Trusted owner scope.
 	 */
 	private function access_context( string $owner_scope ): ChatAccessContext {
 		$filter = new RetrievalFilter( 'public', 'en', array( 8 ) );
@@ -400,6 +453,11 @@ final class RagChatAcceptanceTest extends TestCase {
 
 	/**
 	 * Build one deterministic channel candidate.
+	 *
+	 * @param string $chunk_id Stable chunk identifier.
+	 * @param int    $source_id Stable source identifier.
+	 * @param string $content Untrusted evidence content.
+	 * @param string $visibility Candidate visibility.
 	 */
 	private function ranked( string $chunk_id, int $source_id, string $content, string $visibility ): RankedCandidate {
 		return new RankedCandidate(
@@ -417,6 +475,7 @@ final class RagChatAcceptanceTest extends TestCase {
 	 * Check the observable log for a prefixed event without exposing double internals.
 	 *
 	 * @param ArrayObject $log Observable call order.
+	 * @param string      $prefix Event prefix.
 	 * @phpstan-param ArrayObject<int,string> $log
 	 */
 	private function log_contains_prefix( ArrayObject $log, string $prefix ): bool {
