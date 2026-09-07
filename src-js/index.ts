@@ -218,3 +218,5 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 	return true;
 };
+
+bootstrapAdminApp();
