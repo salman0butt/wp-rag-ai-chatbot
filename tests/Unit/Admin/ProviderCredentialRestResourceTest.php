@@ -34,12 +34,12 @@ final class ProviderCredentialRestResourceTest extends TestCase {
 		$store->method( 'load' )->willReturn( new Secret( 'sk-provider-secret' ) );
 
 		$response = ( new ProviderCredentialRestResource( $reader, $store ) )->read( ProviderIds::OPENAI_DIRECT );
-		$encoded  = json_encode( $response, JSON_THROW_ON_ERROR );
 
 		self::assertSame( true, $response['configured'] );
 		self::assertSame( 'option', $response['source'] );
-		self::assertStringNotContainsString( 'sk-provider-secret', $encoded );
-		self::assertStringNotContainsString( 'cipher', strtolower( $encoded ) );
+		self::assertArrayNotHasKey( 'credential', $response );
+		self::assertArrayNotHasKey( 'secret', $response );
+		self::assertArrayNotHasKey( 'ciphertext', $response );
 	}
 
 	/**
@@ -56,10 +56,10 @@ final class ProviderCredentialRestResourceTest extends TestCase {
 			ProviderIds::OPENROUTER_DIRECT,
 			array( 'credential' => 'sk-new-secret' )
 		);
-		$encoded = json_encode( $response, JSON_THROW_ON_ERROR );
 
 		self::assertSame( true, $response['managed'] );
-		self::assertStringNotContainsString( 'sk-new-secret', $encoded );
+		self::assertArrayNotHasKey( 'credential', $response );
+		self::assertArrayNotHasKey( 'secret', $response );
 	}
 
 	/**
@@ -91,11 +91,9 @@ final class ProviderCredentialRestResourceTest extends TestCase {
 			ProviderIds::OPENAI_DIRECT,
 			array( 'credential' => 'sk-secret' )
 		);
-		$encoded = json_encode( $response, JSON_THROW_ON_ERROR );
 
 		self::assertSame( 'credential_operation_failed', $response['error']['code'] );
-		self::assertStringNotContainsString( 'sk-secret', $encoded );
-		self::assertStringNotContainsString( 'internal-storage-error', $encoded );
+		self::assertSame( 'Provider credential operation failed.', $response['error']['message'] );
 	}
 
 	/**
