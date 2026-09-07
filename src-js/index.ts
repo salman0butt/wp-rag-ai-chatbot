@@ -191,7 +191,8 @@ export const OnboardingFlow = ( {
 	issue,
 }: OnboardingFlowProps ): unknown => {
 	const createElement = window.wp.element.createElement;
-	const issueCopy = issue === undefined ? undefined : ONBOARDING_ISSUES[ issue ];
+	const issueCopy =
+		issue === undefined ? undefined : ONBOARDING_ISSUES[ issue ];
 	const issueContent =
 		issueCopy === undefined
 			? undefined
@@ -199,7 +200,11 @@ export const OnboardingFlow = ( {
 					'div',
 					{ role: 'alert' },
 					createElement( 'p', null, issueCopy.message ),
-					createElement( 'a', { href: '#/providers' }, issueCopy.action )
+					createElement(
+						'a',
+						{ href: '#/providers' },
+						issueCopy.action
+					)
 			  );
 
 	return createElement(
