@@ -99,19 +99,6 @@ describe( 'OnboardingFlow', () => {
 			expect( alert?.textContent ).toContain( message );
 			expect( link?.textContent ).toBe( action );
 			expect( link?.getAttribute( 'href' ) ).toBe( '#/providers' );
-		}
-	);
-
-	it.each( [
-		'provider_unavailable',
-		'missing_credential',
-		'unsupported_capability',
-	] as const )(
-		'moves focus to the actionable %s recovery control',
-		( issue ) => {
-			const root = renderOnboarding( 'model', issue );
-			const link = root.querySelector( '[role="alert"] a' );
-
 			expect( link?.getAttribute( 'autofocus' ) ).toBe( 'true' );
 		}
 	);
