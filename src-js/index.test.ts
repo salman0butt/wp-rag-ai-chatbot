@@ -20,6 +20,7 @@ type AdminShellComponent = ( props: {
 } ) => Node;
 
 type TestElementProps = Record< string, string > | null;
+type TestRender = ( element: Node, root: Element ) => void;
 
 const createTestElement = (
 	tagName: string,
@@ -43,12 +44,13 @@ const createTestElement = (
 	return element;
 };
 
-const configureTestElementRuntime = (): void => {
+const configureTestElementRuntime = ( render?: TestRender ): void => {
 	Object.defineProperty( window, 'wp', {
 		configurable: true,
 		value: {
 			element: {
 				createElement: createTestElement,
+				...( render ? { render } : {} ),
 			},
 		},
 	} );
@@ -200,5 +202,58 @@ describe( 'resolveAdminScreen', () => {
 		expect( resolveAdminScreen?.( '#/providers' ) ).toBe( 'providers' );
 		expect( resolveAdminScreen?.( '#/unknown' ) ).toBe( 'onboarding' );
 		expect( resolveAdminScreen?.( '' ) ).toBe( 'onboarding' );
+	} );
+} );
+
+describe( 'bootstrapAdminApp', () => {
+	afterEach( () => {
+		document.body.innerHTML = '';
+		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
+	} );
+
+	it( 'does nothing when the admin mount boundary is absent', () => {
+		const render = jest.fn();
+		configureTestElementRuntime( render );
+		const exports = plugin as unknown as Record< string, unknown >;
+		const bootstrapAdminApp = exports.bootstrapAdminApp as
+			| ( ( hash?: string ) => boolean )
+			| undefined;
+
+		expect( typeof bootstrapAdminApp ).toBe( 'function' );
+		expect( bootstrapAdminApp?.( '#/bots' ) ).toBe( false );
+		expect( render ).not.toHaveBeenCalled();
+	} );
+
+	it( 'mounts the selected ready screen from the safe WordPress boot payload', () => {
+		const render = jest.fn( ( element: Node, root: Element ) => {
+			root.append( element );
+		} );
+		configureTestElementRuntime( render );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+		Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+			configurable: true,
+			value: {
+				plugin: 'wp-rag-ai-chatbot',
+				restBase:
+					'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+				nonce: 'rest-nonce',
+			},
+		} );
+		const exports = plugin as unknown as Record< string, unknown >;
+		const bootstrapAdminApp = exports.bootstrapAdminApp as
+			| ( ( hash?: string ) => boolean )
+			| undefined;
+
+		expect( bootstrapAdminApp?.( '#/providers' ) ).toBe( true );
+		expect( render ).toHaveBeenCalledTimes( 1 );
+		expect( render.mock.calls[ 0 ][ 1 ] ).toBe( root );
+		expect(
+			root.querySelector( 'a[aria-current="page"]' )?.textContent
+		).toBe( 'Providers' );
+		expect( root.querySelector( 'main h1' )?.textContent ).toBe(
+			'Providers'
+		);
 	} );
 } );
