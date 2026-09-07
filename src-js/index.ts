@@ -15,10 +15,10 @@ export interface AdminApiClientConfig {
 }
 
 export interface AdminApiClient {
-	request< T >(
+	request: < T >(
 		path: string,
 		options?: AdminApiRequestOptions
-	): Promise< T >;
+	) => Promise< T >;
 }
 
 export const createAdminApiClient = (
