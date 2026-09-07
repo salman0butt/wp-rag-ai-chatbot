@@ -137,6 +137,8 @@ const ADMIN_SCREENS: ReadonlyArray< {
 	{ screen: 'providers', label: 'Providers' },
 ];
 
+let activeHashChangeHandler: ( () => void ) | null = null;
+
 export const resolveAdminScreen = ( hash: string ): AdminScreen => {
 	const candidate = hash.replace( /^#\/?/, '' ).split( '/' )[ 0 ];
 	const screen = ADMIN_SCREENS.find( ( item ) => item.screen === candidate );
@@ -229,16 +231,33 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		return false;
 	}
 
-	const screen = resolveAdminScreen( hash );
+	let currentState: AdminShellState = 'ready';
+	const currentHash = (): string => window.location.hash || hash;
+	const renderState = ( state: AdminShellState ): void => {
+		currentState = state;
+		renderAdminShell( root, state, resolveAdminScreen( currentHash() ) );
+	};
+
+	if ( activeHashChangeHandler !== null ) {
+		window.removeEventListener( 'hashchange', activeHashChangeHandler );
+	}
+
+	activeHashChangeHandler = () => {
+		if ( root.isConnected ) {
+			renderState( currentState );
+		}
+	};
+	window.addEventListener( 'hashchange', activeHashChangeHandler );
+
 	const config = window.wpRagAiChatbotAdminConfig;
 	const fetcher = window.fetch;
 
 	if ( config === undefined || typeof fetcher !== 'function' ) {
-		renderAdminShell( root, 'ready', screen );
+		renderState( 'ready' );
 		return true;
 	}
 
-	renderAdminShell( root, 'loading', screen );
+	renderState( 'loading' );
 
 	const client = createAdminApiClient( {
 		baseUrl: config.restBase,
@@ -249,10 +268,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	void client
 		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
 		.then( ( readiness ) => {
-			renderAdminShell( root, stateFromReadiness( readiness ), screen );
+			renderState( stateFromReadiness( readiness ) );
 		} )
 		.catch( () => {
-			renderAdminShell( root, 'error', screen );
+			renderState( 'error' );
 		} );
 
 	return true;
