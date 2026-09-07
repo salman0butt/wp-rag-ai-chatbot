@@ -17,9 +17,9 @@ use WpRagAiChatbot\Database\DatabaseSchema;
  */
 final class ConversationPersistenceContractTest extends TestCase {
 	/**
-	 * M11 persistence advances the additive schema through V009.
+	 * M11 persistence remains present after later additive schema migrations.
 	 */
-	public function test_conversation_migrations_advance_schema_through_v009(): void {
+	public function test_conversation_migrations_remain_available_after_v009(): void {
 		self::assertTrue(
 			class_exists( 'WpRagAiChatbot\\Database\\Migrations\\V007CreateConversationsTable' ),
 			'V007CreateConversationsTable must exist before M11 Task 2 can pass.'
@@ -32,7 +32,7 @@ final class ConversationPersistenceContractTest extends TestCase {
 			class_exists( 'WpRagAiChatbot\\Database\\Migrations\\V009CreateMessageCitationsTable' ),
 			'V009CreateMessageCitationsTable must exist before M11 Task 2 can pass.'
 		);
-		self::assertSame( 9, DatabaseSchema::VERSION );
+		self::assertGreaterThanOrEqual( 9, DatabaseSchema::VERSION );
 	}
 
 	/**
