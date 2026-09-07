@@ -112,6 +112,29 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 		expect( heading?.textContent ).toBe( 'Choose a model' );
 	} );
 
+	it( 'renders a server-derived onboarding issue with focused recovery action', async () => {
+		const fetcher = jest.fn().mockResolvedValue( {
+			ok: true,
+			status: 200,
+			json: async () => ( {
+				ready: false,
+				next_step: 'provider',
+				issue: 'missing_credential',
+			} ),
+		} );
+		const root = configureAdminRuntime( fetcher );
+
+		expect( bootstrapAdminApp( '#/onboarding' ) ).toBe( true );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		const alert = root.querySelector( '[role="alert"]' );
+		const recovery = alert?.querySelector( 'a[href="#/providers"]' );
+		expect( alert?.textContent ).toContain(
+			'Add a provider credential to continue.'
+		);
+		expect( recovery?.getAttribute( 'autofocus' ) ).not.toBeNull();
+	} );
+
 	it( 'replaces loading with the safe error state when readiness fails', async () => {
 		const fetcher = jest.fn().mockResolvedValue( {
 			ok: false,
