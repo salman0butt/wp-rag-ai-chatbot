@@ -29,9 +29,23 @@ final class StreamingOutputBoundTest extends TestCase {
 	 */
 	public function test_stream_stops_before_accepting_output_beyond_hard_limit(): void {
 		$stream = new class() implements GenerationStream {
+			/**
+			 * Number of provider reads.
+			 *
+			 * @var int
+			 */
 			public int $next_calls = 0;
+
+			/**
+			 * Whether stream cleanup ran.
+			 *
+			 * @var bool
+			 */
 			public bool $closed = false;
 
+			/**
+			 * Return exactly seventeen 4 KiB deltas, then complete.
+			 */
 			public function next_delta(): ?string {
 				++$this->next_calls;
 				if ( $this->next_calls > 17 ) {
@@ -41,6 +55,9 @@ final class StreamingOutputBoundTest extends TestCase {
 				return str_repeat( 'a', 4096 );
 			}
 
+			/**
+			 * Record provider stream cleanup.
+			 */
 			public function close(): void {
 				$this->closed = true;
 			}
@@ -55,7 +72,7 @@ final class StreamingOutputBoundTest extends TestCase {
 			false
 		);
 
-		$deltas = array_values(
+		$deltas      = array_values(
 			array_filter(
 				$events,
 				static fn ( StreamEvent $event ): bool => StreamEventType::MESSAGE_DELTA === $event->type
