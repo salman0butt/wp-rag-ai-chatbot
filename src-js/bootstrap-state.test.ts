@@ -145,6 +145,25 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 		expect( fetcher ).toHaveBeenCalledTimes( 1 );
 	} );
 
+	it( 'fails closed when the browser fetch transport is unavailable', () => {
+		const root = configureElementRuntime();
+		Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+			configurable: true,
+			value: {
+				plugin: 'wp-rag-ai-chatbot',
+				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+				nonce: 'rest-nonce',
+			},
+		} );
+		Reflect.deleteProperty( window, 'fetch' );
+
+		expect( bootstrapAdminApp( '#/onboarding' ) ).toBe( true );
+		expect( root.querySelector( '[role="alert"]' )?.textContent ).toBe(
+			'Administration data could not be loaded.'
+		);
+		expect( root.querySelector( '[data-admin-state="ready"]' ) ).toBeNull();
+	} );
+
 	it( 'fails closed when the WordPress boot configuration is missing', () => {
 		const root = configureElementRuntime();
 		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
