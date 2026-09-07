@@ -1,6 +1,6 @@
 # M12 — Admin Onboarding, Bot Management & Provider Configuration
 
-Status: **IN PROGRESS — Tasks 1-6 COMPLETE; Task 7 ACTIVE**
+Status: **IN PROGRESS — Tasks 1-7 COMPLETE; Task 8 ACTIVE**
 
 ## Goal
 Build a professional WordPress-native admin shell, onboarding, multi-bot management, and provider/model configuration UI.
@@ -31,8 +31,8 @@ Admin capabilities are enforced; onboarding handles unavailable provider/capabil
 4. **COMPLETE** — Provider credential/configuration REST resource with write-only secrets.
 5. **COMPLETE** — Provider model/capability and onboarding-readiness resources.
 6. **COMPLETE** — React admin shell and typed API layer.
-7. **ACTIVE** — Onboarding flow.
-8. Bot management screens.
+7. **COMPLETE** — Onboarding flow.
+8. **ACTIVE** — Bot management screens.
 9. Provider/model configuration screens.
 10. Integration/E2E, security, accessibility, performance, review, durable closeout.
 
@@ -54,38 +54,35 @@ Core RED `26ce3eefef6dd7d5198b77a669268bc07cbcafbf` / CI `34102834048`; protecte
 Resource RED `471f7fd753f571a99a716d8bf8381bb4dd3d1987` / CI `34113946121`; REST-route RED `6878e36f6073b4fc69f1f5dc2f49a9a86290c009` / CI `34114690187`; integration `6a16a932275254ba97ae642258feaa9ebd727b49` / CI `34115367056` passed full CI and real WordPress REST readiness smoke. Review found one Important page-1-only readiness defect. Genuine regression RED `c19cb4395680a9c2c13b8a70f391763aebda9b17` / CI `34119267966` ran 664 tests / 2,762 assertions and failed exactly because a compatible bot on page 2 returned `first_bot`; fix `080c973dbd011192c88c3f56941f15d3495d504a` / CI `34119414309` passed full CI. Post-fix review `5131750259`: **0 Critical / 0 Important unresolved**.
 
 ### Task 6 — React admin shell and typed API
-Task 6 now provides:
-- a typed same-origin REST client with WordPress nonce in `X-WP-Nonce`, never in URLs;
-- normalized safe REST failures that do not surface arbitrary upstream messages;
-- loading, empty, error, and ready UI primitives;
-- accessible status/error semantics and labelled navigation with `aria-current`;
-- deterministic hash routing and hash-change rerender without readiness refetch;
-- safe WordPress boot configuration;
-- a deterministic admin mount boundary with automatic bundle bootstrap;
-- server-derived shell state from `/admin/onboarding/readiness`;
-- fail-closed behavior for missing boot configuration or missing browser fetch transport;
-- strict plugin-screen-only bundle/config enqueue, preserving public and unrelated-admin asset isolation.
+Task 6 provides a typed same-origin REST client with WordPress nonce headers, normalized safe REST failures, loading/empty/error/ready primitives, accessible navigation/status/error semantics, deterministic hash routing, safe WordPress boot configuration, automatic admin-only mount bootstrap, server-derived readiness state, fail-closed missing-config/transport behavior, and plugin-screen-only asset enqueue.
 
-Key TDD checkpoints:
-- Mount RED `f057d77c2f62e3b6fc6140fb28cd7c8d1a9819e9` / CI `34134906858`: lint/typecheck passed and Jest failed exactly the absent mount behavior. GREEN `979be604c1b428d06e6453272aec04692eaa8122` / CI `34135031641` passed all permanent jobs.
-- Automatic-bootstrap RED `64755339aa8a20f822d91ba396e90c5e0d2c354f` / CI `34135499494`: existing tests passed and exactly the new bundle-mount assertion failed. Fix `ccdec102cb363f272ac70656bd447be31b6afef1` / CI `34135632271` passed full CI.
-- Final closeout review found one Important defect: valid boot configuration plus unavailable `window.fetch` rendered hard-coded `ready` without server truth. Genuine regression RED `95d813045c3b530aa4208e155a64588c069b20c7` / CI `34149025827` passed lint/typecheck and ran 16 Jest tests with exactly the new transport test failing (1 failed / 15 passed). Minimum fix `759b77acb45a9556ce907f9eaf424cb11521f9c4` renders the existing safe error state. Test-alignment checkpoint `4ee313e957f0d7ef8c67fa776df07ff647c8212e` verifies the normal path as loading -> server-derived ready; CI `34149262866` passed `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`.
-- Task 6 closeout review `5134434515`: **0 Critical / 0 Important unresolved**.
+Key closeout evidence: final transport regression RED `95d813045c3b530aa4208e155a64588c069b20c7` / CI `34149025827` passed lint/typecheck and ran 16 Jest tests with exactly the new missing-fetch case failing. Minimum fix `759b77acb45a9556ce907f9eaf424cb11521f9c4`; alignment checkpoint `4ee313e957f0d7ef8c67fa776df07ff647c8212e` / CI `34149262866` passed `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`. Closeout review `5134434515`: **0 Critical / 0 Important unresolved**.
+
+### Task 7 — Onboarding flow
+Task 7 is driven by persisted server readiness rather than browser-only completion. Existing tests prove provider -> model -> first bot -> complete progression, model/first-bot reload resume, actionable `provider_unavailable`, `missing_credential`, and `unsupported_capability` states, `role="alert"` announcements, and focus on the deterministic provider-settings recovery action.
+
+Final live issue-integration TDD evidence:
+- Server-contract RED `ed656605c927c69761cc23a4ba1fc540ee63a4d9` / CI `34167918116` reached PHP verification and failed because onboarding readiness did not expose an `issue` field.
+- Minimum server GREEN `ec94a190c13ce9bd89ac637b1df3ab39e8457014` / CI `34167991217` passed all permanent jobs. Readiness now serializes only one stable issue code and does not expose provider/upstream error text or credentials.
+- Mounted-app RED `1da2935c4066aa18b2e41fca511d3ce38fead75d` / CI `34168105909` passed lint and TypeScript, then ran 24 Jest tests with exactly the new server-derived issue case failing (23 passed / 1 failed) because the alert did not reach the mounted onboarding UI.
+- Minimum propagation GREEN `0cdd18dca7cf226be1957e49826b797bafa169cd` / CI `34168188486` passed `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`. The existing single readiness request now carries optional issue state through typed readiness -> bootstrap -> AdminShell -> OnboardingFlow.
+- Real WordPress integration checkpoint `144f674c113fd355d74f1b60ff4dbbc85dd9acab` / CI `34168358072` passed all permanent jobs. The WordPress database lifecycle executes `test-wp-model-readiness.php`, which now validates that provider-step readiness exposes only one of the normalized actionable issue codes.
+- Closeout review `5135644263`: **0 Critical / 0 Important unresolved** across correctness, security, accessibility, and performance.
 
 ## Security / Accessibility / Performance State
 - Admin REST resources use the centralized WordPress admin capability boundary.
 - Credentials are write-only; provider secret plaintext/ciphertext is not returned to JavaScript.
 - Browser REST nonce transport uses the header path expected by WordPress cookie authentication.
-- UI error messages are normalized and do not expose arbitrary upstream/provider details.
-- Loading uses a polite status region; failures use an alert; selected navigation exposes `aria-current`.
+- UI error messages and onboarding issue state are normalized and do not expose arbitrary upstream/provider details.
+- Loading uses a polite status region; failures/actionable onboarding issues use alerts; selected navigation exposes `aria-current`; onboarding recovery focus is deterministic.
 - Admin JavaScript/config are enqueued only on the plugin admin screen.
 - Readiness uses bounded bot pages and exits when a compatible persisted bot is found.
-- The Task 6 shell performs one readiness request at bootstrap; hash navigation does not refetch it.
+- The shell performs one readiness request at bootstrap; hash navigation and onboarding issue rendering add no duplicate provider/network fetch.
 
-## Current Task — Task 7 Onboarding Flow
-Start with strict TDD against persisted server truth. The first behavioral RED must prove first-run onboarding follows `next_step` through provider -> model -> first bot and that reload resumes from server state rather than browser-only completion. Continue with actionable unavailable-provider/capability errors, accessible validation, keyboard/focus behavior, and successful persistence before considering Task 7 complete.
+## Current Task — Task 8 Bot Management Screens
+Begin under strict TDD against the existing Task 3 bot REST contract. First prove paginated bot-list rendering and the explicit empty state. Then cover create/edit validation, switching records without unsaved-state leakage, delete/archive confirmation behavior, and narrow/mobile WordPress-admin usability.
 
-Task 7 must not advance to Task 8 until focused/full verification, exact-head CI, and correctness/security/accessibility/performance review have no unresolved Critical or Important findings.
+Task 8 must not advance to Task 9 until focused/full verification, exact-head CI, and correctness/security/accessibility/performance review have no unresolved Critical or Important findings.
 
 ## Durable Recovery Sources
 - `docs/progress/STATUS.md` — authoritative global/current-task status and detailed recent evidence.
@@ -95,7 +92,7 @@ Task 7 must not advance to Task 8 until focused/full verification, exact-head CI
 - Auto-approved M12 design and implementation plan referenced above.
 
 ## Completion Checklist
-Tasks **1-6 are complete**. M12 remains open until Tasks 7-10, final integration/E2E/security/accessibility/performance gates, exact-final-SHA CI, merge, and fresh post-merge `main` CI are complete.
+Tasks **1-7 are complete**. M12 remains open until Tasks 8-10, final integration/E2E/security/accessibility/performance gates, exact-final-SHA CI, merge, and fresh post-merge `main` CI are complete.
 
 ## Next Milestone
 M13 — Knowledge Manager/Debugger, only after M12 is genuinely complete.
