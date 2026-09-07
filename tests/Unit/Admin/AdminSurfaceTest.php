@@ -142,7 +142,7 @@ final class AdminSurfaceTest extends TestCase {
 					),
 				)
 			);
-		Functions\expect( 'register_rest_route' )->times( 2 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 4 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}
@@ -175,7 +175,7 @@ final class AdminSurfaceTest extends TestCase {
 					),
 				)
 			);
-		Functions\expect( 'register_rest_route' )->times( 3 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 5 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}
