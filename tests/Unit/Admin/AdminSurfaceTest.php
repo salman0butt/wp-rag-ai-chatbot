@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Admin;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Admin\AdminBootstrap;
 use WpRagAiChatbot\Admin\AdminCapability;
@@ -39,6 +40,7 @@ final class AdminSurfaceTest extends TestCase {
 	/**
 	 * The plugin page must be registered behind the centralized capability.
 	 */
+	#[DoesNotPerformAssertions]
 	public function test_register_menu_adds_capability_protected_plugin_page(): void {
 		Functions\expect( 'add_menu_page' )
 			->once()
@@ -77,6 +79,7 @@ final class AdminSurfaceTest extends TestCase {
 	/**
 	 * The foundational REST route must be versioned and capability-protected.
 	 */
+	#[DoesNotPerformAssertions]
 	public function test_register_routes_adds_safe_admin_bootstrap_resource(): void {
 		Functions\expect( 'register_rest_route' )
 			->once()
