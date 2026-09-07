@@ -152,10 +152,10 @@ final class ChatAnalyticsWiringTest extends TestCase {
 	 * @phpstan-param ArrayObject<int,string> $log
 	 */
 	private function respond( ArrayObject $log, ChatAnalyticsHook $hook, bool $with_evidence ): \WpRagAiChatbot\Chat\ChatResult {
-		$config    = new RetrievalConfig();
-		$candidate = new RankedCandidate( 'chunk-1', 'doc-1', 8, 'Grounded evidence.', 'en', 'public', 1.0 );
-		$fixtures  = $with_evidence ? array( $candidate ) : array();
-		$history   = new class() implements ConversationHistory {
+		$config      = new RetrievalConfig();
+		$candidate   = new RankedCandidate( 'chunk-1', 'doc-1', 8, 'Grounded evidence.', 'en', 'public', 1.0 );
+		$fixtures    = $with_evidence ? array( $candidate ) : array();
+		$history     = new class() implements ConversationHistory {
 			/**
 			 * Return recent owner-scoped history.
 			 *
@@ -181,7 +181,7 @@ final class ChatAnalyticsWiringTest extends TestCase {
 				return null;
 			}
 		};
-		$provider  = new class( $log ) implements GenerationProvider {
+		$provider    = new class( $log ) implements GenerationProvider {
 			/**
 			 * Store the observable event order.
 			 *
@@ -351,7 +351,7 @@ final class ChatAnalyticsWiringTest extends TestCase {
 				return $this->fixtures;
 			}
 		};
-		$access = new class() implements CandidateAccessPolicy {
+		$access   = new class() implements CandidateAccessPolicy {
 			/**
 			 * Allow the deterministic test candidate.
 			 *
