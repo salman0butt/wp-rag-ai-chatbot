@@ -89,8 +89,9 @@ final class BotRestResource {
 	/**
 	 * Update one bot using optimistic concurrency.
 	 *
-	 * @param string $id Bot identifier.
-	 * @param array{version:int,name:string,enabled:bool,provider_id:string,model_id:string} $payload Bot settings.
+	 * @param string $id      Bot identifier.
+	 * @param array  $payload Bot settings.
+	 * @phpstan-param array{version:int,name:string,enabled:bool,provider_id:string,model_id:string} $payload
 	 * @return array{bot:array{id:string,name:string,enabled:bool,provider_id:string,model_id:string,version:int,created_at:string,updated_at:string}}|array{error:array{code:string,message:string}}
 	 */
 	public function update( string $id, array $payload ): array {
@@ -152,7 +153,7 @@ final class BotRestResource {
 	/**
 	 * Build a stable public error payload.
 	 *
-	 * @param string $code Stable machine-readable code.
+	 * @param string $code    Stable machine-readable code.
 	 * @param string $message Stable human-readable message.
 	 * @return array{error:array{code:string,message:string}}
 	 */
