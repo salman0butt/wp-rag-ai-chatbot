@@ -1,5 +1,16 @@
 import * as plugin from './index';
 
+type AdminClientFactory = ( config: {
+	baseUrl: string;
+	nonce: string;
+	fetcher: typeof fetch;
+} ) => {
+	request: < T >(
+		path: string,
+		options?: { method?: string; body?: unknown }
+	) => Promise< T >;
+};
+
 describe( 'pluginIdentity', () => {
 	it( 'uses the canonical plugin slug and development version', () => {
 		expect( plugin.pluginIdentity ).toEqual( {
@@ -21,16 +32,7 @@ describe( 'createAdminApiClient', () => {
 			ok: true,
 			json: async () => ( { ready: true } ),
 		} );
-		const client = (
-			createAdminApiClient as (
-				config: { baseUrl: string; nonce: string; fetcher: typeof fetch }
-			) => {
-				request: < T >(
-					path: string,
-					options?: { method?: string; body?: unknown }
-				) => Promise< T >;
-			}
-		)( {
+		const client = ( createAdminApiClient as AdminClientFactory )( {
 			baseUrl: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
 			nonce: 'rest-nonce',
 			fetcher: fetcher as unknown as typeof fetch,
