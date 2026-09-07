@@ -8,6 +8,7 @@ $WP eval '$p=$GLOBALS["wpdb"]->prefix; $GLOBALS["wpdb"]->query("DROP TABLE IF EX
 $WP plugin activate wp-rag-ai-chatbot --quiet
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-database.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-bots.php
+$WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-model-readiness.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-conversations.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-job-queue.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-chunk-search.php
@@ -18,6 +19,7 @@ $WP eval '$p=$GLOBALS["wpdb"]->prefix; $GLOBALS["wpdb"]->query("DROP TABLE IF EX
 $WP eval 'if ((int) get_option("wp_rag_ai_db_version", 0) !== 10) { fwrite(STDERR, "Automatic V1 to V10 upgrade failed\n"); exit(1); }'
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-database.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-bots.php
+$WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-model-readiness.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-conversations.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-job-queue.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-chunk-search.php
@@ -37,6 +39,7 @@ $WP eval 'define("WP_UNINSTALL_PLUGIN", "wp-rag-ai-chatbot/wp-rag-ai-chatbot.php
 $WP plugin activate wp-rag-ai-chatbot --quiet
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-database.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-bots.php
+$WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-model-readiness.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-conversations.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-job-queue.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-chunk-search.php
