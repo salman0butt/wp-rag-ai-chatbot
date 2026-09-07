@@ -66,6 +66,11 @@ final class TableNames {
 		return $this->prefix . 'rag_ai_message_citations';
 	}
 
+	/** Persisted bot configurations table. */
+	public function bots(): string {
+		return $this->prefix . 'rag_ai_bots';
+	}
+
 	/**
 	 * All plugin tables in safe deletion order.
 	 *
@@ -76,6 +81,7 @@ final class TableNames {
 			$this->message_citations(),
 			$this->messages(),
 			$this->conversations(),
+			$this->bots(),
 			$this->chunk_search(),
 			$this->jobs(),
 			$this->vectors(),
