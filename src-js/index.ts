@@ -90,9 +90,11 @@ export const createAdminApiClient = (
 };
 
 export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
+export type AdminScreen = 'onboarding' | 'bots' | 'providers';
 
 export interface AdminShellProps {
 	state: AdminShellState;
+	screen?: AdminScreen;
 }
 
 type ElementFactory = (
@@ -111,7 +113,26 @@ declare global {
 	}
 }
 
-export const AdminShell = ( { state }: AdminShellProps ): unknown => {
+const ADMIN_SCREENS: ReadonlyArray< {
+	screen: AdminScreen;
+	label: string;
+} > = [
+	{ screen: 'onboarding', label: 'Onboarding' },
+	{ screen: 'bots', label: 'Bots' },
+	{ screen: 'providers', label: 'Providers' },
+];
+
+export const resolveAdminScreen = ( hash: string ): AdminScreen => {
+	const candidate = hash.replace( /^#\/?/, '' ).split( '/' )[ 0 ];
+	const screen = ADMIN_SCREENS.find( ( item ) => item.screen === candidate );
+
+	return screen?.screen ?? 'onboarding';
+};
+
+export const AdminShell = ( {
+	state,
+	screen = 'onboarding',
+}: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
 	if ( state === 'loading' ) {
@@ -139,5 +160,33 @@ export const AdminShell = ( { state }: AdminShellProps ): unknown => {
 		);
 	}
 
-	return createElement( 'div', { 'data-admin-state': 'ready' } );
+	const selected = ADMIN_SCREENS.find( ( item ) => item.screen === screen );
+	const selectedLabel = selected?.label ?? 'Onboarding';
+	const navigation = ADMIN_SCREENS.map( ( item ) => {
+		const props: Record< string, unknown > = {
+			href: `#/${ item.screen }`,
+			key: item.screen,
+		};
+
+		if ( item.screen === screen ) {
+			props[ 'aria-current' ] = 'page';
+		}
+
+		return createElement( 'a', props, item.label );
+	} );
+
+	return createElement(
+		'div',
+		{ 'data-admin-state': 'ready' },
+		createElement(
+			'nav',
+			{ 'aria-label': 'Administration' },
+			...navigation
+		),
+		createElement(
+			'main',
+			null,
+			createElement( 'h1', null, selectedLabel )
+		)
+	);
 };
