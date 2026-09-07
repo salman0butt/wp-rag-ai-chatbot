@@ -22,9 +22,8 @@ describe( 'pluginIdentity', () => {
 
 describe( 'createAdminApiClient', () => {
 	it( 'sends WordPress REST nonce and JSON headers without putting the nonce in the URL', async () => {
-		const createAdminApiClient = (
-			plugin as unknown as Record< string, unknown >
-		).createAdminApiClient;
+		const exports = plugin as unknown as Record< string, unknown >;
+		const createAdminApiClient = exports.createAdminApiClient;
 
 		expect( typeof createAdminApiClient ).toBe( 'function' );
 
