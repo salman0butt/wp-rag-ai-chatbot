@@ -95,9 +95,16 @@ final class AdminSurfaceTest extends TestCase {
 		Functions\when( 'plugins_url' )->justReturn( 'https://example.test/wp-content/plugins/wp-rag-ai-chatbot/build/index.js' );
 		Functions\when( 'rest_url' )->justReturn( 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/' );
 		Functions\when( 'wp_create_nonce' )->justReturn( 'rest-nonce' );
-		Functions\when( 'wp_json_encode' )->alias(
-			static fn ( array $value ): string => (string) json_encode( $value )
-		);
+		Functions\expect( 'wp_json_encode' )
+			->once()
+			->with(
+				array(
+					'plugin'   => 'wp-rag-ai-chatbot',
+					'restBase' => 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+					'nonce'    => 'rest-nonce',
+				)
+			)
+			->andReturn( '{"plugin":"wp-rag-ai-chatbot","restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1","nonce":"rest-nonce"}' );
 
 		Functions\expect( 'wp_enqueue_script' )
 			->once()
