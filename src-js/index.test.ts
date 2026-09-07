@@ -1,5 +1,3 @@
-import { createElement, render } from '@wordpress/element';
-
 import * as plugin from './index';
 
 type AdminClientFactory = ( config: {
@@ -13,23 +11,53 @@ type AdminClientFactory = ( config: {
 	) => Promise< T >;
 };
 
-type AdminShellComponent = ( props: {
-	state: 'loading' | 'empty' | 'error' | 'ready';
-} ) => ReturnType< typeof createElement >;
+type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
 
-const renderAdminShell = (
-	state: 'loading' | 'empty' | 'error' | 'ready'
+type AdminShellComponent = ( props: { state: AdminShellState } ) => Node;
+
+type TestElementProps = Record< string, string > | null;
+
+const createTestElement = (
+	tagName: string,
+	props: TestElementProps,
+	...children: Array< Node | string >
 ): HTMLElement => {
+	const element = document.createElement( tagName );
+
+	for ( const [ key, value ] of Object.entries( props ?? {} ) ) {
+		if ( key === 'className' ) {
+			element.className = value;
+		} else if ( key === 'role' ) {
+			element.setAttribute( 'role', value );
+		} else if ( key.startsWith( 'data-' ) ) {
+			element.setAttribute( key, value );
+		}
+	}
+
+	for ( const child of children ) {
+		element.append( child );
+	}
+
+	return element;
+};
+
+const renderAdminShell = ( state: AdminShellState ): HTMLElement => {
+	Object.defineProperty( window, 'wp', {
+		configurable: true,
+		value: {
+			element: {
+				createElement: createTestElement,
+			},
+		},
+	} );
+
 	const exports = plugin as unknown as Record< string, unknown >;
 	const AdminShell = exports.AdminShell;
 
 	expect( typeof AdminShell ).toBe( 'function' );
 
 	const root = document.createElement( 'div' );
-	render(
-		createElement( AdminShell as AdminShellComponent, { state } ),
-		root
-	);
+	root.append( ( AdminShell as AdminShellComponent )( { state } ) );
 
 	return root;
 };
@@ -123,9 +151,9 @@ describe( 'AdminShell', () => {
 	it( 'renders an explicit empty state', () => {
 		const root = renderAdminShell( 'empty' );
 
-		expect( root.querySelector( '[data-admin-state="empty"]' )?.textContent ).toContain(
-			'No bots configured yet.'
-		);
+		expect(
+			root.querySelector( '[data-admin-state="empty"]' )?.textContent
+		).toContain( 'No bots configured yet.' );
 	} );
 
 	it( 'announces a safe error without provider or server details', () => {
