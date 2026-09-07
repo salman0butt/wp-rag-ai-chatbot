@@ -4,11 +4,11 @@
  *
  * @package WpRagAiChatbot
  */
+
 declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Admin;
 
-use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Admin\Rest\ModelReadinessRestResource;
 use WpRagAiChatbot\Bots\Bot;
@@ -107,7 +107,7 @@ final class ModelReadinessRestResourceTest extends TestCase {
 		self::assertSame( 'first_bot', $without_bot->readiness()['next_step'] );
 		self::assertFalse( $without_bot->readiness()['ready'] );
 
-		$bot = new Bot(
+		$bot  = new Bot(
 			new BotId( 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' ),
 			'Ready bot',
 			true,
@@ -118,7 +118,14 @@ final class ModelReadinessRestResourceTest extends TestCase {
 			'2026-09-07 10:00:00'
 		);
 		$bots = $this->createMock( BotRepository::class );
-		$bots->method( 'list' )->willReturn( array( 'items' => array( $bot ), 'total' => 1, 'page' => 1, 'per_page' => 100 ) );
+		$bots->method( 'list' )->willReturn(
+			array(
+				'items'    => array( $bot ),
+				'total'    => 1,
+				'page'     => 1,
+				'per_page' => 100,
+			)
+		);
 
 		$ready = new ModelReadinessRestResource(
 			$registry,
@@ -158,19 +165,29 @@ final class ModelReadinessRestResourceTest extends TestCase {
 	/**
 	 * Create the resource with deterministic credential and bot state.
 	 *
-	 * @param ProviderRegistry       $registry Provider registry.
-	 * @param bool                   $configured Whether a managed credential exists.
-	 * @param BotRepository|null     $bots Optional bot repository.
+	 * @param ProviderRegistry   $registry Provider registry.
+	 * @param bool               $configured Whether a managed credential exists.
+	 * @param BotRepository|null $bots Optional bot repository.
 	 */
 	private function resource( ProviderRegistry $registry, bool $configured, ?BotRepository $bots = null ): ModelReadinessRestResource {
 		$bots ??= $this->createMock( BotRepository::class );
-		$bots->method( 'list' )->willReturn( array( 'items' => array(), 'total' => 0, 'page' => 1, 'per_page' => 100 ) );
+		$bots->method( 'list' )->willReturn(
+			array(
+				'items'    => array(),
+				'total'    => 0,
+				'page'     => 1,
+				'per_page' => 100,
+			)
+		);
 
 		return new ModelReadinessRestResource( $registry, $this->configuration( $registry, $configured ), $bots );
 	}
 
 	/**
 	 * Create the existing provider configuration service with deterministic credential state.
+	 *
+	 * @param ProviderRegistry $registry Provider registry.
+	 * @param bool             $configured Whether a managed credential exists.
 	 */
 	private function configuration( ProviderRegistry $registry, bool $configured ): ProviderConfigurationService {
 		$reader = $this->createMock( CredentialSourceReader::class );
