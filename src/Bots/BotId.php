@@ -19,6 +19,7 @@ final class BotId {
 	 * Create a bot identifier.
 	 *
 	 * @param string $value Canonical lowercase hexadecimal identifier.
+	 * @throws InvalidArgumentException When the identifier is not canonical.
 	 */
 	public function __construct( public readonly string $value ) {
 		if ( 1 !== preg_match( '/^[a-f0-9]{32}$/D', $value ) ) {
