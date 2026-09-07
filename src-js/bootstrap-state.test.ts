@@ -105,9 +105,10 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 		expect( bootstrapAdminApp( '#/onboarding' ) ).toBe( true );
 		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
-		expect(
-			root.querySelector( '[data-onboarding-step="model"] h2' )?.textContent
-		).toBe( 'Choose a model' );
+		const heading = root.querySelector(
+			'[data-onboarding-step="model"] h2'
+		);
+		expect( heading?.textContent ).toBe( 'Choose a model' );
 	} );
 
 	it( 'replaces loading with the safe error state when readiness fails', async () => {
