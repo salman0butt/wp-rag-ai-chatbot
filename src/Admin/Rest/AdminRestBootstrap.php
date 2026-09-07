@@ -200,14 +200,9 @@ final class AdminRestBootstrap {
 	 * @return array<string,mixed>
 	 */
 	public static function put_provider_credential( WP_REST_Request $request ): array {
-		$payload = $request->get_json_params();
-		if ( null === $payload ) {
-			return self::invalid_request();
-		}
-
 		return self::provider_credentials()->write(
 			(string) $request->get_param( 'provider_id' ),
-			$payload
+			$request->get_json_params()
 		);
 	}
 
