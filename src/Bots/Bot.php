@@ -28,6 +28,7 @@ final class Bot {
 	 * @param int    $version Optimistic persistence version.
 	 * @param string $created_at UTC creation timestamp.
 	 * @param string $updated_at UTC update timestamp.
+	 * @throws InvalidArgumentException When persisted bot data is invalid.
 	 */
 	public function __construct(
 		public readonly BotId $id,
@@ -39,11 +40,11 @@ final class Bot {
 		public readonly string $created_at,
 		public readonly string $updated_at
 	) {
-		$this->requireText( $name, 'Bot name' );
-		$this->requireText( $provider_id, 'Provider identifier' );
-		$this->requireText( $model_id, 'Model identifier' );
-		$this->requireText( $created_at, 'Created timestamp' );
-		$this->requireText( $updated_at, 'Updated timestamp' );
+		$this->require_text( $name );
+		$this->require_text( $provider_id );
+		$this->require_text( $model_id );
+		$this->require_text( $created_at );
+		$this->require_text( $updated_at );
 		if ( $version < 1 ) {
 			throw new InvalidArgumentException( 'Bot version must be positive.' );
 		}
@@ -53,14 +54,14 @@ final class Bot {
 	 * Require non-blank bounded persisted text.
 	 *
 	 * @param string $value Raw value.
-	 * @param string $label Validation label.
+	 * @throws InvalidArgumentException When a value is blank or too large.
 	 */
-	private function requireText( string $value, string $label ): void {
+	private function require_text( string $value ): void {
 		if ( '' === trim( $value ) ) {
-			throw new InvalidArgumentException( $label . ' must not be blank.' );
+			throw new InvalidArgumentException( 'Bot text field must not be blank.' );
 		}
 		if ( strlen( $value ) > self::MAX_TEXT_BYTES ) {
-			throw new InvalidArgumentException( $label . ' exceeds the persistence limit.' );
+			throw new InvalidArgumentException( 'Bot text field exceeds the persistence limit.' );
 		}
 	}
 }
