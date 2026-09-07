@@ -176,11 +176,12 @@ final class AdminRestBootstrap {
 	/**
 	 * Normalize a positive integer REST parameter.
 	 *
-	 * @param mixed $value Raw request parameter.
+	 * @param mixed $value         Raw request parameter.
+	 * @param int   $default_value Value used when the parameter is omitted.
 	 */
-	private static function request_positive_int( mixed $value, int $default ): ?int {
+	private static function request_positive_int( mixed $value, int $default_value ): ?int {
 		if ( null === $value || '' === $value ) {
-			return $default;
+			return $default_value;
 		}
 
 		$validated = filter_var( $value, FILTER_VALIDATE_INT );
