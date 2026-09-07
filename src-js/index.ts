@@ -91,10 +91,15 @@ export const createAdminApiClient = (
 
 export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
 export type AdminScreen = 'onboarding' | 'bots' | 'providers';
+export type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
 
 export interface AdminShellProps {
 	state: AdminShellState;
 	screen?: AdminScreen;
+}
+
+export interface OnboardingFlowProps {
+	nextStep: OnboardingStep;
 }
 
 type ElementFactory = (
@@ -113,7 +118,7 @@ interface AdminBootConfig {
 
 interface AdminOnboardingReadiness {
 	ready: boolean;
-	next_step: 'provider' | 'model' | 'first_bot' | 'complete';
+	next_step: OnboardingStep;
 }
 
 declare global {
@@ -137,6 +142,13 @@ const ADMIN_SCREENS: ReadonlyArray< {
 	{ screen: 'providers', label: 'Providers' },
 ];
 
+const ONBOARDING_HEADINGS: Readonly< Record< OnboardingStep, string > > = {
+	provider: 'Connect a provider',
+	model: 'Choose a model',
+	first_bot: 'Create your first bot',
+	complete: 'Onboarding complete',
+};
+
 let activeHashChangeHandler: ( () => void ) | null = null;
 
 export const resolveAdminScreen = ( hash: string ): AdminScreen => {
@@ -144,6 +156,18 @@ export const resolveAdminScreen = ( hash: string ): AdminScreen => {
 	const screen = ADMIN_SCREENS.find( ( item ) => item.screen === candidate );
 
 	return screen?.screen ?? 'onboarding';
+};
+
+export const OnboardingFlow = ( {
+	nextStep,
+}: OnboardingFlowProps ): unknown => {
+	const createElement = window.wp.element.createElement;
+
+	return createElement(
+		'section',
+		{ 'data-onboarding-step': nextStep },
+		createElement( 'h2', null, ONBOARDING_HEADINGS[ nextStep ] )
+	);
 };
 
 export const AdminShell = ( {
