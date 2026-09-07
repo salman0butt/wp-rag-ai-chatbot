@@ -109,6 +109,28 @@ export interface OnboardingFlowProps {
 	issue?: OnboardingIssue;
 }
 
+interface BotListItem {
+	id: string;
+	name: string;
+	enabled: boolean;
+	provider_id: string;
+	model_id: string;
+	version: number;
+	created_at: string;
+	updated_at: string;
+}
+
+interface BotPage {
+	items: BotListItem[];
+	total: number;
+	page: number;
+	per_page: number;
+}
+
+interface BotManagementScreenProps {
+	page: BotPage;
+}
+
 type ElementFactory = (
 	type: string,
 	props: Record< string, unknown > | null,
@@ -217,6 +239,47 @@ export const OnboardingFlow = ( {
 		{ 'data-onboarding-step': nextStep },
 		createElement( 'h2', null, ONBOARDING_HEADINGS[ nextStep ] ),
 		issueContent
+	);
+};
+
+export const BotManagementScreen = ( {
+	page,
+}: BotManagementScreenProps ): unknown => {
+	const createElement = window.wp.element.createElement;
+
+	if ( page.items.length === 0 ) {
+		return createElement(
+			'section',
+			{ 'data-bot-management': 'empty' },
+			createElement(
+				'p',
+				{ 'data-bot-list-empty': true },
+				'No bots configured yet.'
+			)
+		);
+	}
+
+	const totalPages = Math.max( 1, Math.ceil( page.total / page.per_page ) );
+	const rows = page.items.map( ( item ) =>
+		createElement(
+			'li',
+			{
+				key: item.id,
+				'data-bot-id': item.id,
+			},
+			item.name
+		)
+	);
+
+	return createElement(
+		'section',
+		{ 'data-bot-management': 'list' },
+		createElement( 'ul', null, ...rows ),
+		createElement(
+			'nav',
+			{ 'aria-label': 'Bot list pagination' },
+			`Page ${ page.page } of ${ totalPages }`
+		)
 	);
 };
 
