@@ -99,9 +99,7 @@ describe( 'OnboardingFlow', () => {
 			expect( alert?.textContent ).toContain( message );
 			expect( link?.textContent ).toBe( action );
 			expect( link?.getAttribute( 'href' ) ).toBe( '#/providers' );
-			expect(
-				link?.getAttribute( 'autofocus' )
-			).toBe( 'true' );
+			expect( link?.getAttribute( 'autofocus' ) ).toBe( 'true' );
 		}
 	);
 } );
