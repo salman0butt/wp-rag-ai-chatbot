@@ -41,7 +41,9 @@ final class WpdbBotRepositoryTest extends TestCase {
 		);
 		$connection->method( 'prepare' )->willReturn( 'bot-row' );
 		$connection->method( 'get_row' )->willReturnCallback(
-			static fn (): array => self::row( (string) $bot_id, 'Support Bot', 1, 'openai', 'gpt-5-mini', 1 )
+			static function () use ( &$bot_id ): array {
+				return self::row( (string) $bot_id, 'Support Bot', 1, 'openai', 'gpt-5-mini', 1 );
+			}
 		);
 
 		$bot = $this->repository( $connection )->create( 'Support Bot', true, 'openai', 'gpt-5-mini' );
