@@ -258,7 +258,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	}
 
 	if ( typeof fetcher !== 'function' ) {
-		renderState( 'ready' );
+		renderState( 'error' );
 		return true;
 	}
 
