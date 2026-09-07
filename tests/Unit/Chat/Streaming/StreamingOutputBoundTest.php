@@ -34,6 +34,10 @@ final class StreamingOutputBoundTest extends TestCase {
 
 			public function next_delta(): ?string {
 				++$this->next_calls;
+				if ( $this->next_calls > 17 ) {
+					return null;
+				}
+
 				return str_repeat( 'a', 4096 );
 			}
 
