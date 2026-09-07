@@ -101,7 +101,6 @@ final class AdminSurfaceTest extends TestCase {
 	 */
 	#[DoesNotPerformAssertions]
 	public function test_register_routes_adds_capability_protected_bot_crud_resources(): void {
-		Functions\expect( 'register_rest_route' )->times( 2 )->withAnyArgs();
 		Functions\expect( 'register_rest_route' )
 			->once()
 			->with(
@@ -143,6 +142,7 @@ final class AdminSurfaceTest extends TestCase {
 					),
 				)
 			);
+		Functions\expect( 'register_rest_route' )->times( 2 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}
@@ -152,7 +152,6 @@ final class AdminSurfaceTest extends TestCase {
 	 */
 	#[DoesNotPerformAssertions]
 	public function test_register_routes_adds_capability_protected_provider_credential_resource(): void {
-		Functions\expect( 'register_rest_route' )->times( 3 )->withAnyArgs();
 		Functions\expect( 'register_rest_route' )
 			->once()
 			->with(
@@ -176,6 +175,7 @@ final class AdminSurfaceTest extends TestCase {
 					),
 				)
 			);
+		Functions\expect( 'register_rest_route' )->times( 3 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}
