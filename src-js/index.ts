@@ -251,7 +251,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		.then( ( readiness ) => {
 			renderAdminShell( root, stateFromReadiness( readiness ), screen );
 		} )
-		.catch( () => undefined );
+		.catch( () => {
+			renderAdminShell( root, 'error', screen );
+		} );
 
 	return true;
 };
