@@ -70,3 +70,10 @@ if (
 ) {
 	$fail( 'Onboarding readiness REST resource did not return normalized server-derived state.' );
 }
+
+if ( 'provider' === $readiness_data['next_step'] ) {
+	$issue = $readiness_data['issue'] ?? null;
+	if ( ! is_string( $issue ) || ! in_array( $issue, array( 'provider_unavailable', 'missing_credential', 'unsupported_capability' ), true ) ) {
+		$fail( 'Provider-step onboarding readiness did not expose a normalized actionable issue.' );
+	}
+}
