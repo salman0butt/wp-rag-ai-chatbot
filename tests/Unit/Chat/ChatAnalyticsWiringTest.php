@@ -201,7 +201,7 @@ final class ChatAnalyticsWiringTest extends TestCase {
 				return null;
 			}
 		};
-		$provider = new class( $log, $provider_id ) implements GenerationProvider {
+		$provider    = new class( $log, $provider_id ) implements GenerationProvider {
 			/**
 			 * Store the observable event order and provider ID.
 			 *
