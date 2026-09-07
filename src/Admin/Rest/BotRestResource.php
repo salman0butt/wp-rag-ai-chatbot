@@ -17,6 +17,8 @@ use WpRagAiChatbot\Bots\BotRepository;
  */
 final class BotRestResource {
 	/**
+	 * Create the bot REST resource.
+	 *
 	 * @param BotRepository $repository Bot persistence boundary.
 	 */
 	public function __construct( private readonly BotRepository $repository ) {
@@ -25,6 +27,8 @@ final class BotRestResource {
 	/**
 	 * Return one deterministic bot page for REST serialization.
 	 *
+	 * @param int $page Requested page number.
+	 * @param int $per_page Requested page size.
 	 * @return array{items:list<array{id:string,name:string,enabled:bool,provider_id:string,model_id:string,version:int,created_at:string,updated_at:string}>,total:int,page:int,per_page:int}
 	 */
 	public function list( int $page, int $per_page ): array {
@@ -41,6 +45,7 @@ final class BotRestResource {
 	/**
 	 * Serialize only the bounded M12 bot settings contract.
 	 *
+	 * @param Bot $bot Bot aggregate to serialize.
 	 * @return array{id:string,name:string,enabled:bool,provider_id:string,model_id:string,version:int,created_at:string,updated_at:string}
 	 */
 	private static function serialize( Bot $bot ): array {
