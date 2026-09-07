@@ -43,7 +43,6 @@ final class WpdbBotRepository implements BotRepository {
 	 * @param bool   $enabled Whether the bot is enabled.
 	 * @param string $provider_id Provider identifier.
 	 * @param string $model_id Model identifier.
-	 * @throws InvalidArgumentException When bot data is invalid.
 	 * @throws DatabaseException When persistence fails.
 	 */
 	public function create( string $name, bool $enabled, string $provider_id, string $model_id ): Bot {
