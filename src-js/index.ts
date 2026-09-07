@@ -101,6 +101,7 @@ export interface AdminShellProps {
 	state: AdminShellState;
 	screen?: AdminScreen;
 	onboardingStep?: OnboardingStep;
+	onboardingIssue?: OnboardingIssue;
 }
 
 export interface OnboardingFlowProps {
@@ -125,6 +126,7 @@ interface AdminBootConfig {
 interface AdminOnboardingReadiness {
 	ready: boolean;
 	next_step: OnboardingStep;
+	issue?: OnboardingIssue;
 }
 
 interface OnboardingIssueCopy {
@@ -222,6 +224,7 @@ export const AdminShell = ( {
 	state,
 	screen = 'onboarding',
 	onboardingStep,
+	onboardingIssue,
 }: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
@@ -270,7 +273,10 @@ export const AdminShell = ( {
 					'div',
 					null,
 					createElement( 'h1', null, selectedLabel ),
-					OnboardingFlow( { nextStep: onboardingStep } )
+					OnboardingFlow( {
+						nextStep: onboardingStep,
+						issue: onboardingIssue,
+					} )
 			  )
 			: createElement( 'h1', null, selectedLabel );
 
@@ -290,10 +296,16 @@ const renderAdminShell = (
 	root: Element,
 	state: AdminShellState,
 	screen: AdminScreen,
-	onboardingStep?: OnboardingStep
+	onboardingStep?: OnboardingStep,
+	onboardingIssue?: OnboardingIssue
 ): void => {
 	window.wp.element.render(
-		AdminShell( { state, screen, onboardingStep } ),
+		AdminShell( {
+			state,
+			screen,
+			onboardingStep,
+			onboardingIssue,
+		} ),
 		root
 	);
 };
@@ -309,6 +321,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 	let currentState: AdminShellState = 'ready';
 	let currentOnboardingStep: OnboardingStep | undefined;
+	let currentOnboardingIssue: OnboardingIssue | undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -316,7 +329,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			root,
 			state,
 			resolveAdminScreen( currentHash() ),
-			currentOnboardingStep
+			currentOnboardingStep,
+			currentOnboardingIssue
 		);
 	};
 
@@ -356,6 +370,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
 		.then( ( readiness ) => {
 			currentOnboardingStep = readiness.next_step;
+			currentOnboardingIssue = readiness.issue;
 			renderState( stateFromReadiness() );
 		} )
 		.catch( () => {
