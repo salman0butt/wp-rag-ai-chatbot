@@ -21,6 +21,31 @@ export interface AdminApiClient {
 	) => Promise< T >;
 }
 
+export class AdminApiError extends Error {
+	public readonly code: string;
+	public readonly status: number;
+
+	public constructor( status: number, code: string ) {
+		super( 'The admin request could not be completed.' );
+		this.name = 'AdminApiError';
+		this.code = code;
+		this.status = status;
+	}
+}
+
+const getErrorCode = ( payload: unknown ): string => {
+	if (
+		typeof payload === 'object' &&
+		payload !== null &&
+		'code' in payload &&
+		typeof payload.code === 'string'
+	) {
+		return payload.code;
+	}
+
+	return 'admin_request_failed';
+};
+
 export const createAdminApiClient = (
 	config: AdminApiClientConfig
 ): AdminApiClient => {
@@ -50,8 +75,16 @@ export const createAdminApiClient = (
 				`${ baseUrl }${ normalizedPath }`,
 				request
 			);
+			const payload = ( await response.json() ) as unknown;
 
-			return ( await response.json() ) as T;
+			if ( ! response.ok ) {
+				throw new AdminApiError(
+					response.status,
+					getErrorCode( payload )
+				);
+			}
+
+			return payload as T;
 		},
 	};
 };
