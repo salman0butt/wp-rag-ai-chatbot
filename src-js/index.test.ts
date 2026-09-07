@@ -209,6 +209,7 @@ describe( 'bootstrapAdminApp', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
 		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
+		Reflect.deleteProperty( window, 'fetch' );
 	} );
 
 	it( 'does nothing when the admin mount boundary is absent', () => {
@@ -224,9 +225,9 @@ describe( 'bootstrapAdminApp', () => {
 		expect( render ).not.toHaveBeenCalled();
 	} );
 
-	it( 'mounts the selected ready screen from the safe WordPress boot payload', () => {
+	it( 'mounts the selected ready screen from the safe WordPress boot payload', async () => {
 		const render = jest.fn( ( element: Node, root: Element ) => {
-			root.append( element );
+			root.replaceChildren( element );
 		} );
 		configureTestElementRuntime( render );
 		const root = document.createElement( 'div' );
@@ -240,13 +241,26 @@ describe( 'bootstrapAdminApp', () => {
 				nonce: 'rest-nonce',
 			},
 		} );
+		Object.defineProperty( window, 'fetch', {
+			configurable: true,
+			value: jest.fn().mockResolvedValue( {
+				ok: true,
+				status: 200,
+				json: async () => ( { ready: true, next_step: 'complete' } ),
+			} ),
+		} );
 		const exports = plugin as unknown as Record< string, unknown >;
 		const bootstrapAdminApp = exports.bootstrapAdminApp as
 			| ( ( hash?: string ) => boolean )
 			| undefined;
 
 		expect( bootstrapAdminApp?.( '#/providers' ) ).toBe( true );
-		expect( render ).toHaveBeenCalledTimes( 1 );
+		expect( root.querySelector( '[role="status"]' )?.textContent ).toBe(
+			'Loading administration data…'
+		);
+
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
 		expect( render.mock.calls[ 0 ][ 1 ] ).toBe( root );
 		expect(
 			root.querySelector( 'a[aria-current="page"]' )?.textContent
