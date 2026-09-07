@@ -18,6 +18,7 @@ use WpRagAiChatbot\Database\Migrations\V006CreateChunkSearchTable;
 use WpRagAiChatbot\Database\Migrations\V007CreateConversationsTable;
 use WpRagAiChatbot\Database\Migrations\V008CreateMessagesTable;
 use WpRagAiChatbot\Database\Migrations\V009CreateMessageCitationsTable;
+use WpRagAiChatbot\Database\Migrations\V010CreateBotsTable;
 
 /**
  * Composes and executes database migrations at WordPress lifecycle boundaries.
@@ -73,6 +74,7 @@ final class DatabaseBootstrap {
 				new V007CreateConversationsTable( $tables ),
 				new V008CreateMessagesTable( $tables ),
 				new V009CreateMessageCitationsTable( $tables ),
+				new V010CreateBotsTable( $tables ),
 			)
 		);
 	}
