@@ -137,9 +137,10 @@ final class WpdbBotRepositoryTest extends TestCase {
 		$connection->expects( self::once() )->method( 'get_var' )->willReturn( 2 );
 		$connection->expects( self::once() )->method( 'prepare' )->willReturnCallback(
 			static function ( string $query, mixed ...$args ): string {
+				self::assertStringContainsString( 'FROM %i', $query );
 				self::assertStringContainsString( 'ORDER BY created_at ASC, bot_id ASC', $query );
 				self::assertStringContainsString( 'LIMIT %d OFFSET %d', $query );
-				self::assertSame( array( 10, 0 ), $args );
+				self::assertSame( array( 'wp_rag_ai_bots', 10, 0 ), $args );
 				return 'page';
 			}
 		);
