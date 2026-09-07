@@ -111,6 +111,11 @@ interface AdminBootConfig {
 	nonce: string;
 }
 
+interface AdminOnboardingReadiness {
+	ready: boolean;
+	next_step: 'provider' | 'model' | 'first_bot' | 'complete';
+}
+
 declare global {
 	interface Window {
 		wp: {
@@ -201,6 +206,22 @@ export const AdminShell = ( {
 	);
 };
 
+const renderAdminShell = (
+	root: Element,
+	state: AdminShellState,
+	screen: AdminScreen
+): void => {
+	window.wp.element.render( AdminShell( { state, screen } ), root );
+};
+
+const stateFromReadiness = (
+	readiness: AdminOnboardingReadiness
+): AdminShellState => {
+	return ! readiness.ready && readiness.next_step === 'first_bot'
+		? 'empty'
+		: 'ready';
+};
+
 export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	const root = document.getElementById( 'wp-rag-ai-chatbot-admin' );
 
@@ -208,13 +229,29 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		return false;
 	}
 
-	window.wp.element.render(
-		AdminShell( {
-			state: 'ready',
-			screen: resolveAdminScreen( hash ),
-		} ),
-		root
-	);
+	const screen = resolveAdminScreen( hash );
+	const config = window.wpRagAiChatbotAdminConfig;
+	const fetcher = window.fetch;
+
+	if ( config === undefined || typeof fetcher !== 'function' ) {
+		renderAdminShell( root, 'ready', screen );
+		return true;
+	}
+
+	renderAdminShell( root, 'loading', screen );
+
+	const client = createAdminApiClient( {
+		baseUrl: config.restBase,
+		nonce: config.nonce,
+		fetcher: fetcher.bind( window ),
+	} );
+
+	void client
+		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
+		.then( ( readiness ) => {
+			renderAdminShell( root, stateFromReadiness( readiness ), screen );
+		} )
+		.catch( () => undefined );
 
 	return true;
 };
