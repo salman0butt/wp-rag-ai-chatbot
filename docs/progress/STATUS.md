@@ -10,11 +10,15 @@
 - Current milestone: **M12 — Admin Onboarding, Bot Management & Provider Configuration**.
 - M12 status: **IN PROGRESS**.
 - M12 branch: `feat/m12-admin-onboarding-bots-providers`.
+- M12 draft PR: **#17**.
 - M12 design: `docs/superpowers/specs/2026-09-07-m12-admin-onboarding-bots-providers-design.md` — **AUTO-APPROVED — SCHEDULED MODE**.
 - M12 implementation plan: `docs/superpowers/plans/2026-09-07-m12-admin-onboarding-bots-providers.md` — **AUTO-APPROVED — SCHEDULED MODE**.
-- Current M12 task: **Task 1 — Admin foundation and capability-protected REST bootstrap**.
-- M12 planning commits: `f0176ed61d1341dec0e134a300613f384d2cc8e3`, `8439d6be7f622a3291c92a0c22cd8e1bdf9eb983`.
-- Recovery baseline `main`: `3bd73cb99efc1f051c884f8f522f08b0c9938a84`; its exact-SHA `php-quality`, `js-quality`, `package`, and `wordpress-smoke` checks were GREEN before M12 writes.
-- Exact next unfinished action: create Task 1 behavioral tests first, obtain genuine expected RED on the exact test SHA, then implement the minimum admin bootstrap/capability/REST registration change and verify GREEN.
+- M12 Task 1 — Admin foundation and capability-protected REST bootstrap: **COMPLETE**.
+- Task 1 final implementation SHA: `0638dc14197054f48efc5fd51e480b74ca394073`.
+- Task 1 exact-head CI: `34088991361` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN.
+- Task 1 scoped correctness/security/performance review: PR review `5128526998` — **0 Critical / 0 Important**, no inline review threads.
+- Task 1 delivered centralized `manage_options` authorization, admin menu/mount/bootstrap wiring, strict plugin-screen scoping, and a capability-protected versioned read-only `/admin/bootstrap` resource returning only safe stable identifiers. Admin assets remain intentionally unenqueued until Task 6.
+- Current M12 task: **Task 2 — Bot aggregate/repository and persistence**.
+- Exact next unfinished action: recover current branch/PR/CI concurrency, inspect existing database migration/repository conventions, add the smallest Task 2 behavior tests first for stable bot IDs, validation, isolated create/read/update/delete-or-archive semantics, and paginated listing, then prove genuine expected RED before any bot production implementation.
 
-Detailed M11 implementation, review, CI, security/performance, and closeout evidence remains in the M11 milestone/progress/spec/plan records and merged PR #16.
+Detailed M12 Task 1 RED/GREEN, review, security/performance, and verification evidence is recorded in `docs/milestones/M12-admin-onboarding-bots-providers.md` and PR #17.
