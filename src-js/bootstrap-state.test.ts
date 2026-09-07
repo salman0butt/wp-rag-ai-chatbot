@@ -66,7 +66,7 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 		Reflect.deleteProperty( window, 'fetch' );
 	} );
 
-	it( 'renders loading before deriving the empty state from persisted onboarding readiness', async () => {
+	it( 'renders loading before resuming the first-bot onboarding step from persisted readiness', async () => {
 		const fetcher = jest.fn().mockResolvedValue( {
 			ok: true,
 			status: 200,
@@ -89,9 +89,10 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 				} ),
 			} )
 		);
-		expect(
-			root.querySelector( '[data-admin-state="empty"]' )?.textContent
-		).toContain( 'No bots configured yet.' );
+		const heading = root.querySelector(
+			'[data-onboarding-step="first_bot"] h2'
+		);
+		expect( heading?.textContent ).toBe( 'Create your first bot' );
 	} );
 
 	it( 'resumes the onboarding screen from the persisted server next step', async () => {
