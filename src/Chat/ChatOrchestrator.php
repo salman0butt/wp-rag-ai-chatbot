@@ -92,13 +92,11 @@ final class ChatOrchestrator {
 			}
 
 			$this->record_analytics(
-				new ChatAnalyticsEvent(
-					true,
-					$request->model_id,
-					null,
-					count( $retrieval->candidates ),
-					0
-				)
+				true,
+				$request->model_id,
+				null,
+				count( $retrieval->candidates ),
+				0
 			);
 
 			return new ChatResult(
@@ -153,16 +151,14 @@ final class ChatOrchestrator {
 		}
 
 		$this->record_analytics(
-			new ChatAnalyticsEvent(
-				false,
-				$request->model_id,
-				$generation->provider_id,
-				count( $retrieval->candidates ),
-				count( $validation->citations ),
-				$generation->usage->input_tokens,
-				$generation->usage->output_tokens,
-				$generation->usage->total_tokens
-			)
+			false,
+			$request->model_id,
+			$generation->provider_id,
+			count( $retrieval->candidates ),
+			count( $validation->citations ),
+			$generation->usage->input_tokens,
+			$generation->usage->output_tokens,
+			$generation->usage->total_tokens
 		);
 
 		return new ChatResult(
@@ -175,17 +171,44 @@ final class ChatOrchestrator {
 	}
 
 	/**
-	 * Emit one non-critical sanitized analytics event when configured.
+	 * Construct and emit one non-critical sanitized analytics event when configured.
 	 *
-	 * @param ChatAnalyticsEvent $event Text-free normalized event.
+	 * @param bool        $no_answer Whether deterministic no-answer was returned.
+	 * @param string      $model_id Requested model identifier.
+	 * @param string|null $provider_id Provider identifier when generation occurred.
+	 * @param int         $retrieval_candidate_count Selected retrieval candidate count.
+	 * @param int         $citation_count Validated citation count.
+	 * @param int|null    $input_tokens Input tokens when known.
+	 * @param int|null    $output_tokens Output tokens when known.
+	 * @param int|null    $total_tokens Total tokens when known.
 	 */
-	private function record_analytics( ChatAnalyticsEvent $event ): void {
+	private function record_analytics(
+		bool $no_answer,
+		string $model_id,
+		?string $provider_id,
+		int $retrieval_candidate_count,
+		int $citation_count,
+		?int $input_tokens = null,
+		?int $output_tokens = null,
+		?int $total_tokens = null
+	): void {
 		if ( null === $this->analytics_hook ) {
 			return;
 		}
 
 		try {
-			$this->analytics_hook->record( $event );
+			$this->analytics_hook->record(
+				new ChatAnalyticsEvent(
+					$no_answer,
+					$model_id,
+					$provider_id,
+					$retrieval_candidate_count,
+					$citation_count,
+					$input_tokens,
+					$output_tokens,
+					$total_tokens
+				)
+			);
 		} catch ( Throwable ) {
 			// Analytics is explicitly non-critical and must never affect a valid chat result.
 			return;
