@@ -252,12 +252,8 @@ const renderAdminShell = (
 };
 
 const stateFromReadiness = (
-	readiness: AdminOnboardingReadiness
-): AdminShellState => {
-	return ! readiness.ready && readiness.next_step === 'first_bot'
-		? 'empty'
-		: 'ready';
-};
+	_readiness: AdminOnboardingReadiness
+): AdminShellState => 'ready';
 
 export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	const root = document.getElementById( 'wp-rag-ai-chatbot-admin' );
