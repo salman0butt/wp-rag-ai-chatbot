@@ -11,7 +11,6 @@ namespace WpRagAiChatbot\Admin\Rest;
 
 use OutOfBoundsException;
 use Throwable;
-use WpRagAiChatbot\Bots\Bot;
 use WpRagAiChatbot\Bots\BotRepository;
 use WpRagAiChatbot\Providers\ModelInfo;
 use WpRagAiChatbot\Providers\ProviderConfigurationService;
@@ -123,7 +122,7 @@ final class ModelReadinessRestResource {
 
 		$page = $this->bots->list( 1, 100 );
 		foreach ( $page['items'] as $bot ) {
-			if ( $bot instanceof Bot && isset( $compatible[ $bot->provider_id ][ $bot->model_id ] ) ) {
+			if ( isset( $compatible[ $bot->provider_id ][ $bot->model_id ] ) ) {
 				return array(
 					'ready'     => true,
 					'next_step' => 'complete',
@@ -184,7 +183,7 @@ final class ModelReadinessRestResource {
 	 * Serialize only stable, provider-neutral model metadata required by M12.
 	 *
 	 * @param ModelInfo $model Provider-neutral model metadata.
-	 * @return array{provider_id:string,model_id:string,display_name:string,input_modalities:array,output_modalities:array,capabilities:array,context_window:int|null}
+	 * @return array{provider_id:string,model_id:string,display_name:string,input_modalities:array<int,string>,output_modalities:array<int,string>,capabilities:array<int,string>,context_window:int|null}
 	 */
 	private function normalize( ModelInfo $model ): array {
 		return array(
