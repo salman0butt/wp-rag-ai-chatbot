@@ -202,7 +202,7 @@ export const OnboardingFlow = ( {
 					createElement( 'p', null, issueCopy.message ),
 					createElement(
 						'a',
-						{ href: '#/providers', autoFocus: true },
+						{ href: '#/providers' },
 						issueCopy.action
 					)
 			  );
