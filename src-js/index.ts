@@ -219,7 +219,12 @@ export const AdminShell = ( {
 	} );
 	const screenContent =
 		screen === 'onboarding' && onboardingStep !== undefined
-			? OnboardingFlow( { nextStep: onboardingStep } )
+			? createElement(
+					'div',
+					null,
+					createElement( 'h1', null, selectedLabel ),
+					OnboardingFlow( { nextStep: onboardingStep } )
+			  )
 			: createElement( 'h1', null, selectedLabel );
 
 	return createElement(
