@@ -97,6 +97,57 @@ final class AdminSurfaceTest extends TestCase {
 	}
 
 	/**
+	 * Bot CRUD routes share the centralized capability and keep invalid IDs in the controller boundary.
+	 */
+	#[DoesNotPerformAssertions]
+	public function test_register_routes_adds_capability_protected_bot_crud_resources(): void {
+		Functions\expect( 'register_rest_route' )->once()->withAnyArgs();
+		Functions\expect( 'register_rest_route' )
+			->once()
+			->with(
+				'wp-rag-ai-chatbot/v1',
+				'/admin/bots',
+				array(
+					array(
+						'methods'             => 'GET',
+						'callback'            => array( AdminRestBootstrap::class, 'list_bots' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+					array(
+						'methods'             => 'POST',
+						'callback'            => array( AdminRestBootstrap::class, 'create_bot' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+				)
+			);
+		Functions\expect( 'register_rest_route' )
+			->once()
+			->with(
+				'wp-rag-ai-chatbot/v1',
+				'/admin/bots/(?P<id>[^/]+)',
+				array(
+					array(
+						'methods'             => 'GET',
+						'callback'            => array( AdminRestBootstrap::class, 'get_bot' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+					array(
+						'methods'             => 'PUT',
+						'callback'            => array( AdminRestBootstrap::class, 'update_bot' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+					array(
+						'methods'             => 'DELETE',
+						'callback'            => array( AdminRestBootstrap::class, 'delete_bot' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+				)
+			);
+
+		AdminRestBootstrap::register_routes();
+	}
+
+	/**
 	 * The foundational response contains identifiers only and no credential material.
 	 */
 	public function test_admin_bootstrap_response_is_non_secret(): void {
