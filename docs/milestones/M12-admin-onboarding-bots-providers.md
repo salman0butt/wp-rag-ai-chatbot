@@ -27,8 +27,8 @@ Admin capabilities enforced; onboarding handles unavailable provider/capability 
 ## Tasks
 1. **COMPLETE** — Admin foundation and capability-protected REST bootstrap.
 2. **COMPLETE** — Bot aggregate/repository and persistence.
-3. **ACTIVE** — Bot CRUD REST resources with pagination/isolation.
-4. Provider credential/configuration REST resource with write-only secrets.
+3. **COMPLETE** — Bot CRUD REST resources with pagination/isolation.
+4. **ACTIVE** — Provider credential/configuration REST resource with write-only secrets.
 5. Provider model/capability and onboarding-readiness resources.
 6. React admin shell and typed API layer.
 7. Onboarding flow.
@@ -50,51 +50,67 @@ Task 2 preserved a genuine behavioral RED before production implementation:
 - Minimum implementation added the bounded bot aggregate/repository contract, V010 schema, and wpdb repository. Intermediate verification failures were treated as quality/static/test-fixture defects rather than fabricated RED: PHPCS metadata, a literal-query PHPStan finding, a unit-test closure capture bug, and stale schema-9 assertions were corrected without broadening Task 2.
 - Final Task 2 GREEN implementation/integration head `1bbfe79994f7fa850429e7f5aa968f44e4c54c31`, CI `34091206697`: PHPStan 279/279 with 0 errors, PHPUnit 645/645 with 2,700 assertions, Composer audit clean, plus JS/package/WordPress smoke GREEN.
 
+Task 3 preserved a genuine route-level behavioral RED before the missing WordPress REST wiring was implemented:
+
+- Existing Task 3 resource tests already covered bounded serialization, create/read/update/delete mapping, validation, malformed/missing identifiers, optimistic-version conflicts, and repository isolation. The missing integration boundary was concrete WordPress route registration/composition.
+- Genuine RED `b7950a33c51171532c1d270076f8b847b70d2d21`, CI `34097504341`: PHPCS and PHPStan passed; PHPUnit executed 653 tests / 2,724 assertions and failed exactly the new bot-route expectation because `/admin/bots` had not been registered.
+- Minimum production implementation registered capability-protected collection/item routes and mapped WordPress REST requests into the existing `BotRestResource`/`WpdbBotRepository`. Intermediate heads `6d6b2f2e9e11243466f18e42114cb291f8988316` and `b4a4489d809ffc1787643403a180dd22d1808666` exposed only PHPCS and PHPStan contract defects; those were fixed without broadening behavior.
+- Behavioral GREEN `555fee248a1a543483e73a0b5c485acefef1af4b`: PHP verification, JS verification, and package verification all passed. Integration checkpoint `047de805f6481ad36a334e63e2e44efb62989553`, CI `34098207281`, then passed all permanent jobs including the real WordPress REST lifecycle.
+
 Backend and component tests remain required throughout M12.
 
 ## Integration Test Evidence
 Task 1 exact-head WordPress smoke on `0638dc14197054f48efc5fd51e480b74ca394073`, run `34088991361`, passed activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and environment cleanup.
 
-Task 2 exact-head WordPress smoke on `1bbfe79994f7fa850429e7f5aa968f44e4c54c31`, run `34091206697`, passed the full lifecycle. `test:wp:database` now validates schema V010, the bots table/indexes, clean install, V1 -> V10 upgrade, retain-by-default uninstall, opt-in deletion, and clean reinstall. The new real MySQL bot smoke creates two bots, proves distinct stable IDs, bounded deterministic pagination, updates bot A without mutating bot B, rejects a stale optimistic write, deletes A without deleting B, and reruns after upgrade/reinstall.
+Task 2 exact-head WordPress smoke on `1bbfe79994f7fa850429e7f5aa968f44e4c54c31`, run `34091206697`, passed the full lifecycle. `test:wp:database` validates schema V010, the bots table/indexes, clean install, V1 -> V10 upgrade, retain-by-default uninstall, opt-in deletion, and clean reinstall. The real MySQL bot smoke creates two bots, proves distinct stable IDs, bounded deterministic pagination, updates bot A without mutating bot B, rejects a stale optimistic write, deletes A without deleting B, and reruns after upgrade/reinstall.
 
-Bot REST integration belongs to Task 3; provider REST integration belongs to Tasks 4-5.
+Task 3 exact implementation/integration head `047de805f6481ad36a334e63e2e44efb62989553`, CI `34098207281`, extended the real WordPress bot smoke through the actual REST server. It proves unauthenticated bot access is rejected; an administrator can create two independently addressed bots; list pagination is bounded; invalid pagination normalizes deterministically; updating bot A does not mutate bot B; stale writes fail deterministically; malformed identifiers normalize safely; deleting bot A leaves bot B intact; and the full database smoke repeats through upgrade/reinstall lifecycle. All WordPress smoke stages passed.
+
+Provider REST integration belongs to Tasks 4-5.
 
 ## E2E / Visual Verification
-No user-facing React UI exists in Tasks 1-2, so visual/accessibility UI verification is not yet applicable. Desktop/mobile admin, loading/empty/error, keyboard navigation, and provider capability errors remain required for later M12 UI tasks.
+No user-facing React UI exists in Tasks 1-3, so visual/accessibility UI verification is not yet applicable. Desktop/mobile admin, loading/empty/error, keyboard navigation, and provider capability errors remain required for later M12 UI tasks.
 
 ## Security Review
 Task 1 review verified one centralized `manage_options` policy for menu/REST access, a capability-protected read-only admin bootstrap route, and a response limited to stable plugin/API identifiers. No provider credentials, encrypted credential material, chat content, owner scope, mutable configuration, or raw diagnostics are returned.
 
 Task 2 review verified bot IDs are opaque 128-bit lowercase-hex identifiers; persisted human/provider/model text is bounded; exact-ID CRUD and optimistic `bot_id + version` updates fail closed on stale targets; listing is deterministic and page-size bounded to 100; user-controlled values do not enter raw SQL; reads bind identifiers/values through the prepared connection boundary and writes use structured wpdb APIs. Task 2 stores provider/model identifiers only and introduces no credential, transcript, retrieval, owner-scope, knowledge, appearance, or analytics material.
 
-Mutation capability/nonces/CSRF coverage remains mandatory when Task 3 adds REST writes.
+Task 3 review verified every bot REST route uses the centralized `AdminCapability::can_manage` permission callback, real unauthenticated REST access is denied, request payloads/pagination are server-side type/shape validated, identifiers remain exact mutation targets, and responses serialize only bounded M12 bot settings/metadata. WordPress remains the authentication and REST-cookie nonce/CSRF authority; these routes use the normal WordPress REST stack and introduce no alternate authentication or nonce bypass. Browser nonce transport is implemented when the typed React API client is introduced in Task 6.
 
 ## Accessibility Review where UI exists
-Not applicable to Tasks 1-2; no interactive UI has been introduced yet.
+Not applicable to Tasks 1-3; no interactive UI has been introduced yet.
 
 ## Performance Review where relevant
 Task 1 admin asset registration remains strictly scoped and enqueues nothing until Task 6.
 
 Task 2 bounds list pages to 100 records, uses a unique `bot_id` index and a `(created_at, bot_id)` deterministic-list index, and performs one count plus one bounded page read. No provider/network call or public request path is added.
 
+Task 3 preserves the same bounded indexed list path, adds no provider/network call, and adds no admin/public frontend asset. CRUD operations remain exact-ID repository operations.
+
 ## Code Review Findings
 - Task 1 scoped correctness/security/performance review on exact head `0638dc14197054f48efc5fd51e480b74ca394073`, PR review `5128526998`: **0 Critical / 0 Important findings**.
 - Task 2 scoped correctness/security/performance review on exact head `1bbfe79994f7fa850429e7f5aa968f44e4c54c31`, PR review `5128744956`: **0 Critical / 0 Important findings**.
-- PR #17 has no inline review threads at the Task 2 checkpoint.
+- Task 3 scoped correctness/security/performance review on exact implementation/integration head `047de805f6481ad36a334e63e2e44efb62989553`, PR review `5129481296`: **0 Critical / 0 Important findings**.
+- PR #17 has no unresolved inline review threads at the Task 3 checkpoint.
 
 ## Fixes
 Task 1's only post-behavioral-GREEN follow-up was test metadata for Brain Monkey expectation-only tests.
 
 Task 2 verification fixes were limited to repository coding-standard metadata, prepared `%i` table binding for the list query, a unit-test closure-capture defect, and stale schema-9 test/smoke assertions. The real WordPress bot persistence smoke was added before Task 2 closeout.
 
+Task 3 verification fixes were limited to a WordPress coding-standard parameter name/docblock correction and an explicit optimistic-update array-shape narrowing required by PHPStan. The real WordPress REST bot lifecycle was added as the integration checkpoint before closeout.
+
 ## Fresh Verification Commands
-Observed through GitHub Actions on exact implementation heads: Composer validation/PHP verification/audit, JS verification/audits/gating tests, package build/assertion, and WordPress smoke suites including database lifecycle integration.
+Observed through GitHub Actions on exact implementation heads: Composer validation/PHP verification/audit, JS verification/audits/gating tests, package build/assertion, and WordPress smoke suites including database/REST lifecycle integration.
 
 ## Fresh Verification Results
 - Recovery `main` SHA `3bd73cb99efc1f051c884f8f522f08b0c9938a84`: permanent jobs GREEN before this M12 continuation.
 - Task 1 final implementation SHA `0638dc14197054f48efc5fd51e480b74ca394073`, CI `34088991361`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN.
 - Task 2 genuine RED SHA `2f9adb8daf5b8cfad1607a5462c779ec31f4abaf`, CI `34090057465`: static gates passed and PHPUnit failed exactly 12 absent-Task-2 behavior tests.
 - Task 2 final implementation/integration SHA `1bbfe79994f7fa850429e7f5aa968f44e4c54c31`, CI `34091206697`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN; PHPUnit 645/645 / 2,700 assertions; Composer audit clean; real WordPress/MySQL bot lifecycle GREEN.
+- Task 3 genuine RED SHA `b7950a33c51171532c1d270076f8b847b70d2d21`, CI `34097504341`: PHPCS/PHPStan passed and PHPUnit failed exactly the missing bot REST route registration expectation.
+- Task 3 final implementation/integration SHA `047de805f6481ad36a334e63e2e44efb62989553`, CI `34098207281`: `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all GREEN; real WordPress REST authorization/CRUD/pagination/isolation/stale/malformed lifecycle GREEN.
 
 ## Commits
 Task 1 key commits:
@@ -119,19 +135,28 @@ Task 2 key commits:
 - `4c91dfcdcad25169f917898d781358acfa74b36f` / `44af03d694efba4f14b0d8450736ec07d4861f10` — stale schema/unit-test fixture corrections.
 - `1bbfe79994f7fa850429e7f5aa968f44e4c54c31` — final Task 2 implementation/integration checkpoint.
 
+Task 3 key commits:
+- `b7950a33c51171532c1d270076f8b847b70d2d21` — genuine protected bot REST route RED.
+- `6d6b2f2e9e11243466f18e42114cb291f8988316` — initial bot REST route/request mapping implementation.
+- `b4a4489d809ffc1787643403a180dd22d1808666` — coding-standard correction.
+- `555fee248a1a543483e73a0b5c485acefef1af4b` — PHPStan-safe optimistic update boundary / behavioral GREEN.
+- `047de805f6481ad36a334e63e2e44efb62989553` — real WordPress REST authorization/CRUD/isolation integration checkpoint.
+
 ## Files Changed
 Task 1 added the protected admin bootstrap/capability/REST seam and core wiring.
 
 Task 2 added `src/Bots/Bot.php`, `BotId.php`, `BotRepository.php`, `src/Database/Migrations/V010CreateBotsTable.php`, `src/Database/Repository/WpdbBotRepository.php`, schema/table/bootstrap composition, focused unit contracts, and `scripts/test-wp-bots.php` plus schema-10 lifecycle smoke updates.
 
+Task 3 added the repository-backed `src/Admin/Rest/BotRestResource.php` contract/tests, registered protected bot collection/item routes in `AdminRestBootstrap`, added bounded REST request normalization, and extended `scripts/test-wp-bots.php` to exercise the real WordPress REST server and multi-bot lifecycle.
+
 ## Known Limitations
-Tasks 1-2 intentionally provide only the protected admin foundation and persisted bot configuration layer. No bot REST CRUD, provider credential/model resource, onboarding state, or React admin application exists yet. Provider/model capability compatibility is deliberately deferred to Task 5. These are planned later M12 tasks, not Task 2 defects.
+Tasks 1-3 intentionally provide the protected admin foundation, persisted bot configuration layer, and protected bot REST CRUD. Provider credential/model resources, onboarding state, and the React admin application do not exist yet. Provider/model capability compatibility is deliberately deferred to Task 5; browser REST nonce transport belongs to the typed API layer in Task 6. These are planned later M12 tasks, not Task 3 defects.
 
 ## Documentation Updated
-M12 design, implementation plan, milestone ledger, and global status checkpoint are the durable recovery sources. Task 2 exact RED/GREEN, integration, security/performance, review, and CI evidence is recorded here and in PR #17.
+M12 design, implementation plan, milestone ledger, and global status checkpoint are the durable recovery sources. Task 3 exact RED/GREEN, real WordPress REST integration, security/performance review, review submission, and CI evidence are recorded here and in PR #17.
 
 ## Completion Checklist
-Tasks 1-2 are complete. M12 remains open until Tasks 3-10, final independent review/security/accessibility/performance gates, exact-final-SHA CI, merge, and fresh post-merge `main` CI are complete.
+Tasks 1-3 are complete. M12 remains open until Tasks 4-10, final independent review/security/accessibility/performance gates, exact-final-SHA CI, merge, and fresh post-merge `main` CI are complete.
 
 ## Next Milestone
 M13 — Knowledge Manager/Debugger, only after M12 is genuinely complete.
