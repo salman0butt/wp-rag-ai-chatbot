@@ -1,7 +1,14 @@
 import * as plugin from './index';
 
 type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
-type OnboardingFlowComponent = ( props: { nextStep: OnboardingStep } ) => Node;
+type OnboardingIssue =
+	| 'provider_unavailable'
+	| 'missing_credential'
+	| 'unsupported_capability';
+type OnboardingFlowComponent = ( props: {
+	nextStep: OnboardingStep;
+	issue?: OnboardingIssue;
+} ) => Node;
 type TestElementProps = Record< string, string > | null;
 
 const createTestElement = (
@@ -22,7 +29,10 @@ const createTestElement = (
 	return element;
 };
 
-const renderOnboarding = ( nextStep: OnboardingStep ): HTMLElement => {
+const renderOnboarding = (
+	nextStep: OnboardingStep,
+	issue?: OnboardingIssue
+): HTMLElement => {
 	Object.defineProperty( window, 'wp', {
 		configurable: true,
 		value: {
@@ -39,7 +49,7 @@ const renderOnboarding = ( nextStep: OnboardingStep ): HTMLElement => {
 
 	const root = document.createElement( 'div' );
 	root.append(
-		( OnboardingFlow as OnboardingFlowComponent )( { nextStep } )
+		( OnboardingFlow as OnboardingFlowComponent )( { nextStep, issue } )
 	);
 
 	return root;
@@ -60,6 +70,35 @@ describe( 'OnboardingFlow', () => {
 			expect(
 				root.firstElementChild?.getAttribute( 'data-onboarding-step' )
 			).toBe( nextStep );
+		}
+	);
+
+	it.each( [
+		[
+			'provider_unavailable',
+			'The provider is currently unavailable.',
+			'Review provider settings',
+		],
+		[
+			'missing_credential',
+			'Add a provider credential to continue.',
+			'Configure provider',
+		],
+		[
+			'unsupported_capability',
+			'Choose a provider and model that support generation.',
+			'Review compatible models',
+		],
+	] as const )(
+		'renders an actionable accessible %s state',
+		( issue, message, action ) => {
+			const root = renderOnboarding( 'model', issue );
+			const alert = root.querySelector( '[role="alert"]' );
+			const link = alert?.querySelector( 'a' );
+
+			expect( alert?.textContent ).toContain( message );
+			expect( link?.textContent ).toBe( action );
+			expect( link?.getAttribute( 'href' ) ).toBe( '#/providers' );
 		}
 	);
 } );
