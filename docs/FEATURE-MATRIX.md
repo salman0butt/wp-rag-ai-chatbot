@@ -22,10 +22,10 @@ Legend: PLANNED = approved product target, IMPLEMENTED = verified implementation
 | Lexical/exact retrieval | identifiers/SKUs/phrases | IMPLEMENTED | M10 |
 | Hybrid fusion | explainable score fusion | IMPLEMENTED | M10 |
 | Optional reranking | provider/adapter based | IMPLEMENTED | M10 |
-| Grounded chat | strict/preferred/general modes | PLANNED | M11 |
-| Citations | source-linked + validated | PLANNED | M11 |
-| Conversation memory | recent + summary + fresh RAG | PLANNED | M11 |
-| Streaming | normalized server events | PLANNED | M11 |
+| Grounded chat | strict/preferred/general modes | IMPLEMENTED | M11 |
+| Citations | source-linked + validated | IMPLEMENTED | M11 |
+| Conversation memory | recent + summary + fresh RAG | IMPLEMENTED | M11 |
+| Streaming | normalized server events | IMPLEMENTED | M11 |
 | Admin/onboarding | multi-screen professional admin | PLANNED | M12 |
 | Knowledge manager | indexing/status/jobs | PLANNED | M13 |
 | RAG debugger | retrieval trace/usage/cost | PLANNED | M13 |
