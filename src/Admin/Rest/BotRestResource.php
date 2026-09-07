@@ -35,7 +35,7 @@ final class BotRestResource {
 		$result = $this->repository->list( $page, $per_page );
 
 		return array(
-			'items'    => array_map( self::serialize( ... ), $result['items'] ),
+			'items'    => array_values( array_map( self::serialize( ... ), $result['items'] ) ),
 			'total'    => $result['total'],
 			'page'     => $result['page'],
 			'per_page' => $result['per_page'],
