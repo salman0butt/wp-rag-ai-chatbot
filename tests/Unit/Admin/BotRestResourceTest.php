@@ -21,7 +21,7 @@ use WpRagAiChatbot\Bots\BotRepository;
 final class BotRestResourceTest extends TestCase {
 	/** List responses serialize only bounded M12 bot fields and pagination. */
 	public function test_list_serializes_repository_page(): void {
-		$bot = new Bot(
+		$bot        = new Bot(
 			new BotId( '0123456789abcdef0123456789abcdef' ),
 			'Support Bot',
 			true,
