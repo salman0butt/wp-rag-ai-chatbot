@@ -40,6 +40,7 @@ final class ChatOrchestrator {
 	 * @param GenerationProvider     $provider Existing M03 provider-neutral generation boundary.
 	 * @param CitationValidator      $citation_validator Request-local citation validator.
 	 * @param MessageRepository|null $message_repository Optional owner-scoped assistant-message persistence boundary.
+	 * @param ChatAnalyticsHook|null $analytics_hook Optional non-critical text-free analytics boundary.
 	 */
 	public function __construct(
 		private readonly ChatRequestPolicy $request_policy,
@@ -49,7 +50,8 @@ final class ChatOrchestrator {
 		private readonly PromptBuilder $prompt_builder,
 		private readonly GenerationProvider $provider,
 		private readonly CitationValidator $citation_validator,
-		private readonly ?MessageRepository $message_repository = null
+		private readonly ?MessageRepository $message_repository = null,
+		private readonly ?ChatAnalyticsHook $analytics_hook = null
 	) {
 	}
 
@@ -88,6 +90,16 @@ final class ChatOrchestrator {
 				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 				throw new ChatException( ChatFailureReason::INSUFFICIENT_EVIDENCE, 'Selected evidence is insufficient.' );
 			}
+
+			$this->record_analytics(
+				new ChatAnalyticsEvent(
+					true,
+					$request->model_id,
+					null,
+					count( $retrieval->candidates ),
+					0
+				)
+			);
 
 			return new ChatResult(
 				$no_answer,
@@ -140,6 +152,19 @@ final class ChatOrchestrator {
 			}
 		}
 
+		$this->record_analytics(
+			new ChatAnalyticsEvent(
+				false,
+				$request->model_id,
+				$generation->provider_id,
+				count( $retrieval->candidates ),
+				count( $validation->citations ),
+				$generation->usage->input_tokens,
+				$generation->usage->output_tokens,
+				$generation->usage->total_tokens
+			)
+		);
+
 		return new ChatResult(
 			$generation->output_text,
 			false,
@@ -147,5 +172,23 @@ final class ChatOrchestrator {
 			$validation->citations,
 			$request->conversation_id
 		);
+	}
+
+	/**
+	 * Emit one non-critical sanitized analytics event when configured.
+	 *
+	 * @param ChatAnalyticsEvent $event Text-free normalized event.
+	 */
+	private function record_analytics( ChatAnalyticsEvent $event ): void {
+		if ( null === $this->analytics_hook ) {
+			return;
+		}
+
+		try {
+			$this->analytics_hook->record( $event );
+		} catch ( Throwable ) {
+			// Analytics is explicitly non-critical and must never affect a valid chat result.
+			return;
+		}
 	}
 }
