@@ -251,9 +251,7 @@ const renderAdminShell = (
 	);
 };
 
-const stateFromReadiness = (
-	_readiness: AdminOnboardingReadiness
-): AdminShellState => 'ready';
+const stateFromReadiness = (): AdminShellState => 'ready';
 
 export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	const root = document.getElementById( 'wp-rag-ai-chatbot-admin' );
@@ -311,7 +309,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
 		.then( ( readiness ) => {
 			currentOnboardingStep = readiness.next_step;
-			renderState( stateFromReadiness( readiness ) );
+			renderState( stateFromReadiness() );
 		} )
 		.catch( () => {
 			renderState( 'error' );
