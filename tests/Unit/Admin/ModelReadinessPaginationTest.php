@@ -63,7 +63,7 @@ final class ModelReadinessPaginationTest extends TestCase {
 			'2026-09-07 10:00:00',
 			'2026-09-07 10:00:00'
 		);
-		$compatible = new Bot(
+		$compatible   = new Bot(
 			new BotId( 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb' ),
 			'Ready bot',
 			true,
@@ -102,7 +102,10 @@ final class ModelReadinessPaginationTest extends TestCase {
 		$resource = new ModelReadinessRestResource( $registry, $configuration, $bots );
 
 		self::assertSame(
-			array( 'ready' => true, 'next_step' => 'complete' ),
+			array(
+				'ready'     => true,
+				'next_step' => 'complete',
+			),
 			$resource->readiness()
 		);
 	}
