@@ -94,6 +94,22 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 		).toContain( 'No bots configured yet.' );
 	} );
 
+	it( 'resumes the onboarding screen from the persisted server next step', async () => {
+		const fetcher = jest.fn().mockResolvedValue( {
+			ok: true,
+			status: 200,
+			json: async () => ( { ready: false, next_step: 'model' } ),
+		} );
+		const root = configureAdminRuntime( fetcher );
+
+		expect( bootstrapAdminApp( '#/onboarding' ) ).toBe( true );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect(
+			root.querySelector( '[data-onboarding-step="model"] h2' )?.textContent
+		).toBe( 'Choose a model' );
+	} );
+
 	it( 'replaces loading with the safe error state when readiness fails', async () => {
 		const fetcher = jest.fn().mockResolvedValue( {
 			ok: false,
