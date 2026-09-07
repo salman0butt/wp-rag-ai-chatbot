@@ -42,10 +42,10 @@ final class StreamingChatOrchestrator {
 		CitationRegistry $registry,
 		Cancellation $cancellation
 	): \Generator {
-		$sequence        = 0;
-		$answer          = '';
-		$answer_bytes    = 0;
-		$limit_exceeded  = false;
+		$sequence       = 0;
+		$answer         = '';
+		$answer_bytes   = 0;
+		$limit_exceeded = false;
 
 		yield new StreamEvent( $sequence++, StreamEventType::MESSAGE_START );
 
