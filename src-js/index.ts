@@ -103,13 +103,23 @@ type ElementFactory = (
 	...children: unknown[]
 ) => unknown;
 
+type ElementRenderer = ( element: unknown, root: Element ) => void;
+
+interface AdminBootConfig {
+	plugin: string;
+	restBase: string;
+	nonce: string;
+}
+
 declare global {
 	interface Window {
 		wp: {
 			element: {
 				createElement: ElementFactory;
+				render: ElementRenderer;
 			};
 		};
+		wpRagAiChatbotAdminConfig?: AdminBootConfig;
 	}
 }
 
@@ -189,4 +199,22 @@ export const AdminShell = ( {
 			createElement( 'h1', null, selectedLabel )
 		)
 	);
+};
+
+export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
+	const root = document.getElementById( 'wp-rag-ai-chatbot-admin' );
+
+	if ( root === null ) {
+		return false;
+	}
+
+	window.wp.element.render(
+		AdminShell( {
+			state: 'ready',
+			screen: resolveAdminScreen( hash ),
+		} ),
+		root
+	);
+
+	return true;
 };
