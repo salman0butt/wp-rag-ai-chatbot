@@ -12,8 +12,12 @@ type AdminClientFactory = ( config: {
 };
 
 type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
+type AdminScreen = 'onboarding' | 'bots' | 'providers';
 
-type AdminShellComponent = ( props: { state: AdminShellState } ) => Node;
+type AdminShellComponent = ( props: {
+	state: AdminShellState;
+	screen?: AdminScreen;
+} ) => Node;
 
 type TestElementProps = Record< string, string > | null;
 
@@ -27,9 +31,7 @@ const createTestElement = (
 	for ( const [ key, value ] of Object.entries( props ?? {} ) ) {
 		if ( key === 'className' ) {
 			element.className = value;
-		} else if ( key === 'role' ) {
-			element.setAttribute( 'role', value );
-		} else if ( key.startsWith( 'data-' ) ) {
+		} else {
 			element.setAttribute( key, value );
 		}
 	}
@@ -41,7 +43,7 @@ const createTestElement = (
 	return element;
 };
 
-const renderAdminShell = ( state: AdminShellState ): HTMLElement => {
+const configureTestElementRuntime = (): void => {
 	Object.defineProperty( window, 'wp', {
 		configurable: true,
 		value: {
@@ -50,6 +52,13 @@ const renderAdminShell = ( state: AdminShellState ): HTMLElement => {
 			},
 		},
 	} );
+};
+
+const renderAdminShell = (
+	state: AdminShellState,
+	screen?: AdminScreen
+): HTMLElement => {
+	configureTestElementRuntime();
 
 	const exports = plugin as unknown as Record< string, unknown >;
 	const AdminShell = exports.AdminShell;
@@ -57,7 +66,7 @@ const renderAdminShell = ( state: AdminShellState ): HTMLElement => {
 	expect( typeof AdminShell ).toBe( 'function' );
 
 	const root = document.createElement( 'div' );
-	root.append( ( AdminShell as AdminShellComponent )( { state } ) );
+	root.append( ( AdminShell as AdminShellComponent )( { state, screen } ) );
 
 	return root;
 };
@@ -162,5 +171,36 @@ describe( 'AdminShell', () => {
 		expect( root.querySelector( '[role="alert"]' )?.textContent ).toBe(
 			'Administration data could not be loaded.'
 		);
+	} );
+
+	it( 'renders accessible navigation and the selected ready screen', () => {
+		const root = renderAdminShell( 'ready', 'bots' );
+		const nav = root.querySelector( 'nav[aria-label="Administration"]' );
+		const links = Array.from( nav?.querySelectorAll( 'a' ) ?? [] );
+
+		expect( links.map( ( link ) => link.getAttribute( 'href' ) ) ).toEqual( [
+			'#/onboarding',
+			'#/bots',
+			'#/providers',
+		] );
+		expect(
+			nav?.querySelector( 'a[aria-current="page"]' )?.textContent
+		).toBe( 'Bots' );
+		expect( root.querySelector( 'main h1' )?.textContent ).toBe( 'Bots' );
+	} );
+} );
+
+describe( 'resolveAdminScreen', () => {
+	it( 'normalizes known hashes and falls back to onboarding', () => {
+		const exports = plugin as unknown as Record< string, unknown >;
+		const resolveAdminScreen = exports.resolveAdminScreen as
+			| ( ( hash: string ) => AdminScreen )
+			| undefined;
+
+		expect( typeof resolveAdminScreen ).toBe( 'function' );
+		expect( resolveAdminScreen?.( '#/bots' ) ).toBe( 'bots' );
+		expect( resolveAdminScreen?.( '#/providers' ) ).toBe( 'providers' );
+		expect( resolveAdminScreen?.( '#/unknown' ) ).toBe( 'onboarding' );
+		expect( resolveAdminScreen?.( '' ) ).toBe( 'onboarding' );
 	} );
 } );
