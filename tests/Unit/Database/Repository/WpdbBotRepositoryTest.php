@@ -25,7 +25,7 @@ final class WpdbBotRepositoryTest extends TestCase {
 	public function test_create_inserts_and_rehydrates_one_bot(): void {
 		self::assertTrue( class_exists( WpdbBotRepository::class ), 'M12 Task 2 requires WpdbBotRepository.' );
 		$connection = $this->connection();
-		$bot_id = null;
+		$bot_id     = null;
 		$connection->expects( self::once() )->method( 'insert' )->willReturnCallback(
 			static function ( string $table, array $data ) use ( &$bot_id ): int {
 				self::assertSame( 'wp_rag_ai_bots', $table );
@@ -76,7 +76,10 @@ final class WpdbBotRepositoryTest extends TestCase {
 				self::assertSame( 'wp_rag_ai_bots', $table );
 				self::assertSame( 4, $data['version'] ?? null );
 				self::assertSame(
-					array( 'bot_id' => '0123456789abcdef0123456789abcdef', 'version' => 3 ),
+					array(
+						'bot_id' => '0123456789abcdef0123456789abcdef',
+						'version' => 3,
+					),
 					$where
 				);
 				return 1;
@@ -154,16 +157,31 @@ final class WpdbBotRepositoryTest extends TestCase {
 		self::assertSame( 10, $page['per_page'] );
 	}
 
-	/** @return Connection&MockObject */
+	/**
+	 * Create a connection mock.
+	 *
+	 * @return Connection&MockObject
+	 */
 	private function connection(): Connection {
 		return $this->createMock( Connection::class );
 	}
 
+	/** Create the repository under test. */
 	private function repository( Connection $connection ): WpdbBotRepository {
 		return new WpdbBotRepository( $connection, new TableNames( 'wp_' ) );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Build one persisted bot row.
+	 *
+	 * @param string $bot_id Stable bot identifier.
+	 * @param string $name Bot name.
+	 * @param int    $enabled Enabled storage flag.
+	 * @param string $provider_id Provider identifier.
+	 * @param string $model_id Model identifier.
+	 * @param int    $version Persisted optimistic version.
+	 * @return array<string,mixed>
+	 */
 	private static function row(
 		string $bot_id,
 		string $name = 'Support Bot',
