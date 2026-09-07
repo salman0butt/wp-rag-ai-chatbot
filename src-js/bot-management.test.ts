@@ -98,9 +98,9 @@ describe( 'BotManagementScreen', () => {
 			per_page: 20,
 		} );
 
-		expect( root.querySelector( '[data-bot-list-empty]' )?.textContent ).toBe(
-			'No bots configured yet.'
-		);
+		expect(
+			root.querySelector( '[data-bot-list-empty]' )?.textContent
+		).toBe( 'No bots configured yet.' );
 	} );
 
 	it( 'renders bot rows and deterministic pagination from the Task 3 list contract', () => {
@@ -115,16 +115,16 @@ describe( 'BotManagementScreen', () => {
 		} );
 		const rows = Array.from( root.querySelectorAll( '[data-bot-id]' ) );
 
-		expect( rows.map( ( row ) => row.getAttribute( 'data-bot-id' ) ) ).toEqual( [
-			'bot-alpha',
-			'bot-beta',
-		] );
+		expect(
+			rows.map( ( row ) => row.getAttribute( 'data-bot-id' ) )
+		).toEqual( [ 'bot-alpha', 'bot-beta' ] );
 		expect( rows.map( ( row ) => row.textContent ) ).toEqual( [
 			'Support Bot',
 			'Sales Bot',
 		] );
 		expect(
-			root.querySelector( '[aria-label="Bot list pagination"]' )?.textContent
+			root.querySelector( '[aria-label="Bot list pagination"]' )
+				?.textContent
 		).toContain( 'Page 1 of 2' );
 	} );
 } );
