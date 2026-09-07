@@ -18,6 +18,7 @@ use WpRagAiChatbot\Providers\Credentials\AuthenticatedCredentialCipher;
 use WpRagAiChatbot\Providers\Credentials\RuntimeCredentialSourceReader;
 use WpRagAiChatbot\Providers\Credentials\RuntimeCryptoCapabilities;
 use WpRagAiChatbot\Providers\Credentials\WordPressCredentialStore;
+use WpRagAiChatbot\Providers\ProviderBootstrap;
 
 /**
  * Registers the plugin administration REST resources.
@@ -100,6 +101,26 @@ final class AdminRestBootstrap {
 					'callback'            => array( self::class, 'delete_provider_credential' ),
 					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 				),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/models',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( self::class, 'list_models' ),
+				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/onboarding/readiness',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( self::class, 'get_onboarding_readiness' ),
+				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 			)
 		);
 	}
@@ -217,6 +238,48 @@ final class AdminRestBootstrap {
 	}
 
 	/**
+	 * Return normalized models for one configured provider.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function list_models( WP_REST_Request $request ): array {
+		$provider_id = $request->get_param( 'provider_id' );
+		$purpose     = $request->get_param( 'purpose' );
+		$capability  = $request->get_param( 'capability' );
+
+		if (
+			! is_string( $provider_id )
+			|| '' === trim( $provider_id )
+			|| ! is_string( $purpose )
+			|| '' === trim( $purpose )
+			|| ( null !== $capability && '' !== $capability && ! is_string( $capability ) )
+		) {
+			return self::invalid_request();
+		}
+
+		$normalized_capability = null;
+		if ( is_string( $capability ) && '' !== trim( $capability ) ) {
+			$normalized_capability = trim( $capability );
+		}
+
+		return self::model_readiness()->models(
+			trim( $provider_id ),
+			trim( $purpose ),
+			$normalized_capability
+		);
+	}
+
+	/**
+	 * Return onboarding progress derived from persisted provider/model/bot truth.
+	 *
+	 * @return array{ready:bool,next_step:string}
+	 */
+	public static function get_onboarding_readiness(): array {
+		return self::model_readiness()->readiness();
+	}
+
+	/**
 	 * Build the repository-backed bot resource from WordPress services.
 	 */
 	private static function bots(): BotRestResource {
@@ -244,9 +307,27 @@ final class AdminRestBootstrap {
 	}
 
 	/**
+	 * Build Task 5 from the existing provider registry/configuration and bot repository seams.
+	 */
+	private static function model_readiness(): ModelReadinessRestResource {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+
+		return new ModelReadinessRestResource(
+			ProviderBootstrap::registry(),
+			ProviderBootstrap::configuration(),
+			new WpdbBotRepository(
+				$connection,
+				new TableNames( $connection->prefix() )
+			)
+		);
+	}
+
+	/**
 	 * Normalize a positive integer REST parameter.
 	 *
-	 * @param mixed $value         Raw request parameter.
+	 * @param mixed $value Raw request parameter.
 	 * @param int   $default_value Value used when the parameter is omitted.
 	 */
 	private static function request_positive_int( mixed $value, int $default_value ): ?int {
@@ -271,12 +352,12 @@ final class AdminRestBootstrap {
 	 */
 	private static function settings_payload( ?array $input, bool $require_version ): ?array {
 		if (
-		null === $input
-		|| ! isset( $input['name'], $input['provider_id'], $input['model_id'] )
-		|| ! is_string( $input['name'] )
-		|| ! is_bool( $input['enabled'] ?? null )
-		|| ! is_string( $input['provider_id'] )
-		|| ! is_string( $input['model_id'] )
+			null === $input
+			|| ! isset( $input['name'], $input['provider_id'], $input['model_id'] )
+			|| ! is_string( $input['name'] )
+			|| ! is_bool( $input['enabled'] ?? null )
+			|| ! is_string( $input['provider_id'] )
+			|| ! is_string( $input['model_id'] )
 		) {
 			return null;
 		}
