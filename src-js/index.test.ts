@@ -236,8 +236,7 @@ describe( 'bootstrapAdminApp', () => {
 			configurable: true,
 			value: {
 				plugin: 'wp-rag-ai-chatbot',
-				restBase:
-					'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
 				nonce: 'rest-nonce',
 			},
 		} );
