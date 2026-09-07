@@ -36,7 +36,16 @@ final class WpdbBotRepository implements BotRepository {
 	) {
 	}
 
-	/** Create one bot. */
+	/**
+	 * Create one bot.
+	 *
+	 * @param string $name Human-readable bot name.
+	 * @param bool   $enabled Whether the bot is enabled.
+	 * @param string $provider_id Provider identifier.
+	 * @param string $model_id Model identifier.
+	 * @throws InvalidArgumentException When bot data is invalid.
+	 * @throws DatabaseException When persistence fails.
+	 */
 	public function create( string $name, bool $enabled, string $provider_id, string $model_id ): Bot {
 		$bot_id = new BotId( bin2hex( random_bytes( 16 ) ) );
 		$now    = gmdate( 'Y-m-d H:i:s' );
@@ -68,7 +77,11 @@ final class WpdbBotRepository implements BotRepository {
 		return $persisted;
 	}
 
-	/** Find one bot by stable identifier. */
+	/**
+	 * Find one bot by stable identifier.
+	 *
+	 * @param BotId $id Stable bot identifier.
+	 */
 	public function find( BotId $id ): ?Bot {
 		$sql = $this->connection->prepare(
 			'SELECT bot_id, name, enabled, provider_id, model_id, version, created_at, updated_at FROM %i WHERE bot_id = %s LIMIT 1',
@@ -80,7 +93,19 @@ final class WpdbBotRepository implements BotRepository {
 		return null === $row ? null : $this->hydrate( $row );
 	}
 
-	/** Update one bot only when its expected version is current. */
+	/**
+	 * Update one bot only when its expected version is current.
+	 *
+	 * @param BotId  $id Stable bot identifier.
+	 * @param int    $expected_version Expected optimistic version.
+	 * @param string $name Human-readable bot name.
+	 * @param bool   $enabled Whether the bot is enabled.
+	 * @param string $provider_id Provider identifier.
+	 * @param string $model_id Model identifier.
+	 * @throws InvalidArgumentException When bot data or the expected version is invalid.
+	 * @throws RuntimeException When the update target is missing or stale.
+	 * @throws DatabaseException When the updated row cannot be reloaded.
+	 */
 	public function update(
 		BotId $id,
 		int $expected_version,
@@ -125,7 +150,12 @@ final class WpdbBotRepository implements BotRepository {
 		return $persisted;
 	}
 
-	/** Delete one bot by stable identifier. */
+	/**
+	 * Delete one bot by stable identifier.
+	 *
+	 * @param BotId $id Stable bot identifier.
+	 * @throws DatabaseException When the delete query fails.
+	 */
 	public function delete( BotId $id ): bool {
 		$result = $this->connection->delete(
 			$this->tables->bots(),
@@ -143,7 +173,10 @@ final class WpdbBotRepository implements BotRepository {
 	/**
 	 * List a deterministic bounded page.
 	 *
+	 * @param int $page One-based page number.
+	 * @param int $per_page Requested page size.
 	 * @return array{items:array<int,Bot>,total:int,page:int,per_page:int}
+	 * @throws InvalidArgumentException When pagination arguments are invalid.
 	 */
 	public function list( int $page, int $per_page ): array {
 		if ( $page < 1 ) {
