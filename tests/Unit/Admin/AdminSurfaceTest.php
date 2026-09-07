@@ -77,6 +77,49 @@ final class AdminSurfaceTest extends TestCase {
 	}
 
 	/**
+	 * Non-plugin admin screens must not load the React administration bundle.
+	 */
+	#[DoesNotPerformAssertions]
+	public function test_enqueue_assets_skips_non_plugin_admin_screens(): void {
+		Functions\expect( 'wp_enqueue_script' )->never();
+		Functions\expect( 'wp_add_inline_script' )->never();
+
+		AdminBootstrap::enqueue_assets( 'dashboard' );
+	}
+
+	/**
+	 * The plugin screen gets the bundle and only the minimal nonce-bearing boot configuration.
+	 */
+	#[DoesNotPerformAssertions]
+	public function test_enqueue_assets_loads_bundle_with_safe_boot_configuration(): void {
+		Functions\when( 'plugins_url' )->justReturn( 'https://example.test/wp-content/plugins/wp-rag-ai-chatbot/build/index.js' );
+		Functions\when( 'rest_url' )->justReturn( 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/' );
+		Functions\when( 'wp_create_nonce' )->justReturn( 'rest-nonce' );
+		Functions\when( 'wp_json_encode' )->alias(
+			static fn ( array $value ): string => (string) json_encode( $value )
+		);
+
+		Functions\expect( 'wp_enqueue_script' )
+			->once()
+			->with(
+				'wp-rag-ai-chatbot-admin',
+				'https://example.test/wp-content/plugins/wp-rag-ai-chatbot/build/index.js',
+				array( 'wp-element' ),
+				'0.1.0-dev',
+				true
+			);
+		Functions\expect( 'wp_add_inline_script' )
+			->once()
+			->with(
+				'wp-rag-ai-chatbot-admin',
+				'window.wpRagAiChatbotAdminConfig = {"plugin":"wp-rag-ai-chatbot","restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1","nonce":"rest-nonce"};',
+				'before'
+			);
+
+		AdminBootstrap::enqueue_assets( 'toplevel_page_wp-rag-ai-chatbot' );
+	}
+
+	/**
 	 * The foundational REST route must be versioned and capability-protected.
 	 */
 	#[DoesNotPerformAssertions]
