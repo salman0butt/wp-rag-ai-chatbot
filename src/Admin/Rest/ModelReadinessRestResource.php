@@ -95,14 +95,19 @@ final class ModelReadinessRestResource {
 	/**
 	 * Return onboarding progress reconstructed from persisted server state.
 	 *
-	 * @return array{ready:bool,next_step:string}
+	 * @return array{ready:bool,next_step:string,issue?:string}
 	 */
 	public function readiness(): array {
 		$compatible = array();
+		$issues     = array();
 
 		foreach ( $this->registry->ids() as $provider_id ) {
 			$response = $this->models( $provider_id, 'generation' );
 			if ( isset( $response['error'] ) ) {
+				$code = $response['error']['code'] ?? null;
+				if ( is_string( $code ) ) {
+					$issues[] = $code;
+				}
 				continue;
 			}
 
@@ -114,10 +119,15 @@ final class ModelReadinessRestResource {
 		}
 
 		if ( array() === $compatible ) {
-			return array(
+			$response = array(
 				'ready'     => false,
 				'next_step' => $this->has_configured_provider() ? 'model' : 'provider',
 			);
+			$issue    = $this->readiness_issue( $issues );
+			if ( null !== $issue ) {
+				$response['issue'] = $issue;
+			}
+			return $response;
 		}
 
 		$page_number = 1;
@@ -140,6 +150,21 @@ final class ModelReadinessRestResource {
 			'ready'     => false,
 			'next_step' => 'first_bot',
 		);
+	}
+
+	/**
+	 * Select one deterministic safe issue code for onboarding recovery.
+	 *
+	 * @param array<int,string> $issues Provider/model issue codes observed while deriving readiness.
+	 */
+	private function readiness_issue( array $issues ): ?string {
+		foreach ( array( 'missing_credential', 'provider_unavailable', 'unsupported_capability' ) as $code ) {
+			if ( in_array( $code, $issues, true ) ) {
+				return $code;
+			}
+		}
+
+		return null;
 	}
 
 	/**
