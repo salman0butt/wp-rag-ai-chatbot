@@ -161,6 +161,55 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 		);
 	} );
 
+	it( 'loads the Task 3 bot page when the mounted app opens the bots screen', async () => {
+		const fetcher = jest
+			.fn()
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
+				json: async () => ( { ready: true, next_step: 'complete' } ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
+				json: async () => ( {
+					items: [
+						{
+							id: 'bot-alpha',
+							name: 'Support Bot',
+							enabled: true,
+							provider_id: 'openai',
+							model_id: 'gpt-5-mini',
+							version: 1,
+							created_at: '2026-09-08T00:00:00+00:00',
+							updated_at: '2026-09-08T00:00:00+00:00',
+						},
+					],
+					total: 1,
+					page: 1,
+					per_page: 20,
+				} ),
+			} );
+		const root = configureAdminRuntime( fetcher );
+
+		expect( bootstrapAdminApp( '#/bots' ) ).toBe( true );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( fetcher ).toHaveBeenNthCalledWith(
+			2,
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots?page=1&per_page=20',
+			expect.objectContaining( {
+				headers: expect.objectContaining( {
+					'X-WP-Nonce': 'rest-nonce',
+				} ),
+			} )
+		);
+		expect(
+			root.querySelector( '[data-bot-id="bot-alpha"]' )?.textContent
+		).toBe( 'Support Bot' );
+	} );
+
 	it( 'rerenders the ready shell on hash navigation without refetching readiness', async () => {
 		const fetcher = jest.fn().mockResolvedValue( {
 			ok: true,
