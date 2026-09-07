@@ -144,14 +144,34 @@ final class ChatAnalyticsWiringTest extends TestCase {
 	}
 
 	/**
+	 * Invalid analytics metadata cannot break a valid persisted answer.
+	 */
+	public function test_invalid_analytics_metadata_cannot_break_valid_chat_result(): void {
+		$log    = new ArrayObject();
+		$events = new ArrayObject();
+		$result = $this->respond( $log, $this->hook( $log, $events ), true, '' );
+
+		self::assertFalse( $result->no_answer );
+		self::assertSame( 'Grounded answer. [C1]', $result->answer );
+		self::assertSame( array( 'generation', 'persistence' ), $log->getArrayCopy() );
+		self::assertCount( 0, $events );
+	}
+
+	/**
 	 * Build and execute the real application composition with deterministic external boundaries.
 	 *
 	 * @param ArrayObject       $log Observable order.
 	 * @param ChatAnalyticsHook $hook Analytics hook under test.
 	 * @param bool              $with_evidence Whether retrieval returns one selected candidate.
+	 * @param string            $provider_id Provider result identifier.
 	 * @phpstan-param ArrayObject<int,string> $log
 	 */
-	private function respond( ArrayObject $log, ChatAnalyticsHook $hook, bool $with_evidence ): \WpRagAiChatbot\Chat\ChatResult {
+	private function respond(
+		ArrayObject $log,
+		ChatAnalyticsHook $hook,
+		bool $with_evidence,
+		string $provider_id = 'analytics-fake'
+	): \WpRagAiChatbot\Chat\ChatResult {
 		$config      = new RetrievalConfig();
 		$candidate   = new RankedCandidate( 'chunk-1', 'doc-1', 8, 'Grounded evidence.', 'en', 'public', 1.0 );
 		$fixtures    = $with_evidence ? array( $candidate ) : array();
@@ -181,21 +201,22 @@ final class ChatAnalyticsWiringTest extends TestCase {
 				return null;
 			}
 		};
-		$provider    = new class( $log ) implements GenerationProvider {
+		$provider = new class( $log, $provider_id ) implements GenerationProvider {
 			/**
-			 * Store the observable event order.
+			 * Store the observable event order and provider ID.
 			 *
 			 * @param ArrayObject $log Observable order.
+			 * @param string      $provider_id Provider identifier.
 			 * @phpstan-param ArrayObject<int,string> $log
 			 */
-			public function __construct( private ArrayObject $log ) {
+			public function __construct( private ArrayObject $log, private string $provider_id ) {
 			}
 
 			/**
 			 * Return the deterministic provider identifier.
 			 */
 			public function provider_id(): string {
-				return 'analytics-fake';
+				return $this->provider_id;
 			}
 
 			/**
