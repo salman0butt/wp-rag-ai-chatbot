@@ -74,6 +74,24 @@ final class AdminBootstrap {
 			return;
 		}
 
-		// The React admin bundle is introduced in M12 Task 6.
+		$handle = 'wp-rag-ai-chatbot-admin';
+		$config = array(
+			'plugin'   => self::PAGE_SLUG,
+			'restBase' => untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) ),
+			'nonce'    => wp_create_nonce( 'wp_rest' ),
+		);
+
+		wp_enqueue_script(
+			$handle,
+			plugins_url( 'build/index.js', dirname( __DIR__, 2 ) . '/wp-rag-ai-chatbot.php' ),
+			array( 'wp-element' ),
+			'0.1.0-dev',
+			true
+		);
+		wp_add_inline_script(
+			$handle,
+			'window.wpRagAiChatbotAdminConfig = ' . wp_json_encode( $config ) . ';',
+			'before'
+		);
 	}
 }
