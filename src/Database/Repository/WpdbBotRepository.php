@@ -189,7 +189,8 @@ final class WpdbBotRepository implements BotRepository {
 		$total  = (int) $this->connection->get_var( "SELECT COUNT(*) FROM {$table}" );
 		$offset = ( $page - 1 ) * $per_page;
 		$sql    = $this->connection->prepare(
-			"SELECT bot_id, name, enabled, provider_id, model_id, version, created_at, updated_at FROM {$table} ORDER BY created_at ASC, bot_id ASC LIMIT %d OFFSET %d",
+			'SELECT bot_id, name, enabled, provider_id, model_id, version, created_at, updated_at FROM %i ORDER BY created_at ASC, bot_id ASC LIMIT %d OFFSET %d',
+			$table,
 			$per_page,
 			$offset
 		);
