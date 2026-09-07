@@ -52,4 +52,37 @@ describe( 'createAdminApiClient', () => {
 		);
 		expect( fetcher.mock.calls[ 0 ][ 0 ] ).not.toContain( 'rest-nonce' );
 	} );
+
+	it( 'normalizes failed REST responses without exposing arbitrary response messages', async () => {
+		const fetcher = jest.fn().mockResolvedValue( {
+			ok: false,
+			status: 403,
+			json: async () => ( {
+				code: 'rest_forbidden',
+				message: 'provider-secret-upstream-detail',
+			} ),
+		} );
+		const client = plugin.createAdminApiClient( {
+			baseUrl: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+			nonce: 'rest-nonce',
+			fetcher: fetcher as unknown as typeof fetch,
+		} );
+		let failure: unknown;
+
+		try {
+			await client.request( '/admin/bootstrap' );
+		} catch ( error ) {
+			failure = error;
+		}
+
+		expect( failure ).toMatchObject( {
+			name: 'AdminApiError',
+			code: 'rest_forbidden',
+			status: 403,
+			message: 'The admin request could not be completed.',
+		} );
+		expect( ( failure as Error ).message ).not.toContain(
+			'provider-secret-upstream-detail'
+		);
+	} );
 } );
