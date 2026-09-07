@@ -92,6 +92,10 @@ export const createAdminApiClient = (
 export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
 export type AdminScreen = 'onboarding' | 'bots' | 'providers';
 export type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
+export type OnboardingIssue =
+	| 'provider_unavailable'
+	| 'missing_credential'
+	| 'unsupported_capability';
 
 export interface AdminShellProps {
 	state: AdminShellState;
@@ -101,6 +105,7 @@ export interface AdminShellProps {
 
 export interface OnboardingFlowProps {
 	nextStep: OnboardingStep;
+	issue?: OnboardingIssue;
 }
 
 type ElementFactory = (
@@ -120,6 +125,11 @@ interface AdminBootConfig {
 interface AdminOnboardingReadiness {
 	ready: boolean;
 	next_step: OnboardingStep;
+}
+
+interface OnboardingIssueCopy {
+	message: string;
+	action: string;
 }
 
 declare global {
@@ -150,6 +160,23 @@ const ONBOARDING_HEADINGS: Readonly< Record< OnboardingStep, string > > = {
 	complete: 'Onboarding complete',
 };
 
+const ONBOARDING_ISSUES: Readonly<
+	Record< OnboardingIssue, OnboardingIssueCopy >
+> = {
+	provider_unavailable: {
+		message: 'The provider is currently unavailable.',
+		action: 'Review provider settings',
+	},
+	missing_credential: {
+		message: 'Add a provider credential to continue.',
+		action: 'Configure provider',
+	},
+	unsupported_capability: {
+		message: 'Choose a provider and model that support generation.',
+		action: 'Review compatible models',
+	},
+};
+
 let activeHashChangeHandler: ( () => void ) | null = null;
 
 export const resolveAdminScreen = ( hash: string ): AdminScreen => {
@@ -161,13 +188,25 @@ export const resolveAdminScreen = ( hash: string ): AdminScreen => {
 
 export const OnboardingFlow = ( {
 	nextStep,
+	issue,
 }: OnboardingFlowProps ): unknown => {
 	const createElement = window.wp.element.createElement;
+	const issueCopy = issue === undefined ? undefined : ONBOARDING_ISSUES[ issue ];
+	const issueContent =
+		issueCopy === undefined
+			? undefined
+			: createElement(
+					'div',
+					{ role: 'alert' },
+					createElement( 'p', null, issueCopy.message ),
+					createElement( 'a', { href: '#/providers' }, issueCopy.action )
+			  );
 
 	return createElement(
 		'section',
 		{ 'data-onboarding-step': nextStep },
-		createElement( 'h2', null, ONBOARDING_HEADINGS[ nextStep ] )
+		createElement( 'h2', null, ONBOARDING_HEADINGS[ nextStep ] ),
+		issueContent
 	);
 };
 
