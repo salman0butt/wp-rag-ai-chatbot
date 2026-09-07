@@ -20,7 +20,7 @@ const createTestElement = (
 	return element;
 };
 
-const configureAdminRuntime = ( fetcher: jest.Mock ): HTMLElement => {
+const configureElementRuntime = (): HTMLElement => {
 	const render = jest.fn( ( element: Node, root: Element ) => {
 		root.replaceChildren( element );
 	} );
@@ -36,6 +36,12 @@ const configureAdminRuntime = ( fetcher: jest.Mock ): HTMLElement => {
 	const root = document.createElement( 'div' );
 	root.id = 'wp-rag-ai-chatbot-admin';
 	document.body.append( root );
+
+	return root;
+};
+
+const configureAdminRuntime = ( fetcher: jest.Mock ): HTMLElement => {
+	const root = configureElementRuntime();
 	Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
 		configurable: true,
 		value: {
@@ -137,5 +143,16 @@ describe( 'bootstrapAdminApp server-derived state', () => {
 			'Providers'
 		);
 		expect( fetcher ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'fails closed when the WordPress boot configuration is missing', () => {
+		const root = configureElementRuntime();
+		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
+		Reflect.deleteProperty( window, 'fetch' );
+
+		expect( bootstrapAdminApp( '#/onboarding' ) ).toBe( true );
+		expect( root.querySelector( '[role="alert"]' )?.textContent ).toBe(
+			'Administration data could not be loaded.'
+		);
 	} );
 } );
