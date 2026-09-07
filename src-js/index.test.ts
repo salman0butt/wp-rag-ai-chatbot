@@ -255,4 +255,21 @@ describe( 'bootstrapAdminApp', () => {
 			'Providers'
 		);
 	} );
+
+	it( 'mounts automatically when the admin bundle loads on the plugin screen', () => {
+		const render = jest.fn( ( element: Node, root: Element ) => {
+			root.append( element );
+		} );
+		configureTestElementRuntime( render );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+
+		jest.isolateModules( () => {
+			jest.requireActual( './index' );
+		} );
+
+		expect( render ).toHaveBeenCalledTimes( 1 );
+		expect( render.mock.calls[ 0 ][ 1 ] ).toBe( root );
+	} );
 } );
