@@ -140,7 +140,7 @@ final class AdminRestBootstrap {
 	 */
 	public static function update_bot( WP_REST_Request $request ): array {
 		$payload = self::settings_payload( $request->get_json_params(), true );
-		if ( null === $payload ) {
+		if ( null === $payload || ! isset( $payload['version'] ) ) {
 			return self::invalid_request();
 		}
 
