@@ -38,7 +38,9 @@ const renderOnboarding = ( nextStep: OnboardingStep ): HTMLElement => {
 	expect( typeof OnboardingFlow ).toBe( 'function' );
 
 	const root = document.createElement( 'div' );
-	root.append( ( OnboardingFlow as OnboardingFlowComponent )( { nextStep } ) );
+	root.append(
+		( OnboardingFlow as OnboardingFlowComponent )( { nextStep } )
+	);
 
 	return root;
 };
