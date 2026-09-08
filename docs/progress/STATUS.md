@@ -52,18 +52,31 @@ Completed bounded slice — server-supplied knowledge-source rendering:
 - Scoped review `5146690487`: 0 Critical / 0 Important.
 - Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-SOURCE-RENDERING.md`.
 
+Completed bounded slice — Knowledge router/bootstrap and server-authoritative source loading:
+
+- Added Knowledge to the established admin navigation/hash router and reused the nonce-authenticated same-origin admin client.
+- Loads only `GET /admin/knowledge/sources?page=N&per_page=20`; selected source/page state is derived defensively from the hash.
+- Leaving Knowledge discards the bounded in-memory source page, so returning to the same page refetches server-authoritatively rather than reusing stale data.
+- Initial checkpoint `fe12b8a5c8dbe23d1d7d541607ca5905a7c21ca5` / CI `34277143129` is **not RED** because Prettier stopped before Jest.
+- Genuine bootstrap RED `2e2471f9a952221406768caf1b4240c5db40b02b` / CI `34282644712`: lint/typecheck passed; Jest 47 tests with 46 passed / exactly 1 missing-source-request failure.
+- Verification caught and reverted an over-broad test-file edit before closeout; no production behavior depended on it.
+- Genuine server-authoritative re-entry RED `5edf9034d0bab82ea701245768834cf55dd5498b` / CI `34283561496`: lint/typecheck passed; Jest 48 tests with 47 passed / exactly 1 stale re-entry failure.
+- GREEN implementation `64c57e7bdcbb07282cf91838c8b8ddf987ecc4fd` / CI `34284020063`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN.
+- Scoped review `5147497514`: 0 Critical / 0 Important.
+- Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-BOOTSTRAP.md`.
+
 ## Current work
 
 **Task 4 — Knowledge manager admin UI** remains the authoritative unfinished unit.
 
 Exact continuation:
 
-- add `knowledge` to the existing admin router/navigation and load the bounded source page through the existing nonce-authenticated client from `GET /admin/knowledge/sources`;
-- resolve source/page state from the hash and refresh server-authoritatively on navigation;
-- then integrate bounded Task 2 source/document/chunk detail plus Task 3 job inventory/actions with loading/empty/error and stable lifecycle-error states;
-- do not cache secret or unbounded data in browser state;
-- add constrained-width, long-content, keyboard/accessibility, and responsive CSS coverage;
-- complete final Task 4 scoped/independent review and exact-final-SHA CI before advancing to Task 5.
+- start with a fresh genuine Jest RED for selected-source detail loading through the existing Task 2 contracts;
+- load the selected allow-listed source detail plus bounded document page server-authoritatively, then add bounded persisted chunk inspection for a selected document;
+- integrate Task 3 bounded job inventory/enqueue/cancel/retry and stable `invalid_transition` lifecycle-error UI states;
+- do not cache secret-bearing, raw document, raw provider, or unbounded data in browser state;
+- add explicit loading/empty/error behavior plus constrained-width, long-content, keyboard/accessibility, and responsive CSS coverage;
+- complete final Task 4 correctness/security/accessibility/performance and independent review and exact-final-SHA CI before advancing to Task 5.
 
 ## Durable recovery
 
@@ -74,4 +87,5 @@ Exact continuation:
 - `docs/progress/M13-TASK2-KNOWLEDGE-DETAIL.md` — Task 2 evidence.
 - `docs/progress/M13-TASK3-JOB-LIFECYCLE.md` — Task 3 evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-SOURCE-RENDERING.md` — Task 4 source-rendering slice evidence.
+- `docs/progress/M13-TASK4-KNOWLEDGE-BOOTSTRAP.md` — Task 4 router/bootstrap/source-loading evidence.
 - PR #18 — milestone-wide draft integration record.
