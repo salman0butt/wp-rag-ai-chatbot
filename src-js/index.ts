@@ -1054,6 +1054,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		}
 
 		const screen = resolveAdminScreen( currentHash() );
+
+		if ( screen !== 'knowledge' ) {
+			currentKnowledgePage = undefined;
+		}
+
 		const targetPage = resolveBotPage( currentHash() );
 
 		if (
