@@ -554,8 +554,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentBotPage: BotPage | undefined;
 	let createBot: ( draft: BotDraft ) => Promise< void > = async () =>
 		undefined;
-	let updateBot: ( bot: BotListItem, draft: BotDraft ) => Promise< void > =
-		async () => undefined;
+	let updateBot: (
+		bot: BotListItem,
+		draft: BotDraft
+	) => Promise< void > = async () => undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -619,7 +621,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			renderState( 'error' );
 		}
 	};
-	updateBot = async ( bot: BotListItem, draft: BotDraft ): Promise< void > => {
+	updateBot = async (
+		bot: BotListItem,
+		draft: BotDraft
+	): Promise< void > => {
 		try {
 			await client.request< { bot: BotListItem } >(
 				`/admin/bots/${ encodeURIComponent( bot.id ) }`,
