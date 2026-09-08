@@ -3,9 +3,15 @@ export interface ProviderCredentialState {
 	source: string;
 }
 
+export interface ProviderModelChoice {
+	model_id: string;
+	display_name: string;
+}
+
 export interface ProviderSettingsScreenProps {
 	providerId: string;
 	credential: ProviderCredentialState;
+	models?: ReadonlyArray< ProviderModelChoice >;
 	onReplace?: ( credential: string ) => Promise< void >;
 }
 
@@ -25,6 +31,7 @@ const SOURCE_LABELS: Readonly< Record< string, string > > = {
 export const ProviderSettingsScreen = ( {
 	providerId,
 	credential,
+	models = [],
 	onReplace,
 }: ProviderSettingsScreenProps ): unknown => {
 	const createElement = window.wp.element
@@ -32,6 +39,28 @@ export const ProviderSettingsScreen = ( {
 	const sourceLabel =
 		SOURCE_LABELS[ credential.source ] ?? 'Configured externally';
 	const credentialId = `provider-${ providerId }-credential`;
+	const modelId = `provider-${ providerId }-model`;
+	const modelOptions = models.map( ( model ) =>
+		createElement(
+			'option',
+			{ key: model.model_id, value: model.model_id },
+			model.display_name
+		)
+	);
+	const modelSelector =
+		models.length === 0
+			? undefined
+			: createElement(
+					'div',
+					{ 'data-provider-model-selection': true },
+					createElement( 'h2', null, 'Generation model' ),
+					createElement( 'label', { htmlFor: modelId }, 'Model' ),
+					createElement(
+						'select',
+						{ id: modelId, name: 'model_id' },
+						...modelOptions
+					)
+			  );
 
 	return createElement(
 		'section',
@@ -85,6 +114,7 @@ export const ProviderSettingsScreen = ( {
 				{ type: 'submit' },
 				credential.configured ? 'Replace credential' : 'Save credential'
 			)
-		)
+		),
+		modelSelector
 	);
 };
