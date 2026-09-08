@@ -11,7 +11,6 @@ namespace WpRagAiChatbot\Tests\Unit\Admin;
 
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
-use WpRagAiChatbot\Admin\Rest\KnowledgeSourceRestResource;
 use WpRagAiChatbot\Core\PagedResult;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
@@ -42,7 +41,7 @@ final class KnowledgeSourceRestResourceTest extends TestCase {
 			->with( 1, 20 )
 			->willReturn( new PagedResult( array( $record ), 21, 1, 20 ) );
 
-		$response = ( new KnowledgeSourceRestResource( $repository ) )->list( 1, 20 );
+		$response = $this->call_list( $repository, 1, 20 );
 
 		self::assertSame( 21, $response['total'] );
 		self::assertSame( 1, $response['page'] );
@@ -72,9 +71,26 @@ final class KnowledgeSourceRestResourceTest extends TestCase {
 	public function test_list_rejects_invalid_pagination_bounds(): void {
 		$repository = $this->createMock( KnowledgeSourceRepository::class );
 		$repository->expects( self::never() )->method( 'paginate' );
-		$resource = new KnowledgeSourceRestResource( $repository );
 
-		self::assertSame( 'invalid_request', $resource->list( 0, 20 )['error']['code'] );
-		self::assertSame( 'invalid_request', $resource->list( 1, 101 )['error']['code'] );
+		self::assertSame( 'invalid_request', $this->call_list( $repository, 0, 20 )['error']['code'] );
+		self::assertSame( 'invalid_request', $this->call_list( $repository, 1, 101 )['error']['code'] );
+	}
+
+	/**
+	 * Invoke the not-yet-implemented resource dynamically so static analysis can reach PHPUnit RED.
+	 *
+	 * @param KnowledgeSourceRepository $repository Repository fixture.
+	 * @param int                       $page Page number.
+	 * @param int                       $per_page Page size.
+	 * @return array<string,mixed>
+	 */
+	private function call_list( KnowledgeSourceRepository $repository, int $page, int $per_page ): array {
+		$class = 'WpRagAiChatbot\\Admin\\Rest\\KnowledgeSourceRestResource';
+		self::assertTrue( class_exists( $class ), 'KnowledgeSourceRestResource must exist.' );
+		$resource = new $class( $repository );
+		$response = call_user_func( array( $resource, 'list' ), $page, $per_page );
+		self::assertIsArray( $response );
+
+		return $response;
 	}
 }
