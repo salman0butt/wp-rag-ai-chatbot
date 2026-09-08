@@ -111,8 +111,8 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 			->with(
 				self::callback(
 					static fn ( JobRequest $request ): bool => 'index.document' === $request->type
-						&& $payload === $request->payload
-					),
+					&& $payload === $request->payload
+				),
 				$now
 			)
 			->willReturn( $this->job( JobStatus::QUEUED, 'job-new' ) );
