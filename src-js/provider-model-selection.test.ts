@@ -19,7 +19,10 @@ const createTestElement = (
 			}
 			continue;
 		}
-		element.setAttribute( key === 'htmlFor' ? 'for' : key, String( value ) );
+		element.setAttribute(
+			key === 'htmlFor' ? 'for' : key,
+			String( value )
+		);
 	}
 
 	for ( const child of children ) {
@@ -56,7 +59,9 @@ describe( 'provider model selection', () => {
 
 		expect( selector ).not.toBeNull();
 		expect(
-			Array.from( selector?.options ?? [] ).map( ( option ) => option.value )
+			Array.from( selector?.options ?? [] ).map(
+				( option ) => option.value
+			)
 		).toEqual( [ 'gpt-generation' ] );
 		expect( screen.textContent ).toContain( 'GPT Generation' );
 		expect( screen.textContent ).not.toContain( 'embedding-only' );
