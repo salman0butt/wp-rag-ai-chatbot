@@ -29,18 +29,29 @@
 - Final review `5145555022`: 1 Important UTF-8 truncation issue found and resolved; 0 Critical / 0 Important unresolved.
 - Evidence: `docs/progress/M13-TASK2-KNOWLEDGE-DETAIL.md`.
 
+### Task 3 — recoverable job status and safe lifecycle controls: COMPLETE
+
+- Protected bounded job inventory plus enqueue/cancel/retry endpoints over the existing M09 queue/repository/state-transition seams.
+- Job pages are capped at 100 and expose only allow-listed operational fields; payload, idempotency and lease internals are excluded.
+- Unsupported terminal cancellation and non-failed retry return stable `invalid_transition` before any mutation/enqueue call.
+- Persisted error code/message fields reuse the M09 sanitized diagnostic contract rather than raw exception/provider payloads.
+- Genuine RED `c7e122f641c7734905711416a9bc318f8cc78fb0`, CI `34267619024`: static analysis clean; PHPUnit 687 tests / 2,897 assertions with exactly two expected missing-route errors; JS/package/WordPress smoke green.
+- Final implementation/harness head `645f58fa08a1c3dff3d31128a700071a94c2c97a`, CI `34272705657`: all four permanent jobs GREEN; PHPStan 288/288 clean; PHPUnit 687/687 tests / 2,897 assertions; Composer audit clean.
+- Review `5146492264`: 0 Critical / 0 Important.
+- Evidence: `docs/progress/M13-TASK3-JOB-LIFECYCLE.md`.
+
 ## Current work
 
-**Task 3 — Recoverable job status and safe lifecycle controls** is the authoritative next unfinished unit.
+**Task 4 — Knowledge manager admin UI** is the authoritative next unfinished unit.
 
 Per the approved M13 plan:
 
-- reuse M09 job repository/queue/state-transition seams;
-- expose bounded job status plus only supported enqueue/cancel/retry transitions;
-- begin with genuine RED tests proving unsupported transitions do not mutate persisted job state;
-- return stable `invalid_transition` errors for unsupported transitions;
-- expose only safe error code/message fields and never serialize raw exception/provider payloads;
-- verify behavior against persisted job fixtures before advancing to Task 4.
+- consume Tasks 1–3 REST DTOs through the existing typed nonce-authenticated admin client;
+- begin with genuine Jest RED coverage for paginated source rendering, selected detail, loading/empty/error states, supported job actions, and keyboard-labelled controls;
+- keep pagination and lifecycle mutation refresh server-authoritative;
+- do not cache secret or unbounded data in browser state;
+- add constrained-width and long-content accessibility/CSS coverage;
+- verify Jest, PHP integration, package, and complete WordPress smoke before advancing to Task 5.
 
 ## Durable recovery
 
@@ -49,4 +60,5 @@ Per the approved M13 plan:
 - `docs/superpowers/plans/2026-09-08-m13-knowledge-manager-debugger.md` — auto-approved implementation plan.
 - `docs/progress/M13-TASK1-KNOWLEDGE-SOURCES.md` — Task 1 evidence.
 - `docs/progress/M13-TASK2-KNOWLEDGE-DETAIL.md` — Task 2 evidence.
+- `docs/progress/M13-TASK3-JOB-LIFECYCLE.md` — Task 3 evidence.
 - PR #18 — milestone-wide draft integration record.
