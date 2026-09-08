@@ -155,7 +155,9 @@ describe( 'bot editor record isolation', () => {
 			'form[data-bot-editor="edit"][data-edit-bot-id="bot-b"]'
 		);
 		const betaName =
-			betaEditor?.querySelector< HTMLInputElement >( 'input[name="name"]' );
+			betaEditor?.querySelector< HTMLInputElement >(
+				'input[name="name"]'
+			);
 
 		expect(
 			root.querySelectorAll( 'form[data-bot-editor="edit"]' )
