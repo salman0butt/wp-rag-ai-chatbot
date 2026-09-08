@@ -19,6 +19,7 @@ interface BotPage {
 }
 
 type BotManagementComponent = ( props: { page: BotPage } ) => Node;
+type BotEditorComponent = ( props: { mode: 'create' | 'edit' } ) => Node;
 
 type TestElementProps = Record< string, unknown > | null;
 
@@ -53,7 +54,7 @@ const createTestElement = (
 	return element;
 };
 
-const renderBotManagement = ( page: BotPage ): HTMLElement => {
+const configureTestRuntime = (): void => {
 	Object.defineProperty( window, 'wp', {
 		configurable: true,
 		value: {
@@ -62,6 +63,10 @@ const renderBotManagement = ( page: BotPage ): HTMLElement => {
 			},
 		},
 	} );
+};
+
+const renderBotManagement = ( page: BotPage ): HTMLElement => {
+	configureTestRuntime();
 
 	const exports = plugin as unknown as Record< string, unknown >;
 	const BotManagementScreen = exports.BotManagementScreen;
@@ -72,6 +77,24 @@ const renderBotManagement = ( page: BotPage ): HTMLElement => {
 	root.append(
 		( BotManagementScreen as BotManagementComponent )( {
 			page,
+		} )
+	);
+
+	return root;
+};
+
+const renderBotEditor = (): HTMLElement => {
+	configureTestRuntime();
+
+	const exports = plugin as unknown as Record< string, unknown >;
+	const BotEditorScreen = exports.BotEditorScreen;
+
+	expect( typeof BotEditorScreen ).toBe( 'function' );
+
+	const root = document.createElement( 'div' );
+	root.append(
+		( BotEditorScreen as BotEditorComponent )( {
+			mode: 'create',
 		} )
 	);
 
@@ -126,5 +149,32 @@ describe( 'BotManagementScreen', () => {
 			root.querySelector( '[aria-label="Bot list pagination"]' )
 				?.textContent
 		).toContain( 'Page 1 of 2' );
+	} );
+} );
+
+describe( 'BotEditorScreen', () => {
+	it( 'renders accessible required create fields for the Task 3 bot contract', () => {
+		const root = renderBotEditor();
+		const form = root.querySelector( 'form[data-bot-editor="create"]' );
+		const name = root.querySelector( 'input[name="name"]' );
+		const provider = root.querySelector( 'input[name="provider_id"]' );
+		const model = root.querySelector( 'input[name="model_id"]' );
+
+		expect( form ).not.toBeNull();
+		expect( name?.getAttribute( 'required' ) ).not.toBeNull();
+		expect( provider?.getAttribute( 'required' ) ).not.toBeNull();
+		expect( model?.getAttribute( 'required' ) ).not.toBeNull();
+		expect( root.querySelector( 'label[for="bot-name"]' )?.textContent ).toBe(
+			'Bot name'
+		);
+		expect(
+			root.querySelector( 'label[for="bot-provider"]' )?.textContent
+		).toBe( 'Provider' );
+		expect( root.querySelector( 'label[for="bot-model"]' )?.textContent ).toBe(
+			'Model'
+		);
+		expect( root.querySelector( 'button[type="submit"]' )?.textContent ).toBe(
+			'Create bot'
+		);
 	} );
 } );
