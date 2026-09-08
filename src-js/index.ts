@@ -415,7 +415,8 @@ export const BotManagementScreen = ( {
 
 	const totalPages = Math.max( 1, Math.ceil( page.total / page.per_page ) );
 	const selectedBot =
-		page.items.find( ( item ) => item.id === selectedBotId ) ?? page.items[ 0 ];
+		page.items.find( ( item ) => item.id === selectedBotId ) ??
+		page.items[ 0 ];
 	const rows = page.items.map( ( item ) =>
 		createElement(
 			'li',
