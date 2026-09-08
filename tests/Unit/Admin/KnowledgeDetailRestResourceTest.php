@@ -194,13 +194,13 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 	/**
 	 * Invoke one dynamic resource method without making PHPStan assume the RED class exists.
 	 *
-	 * @param object            $resource Dynamic resource.
+	 * @param object            $target Dynamic resource.
 	 * @param string            $method Method name.
 	 * @param array<int, mixed> $arguments Method arguments.
 	 * @return array<string,mixed>
 	 */
-	private function invoke( object $resource, string $method, array $arguments ): array {
-		$response = call_user_func_array( array( $resource, $method ), $arguments );
+	private function invoke( object $target, string $method, array $arguments ): array {
+		$response = call_user_func_array( array( $target, $method ), $arguments );
 		self::assertIsArray( $response );
 
 		return $response;
