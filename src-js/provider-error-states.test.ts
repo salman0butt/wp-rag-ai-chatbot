@@ -92,7 +92,8 @@ describe( 'provider error states', () => {
 				configurable: true,
 				value: {
 					plugin: 'wp-rag-ai-chatbot',
-					restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+					restBase:
+						'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
 					nonce: 'rest-nonce',
 				},
 			} );
@@ -132,9 +133,9 @@ describe( 'provider error states', () => {
 				value: fetcher,
 			} );
 
-			expect(
-				bootstrapAdminApp( '#/providers/openai_direct' )
-			).toBe( true );
+			expect( bootstrapAdminApp( '#/providers/openai_direct' ) ).toBe(
+				true
+			);
 			await tick();
 			await tick();
 
