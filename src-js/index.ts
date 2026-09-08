@@ -151,6 +151,30 @@ interface BotPage {
 	per_page: number;
 }
 
+interface KnowledgeSourceItem {
+	id: string;
+	source_key: string;
+	source_type: string;
+	external_id: string | null;
+	title: string;
+	canonical_url: string | null;
+	status: string;
+	last_synced_at: string | null;
+	updated_at: string;
+}
+
+interface KnowledgeSourcePage {
+	items: KnowledgeSourceItem[];
+	total: number;
+	page: number;
+	per_page: number;
+}
+
+interface KnowledgeManagementScreenProps {
+	page: KnowledgeSourcePage;
+	selectedSourceId?: string;
+}
+
 interface BotManagementScreenProps {
 	page: BotPage;
 	selectedBotId?: string;
@@ -571,6 +595,95 @@ export const BotManagementScreen = ( {
 		createElement(
 			'nav',
 			{ 'aria-label': 'Bot list pagination' },
+			...pagination
+		)
+	);
+};
+
+export const KnowledgeManagementScreen = ( {
+	page,
+	selectedSourceId,
+}: KnowledgeManagementScreenProps ): unknown => {
+	const createElement = window.wp.element.createElement;
+
+	if ( page.items.length === 0 ) {
+		return createElement(
+			'section',
+			{ 'data-knowledge-management': 'empty' },
+			createElement( 'p', null, 'No knowledge sources found.' )
+		);
+	}
+
+	const totalPages = Math.max( 1, Math.ceil( page.total / page.per_page ) );
+	const selectedSource =
+		page.items.find( ( item ) => item.id === selectedSourceId ) ??
+		page.items[ 0 ];
+	const rows = page.items.map( ( item ) => {
+		const linkProps: Record< string, unknown > = {
+			href: `#/knowledge/${ encodeURIComponent( item.id ) }?page=${
+				page.page
+			}`,
+		};
+
+		if ( item.id === selectedSource.id ) {
+			linkProps[ 'aria-current' ] = 'true';
+		}
+
+		return createElement(
+			'li',
+			{
+				key: item.id,
+				'data-knowledge-source-id': item.id,
+			},
+			createElement( 'a', linkProps, item.title )
+		);
+	} );
+	const pagination: unknown[] = [];
+
+	if ( page.page > 1 ) {
+		pagination.push(
+			createElement(
+				'a',
+				{
+					'data-knowledge-page': 'previous',
+					href: `#/knowledge?page=${ page.page - 1 }`,
+				},
+				'Previous'
+			)
+		);
+	}
+
+	pagination.push(
+		createElement( 'span', null, `Page ${ page.page } of ${ totalPages }` )
+	);
+
+	if ( page.page < totalPages ) {
+		pagination.push(
+			createElement(
+				'a',
+				{
+					'data-knowledge-page': 'next',
+					href: `#/knowledge?page=${ page.page + 1 }`,
+				},
+				'Next'
+			)
+		);
+	}
+
+	return createElement(
+		'section',
+		{ 'data-knowledge-management': 'list' },
+		createElement( 'ul', null, ...rows ),
+		createElement(
+			'article',
+			{ 'data-knowledge-selected-source': selectedSource.id },
+			createElement( 'h2', null, selectedSource.title ),
+			createElement( 'p', null, `Type: ${ selectedSource.source_type }` ),
+			createElement( 'p', null, `Status: ${ selectedSource.status }` )
+		),
+		createElement(
+			'nav',
+			{ 'aria-label': 'Knowledge source pagination' },
 			...pagination
 		)
 	);
