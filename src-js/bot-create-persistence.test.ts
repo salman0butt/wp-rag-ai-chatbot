@@ -133,7 +133,9 @@ describe( 'persisted bot creation', () => {
 		await tick();
 
 		const form = root.querySelector( 'form[data-bot-editor="create"]' );
-		const name = form?.querySelector< HTMLInputElement >( 'input[name="name"]' );
+		const name = form?.querySelector< HTMLInputElement >(
+			'input[name="name"]'
+		);
 		const provider = form?.querySelector< HTMLInputElement >(
 			'input[name="provider_id"]'
 		);
