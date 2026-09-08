@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Admin\Rest;
 
-use WpRagAiChatbot\Core\PagedResult;
 use WpRagAiChatbot\Documents\DocumentRecord;
 use WpRagAiChatbot\Documents\DocumentRepository;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
@@ -22,7 +21,7 @@ use WpRagAiChatbot\Retrieval\Lexical\ChunkSearchRecord;
  * Projects persisted knowledge detail into bounded allow-listed admin DTOs.
  */
 final class KnowledgeDetailRestResource {
-	private const MAX_PAGE_SIZE = 100;
+	private const MAX_PAGE_SIZE           = 100;
 	private const MAX_CHUNK_CONTENT_BYTES = 2000;
 
 	/**
@@ -75,9 +74,13 @@ final class KnowledgeDetailRestResource {
 			return self::not_found();
 		}
 
-		return self::project_page(
-			$this->documents->paginateBySource( $source_id, $page, $per_page ),
-			self::project_document( ... )
+		$result = $this->documents->paginateBySource( $source_id, $page, $per_page );
+
+		return array(
+			'items'    => array_map( self::project_document( ... ), $result->items ),
+			'total'    => $result->total,
+			'page'     => $result->page,
+			'per_page' => $result->perPage,
 		);
 	}
 
@@ -104,9 +107,13 @@ final class KnowledgeDetailRestResource {
 			return self::not_found();
 		}
 
-		return self::project_page(
-			$this->chunks->paginate_document_chunks( $document_key, $page, $per_page ),
-			static fn ( ChunkSearchRecord $chunk ): array => self::project_chunk( $chunk, $source_id, $document_key )
+		$result = $this->chunks->paginate_document_chunks( $document_key, $page, $per_page );
+
+		return array(
+			'items'    => array_map( self::project_chunk( ... ), $result->items ),
+			'total'    => $result->total,
+			'page'     => $result->page,
+			'per_page' => $result->perPage,
 		);
 	}
 
@@ -139,18 +146,18 @@ final class KnowledgeDetailRestResource {
 	 */
 	private static function project_document( DocumentRecord $record ): array {
 		return array(
-			'id'            => $record->id,
-			'document_key'  => $record->documentKey,
-			'source_id'     => $record->sourceId,
-			'external_id'   => $record->externalId,
-			'document_type' => $record->documentType,
-			'title'         => $record->title,
-			'canonical_url' => $record->canonicalUrl,
-			'source_version'=> $record->sourceVersion,
-			'language'      => $record->language,
-			'visibility'    => $record->visibility,
-			'created_at'    => $record->createdAt->format( DATE_ATOM ),
-			'updated_at'    => $record->updatedAt->format( DATE_ATOM ),
+			'id'             => $record->id,
+			'document_key'   => $record->documentKey,
+			'source_id'      => $record->sourceId,
+			'external_id'    => $record->externalId,
+			'document_type'  => $record->documentType,
+			'title'          => $record->title,
+			'canonical_url'  => $record->canonicalUrl,
+			'source_version' => $record->sourceVersion,
+			'language'       => $record->language,
+			'visibility'     => $record->visibility,
+			'created_at'     => $record->createdAt->format( DATE_ATOM ),
+			'updated_at'     => $record->updatedAt->format( DATE_ATOM ),
 		);
 	}
 
@@ -158,18 +165,10 @@ final class KnowledgeDetailRestResource {
 	 * Project one safe bounded chunk detail.
 	 *
 	 * @param ChunkSearchRecord $record Persisted chunk-search record.
-	 * @param int               $source_id Expected source identifier.
-	 * @param string            $document_key Expected document key.
 	 * @return array<string,mixed>
 	 */
-	private static function project_chunk( ChunkSearchRecord $record, int $source_id, string $document_key ): array {
-		$content = $record->content;
-		$valid_lineage = $record->source_id === $source_id && $record->document_key === $document_key;
-		if ( ! $valid_lineage ) {
-			$content = '';
-		}
-
-		$truncated = strlen( $content ) > self::MAX_CHUNK_CONTENT_BYTES;
+	private static function project_chunk( ChunkSearchRecord $record ): array {
+		$truncated = strlen( $record->content ) > self::MAX_CHUNK_CONTENT_BYTES;
 
 		return array(
 			'chunk_key'         => $record->chunk_key,
@@ -178,7 +177,7 @@ final class KnowledgeDetailRestResource {
 			'document_type'     => $record->document_type,
 			'title'             => $record->title,
 			'canonical_url'     => $record->canonical_url,
-			'content'           => substr( $content, 0, self::MAX_CHUNK_CONTENT_BYTES ),
+			'content'           => substr( $record->content, 0, self::MAX_CHUNK_CONTENT_BYTES ),
 			'content_truncated' => $truncated,
 			'language'          => $record->language,
 			'visibility'        => $record->visibility,
@@ -187,22 +186,12 @@ final class KnowledgeDetailRestResource {
 	}
 
 	/**
-	 * Project a bounded repository page.
+	 * Validate a bounded child-page request.
 	 *
-	 * @param PagedResult         $result Repository page.
-	 * @param callable(mixed):array<string,mixed> $project Projector callback.
-	 * @return array<string,mixed>
+	 * @param int $source_id Persisted source identifier.
+	 * @param int $page One-based page.
+	 * @param int $per_page Requested page size.
 	 */
-	private static function project_page( PagedResult $result, callable $project ): array {
-		return array(
-			'items'    => array_map( $project, $result->items ),
-			'total'    => $result->total,
-			'page'     => $result->page,
-			'per_page' => $result->perPage,
-		);
-	}
-
-	/** Validate a bounded child-page request. */
 	private static function valid_page( int $source_id, int $page, int $per_page ): bool {
 		return $source_id > 0 && $page > 0 && $per_page > 0 && $per_page <= self::MAX_PAGE_SIZE;
 	}
