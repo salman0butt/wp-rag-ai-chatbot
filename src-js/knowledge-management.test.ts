@@ -169,7 +169,8 @@ describe( 'KnowledgeManagementScreen', () => {
 			root.querySelector( '[aria-current="true"]' )?.textContent
 		).toBe( 'Product Catalog' );
 		expect(
-			root.querySelector( '[data-knowledge-selected-source]' )
+			root
+				.querySelector( '[data-knowledge-selected-source]' )
 				?.getAttribute( 'data-knowledge-selected-source' )
 		).toBe( '17' );
 	} );
