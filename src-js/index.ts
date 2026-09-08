@@ -487,8 +487,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
-	let createBot: ( draft: BotDraft ) => Promise< void > =
-		async () => undefined;
+	let createBot: ( draft: BotDraft ) => Promise< void > = async () =>
+		undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -553,9 +553,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	};
 
 	void client
-		.request< AdminOnboardingReadiness >(
-			'/admin/onboarding/readiness'
-		)
+		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
 		.then( async ( readiness ) => {
 			currentOnboardingStep = readiness.next_step;
 			currentOnboardingIssue = readiness.issue;
