@@ -111,6 +111,7 @@ export interface AdminShellProps {
 	onboardingIssue?: OnboardingIssue;
 	botPage?: BotPage;
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >;
+	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 }
 
 export interface OnboardingFlowProps {
@@ -139,10 +140,12 @@ interface BotPage {
 interface BotManagementScreenProps {
 	page: BotPage;
 	onCreate?: ( draft: BotDraft ) => Promise< void >;
+	onUpdate?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 }
 
 interface BotEditorScreenProps {
 	mode: 'create' | 'edit';
+	bot?: BotListItem;
 	onSave?: ( draft: BotDraft ) => Promise< void >;
 }
 
@@ -259,15 +262,21 @@ export const OnboardingFlow = ( {
 
 export const BotEditorScreen = ( {
 	mode,
+	bot,
 	onSave,
 }: BotEditorScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
-	const validationId = `bot-${ mode }-validation`;
+	const editorId = bot?.id ?? 'create';
+	const validationId = `bot-${ editorId }-validation`;
+	const nameId = `bot-${ editorId }-name`;
+	const providerId = `bot-${ editorId }-provider`;
+	const modelId = `bot-${ editorId }-model`;
 
 	return createElement(
 		'form',
 		{
 			'data-bot-editor': mode,
+			'data-bot-id': bot?.id,
 			onSubmit: ( event: Event ) => {
 				event.preventDefault();
 
@@ -314,7 +323,7 @@ export const BotEditorScreen = ( {
 					name: name.value,
 					provider_id: provider.value,
 					model_id: model.value,
-					enabled: true,
+					enabled: bot?.enabled ?? true,
 				} );
 			},
 		},
@@ -327,26 +336,29 @@ export const BotEditorScreen = ( {
 			},
 			'Complete the required bot fields.'
 		),
-		createElement( 'label', { htmlFor: 'bot-name' }, 'Bot name' ),
+		createElement( 'label', { htmlFor: nameId }, 'Bot name' ),
 		createElement( 'input', {
 			'aria-describedby': validationId,
-			id: 'bot-name',
+			defaultValue: bot?.name,
+			id: nameId,
 			name: 'name',
 			required: true,
 			type: 'text',
 		} ),
-		createElement( 'label', { htmlFor: 'bot-provider' }, 'Provider' ),
+		createElement( 'label', { htmlFor: providerId }, 'Provider' ),
 		createElement( 'input', {
 			'aria-describedby': validationId,
-			id: 'bot-provider',
+			defaultValue: bot?.provider_id,
+			id: providerId,
 			name: 'provider_id',
 			required: true,
 			type: 'text',
 		} ),
-		createElement( 'label', { htmlFor: 'bot-model' }, 'Model' ),
+		createElement( 'label', { htmlFor: modelId }, 'Model' ),
 		createElement( 'input', {
 			'aria-describedby': validationId,
-			id: 'bot-model',
+			defaultValue: bot?.model_id,
+			id: modelId,
 			name: 'model_id',
 			required: true,
 			type: 'text',
@@ -362,6 +374,7 @@ export const BotEditorScreen = ( {
 export const BotManagementScreen = ( {
 	page,
 	onCreate,
+	onUpdate,
 }: BotManagementScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 	const createEditor = BotEditorScreen( {
@@ -390,7 +403,15 @@ export const BotManagementScreen = ( {
 				key: item.id,
 				'data-bot-id': item.id,
 			},
-			item.name
+			item.name,
+			BotEditorScreen( {
+				mode: 'edit',
+				bot: item,
+				onSave:
+					onUpdate === undefined
+						? undefined
+						: ( draft ) => onUpdate( item, draft ),
+			} )
 		)
 	);
 
@@ -414,6 +435,7 @@ export const AdminShell = ( {
 	onboardingIssue,
 	botPage,
 	onCreateBot,
+	onUpdateBot,
 }: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
@@ -473,7 +495,11 @@ export const AdminShell = ( {
 			'div',
 			null,
 			createElement( 'h1', null, selectedLabel ),
-			BotManagementScreen( { page: botPage, onCreate: onCreateBot } )
+			BotManagementScreen( {
+				page: botPage,
+				onCreate: onCreateBot,
+				onUpdate: onUpdateBot,
+			} )
 		);
 	}
 
@@ -496,7 +522,8 @@ const renderAdminShell = (
 	onboardingStep?: OnboardingStep,
 	onboardingIssue?: OnboardingIssue,
 	botPage?: BotPage,
-	onCreateBot?: ( draft: BotDraft ) => Promise< void >
+	onCreateBot?: ( draft: BotDraft ) => Promise< void >,
+	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >
 ): void => {
 	window.wp.element.render(
 		AdminShell( {
@@ -506,6 +533,7 @@ const renderAdminShell = (
 			onboardingIssue,
 			botPage,
 			onCreateBot,
+			onUpdateBot,
 		} ),
 		root
 	);
@@ -526,6 +554,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentBotPage: BotPage | undefined;
 	let createBot: ( draft: BotDraft ) => Promise< void > = async () =>
 		undefined;
+	let updateBot: ( bot: BotListItem, draft: BotDraft ) => Promise< void > =
+		async () => undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -536,7 +566,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentOnboardingStep,
 			currentOnboardingIssue,
 			currentBotPage,
-			createBot
+			createBot,
+			updateBot
 		);
 	};
 
@@ -582,6 +613,24 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				method: 'POST',
 				body: draft,
 			} );
+			await refreshBotPage();
+			renderState( stateFromReadiness() );
+		} catch {
+			renderState( 'error' );
+		}
+	};
+	updateBot = async ( bot: BotListItem, draft: BotDraft ): Promise< void > => {
+		try {
+			await client.request< { bot: BotListItem } >(
+				`/admin/bots/${ encodeURIComponent( bot.id ) }`,
+				{
+					method: 'PUT',
+					body: {
+						version: bot.version,
+						...draft,
+					},
+				}
+			);
 			await refreshBotPage();
 			renderState( stateFromReadiness() );
 		} catch {
