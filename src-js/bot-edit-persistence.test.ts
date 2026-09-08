@@ -22,6 +22,12 @@ const createTestElement = (
 			continue;
 		}
 
+		if ( key === 'defaultValue' && element instanceof HTMLInputElement ) {
+			element.defaultValue = String( value );
+			element.value = String( value );
+			continue;
+		}
+
 		if ( typeof value === 'boolean' ) {
 			if ( value ) {
 				element.setAttribute( key, '' );
@@ -142,9 +148,8 @@ describe( 'persisted bot editing', () => {
 		const form = root.querySelector(
 			'form[data-bot-editor="edit"][data-bot-id="bot-existing"]'
 		);
-		const name = form?.querySelector< HTMLInputElement >(
-			'input[name="name"]'
-		);
+		const name =
+			form?.querySelector< HTMLInputElement >( 'input[name="name"]' );
 		const provider = form?.querySelector< HTMLInputElement >(
 			'input[name="provider_id"]'
 		);
