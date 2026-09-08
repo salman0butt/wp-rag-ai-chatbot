@@ -252,7 +252,10 @@ export const BotEditorScreen = ( { mode }: BotEditorScreenProps ): unknown => {
 
 	return createElement(
 		'form',
-		{ 'data-bot-editor': mode },
+		{
+			'data-bot-editor': mode,
+			onSubmit: ( event: Event ) => event.preventDefault(),
+		},
 		createElement( 'label', { htmlFor: 'bot-name' }, 'Bot name' ),
 		createElement( 'input', {
 			id: 'bot-name',
