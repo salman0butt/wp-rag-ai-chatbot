@@ -81,6 +81,12 @@ final class AdminBootstrap {
 			'nonce'    => wp_create_nonce( 'wp_rest' ),
 		);
 
+		wp_enqueue_style(
+			$handle,
+			plugins_url( 'assets/admin.css', dirname( __DIR__, 2 ) . '/wp-rag-ai-chatbot.php' ),
+			array(),
+			'0.1.0-dev'
+		);
 		wp_enqueue_script(
 			$handle,
 			plugins_url( 'build/index.js', dirname( __DIR__, 2 ) . '/wp-rag-ai-chatbot.php' ),
