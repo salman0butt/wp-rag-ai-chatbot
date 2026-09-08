@@ -112,7 +112,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 				self::callback(
 					static fn ( JobRequest $request ): bool => 'index.document' === $request->type
 						&& $payload === $request->payload
-				),
+					),
 				$now
 			)
 			->willReturn( $this->job( JobStatus::QUEUED, 'job-new' ) );
@@ -155,7 +155,11 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		return $this->createMock( JobRepository::class );
 	}
 
-	/** Build a deterministic queue clock. */
+	/**
+	 * Build a deterministic queue clock.
+	 *
+	 * @param DateTimeImmutable|null $now Fixed current time.
+	 */
 	private function clock( ?DateTimeImmutable $now = null ): Clock&MockObject {
 		$clock = $this->createMock( Clock::class );
 		$clock->method( 'now' )->willReturn( $now ?? new DateTimeImmutable( '2026-09-08T18:45:00+00:00' ) );
@@ -163,7 +167,13 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		return $clock;
 	}
 
-	/** Build one persisted M09 job fixture containing fields that must remain server-side. */
+	/**
+	 * Build one persisted M09 job fixture containing fields that must remain server-side.
+	 *
+	 * @param JobStatus $status Persisted job status.
+	 * @param string    $job_key Stable job identity.
+	 * @param bool      $include_secret Whether to add a projection-only secret sentinel.
+	 */
 	private function job( JobStatus $status, string $job_key = 'job-123', bool $include_secret = true ): JobRecord {
 		$now     = new DateTimeImmutable( '2026-09-08T18:40:00+00:00' );
 		$payload = $this->payload();
@@ -207,7 +217,13 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		);
 	}
 
-	/** Invoke a dynamic resource method and assert the stable array boundary. */
+	/**
+	 * Invoke a dynamic resource method and assert the stable array boundary.
+	 *
+	 * @param object            $target Dynamic resource instance.
+	 * @param string            $method Method name.
+	 * @param array<int, mixed> $arguments Invocation arguments.
+	 */
 	private function invoke( object $target, string $method, array $arguments ): array {
 		$response = call_user_func_array( array( $target, $method ), $arguments );
 		self::assertIsArray( $response );
