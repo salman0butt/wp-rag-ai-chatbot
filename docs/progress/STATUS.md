@@ -1,53 +1,44 @@
 # Global Status
 
-- Completed milestones on `main`: **M00-M11**.
-- Current milestone: **M12 — Admin Onboarding, Bot Management & Provider Configuration**.
-- M12 branch: `feat/m12-admin-onboarding-bots-providers`.
-- M12 PR: **#17**.
-- M12 design: `docs/superpowers/specs/2026-09-07-m12-admin-onboarding-bots-providers-design.md` — **AUTO-APPROVED — SCHEDULED MODE**.
-- M12 implementation plan: `docs/superpowers/plans/2026-09-07-m12-admin-onboarding-bots-providers.md` — **AUTO-APPROVED — SCHEDULED MODE**.
-
-## M12 state
-
-**IMPLEMENTATION COMPLETE — MERGE / POST-MERGE VERIFICATION PENDING.**
-
-Tasks 1-10 are complete. Task 9 provider/model configuration closed with final implementation `394da863b54f6663743c98bf8dd978e675041535`, exact-head CI `34232581709` GREEN, and whole-task review `5142448686` with **0 Critical / 0 Important**. Detailed evidence: `docs/progress/M12-TASK9-CLOSEOUT.md`.
-
-Task 10 integration/closeout exercised the M12 administration boundary in real WordPress. The first integrated smoke head `ff125b79c078da4dfa0d22f0bef892d8777d74fd` exposed a verification-harness provider-ID mismatch, not a product defect. The harness was corrected in `a8518ac2cbc5aeb27968a1bc4ef3291c26e34524`; CI `34235369601` then passed `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`. Final milestone-level correctness/security/accessibility/performance review `5142753820`: **0 Critical / 0 Important**. Detailed evidence: `docs/progress/M12-TASK10-CLOSEOUT.md`.
-
-The previous durable Task 10 evidence head `ebea9257967bb9f7a5f15d14aa9a6051126624d7` passed exact-head CI `34236425289` with all four permanent jobs GREEN. This status/milestone reconciliation intentionally moves the branch head again, so merge requires fresh CI on the new exact durable head before PR #17 can be integrated.
+- Completed milestones on `main`: **M00-M12**.
+- Latest completed milestone: **M12 — Admin Onboarding, Bot Management & Provider Configuration**.
+- M12 PR: **#17 — MERGED**.
+- M12 merge SHA: `206dbfcef42cfcee2a998d7f3c386abdb97425a0`.
+- M12 final reconciled PR head: `85c1e18ba64626653c6ecc7733517d930bc8d695`; CI `34240807501` GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
+- M12 post-merge `main` CI: `34241199445` — all four permanent jobs GREEN, including the complete WordPress smoke chain.
+- M12 final milestone review `5142753820`: **0 Critical / 0 Important**.
+- Current milestone: **M13 — Knowledge Manager/Debugger**.
 
 ## M12 completed surface
+
+M12 is **COMPLETE**. It delivered:
 
 - capability-protected WordPress admin bootstrap and typed same-origin nonce REST client;
 - multi-bot persistence, CRUD, pagination, isolation, validation, optimistic editing, confirmed deletion, selected-record accessibility, and responsive admin layout;
 - onboarding driven by server-authoritative readiness;
-- credential reads exposing only `configured` / `source`, with plaintext/ciphertext never serialized to JavaScript;
-- safe replacement submitting only newly typed credentials;
-- server-authoritative capability-compatible model choices from Task 5 `/admin/models`;
-- stale model/provider state cleared on route/provider changes;
+- browser-safe credential state exposing only `configured` / `source`, with plaintext/ciphertext never serialized to JavaScript;
+- safe credential replacement submitting only newly typed credentials;
+- server-authoritative capability-compatible model selection through Task 5 `/admin/models`;
+- stale provider/model state cleared across provider route changes;
 - deterministic accessible guidance only for stable `missing_credential`, `provider_unavailable`, and `unsupported_capability` codes;
 - arbitrary provider/upstream messages excluded from the UI;
 - plugin-screen-only M12 assets and bounded/on-demand admin work;
-- real WordPress admin smoke verifying authorization, mount/enqueue boundaries, non-secret boot data, normalized bootstrap, and credential serialization.
+- real WordPress admin smoke covering authorization, mount/enqueue boundaries, non-secret boot data, normalized bootstrap, credential serialization, activation, database, providers, knowledge, file ingestion, and WooCommerce knowledge.
 
-## Merge gate
+Task 9 final implementation `394da863b54f6663743c98bf8dd978e675041535`; CI `34232581709` GREEN; whole-task review `5142448686`: 0 Critical / 0 Important. Evidence: `docs/progress/M12-TASK9-CLOSEOUT.md`.
 
-Exact next work:
+Task 10 final integration correction `a8518ac2cbc5aeb27968a1bc4ef3291c26e34524`; CI `34235369601` GREEN; final milestone review `5142753820`: 0 Critical / 0 Important. Evidence: `docs/progress/M12-TASK10-CLOSEOUT.md`.
 
-1. wait for/verify fresh CI on the final reconciled PR head;
-2. confirm PR #17 is mergeable and has 0 blocking review threads;
-3. mark PR #17 ready for review;
-4. merge only with the expected exact CI-green head;
-5. verify fresh post-merge `main` CI;
-6. only after that, mark M12 globally complete and make M13 the active milestone.
+## Current work
 
-Do not start M13 before M12 post-merge verification is green.
+**M13 — Knowledge Manager/Debugger** is now the first legitimate unfinished milestone.
+
+A fresh autonomous run must recover M13 scope from its milestone/spec/plan and repository state before writing. Do not infer M13 behavior from M12 implementation details.
 
 ## Durable recovery
 
-- `docs/milestones/M12-admin-onboarding-bots-providers.md` — authoritative M12 acceptance/merge-gate ledger.
+- `docs/milestones/M12-admin-onboarding-bots-providers.md` — completed M12 ledger.
 - `docs/progress/M12-TASK9-CLOSEOUT.md` — final Task 9 evidence.
-- `docs/progress/M12-TASK10-CLOSEOUT.md` — Task 10 integration/review evidence.
-- PR #17 — exact branch/CI/review/merge state.
-- `docs/superpowers/specs/2026-09-07-m12-admin-onboarding-bots-providers-design.md` and `docs/superpowers/plans/2026-09-07-m12-admin-onboarding-bots-providers.md` — auto-approved M12 design/plan.
+- `docs/progress/M12-TASK10-CLOSEOUT.md` — final Task 10 integration/review evidence.
+- PR #17 — merged M12 integration record.
+- M13 milestone/spec/plan docs — authoritative next-scope sources for the next run.
