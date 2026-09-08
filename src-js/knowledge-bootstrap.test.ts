@@ -68,6 +68,29 @@ const configureAdminRuntime = ( fetcher: jest.Mock ): HTMLElement => {
 	return root;
 };
 
+const sourcePageResponse = ( title: string ) => ( {
+	ok: true,
+	status: 200,
+	json: async () => ( {
+		items: [
+			{
+				id: 'source-alpha',
+				source_key: 'source-alpha',
+				source_type: 'wordpress_posts',
+				external_id: null,
+				title,
+				canonical_url: 'https://example.test/support',
+				status: 'indexed',
+				last_synced_at: null,
+				updated_at: '2026-09-08T19:05:00+00:00',
+			},
+		],
+		total: 21,
+		page: 2,
+		per_page: 20,
+	} ),
+} );
+
 describe( 'knowledge admin bootstrap', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
@@ -84,28 +107,7 @@ describe( 'knowledge admin bootstrap', () => {
 				status: 200,
 				json: async () => ( { ready: true, next_step: 'complete' } ),
 			} )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( {
-					items: [
-						{
-							id: 'source-alpha',
-							source_key: 'source-alpha',
-							source_type: 'wordpress_posts',
-							external_id: null,
-							title: 'Support Articles',
-							canonical_url: 'https://example.test/support',
-							status: 'indexed',
-							last_synced_at: null,
-							updated_at: '2026-09-08T19:05:00+00:00',
-						},
-					],
-					total: 21,
-					page: 2,
-					per_page: 20,
-				} ),
-			} );
+			.mockResolvedValueOnce( sourcePageResponse( 'Support Articles' ) );
 		const root = configureAdminRuntime( fetcher );
 
 		window.location.hash = '#/knowledge/source-alpha?page=2';
@@ -131,5 +133,45 @@ describe( 'knowledge admin bootstrap', () => {
 				'nav[aria-label="Administration"] a[aria-current="page"]'
 			)?.textContent
 		).toBe( 'Knowledge' );
+	} );
+
+	it( 'refetches the same bounded page after navigating away and back to Knowledge', async () => {
+		const fetcher = jest
+			.fn()
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
+				json: async () => ( { ready: true, next_step: 'complete' } ),
+			} )
+			.mockResolvedValueOnce( sourcePageResponse( 'Support Articles' ) )
+			.mockResolvedValueOnce( sourcePageResponse( 'Updated Articles' ) );
+		const root = configureAdminRuntime( fetcher );
+
+		window.location.hash = '#/knowledge/source-alpha?page=2';
+		expect( bootstrapAdminApp() ).toBe( true );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		window.location.hash = '#/onboarding';
+		window.dispatchEvent( new Event( 'hashchange' ) );
+		window.location.hash = '#/knowledge/source-alpha?page=2';
+		window.dispatchEvent( new Event( 'hashchange' ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( fetcher ).toHaveBeenCalledTimes( 3 );
+		expect( fetcher ).toHaveBeenNthCalledWith(
+			3,
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources?page=2&per_page=20',
+			expect.objectContaining( {
+				headers: expect.objectContaining( {
+					'X-WP-Nonce': 'rest-nonce',
+				} ),
+			} )
+		);
+		expect(
+			root.querySelector( '[data-knowledge-source-id="source-alpha"]' )
+				?.textContent
+		).toBe( 'Updated Articles' );
 	} );
 } );
