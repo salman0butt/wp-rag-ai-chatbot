@@ -9,6 +9,7 @@
  */
 
 use WpRagAiChatbot\Admin\AdminBootstrap;
+use WpRagAiChatbot\Providers\ProviderIds;
 
 $fail = static function ( string $message ): void {
 	fwrite( STDERR, $message . PHP_EOL );
@@ -99,7 +100,10 @@ if (
 }
 
 $credential_response = rest_do_request(
-	new WP_REST_Request( 'GET', '/wp-rag-ai-chatbot/v1/admin/providers/openai/credential' )
+	new WP_REST_Request(
+		'GET',
+		'/wp-rag-ai-chatbot/v1/admin/providers/' . ProviderIds::OPENAI_DIRECT . '/credential'
+	)
 );
 $credential_data = $credential_response->get_data();
 if (
