@@ -42,6 +42,7 @@ final class WpdbJobReadRepository implements JobReadRepository {
 	 * Find one persisted job by stable job key.
 	 *
 	 * @param string $job_key Stable opaque job key.
+	 * @throws JobQueueException When the key or persisted row is invalid.
 	 */
 	public function findByKey( string $job_key ): ?JobRecord {
 		if ( '' === trim( $job_key ) || strlen( $job_key ) > 191 ) {
@@ -63,6 +64,7 @@ final class WpdbJobReadRepository implements JobReadRepository {
 	 *
 	 * @param int $page One-based page.
 	 * @param int $perPage Requested page size.
+	 * @throws JobQueueException When bounds or a persisted row are invalid.
 	 */
 	public function paginate( int $page, int $perPage ): PagedResult {
 		if ( $page < 1 || $perPage < 1 || $perPage > 100 ) {
@@ -73,13 +75,13 @@ final class WpdbJobReadRepository implements JobReadRepository {
 			'SELECT COUNT(*) FROM %i',
 			$this->tables->jobs()
 		);
-		$page_sql = $this->connection->prepare(
+		$page_sql  = $this->connection->prepare(
 			'SELECT * FROM %i ORDER BY id DESC LIMIT %d OFFSET %d',
 			$this->tables->jobs(),
 			$perPage,
 			( $page - 1 ) * $perPage
 		);
-		$rows = $this->connection->get_results( $page_sql );
+		$rows      = $this->connection->get_results( $page_sql );
 
 		return new PagedResult(
 			array_map( self::hydrate( ... ), $rows ),
@@ -93,6 +95,7 @@ final class WpdbJobReadRepository implements JobReadRepository {
 	 * Hydrate one existing M09 job row.
 	 *
 	 * @param array<string,mixed> $row Persisted row.
+	 * @throws JobQueueException When persisted data cannot form a valid job record.
 	 */
 	private static function hydrate( array $row ): JobRecord {
 		try {
@@ -120,44 +123,62 @@ final class WpdbJobReadRepository implements JobReadRepository {
 			$payload,
 			(int) ( $row['attempts'] ?? 0 ),
 			(int) ( $row['max_attempts'] ?? 0 ),
-			self::parse_utc( $row['available_at'] ?? null, 'available_at' ),
+			self::parse_utc( $row['available_at'] ?? null ),
 			self::nullable_string( $row['lease_owner'] ?? null ),
-			self::parse_nullable_utc( $row['lease_expires_at'] ?? null, 'lease_expires_at' ),
-			self::parse_nullable_utc( $row['cancel_requested_at'] ?? null, 'cancel_requested_at' ),
+			self::parse_nullable_utc( $row['lease_expires_at'] ?? null ),
+			self::parse_nullable_utc( $row['cancel_requested_at'] ?? null ),
 			self::nullable_int( $row['progress_current'] ?? null ),
 			self::nullable_int( $row['progress_total'] ?? null ),
 			self::nullable_string( $row['progress_message'] ?? null ),
 			self::nullable_string( $row['last_error_code'] ?? null ),
 			self::nullable_string( $row['last_error_message'] ?? null ),
-			self::parse_nullable_utc( $row['started_at'] ?? null, 'started_at' ),
-			self::parse_nullable_utc( $row['completed_at'] ?? null, 'completed_at' ),
-			self::parse_utc( $row['created_at'] ?? null, 'created_at' ),
-			self::parse_utc( $row['updated_at'] ?? null, 'updated_at' )
+			self::parse_nullable_utc( $row['started_at'] ?? null ),
+			self::parse_nullable_utc( $row['completed_at'] ?? null ),
+			self::parse_utc( $row['created_at'] ?? null ),
+			self::parse_utc( $row['updated_at'] ?? null )
 		);
 	}
 
-	/** Convert a nullable persisted scalar to a string. */
+	/**
+	 * Convert a nullable persisted scalar to a string.
+	 *
+	 * @param mixed $value Persisted value.
+	 */
 	private static function nullable_string( mixed $value ): ?string {
 		return null === $value ? null : (string) $value;
 	}
 
-	/** Convert a nullable persisted scalar to an integer. */
+	/**
+	 * Convert a nullable persisted scalar to an integer.
+	 *
+	 * @param mixed $value Persisted value.
+	 */
 	private static function nullable_int( mixed $value ): ?int {
 		return null === $value ? null : (int) $value;
 	}
 
-	/** Parse one required persisted UTC datetime. */
-	private static function parse_utc( mixed $value, string $field ): DateTimeImmutable {
+	/**
+	 * Parse one required persisted UTC datetime.
+	 *
+	 * @param mixed $value Persisted datetime value.
+	 * @throws JobQueueException When the datetime is invalid.
+	 */
+	private static function parse_utc( mixed $value ): DateTimeImmutable {
 		if ( ! is_string( $value ) || '' === $value ) {
-			throw new JobQueueException( 'Persisted job ' . $field . ' is invalid.' );
+			throw new JobQueueException( 'Persisted job datetime is invalid.' );
 		}
 
 		return new DateTimeImmutable( $value, new DateTimeZone( 'UTC' ) );
 	}
 
-	/** Parse one nullable persisted UTC datetime. */
-	private static function parse_nullable_utc( mixed $value, string $field ): ?DateTimeImmutable {
-		return null === $value ? null : self::parse_utc( $value, $field );
+	/**
+	 * Parse one nullable persisted UTC datetime.
+	 *
+	 * @param mixed $value Persisted datetime value.
+	 * @throws JobQueueException When the datetime is invalid.
+	 */
+	private static function parse_nullable_utc( mixed $value ): ?DateTimeImmutable {
+		return null === $value ? null : self::parse_utc( $value );
 	}
 }
 // phpcs:enable WordPress.NamingConventions
