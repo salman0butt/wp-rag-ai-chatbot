@@ -262,6 +262,7 @@ export const BotEditorScreen = ( {
 	onSave,
 }: BotEditorScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
+	const validationId = `bot-${ mode }-validation`;
 
 	return createElement(
 		'form',
@@ -284,6 +285,30 @@ export const BotEditorScreen = ( {
 				const model = form.elements.namedItem(
 					'model_id'
 				) as HTMLInputElement;
+				const fields = [ name, provider, model ];
+				const validation = form.querySelector< HTMLElement >(
+					`#${ validationId }`
+				);
+
+				for ( const field of fields ) {
+					field.removeAttribute( 'aria-invalid' );
+				}
+				validation?.setAttribute( 'hidden', '' );
+
+				const firstInvalid = fields.find(
+					( field ) => field.value.trim() === ''
+				);
+
+				if ( firstInvalid !== undefined ) {
+					for ( const field of fields ) {
+						if ( field.value.trim() === '' ) {
+							field.setAttribute( 'aria-invalid', 'true' );
+						}
+					}
+					validation?.removeAttribute( 'hidden' );
+					firstInvalid.focus();
+					return;
+				}
 
 				void onSave( {
 					name: name.value,
@@ -293,8 +318,18 @@ export const BotEditorScreen = ( {
 				} );
 			},
 		},
+		createElement(
+			'p',
+			{
+				hidden: true,
+				id: validationId,
+				role: 'alert',
+			},
+			'Complete the required bot fields.'
+		),
 		createElement( 'label', { htmlFor: 'bot-name' }, 'Bot name' ),
 		createElement( 'input', {
+			'aria-describedby': validationId,
 			id: 'bot-name',
 			name: 'name',
 			required: true,
@@ -302,6 +337,7 @@ export const BotEditorScreen = ( {
 		} ),
 		createElement( 'label', { htmlFor: 'bot-provider' }, 'Provider' ),
 		createElement( 'input', {
+			'aria-describedby': validationId,
 			id: 'bot-provider',
 			name: 'provider_id',
 			required: true,
@@ -309,6 +345,7 @@ export const BotEditorScreen = ( {
 		} ),
 		createElement( 'label', { htmlFor: 'bot-model' }, 'Model' ),
 		createElement( 'input', {
+			'aria-describedby': validationId,
 			id: 'bot-model',
 			name: 'model_id',
 			required: true,
