@@ -33,11 +33,12 @@ $chunk_search       = $prefix . 'rag_ai_chunk_search';
 $conversations      = $prefix . 'rag_ai_conversations';
 $messages           = $prefix . 'rag_ai_messages';
 $message_citations  = $prefix . 'rag_ai_message_citations';
+$bots               = $prefix . 'rag_ai_bots';
 
-if ( 9 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
-	$fail( 'Schema version is not 9.' );
+if ( 10 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
+	$fail( 'Schema version is not 10.' );
 }
-foreach ( array( $sources, $documents, $vector_collections, $vectors, $jobs, $chunk_search, $conversations, $messages, $message_citations ) as $table ) {
+foreach ( array( $sources, $documents, $vector_collections, $vectors, $jobs, $chunk_search, $conversations, $messages, $message_citations, $bots ) as $table ) {
 	$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );
 	if ( $found !== $table ) {
 		$fail( 'Missing table: ' . $table );
@@ -62,6 +63,8 @@ $conversation_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$conversations}`"
 $message_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$messages}`", ARRAY_A );
 // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
 $citation_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$message_citations}`", ARRAY_A );
+// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Plugin-owned table identifier is derived from $wpdb->prefix only.
+$bot_indexes = $wpdb->get_results( "SHOW INDEX FROM `{$bots}`", ARRAY_A );
 $index_names = static fn ( array $rows ): array => array_values( array_unique( array_column( $rows, 'Key_name' ) ) );
 if ( ! in_array( 'source_key', $index_names( $source_indexes ), true ) ) {
 	$fail( 'Missing source_key index.' );
@@ -96,6 +99,11 @@ if ( ! in_array( 'conversation_owner_id', $index_names( $message_indexes ), true
 foreach ( array( 'message_citation', 'message_id' ) as $citation_index ) {
 	if ( ! in_array( $citation_index, $index_names( $citation_indexes ), true ) ) {
 		$fail( 'Missing message-citations index: ' . $citation_index );
+	}
+}
+foreach ( array( 'bot_id', 'created_bot' ) as $bot_index ) {
+	if ( ! in_array( $bot_index, $index_names( $bot_indexes ), true ) ) {
+		$fail( 'Missing bots index: ' . $bot_index );
 	}
 }
 

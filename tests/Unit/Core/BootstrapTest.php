@@ -13,6 +13,7 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
+use WpRagAiChatbot\Admin\AdminBootstrap;
 use WpRagAiChatbot\Core\Bootstrap;
 use WpRagAiChatbot\Core\Lifecycle;
 use WpRagAiChatbot\Database\DatabaseBootstrap;
@@ -50,14 +51,15 @@ final class BootstrapTest extends TestCase {
 	}
 
 	/**
-	 * Bootstrap registers foundation, database, provider, knowledge, and jobs hooks.
+	 * Bootstrap registers foundation, database, provider, knowledge, jobs, and admin hooks.
 	 */
-	public function test_register_wires_foundation_database_provider_knowledge_and_jobs_hooks(): void {
+	public function test_register_wires_foundation_database_provider_knowledge_jobs_and_admin_hooks(): void {
 		self::assertTrue( class_exists( Bootstrap::class ), 'Bootstrap class must exist before hook wiring can be verified.' );
 		self::assertTrue( class_exists( DatabaseBootstrap::class ), 'DatabaseBootstrap must exist before database hook wiring can pass.' );
 		self::assertTrue( class_exists( ProviderBootstrap::class ), 'ProviderBootstrap must exist before provider hook wiring can pass.' );
 		self::assertTrue( class_exists( KnowledgeBootstrap::class ), 'KnowledgeBootstrap must exist before knowledge hook wiring can pass.' );
 		self::assertTrue( class_exists( JobWorkerBootstrap::class ), 'JobWorkerBootstrap must exist before jobs hook wiring can pass.' );
+		self::assertTrue( class_exists( AdminBootstrap::class ), 'AdminBootstrap must exist before admin hook wiring can pass.' );
 
 		$plugin_file = '/tmp/wp-rag-ai-chatbot/wp-rag-ai-chatbot.php';
 
@@ -68,6 +70,7 @@ final class BootstrapTest extends TestCase {
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( ProviderBootstrap::class, 'register' ), 10 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( KnowledgeBootstrap::class, 'register' ), 10 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( JobWorkerBootstrap::class, 'register' ), 20 );
+		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( AdminBootstrap::class, 'register' ), 20 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( Bootstrap::class, 'load' ) );
 
 		Bootstrap::register( $plugin_file );
