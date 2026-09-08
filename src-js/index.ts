@@ -156,7 +156,7 @@ interface BotPage {
 }
 
 interface KnowledgeSourceItem {
-	id: string;
+	id: string | number;
 	source_key: string;
 	source_type: string;
 	external_id: string | null;
@@ -689,7 +689,7 @@ export const KnowledgeManagementScreen = ( {
 
 	const totalPages = Math.max( 1, Math.ceil( page.total / page.per_page ) );
 	const selectedSource =
-		page.items.find( ( item ) => item.id === selectedSourceId ) ??
+		page.items.find( ( item ) => String( item.id ) === selectedSourceId ) ??
 		page.items[ 0 ];
 	const rows = page.items.map( ( item ) => {
 		const linkProps: Record< string, unknown > = {
