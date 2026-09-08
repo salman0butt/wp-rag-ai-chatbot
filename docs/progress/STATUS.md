@@ -65,14 +65,25 @@ Completed bounded slice — Knowledge router/bootstrap and server-authoritative 
 - Scoped review `5147497514`: 0 Critical / 0 Important.
 - Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-BOOTSTRAP.md`.
 
+Completed bounded slice — selected-source detail/document loading and persisted-ID compatibility:
+
+- Selected persisted source routes reuse the existing Task 2 allow-listed source-detail and bounded document-page endpoints through the existing nonce-authenticated client.
+- Detail/document state is discarded when source selection changes or Knowledge is left, preventing stale cross-source rendering.
+- Server DTO source IDs may be numeric while hash-route IDs are strings; UI matching now normalizes only this comparison boundary.
+- `6302f3786946b05be27d4fbb15979c694a82b947` / CI `34286857568` is **not RED** because Prettier stopped before Jest.
+- Genuine persisted-ID RED `7c01f3fb77b73c4bea47b27e410114fa239b854c` / CI `34292237492`: lint and typecheck passed; Jest ran 50 tests with 49 passed / exactly 1 failure, selecting `Support Articles` instead of numeric source `17` / `Product Catalog`.
+- GREEN `65ff1f83f1a232c2bedf510cce8117fceb4e2c0f` / CI `34292560442`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN.
+- Scoped review `5148247521`: 0 Critical / 0 Important.
+- Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-DETAIL-UI.md`.
+
 ## Current work
 
 **Task 4 — Knowledge manager admin UI** remains the authoritative unfinished unit.
 
 Exact continuation:
 
-- start with a fresh genuine Jest RED for selected-source detail loading through the existing Task 2 contracts;
-- load the selected allow-listed source detail plus bounded document page server-authoritatively, then add bounded persisted chunk inspection for a selected document;
+- start with a fresh genuine Jest RED for selected-document bounded chunk inspection through the existing Task 2 contract;
+- load/render only the selected document's bounded persisted chunk page, preserve source/document ownership and server-authoritative navigation, and never cache raw/unbounded document data;
 - integrate Task 3 bounded job inventory/enqueue/cancel/retry and stable `invalid_transition` lifecycle-error UI states;
 - do not cache secret-bearing, raw document, raw provider, or unbounded data in browser state;
 - add explicit loading/empty/error behavior plus constrained-width, long-content, keyboard/accessibility, and responsive CSS coverage;
@@ -88,4 +99,5 @@ Exact continuation:
 - `docs/progress/M13-TASK3-JOB-LIFECYCLE.md` — Task 3 evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-SOURCE-RENDERING.md` — Task 4 source-rendering slice evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-BOOTSTRAP.md` — Task 4 router/bootstrap/source-loading evidence.
+- `docs/progress/M13-TASK4-KNOWLEDGE-DETAIL-UI.md` — Task 4 selected-source detail/document and persisted-ID compatibility evidence.
 - PR #18 — milestone-wide draft integration record.
