@@ -80,7 +80,7 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 		$documents->method( 'findByKey' )->with( 'doc:42' )->willReturn( $this->document() );
 		$chunks = $this->createMock( ChunkInspectionStore::class );
 		$chunks->expects( self::once() )
-			->method( 'paginateByDocument' )
+			->method( 'paginate_document_chunks' )
 			->with( 'doc:42', 1, 20 )
 			->willReturn( new PagedResult( array( $this->chunk() ), 1, 1, 20 ) );
 
@@ -112,6 +112,7 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 		self::assertSame( 'invalid_request', $response['error']['code'] );
 	}
 
+	/** Build one persisted source fixture with secret-bearing fields. */
 	private function source(): KnowledgeSourceRecord {
 		return new KnowledgeSourceRecord(
 			7,
@@ -129,6 +130,7 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 		);
 	}
 
+	/** Build one persisted document fixture with fields that must not serialize. */
 	private function document(): DocumentRecord {
 		return new DocumentRecord(
 			11,
@@ -149,6 +151,7 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 		);
 	}
 
+	/** Build one oversized persisted chunk fixture with secret-bearing metadata/hash. */
 	private function chunk(): ChunkSearchRecord {
 		return new ChunkSearchRecord(
 			str_repeat( 'c', 64 ),
@@ -168,6 +171,10 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 
 	/**
 	 * Construct the not-yet-implemented resource dynamically so static analysis can reach PHPUnit RED.
+	 *
+	 * @param KnowledgeSourceRepository $sources Source repository fixture.
+	 * @param DocumentRepository|null   $documents Document repository fixture.
+	 * @param ChunkInspectionStore|null $chunks Chunk inspection fixture.
 	 */
 	private function resource(
 		KnowledgeSourceRepository $sources,
@@ -187,9 +194,9 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 	/**
 	 * Invoke one dynamic resource method without making PHPStan assume the RED class exists.
 	 *
-	 * @param object             $resource Dynamic resource.
-	 * @param string             $method Method name.
-	 * @param array<int, mixed>  $arguments Method arguments.
+	 * @param object            $resource Dynamic resource.
+	 * @param string            $method Method name.
+	 * @param array<int, mixed> $arguments Method arguments.
 	 * @return array<string,mixed>
 	 */
 	private function invoke( object $resource, string $method, array $arguments ): array {
