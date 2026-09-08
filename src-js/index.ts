@@ -225,15 +225,29 @@ const ONBOARDING_ISSUES: Readonly<
 
 let activeHashChangeHandler: ( () => void ) | null = null;
 
+const normalizeAdminHash = ( hash: string ): string =>
+	hash.replace( /^#\/?/, '' );
+
+const resolveHashPath = ( hash: string ): string =>
+	normalizeAdminHash( hash ).split( '?' )[ 0 ];
+
 export const resolveAdminScreen = ( hash: string ): AdminScreen => {
-	const candidate = hash.replace( /^#\/?/, '' ).split( '/' )[ 0 ];
+	const candidate = resolveHashPath( hash ).split( '/' )[ 0 ];
 	const screen = ADMIN_SCREENS.find( ( item ) => item.screen === candidate );
 
 	return screen?.screen ?? 'onboarding';
 };
 
+const resolveBotPage = ( hash: string ): number => {
+	const query = normalizeAdminHash( hash ).split( '?' )[ 1 ] ?? '';
+	const pageValue = new URLSearchParams( query ).get( 'page' );
+	const page = pageValue === null ? 1 : Number( pageValue );
+
+	return Number.isSafeInteger( page ) && page >= 1 ? page : 1;
+};
+
 const resolveSelectedBotId = ( hash: string ): string | undefined => {
-	const segments = hash.replace( /^#\/?/, '' ).split( '/' );
+	const segments = resolveHashPath( hash ).split( '/' );
 
 	if ( segments[ 0 ] !== 'bots' || ! segments[ 1 ] ) {
 		return undefined;
@@ -420,20 +434,24 @@ export const BotManagementScreen = ( {
 	const selectedBot =
 		page.items.find( ( item ) => item.id === selectedBotId ) ??
 		page.items[ 0 ];
-	const rows = page.items.map( ( item ) =>
-		createElement(
+	const rows = page.items.map( ( item ) => {
+		const linkProps: Record< string, unknown > = {
+			href: `#/bots/${ encodeURIComponent( item.id ) }?page=${ page.page }`,
+		};
+
+		if ( item.id === selectedBot.id ) {
+			linkProps[ 'aria-current' ] = 'true';
+		}
+
+		return createElement(
 			'li',
 			{
 				key: item.id,
 				'data-bot-id': item.id,
 			},
-			createElement(
-				'a',
-				{ href: `#/bots/${ encodeURIComponent( item.id ) }` },
-				item.name
-			)
-		)
-	);
+			createElement( 'a', linkProps, item.name )
+		);
+	} );
 	const editor = BotEditorScreen( {
 		mode: 'edit',
 		bot: selectedBot,
@@ -462,6 +480,37 @@ export const BotManagementScreen = ( {
 		},
 		'Delete bot'
 	);
+	const pagination: unknown[] = [];
+
+	if ( page.page > 1 ) {
+		pagination.push(
+			createElement(
+				'a',
+				{
+					'data-bot-page': 'previous',
+					href: `#/bots?page=${ page.page - 1 }`,
+				},
+				'Previous'
+			)
+		);
+	}
+
+	pagination.push(
+		createElement( 'span', null, `Page ${ page.page } of ${ totalPages }` )
+	);
+
+	if ( page.page < totalPages ) {
+		pagination.push(
+			createElement(
+				'a',
+				{
+					'data-bot-page': 'next',
+					href: `#/bots?page=${ page.page + 1 }`,
+				},
+				'Next'
+			)
+		);
+	}
 
 	return createElement(
 		'section',
@@ -473,7 +522,7 @@ export const BotManagementScreen = ( {
 		createElement(
 			'nav',
 			{ 'aria-label': 'Bot list pagination' },
-			`Page ${ page.page } of ${ totalPages }`
+			...pagination
 		)
 	);
 };
@@ -635,17 +684,6 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		);
 	};
 
-	if ( activeHashChangeHandler !== null ) {
-		window.removeEventListener( 'hashchange', activeHashChangeHandler );
-	}
-
-	activeHashChangeHandler = () => {
-		if ( root.isConnected ) {
-			renderState( currentState );
-		}
-	};
-	window.addEventListener( 'hashchange', activeHashChangeHandler );
-
 	const config = window.wpRagAiChatbotAdminConfig;
 	const fetcher = window.fetch;
 
@@ -666,18 +704,47 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		nonce: config.nonce,
 		fetcher: fetcher.bind( window ),
 	} );
-	const refreshBotPage = async (): Promise< void > => {
+	const refreshBotPage = async (
+		page = resolveBotPage( currentHash() )
+	): Promise< void > => {
 		currentBotPage = await client.request< BotPage >(
-			'/admin/bots?page=1&per_page=20'
+			`/admin/bots?page=${ page }&per_page=20`
 		);
 	};
+
+	if ( activeHashChangeHandler !== null ) {
+		window.removeEventListener( 'hashchange', activeHashChangeHandler );
+	}
+
+	activeHashChangeHandler = () => {
+		if ( ! root.isConnected ) {
+			return;
+		}
+
+		const screen = resolveAdminScreen( currentHash() );
+		const targetPage = resolveBotPage( currentHash() );
+
+		if (
+			screen === 'bots' &&
+			( currentBotPage === undefined || currentBotPage.page !== targetPage )
+		) {
+			void refreshBotPage( targetPage )
+				.then( () => renderState( stateFromReadiness() ) )
+				.catch( () => renderState( 'error' ) );
+			return;
+		}
+
+		renderState( currentState );
+	};
+	window.addEventListener( 'hashchange', activeHashChangeHandler );
+
 	createBot = async ( draft: BotDraft ): Promise< void > => {
 		try {
 			await client.request< BotListItem >( '/admin/bots', {
 				method: 'POST',
 				body: draft,
 			} );
-			await refreshBotPage();
+			await refreshBotPage( 1 );
 			renderState( stateFromReadiness() );
 		} catch {
 			renderState( 'error' );
@@ -698,7 +765,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 					},
 				}
 			);
-			await refreshBotPage();
+			await refreshBotPage( 1 );
 			renderState( stateFromReadiness() );
 		} catch {
 			renderState( 'error' );
@@ -710,7 +777,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				`/admin/bots/${ encodeURIComponent( bot.id ) }`,
 				{ method: 'DELETE' }
 			);
-			await refreshBotPage();
+			await refreshBotPage( 1 );
 			renderState( stateFromReadiness() );
 		} catch {
 			renderState( 'error' );
