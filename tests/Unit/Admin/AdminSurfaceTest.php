@@ -77,22 +77,25 @@ final class AdminSurfaceTest extends TestCase {
 	}
 
 	/**
-	 * Non-plugin admin screens must not load the React administration bundle.
+	 * Non-plugin admin screens must not load the React administration assets.
 	 */
 	#[DoesNotPerformAssertions]
 	public function test_enqueue_assets_skips_non_plugin_admin_screens(): void {
 		Functions\expect( 'wp_enqueue_script' )->never();
+		Functions\expect( 'wp_enqueue_style' )->never();
 		Functions\expect( 'wp_add_inline_script' )->never();
 
 		AdminBootstrap::enqueue_assets( 'dashboard' );
 	}
 
 	/**
-	 * The plugin screen gets the bundle and only the minimal nonce-bearing boot configuration.
+	 * The plugin screen gets the bundle, responsive stylesheet, and minimal nonce-bearing boot configuration.
 	 */
 	#[DoesNotPerformAssertions]
 	public function test_enqueue_assets_loads_bundle_with_safe_boot_configuration(): void {
-		Functions\when( 'plugins_url' )->justReturn( 'https://example.test/wp-content/plugins/wp-rag-ai-chatbot/build/index.js' );
+		Functions\when( 'plugins_url' )->alias(
+			static fn ( string $path ): string => 'https://example.test/wp-content/plugins/wp-rag-ai-chatbot/' . $path
+		);
 		Functions\when( 'rest_url' )->justReturn( 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/' );
 		Functions\when( 'wp_create_nonce' )->justReturn( 'rest-nonce' );
 		Functions\expect( 'wp_json_encode' )
@@ -106,6 +109,14 @@ final class AdminSurfaceTest extends TestCase {
 			)
 			->andReturn( '{"plugin":"wp-rag-ai-chatbot","restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1","nonce":"rest-nonce"}' );
 
+		Functions\expect( 'wp_enqueue_style' )
+			->once()
+			->with(
+				'wp-rag-ai-chatbot-admin',
+				'https://example.test/wp-content/plugins/wp-rag-ai-chatbot/assets/admin.css',
+				array(),
+				'0.1.0-dev'
+			);
 		Functions\expect( 'wp_enqueue_script' )
 			->once()
 			->with(
