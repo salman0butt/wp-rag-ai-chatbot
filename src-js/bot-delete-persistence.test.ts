@@ -178,6 +178,8 @@ describe( 'persisted bot deletion', () => {
 			} )
 		);
 		expect( root.querySelector( '[data-bot-list-empty]' ) ).not.toBeNull();
-		expect( root.querySelector( '[data-bot-id="bot-existing"]' ) ).toBeNull();
+		expect(
+			root.querySelector( '[data-bot-id="bot-existing"]' )
+		).toBeNull();
 	} );
 } );
