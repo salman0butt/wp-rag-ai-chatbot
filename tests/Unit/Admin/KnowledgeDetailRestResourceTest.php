@@ -100,6 +100,31 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 		self::assertStringNotContainsString( str_repeat( 'b', 64 ), $serialized );
 	}
 
+	/** Chunk byte truncation must preserve valid UTF-8 for REST JSON serialization. */
+	public function test_chunk_truncation_preserves_valid_utf8(): void {
+		$sources = $this->createMock( KnowledgeSourceRepository::class );
+		$sources->method( 'findById' )->with( 7 )->willReturn( $this->source() );
+		$documents = $this->createMock( DocumentRepository::class );
+		$documents->method( 'findByKey' )->with( 'doc:42' )->willReturn( $this->document() );
+		$chunks = $this->createMock( ChunkInspectionStore::class );
+		$chunks->method( 'paginate_document_chunks' )->willReturn(
+			new PagedResult( array( $this->chunk_with_utf8_boundary() ), 1, 1, 20 )
+		);
+
+		$response = $this->invoke(
+			$this->resource( $sources, $documents, $chunks ),
+			'chunks',
+			array( 7, 'doc:42', 1, 20 )
+		);
+		$content = $response['items'][0]['content'];
+
+		self::assertIsString( $content );
+		self::assertLessThanOrEqual( 2000, strlen( $content ) );
+		self::assertSame( 1, preg_match( '//u', $content ) );
+		self::assertTrue( $response['items'][0]['content_truncated'] );
+		self::assertIsString( wp_json_encode( $response ) );
+	}
+
 	/** Invalid child bounds are rejected before repository access. */
 	public function test_child_pages_reject_invalid_bounds(): void {
 		$sources = $this->createMock( KnowledgeSourceRepository::class );
@@ -166,6 +191,24 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 			'public',
 			0,
 			array( 'secret' => 'CHUNK-METADATA-SECRET' )
+		);
+	}
+
+	/** Build content whose 2,000-byte boundary cuts a two-byte UTF-8 sequence. */
+	private function chunk_with_utf8_boundary(): ChunkSearchRecord {
+		return new ChunkSearchRecord(
+			str_repeat( 'd', 64 ),
+			'doc:42',
+			7,
+			'wordpress_post',
+			'Privacy policy',
+			'https://example.test/privacy',
+			str_repeat( 'x', 1999 ) . 'é' . str_repeat( 'y', 100 ),
+			str_repeat( 'e', 64 ),
+			'en',
+			'public',
+			1,
+			array()
 		);
 	}
 
