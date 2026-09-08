@@ -13,9 +13,12 @@ use WP_REST_Request;
 use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
 use WpRagAiChatbot\Database\Repository\WpdbDocumentRepository;
+use WpRagAiChatbot\Database\Repository\WpdbJobReadRepository;
+use WpRagAiChatbot\Database\Repository\WpdbJobRepository;
 use WpRagAiChatbot\Database\Repository\WpdbKnowledgeSourceRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
+use WpRagAiChatbot\Jobs\SystemClock;
 use WpRagAiChatbot\Providers\Credentials\AuthenticatedCredentialCipher;
 use WpRagAiChatbot\Providers\Credentials\RuntimeCredentialSourceReader;
 use WpRagAiChatbot\Providers\Credentials\RuntimeCryptoCapabilities;
@@ -163,6 +166,33 @@ final class AdminRestBootstrap {
 			array(
 				'methods'             => 'GET',
 				'callback'            => array( self::class, 'list_knowledge_chunks' ),
+				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/knowledge/jobs',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( self::class, 'list_knowledge_jobs' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( self::class, 'enqueue_knowledge_job' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/knowledge/jobs/(?P<job_key>[^/]+)/(?P<action>cancel|retry)',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( self::class, 'mutate_knowledge_job' ),
 				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 			)
 		);
@@ -399,6 +429,59 @@ final class AdminRestBootstrap {
 	}
 
 	/**
+	 * Return one bounded page of safe persisted job status fields.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function list_knowledge_jobs( WP_REST_Request $request ): array {
+		$page     = self::request_positive_int( $request->get_param( 'page' ), 1 );
+		$per_page = self::request_positive_int( $request->get_param( 'per_page' ), 20 );
+
+		if ( null === $page || null === $per_page || $per_page > 100 ) {
+			return self::invalid_request();
+		}
+
+		return self::knowledge_jobs()->list( $page, $per_page );
+	}
+
+	/**
+	 * Enqueue one document indexing job through the established M09 queue seam.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function enqueue_knowledge_job( WP_REST_Request $request ): array {
+		$payload = $request->get_json_params();
+		if ( null === $payload ) {
+			return self::invalid_request();
+		}
+
+		return self::knowledge_jobs()->enqueue( $payload );
+	}
+
+	/**
+	 * Apply one supported job lifecycle mutation.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function mutate_knowledge_job( WP_REST_Request $request ): array {
+		$job_key = $request->get_param( 'job_key' );
+		$action  = $request->get_param( 'action' );
+
+		if ( ! is_string( $job_key ) || '' === trim( $job_key ) || ! is_string( $action ) ) {
+			return self::invalid_request();
+		}
+
+		return match ( $action ) {
+			'cancel' => self::knowledge_jobs()->cancel( trim( $job_key ) ),
+			'retry'  => self::knowledge_jobs()->retry( trim( $job_key ) ),
+			default  => self::invalid_request(),
+		};
+	}
+
+	/**
 	 * Build the repository-backed bot resource from WordPress services.
 	 */
 	private static function bots(): BotRestResource {
@@ -472,6 +555,22 @@ final class AdminRestBootstrap {
 			new WpdbKnowledgeSourceRepository( $connection, $tables ),
 			new WpdbDocumentRepository( $connection, $tables ),
 			new WpdbChunkSearchStore( $connection, $tables )
+		);
+	}
+
+	/**
+	 * Build the M13 job inspection/lifecycle resource over the existing M09 queue seams.
+	 */
+	private static function knowledge_jobs(): KnowledgeJobRestResource {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+
+		return new KnowledgeJobRestResource(
+			new WpdbJobReadRepository( $connection, $tables ),
+			new WpdbJobRepository( $connection, $tables ),
+			new SystemClock()
 		);
 	}
 
