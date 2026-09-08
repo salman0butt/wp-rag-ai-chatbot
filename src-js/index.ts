@@ -754,7 +754,11 @@ export const KnowledgeManagementScreen = ( {
 						null,
 						`Type: ${ selectedSource.source_type }`
 					),
-					createElement( 'p', null, `Status: ${ selectedSource.status }` )
+					createElement(
+						'p',
+						null,
+						`Status: ${ selectedSource.status }`
+					)
 			  )
 			: createElement(
 					'article',
@@ -763,6 +767,19 @@ export const KnowledgeManagementScreen = ( {
 					createElement( 'p', null, `Type: ${ detail.source_type }` ),
 					createElement( 'p', null, `Status: ${ detail.status }` )
 			  );
+	const documentRows =
+		documents?.items.map( ( item ) =>
+			createElement(
+				'li',
+				{
+					key: item.document_key,
+					'data-knowledge-document-key': item.document_key,
+				},
+				createElement( 'h3', null, item.title ),
+				createElement( 'p', null, `Type: ${ item.document_type }` ),
+				createElement( 'p', null, `Visibility: ${ item.visibility }` )
+			)
+		) ?? [];
 	const documentContent =
 		documents === undefined
 			? undefined
@@ -770,33 +787,9 @@ export const KnowledgeManagementScreen = ( {
 					'section',
 					{ 'data-knowledge-documents': 'list' },
 					createElement( 'h2', null, 'Documents' ),
-					documents.items.length === 0
+					documentRows.length === 0
 						? createElement( 'p', null, 'No documents found.' )
-						: createElement(
-								'ul',
-								null,
-								...documents.items.map( ( item ) =>
-									createElement(
-										'li',
-										{
-											key: item.document_key,
-											'data-knowledge-document-key':
-												item.document_key,
-										},
-										createElement( 'h3', null, item.title ),
-										createElement(
-											'p',
-											null,
-											`Type: ${ item.document_type }`
-										),
-										createElement(
-											'p',
-											null,
-											`Visibility: ${ item.visibility }`
-										)
-									)
-								)
-							  )
+						: createElement( 'ul', null, ...documentRows )
 			  );
 
 	return createElement(
@@ -1094,14 +1087,17 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			`/admin/knowledge/sources?page=${ page }&per_page=20`
 		);
 	};
-	const refreshKnowledgeDetail = async ( sourceId: string ): Promise< void > => {
+	const refreshKnowledgeDetail = async (
+		sourceId: string
+	): Promise< void > => {
 		const encodedSourceId = encodeURIComponent( sourceId );
 		currentKnowledgeDetail = await client.request< KnowledgeSourceDetail >(
 			`/admin/knowledge/sources/${ encodedSourceId }`
 		);
-		currentKnowledgeDocuments = await client.request< KnowledgeDocumentPage >(
-			`/admin/knowledge/sources/${ encodedSourceId }/documents?page=1&per_page=20`
-		);
+		currentKnowledgeDocuments =
+			await client.request< KnowledgeDocumentPage >(
+				`/admin/knowledge/sources/${ encodedSourceId }/documents?page=1&per_page=20`
+			);
 		loadedKnowledgeSourceId = sourceId;
 	};
 	const refreshProviderCredential = async (
@@ -1222,7 +1218,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			void refreshKnowledgePage( targetKnowledgePage )
 				.then( async () => {
 					if ( selectedKnowledgeSourceId !== undefined ) {
-						await refreshKnowledgeDetail( selectedKnowledgeSourceId );
+						await refreshKnowledgeDetail(
+							selectedKnowledgeSourceId
+						);
 					}
 				} )
 				.then( () => renderState( stateFromReadiness() ) )
