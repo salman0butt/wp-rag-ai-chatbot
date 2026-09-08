@@ -44,7 +44,7 @@ final class KnowledgeAdminInspectionTest extends TestCase {
 					'visibility'    => 'public',
 					'sequence'      => 20,
 					'metadata_json' => '{}',
-				)
+				),
 			)
 		);
 
@@ -56,6 +56,7 @@ final class KnowledgeAdminInspectionTest extends TestCase {
 		self::assertInstanceOf( PagedResult::class, $result );
 		self::assertSame( 21, $result->total );
 		self::assertSame( 2, $result->page );
+		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- PagedResult follows the approved domain DTO contract.
 		self::assertSame( 20, $result->perPage );
 		self::assertSame( 'doc:42', $result->items[0]->document_key );
 		self::assertSame( 20, $result->items[0]->sequence );
