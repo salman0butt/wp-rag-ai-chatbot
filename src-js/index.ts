@@ -1,6 +1,7 @@
 import {
 	ProviderCredentialState,
 	ProviderModelChoice,
+	ProviderSettingsIssue,
 	ProviderSettingsScreen,
 } from './provider-settings';
 
@@ -120,6 +121,7 @@ export interface AdminShellProps {
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
 	providerModels?: ReadonlyArray< ProviderModelChoice >;
+	providerIssue?: ProviderSettingsIssue;
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >;
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >;
@@ -235,6 +237,23 @@ const ONBOARDING_ISSUES: Readonly<
 		message: 'Choose a provider and model that support generation.',
 		action: 'Review compatible models',
 	},
+};
+
+const providerSettingsIssueFromError = (
+	error: unknown
+): ProviderSettingsIssue | undefined => {
+	if ( ! ( error instanceof AdminApiError ) ) {
+		return undefined;
+	}
+
+	switch ( error.code ) {
+		case 'missing_credential':
+		case 'provider_unavailable':
+		case 'unsupported_capability':
+			return error.code;
+		default:
+			return undefined;
+	}
 };
 
 let activeHashChangeHandler: ( () => void ) | null = null;
@@ -567,6 +586,7 @@ export const AdminShell = ( {
 	providerId,
 	providerCredential,
 	providerModels,
+	providerIssue,
 	onCreateBot,
 	onUpdateBot,
 	onDeleteBot,
@@ -651,6 +671,7 @@ export const AdminShell = ( {
 				providerId,
 				credential: providerCredential,
 				models: providerModels,
+				issue: providerIssue,
 				onReplace: onReplaceProviderCredential,
 			} )
 		);
@@ -679,6 +700,7 @@ const renderAdminShell = (
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
+	providerIssue?: ProviderSettingsIssue,
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >,
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >,
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >,
@@ -695,6 +717,7 @@ const renderAdminShell = (
 			providerId,
 			providerCredential,
 			providerModels,
+			providerIssue,
 			onCreateBot,
 			onUpdateBot,
 			onDeleteBot,
@@ -719,6 +742,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentBotPage: BotPage | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
+	let currentProviderIssue: ProviderSettingsIssue | undefined;
 	let loadedProviderId: string | undefined;
 	let loadedProviderModelsId: string | undefined;
 	let createBot: ( draft: BotDraft ) => Promise< void > = async () =>
@@ -750,6 +774,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				: undefined,
 			providerId === loadedProviderModelsId
 				? currentProviderModels
+				: undefined,
+			providerId === loadedProviderModelsId
+				? currentProviderIssue
 				: undefined,
 			createBot,
 			updateBot,
@@ -828,13 +855,32 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				},
 			];
 		} );
+		currentProviderIssue = undefined;
 		loadedProviderModelsId = providerId;
+	};
+	const refreshProviderModelsState = async (
+		providerId: string
+	): Promise< void > => {
+		try {
+			await refreshProviderModels( providerId );
+		} catch ( error ) {
+			const issue = providerSettingsIssueFromError( error );
+
+			if ( issue === undefined ) {
+				throw error;
+			}
+
+			currentProviderModels = undefined;
+			currentProviderIssue = issue;
+			loadedProviderModelsId = providerId;
+		}
 	};
 	const refreshProviderSettings = async (
 		providerId: string
 	): Promise< void > => {
+		currentProviderIssue = undefined;
 		await refreshProviderCredential( providerId );
-		await refreshProviderModels( providerId );
+		await refreshProviderModelsState( providerId );
 	};
 
 	if ( activeHashChangeHandler !== null ) {
@@ -870,6 +916,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		) {
 			currentProviderCredential = undefined;
 			currentProviderModels = undefined;
+			currentProviderIssue = undefined;
 			void refreshProviderSettings( providerId )
 				.then( () => renderState( stateFromReadiness() ) )
 				.catch( () => renderState( 'error' ) );
@@ -935,6 +982,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		}
 
 		try {
+			const previousIssue = currentProviderIssue;
 			await client.request< { managed: true } >(
 				`/admin/providers/${ encodeURIComponent(
 					providerId
@@ -945,6 +993,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				}
 			);
 			await refreshProviderCredential( providerId );
+			currentProviderIssue = undefined;
+
+			if ( previousIssue === 'missing_credential' ) {
+				await refreshProviderModelsState( providerId );
+			}
+
 			renderState( stateFromReadiness() );
 		} catch {
 			renderState( 'error' );
