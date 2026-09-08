@@ -164,17 +164,17 @@ describe( 'BotEditorScreen', () => {
 		expect( name?.getAttribute( 'required' ) ).not.toBeNull();
 		expect( provider?.getAttribute( 'required' ) ).not.toBeNull();
 		expect( model?.getAttribute( 'required' ) ).not.toBeNull();
-		expect( root.querySelector( 'label[for="bot-name"]' )?.textContent ).toBe(
-			'Bot name'
-		);
+		expect(
+			root.querySelector( 'label[for="bot-name"]' )?.textContent
+		).toBe( 'Bot name' );
 		expect(
 			root.querySelector( 'label[for="bot-provider"]' )?.textContent
 		).toBe( 'Provider' );
-		expect( root.querySelector( 'label[for="bot-model"]' )?.textContent ).toBe(
-			'Model'
-		);
-		expect( root.querySelector( 'button[type="submit"]' )?.textContent ).toBe(
-			'Create bot'
-		);
+		expect(
+			root.querySelector( 'label[for="bot-model"]' )?.textContent
+		).toBe( 'Model' );
+		expect(
+			root.querySelector( 'button[type="submit"]' )?.textContent
+		).toBe( 'Create bot' );
 	} );
 } );
