@@ -25,10 +25,10 @@ export const ProviderSettingsScreen = ( {
 	providerId,
 	credential,
 }: ProviderSettingsScreenProps ): unknown => {
-	const createElement = (
-		window.wp.element.createElement as unknown as ElementFactory
-	);
-	const sourceLabel = SOURCE_LABELS[ credential.source ] ?? 'Configured externally';
+	const createElement = window.wp.element
+		.createElement as unknown as ElementFactory;
+	const sourceLabel =
+		SOURCE_LABELS[ credential.source ] ?? 'Configured externally';
 	const credentialId = `provider-${ providerId }-credential`;
 
 	return createElement(
@@ -38,7 +38,9 @@ export const ProviderSettingsScreen = ( {
 		createElement(
 			'p',
 			{ role: 'status', 'aria-live': 'polite' },
-			credential.configured ? 'Credential configured' : 'Credential not configured'
+			credential.configured
+				? 'Credential configured'
+				: 'Credential not configured'
 		),
 		createElement( 'p', { 'data-credential-source': true }, sourceLabel ),
 		createElement(
