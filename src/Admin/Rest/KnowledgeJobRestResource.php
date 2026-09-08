@@ -127,22 +127,22 @@ final class KnowledgeJobRestResource {
 	 */
 	private static function project( JobRecord $record ): array {
 		return array(
-			'job_key'            => $record->job_key,
-			'type'               => $record->type,
-			'status'             => $record->status->value,
-			'attempts'           => $record->attempts,
-			'max_attempts'       => $record->max_attempts,
-			'available_at'       => $record->available_at->format( DATE_ATOM ),
+			'job_key'             => $record->job_key,
+			'type'                => $record->type,
+			'status'              => $record->status->value,
+			'attempts'            => $record->attempts,
+			'max_attempts'        => $record->max_attempts,
+			'available_at'        => $record->available_at->format( DATE_ATOM ),
 			'cancel_requested_at' => $record->cancel_requested_at?->format( DATE_ATOM ),
-			'progress_current'   => $record->progress_current,
-			'progress_total'     => $record->progress_total,
-			'progress_message'   => $record->progress_message,
-			'last_error_code'    => $record->last_error_code,
-			'last_error_message' => $record->last_error_message,
-			'started_at'         => $record->started_at?->format( DATE_ATOM ),
-			'completed_at'       => $record->completed_at?->format( DATE_ATOM ),
-			'created_at'         => $record->created_at->format( DATE_ATOM ),
-			'updated_at'         => $record->updated_at->format( DATE_ATOM ),
+			'progress_current'    => $record->progress_current,
+			'progress_total'      => $record->progress_total,
+			'progress_message'    => $record->progress_message,
+			'last_error_code'     => $record->last_error_code,
+			'last_error_message'  => $record->last_error_message,
+			'started_at'          => $record->started_at?->format( DATE_ATOM ),
+			'completed_at'        => $record->completed_at?->format( DATE_ATOM ),
+			'created_at'          => $record->created_at->format( DATE_ATOM ),
+			'updated_at'          => $record->updated_at->format( DATE_ATOM ),
 		);
 	}
 
