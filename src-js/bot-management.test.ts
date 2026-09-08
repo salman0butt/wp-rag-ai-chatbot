@@ -116,7 +116,7 @@ const bot = ( id: string, name: string ): BotListItem => ( {
 } );
 
 describe( 'BotManagementScreen', () => {
-	it( 'renders an explicit empty state from an empty Task 3 bot page', () => {
+	it( 'renders an explicit empty state and create editor from an empty Task 3 bot page', () => {
 		const root = renderBotManagement( {
 			items: [],
 			total: 0,
@@ -127,6 +127,9 @@ describe( 'BotManagementScreen', () => {
 		expect(
 			root.querySelector( '[data-bot-list-empty]' )?.textContent
 		).toBe( 'No bots configured yet.' );
+		expect(
+			root.querySelector( 'form[data-bot-editor="create"]' )
+		).not.toBeNull();
 	} );
 
 	it( 'renders bot rows and deterministic pagination from the Task 3 list contract', () => {
