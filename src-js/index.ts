@@ -113,6 +113,7 @@ export interface AdminShellProps {
 	selectedBotId?: string;
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >;
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
+	onDeleteBot?: ( bot: BotListItem ) => Promise< void >;
 }
 
 export interface OnboardingFlowProps {
@@ -143,6 +144,7 @@ interface BotManagementScreenProps {
 	selectedBotId?: string;
 	onCreate?: ( draft: BotDraft ) => Promise< void >;
 	onUpdate?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
+	onDelete?: ( bot: BotListItem ) => Promise< void >;
 }
 
 interface BotEditorScreenProps {
@@ -393,6 +395,7 @@ export const BotManagementScreen = ( {
 	selectedBotId,
 	onCreate,
 	onUpdate,
+	onDelete,
 }: BotManagementScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 	const createEditor = BotEditorScreen( {
@@ -439,6 +442,24 @@ export const BotManagementScreen = ( {
 				? undefined
 				: ( draft ) => onUpdate( selectedBot, draft ),
 	} );
+	const deleteButton = createElement(
+		'button',
+		{
+			'data-delete-bot-id': selectedBot.id,
+			type: 'button',
+			onClick: () => {
+				if (
+					onDelete !== undefined &&
+					window.confirm(
+						`Delete ${ selectedBot.name }? This action cannot be undone.`
+					)
+				) {
+					void onDelete( selectedBot );
+				}
+			},
+		},
+		'Delete bot'
+	);
 
 	return createElement(
 		'section',
@@ -446,6 +467,7 @@ export const BotManagementScreen = ( {
 		createEditor,
 		createElement( 'ul', null, ...rows ),
 		editor,
+		deleteButton,
 		createElement(
 			'nav',
 			{ 'aria-label': 'Bot list pagination' },
@@ -463,6 +485,7 @@ export const AdminShell = ( {
 	selectedBotId,
 	onCreateBot,
 	onUpdateBot,
+	onDeleteBot,
 }: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
@@ -527,6 +550,7 @@ export const AdminShell = ( {
 				selectedBotId,
 				onCreate: onCreateBot,
 				onUpdate: onUpdateBot,
+				onDelete: onDeleteBot,
 			} )
 		);
 	}
@@ -552,7 +576,8 @@ const renderAdminShell = (
 	botPage?: BotPage,
 	selectedBotId?: string,
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >,
-	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >
+	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >,
+	onDeleteBot?: ( bot: BotListItem ) => Promise< void >
 ): void => {
 	window.wp.element.render(
 		AdminShell( {
@@ -564,6 +589,7 @@ const renderAdminShell = (
 			selectedBotId,
 			onCreateBot,
 			onUpdateBot,
+			onDeleteBot,
 		} ),
 		root
 	);
@@ -588,6 +614,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		bot: BotListItem,
 		draft: BotDraft
 	) => Promise< void > = async () => undefined;
+	let deleteBot: ( bot: BotListItem ) => Promise< void > = async () =>
+		undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -600,7 +628,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentBotPage,
 			resolveSelectedBotId( currentHash() ),
 			createBot,
-			updateBot
+			updateBot,
+			deleteBot
 		);
 	};
 
@@ -666,6 +695,18 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 						...draft,
 					},
 				}
+			);
+			await refreshBotPage();
+			renderState( stateFromReadiness() );
+		} catch {
+			renderState( 'error' );
+		}
+	};
+	deleteBot = async ( bot: BotListItem ): Promise< void > => {
+		try {
+			await client.request< { deleted: true } >(
+				`/admin/bots/${ encodeURIComponent( bot.id ) }`,
+				{ method: 'DELETE' }
 			);
 			await refreshBotPage();
 			renderState( stateFromReadiness() );
