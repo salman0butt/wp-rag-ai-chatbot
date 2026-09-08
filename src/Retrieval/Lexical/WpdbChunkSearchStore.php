@@ -108,6 +108,7 @@ final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionSto
 	 * @param string $document_key Owning document key.
 	 * @param int    $page One-based page.
 	 * @param int    $per_page Requested page size.
+	 * @throws InvalidArgumentException When the document key is empty.
 	 */
 	public function paginate_document_chunks( string $document_key, int $page = 1, int $per_page = 20 ): PagedResult {
 		if ( '' === $document_key ) {
