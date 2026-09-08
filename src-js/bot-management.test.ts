@@ -35,6 +35,14 @@ const createTestElement = (
 			continue;
 		}
 
+		if ( key.startsWith( 'on' ) && typeof value === 'function' ) {
+			element.addEventListener(
+				key.slice( 2 ).toLowerCase(),
+				value as EventListener
+			);
+			continue;
+		}
+
 		if ( typeof value === 'boolean' ) {
 			if ( value ) {
 				element.setAttribute( key, '' );
@@ -195,5 +203,17 @@ describe( 'BotEditorScreen', () => {
 		expect(
 			root.querySelector( 'button[type="submit"]' )?.textContent
 		).toBe( 'Create bot' );
+	} );
+
+	it( 'prevents a native browser submission until the persisted mutation handler owns the save', () => {
+		const root = renderBotEditor();
+		const form = root.querySelector( 'form[data-bot-editor="create"]' );
+		const event = new Event( 'submit', {
+			bubbles: true,
+			cancelable: true,
+		} );
+
+		expect( form?.dispatchEvent( event ) ).toBe( false );
+		expect( event.defaultPrevented ).toBe( true );
 	} );
 } );
