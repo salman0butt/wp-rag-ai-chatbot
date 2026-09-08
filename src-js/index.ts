@@ -102,6 +102,7 @@ export interface AdminShellProps {
 	screen?: AdminScreen;
 	onboardingStep?: OnboardingStep;
 	onboardingIssue?: OnboardingIssue;
+	botPage?: BotPage;
 }
 
 export interface OnboardingFlowProps {
@@ -288,6 +289,7 @@ export const AdminShell = ( {
 	screen = 'onboarding',
 	onboardingStep,
 	onboardingIssue,
+	botPage,
 }: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
@@ -330,18 +332,26 @@ export const AdminShell = ( {
 
 		return createElement( 'a', props, item.label );
 	} );
-	const screenContent =
-		screen === 'onboarding' && onboardingStep !== undefined
-			? createElement(
-					'div',
-					null,
-					createElement( 'h1', null, selectedLabel ),
-					OnboardingFlow( {
-						nextStep: onboardingStep,
-						issue: onboardingIssue,
-					} )
-			  )
-			: createElement( 'h1', null, selectedLabel );
+	let screenContent: unknown = createElement( 'h1', null, selectedLabel );
+
+	if ( screen === 'onboarding' && onboardingStep !== undefined ) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			OnboardingFlow( {
+				nextStep: onboardingStep,
+				issue: onboardingIssue,
+			} )
+		);
+	} else if ( screen === 'bots' && botPage !== undefined ) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			BotManagementScreen( { page: botPage } )
+		);
+	}
 
 	return createElement(
 		'div',
@@ -360,7 +370,8 @@ const renderAdminShell = (
 	state: AdminShellState,
 	screen: AdminScreen,
 	onboardingStep?: OnboardingStep,
-	onboardingIssue?: OnboardingIssue
+	onboardingIssue?: OnboardingIssue,
+	botPage?: BotPage
 ): void => {
 	window.wp.element.render(
 		AdminShell( {
@@ -368,6 +379,7 @@ const renderAdminShell = (
 			screen,
 			onboardingStep,
 			onboardingIssue,
+			botPage,
 		} ),
 		root
 	);
@@ -385,6 +397,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentState: AdminShellState = 'ready';
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
+	let currentBotPage: BotPage | undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -393,7 +406,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			state,
 			resolveAdminScreen( currentHash() ),
 			currentOnboardingStep,
-			currentOnboardingIssue
+			currentOnboardingIssue,
+			currentBotPage
 		);
 	};
 
@@ -431,9 +445,16 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 	void client
 		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
-		.then( ( readiness ) => {
+		.then( async ( readiness ) => {
 			currentOnboardingStep = readiness.next_step;
 			currentOnboardingIssue = readiness.issue;
+
+			if ( resolveAdminScreen( currentHash() ) === 'bots' ) {
+				currentBotPage = await client.request< BotPage >(
+					'/admin/bots?page=1&per_page=20'
+				);
+			}
+
 			renderState( stateFromReadiness() );
 		} )
 		.catch( () => {
