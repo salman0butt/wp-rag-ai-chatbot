@@ -19,17 +19,7 @@ jobs:
           tools: composer:v2
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
-      - name: Run PHP verification
-        shell: bash
-        run: |
-          set -o pipefail
-          composer verify:php 2>&1 | tee php-verify.log
-      - name: Upload PHP verification diagnostic
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: php-verify-log
-          path: php-verify.log
+      - run: composer verify:php
       - run: composer audit
 
   js-quality:
