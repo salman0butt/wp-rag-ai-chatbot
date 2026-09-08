@@ -25,11 +25,11 @@ use WpRagAiChatbot\Retrieval\Lexical\ChunkSearchRecord;
 final class KnowledgeDetailRestResourceTest extends TestCase {
 	/** Source detail must never serialize config or source hashes. */
 	public function test_source_detail_projects_only_safe_fields(): void {
-		$source = $this->source();
+		$source  = $this->source();
 		$sources = $this->createMock( KnowledgeSourceRepository::class );
 		$sources->expects( self::once() )->method( 'findById' )->with( 7 )->willReturn( $source );
 
-		$response = $this->resource( $sources )->source( 7 );
+		$response = $this->invoke( $this->resource( $sources ), 'source', array( 7 ) );
 
 		self::assertSame( 7, $response['id'] );
 		self::assertSame( 'wp:post:42', $response['source_key'] );
@@ -45,7 +45,7 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 		$sources = $this->createMock( KnowledgeSourceRepository::class );
 		$sources->method( 'findById' )->with( 404 )->willReturn( null );
 
-		$response = $this->resource( $sources )->source( 404 );
+		$response = $this->invoke( $this->resource( $sources ), 'source', array( 404 ) );
 
 		self::assertSame( 'not_found', $response['error']['code'] );
 	}
@@ -60,7 +60,7 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 			->with( 7, 2, 20 )
 			->willReturn( new PagedResult( array( $this->document() ), 21, 2, 20 ) );
 
-		$response = $this->resource( $sources, $documents )->documents( 7, 2, 20 );
+		$response = $this->invoke( $this->resource( $sources, $documents ), 'documents', array( 7, 2, 20 ) );
 
 		self::assertSame( 21, $response['total'] );
 		self::assertSame( 2, $response['page'] );
@@ -84,7 +84,11 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 			->with( 'doc:42', 1, 20 )
 			->willReturn( new PagedResult( array( $this->chunk() ), 1, 1, 20 ) );
 
-		$response = $this->resource( $sources, $documents, $chunks )->chunks( 7, 'doc:42', 1, 20 );
+		$response = $this->invoke(
+			$this->resource( $sources, $documents, $chunks ),
+			'chunks',
+			array( 7, 'doc:42', 1, 20 )
+		);
 
 		self::assertSame( 1, $response['total'] );
 		self::assertSame( 2000, strlen( $response['items'][0]['content'] ) );
@@ -103,7 +107,7 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 		$documents = $this->createMock( DocumentRepository::class );
 		$documents->expects( self::never() )->method( 'paginateBySource' );
 
-		$response = $this->resource( $sources, $documents )->documents( 7, 0, 20 );
+		$response = $this->invoke( $this->resource( $sources, $documents ), 'documents', array( 7, 0, 20 ) );
 
 		self::assertSame( 'invalid_request', $response['error']['code'] );
 	}
@@ -178,5 +182,20 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 			$documents ?? $this->createMock( DocumentRepository::class ),
 			$chunks ?? $this->createMock( ChunkInspectionStore::class )
 		);
+	}
+
+	/**
+	 * Invoke one dynamic resource method without making PHPStan assume the RED class exists.
+	 *
+	 * @param object             $resource Dynamic resource.
+	 * @param string             $method Method name.
+	 * @param array<int, mixed>  $arguments Method arguments.
+	 * @return array<string,mixed>
+	 */
+	private function invoke( object $resource, string $method, array $arguments ): array {
+		$response = call_user_func_array( array( $resource, $method ), $arguments );
+		self::assertIsArray( $response );
+
+		return $response;
 	}
 }
