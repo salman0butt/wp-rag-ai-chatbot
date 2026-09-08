@@ -12,12 +12,13 @@ namespace WpRagAiChatbot\Tests\Integration;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Database\Connection;
+use WpRagAiChatbot\Database\Repository\WpdbJobReadRepository;
 use WpRagAiChatbot\Database\Repository\WpdbJobRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Jobs\Clock;
 use WpRagAiChatbot\Jobs\JobReadRepository;
 
-/** Verifies the concrete M09 store supports bounded Task 3 inspection without reopening terminal state. */
+/** Verifies bounded persisted Task 3 inspection without reopening terminal state. */
 final class KnowledgeJobAdminTest extends TestCase {
 	/** Concrete persisted list reads are bounded and ordered without exposing mutation internals. */
 	public function test_concrete_job_repository_pages_persisted_jobs(): void {
@@ -27,19 +28,19 @@ final class KnowledgeJobAdminTest extends TestCase {
 		$connection->expects( self::exactly( 2 ) )->method( 'prepare' )->willReturnCallback(
 			static function ( string $query, mixed ...$args ): string {
 				if ( str_contains( $query, 'COUNT(*)' ) ) {
-					self::assertSame( array(), $args );
+					self::assertSame( array( 'wp_rag_ai_jobs' ), $args );
 					return 'count-query';
 				}
 
 				self::assertStringContainsString( 'ORDER BY id DESC', $query );
-				self::assertSame( array( 20, 20 ), $args );
+				self::assertSame( array( 'wp_rag_ai_jobs', 20, 20 ), $args );
 				return 'page-query';
 			}
 		);
 		$connection->expects( self::once() )->method( 'get_var' )->with( 'count-query' )->willReturn( 21 );
 		$connection->expects( self::once() )->method( 'get_results' )->with( 'page-query' )->willReturn( array( self::row( 'job-21', 'failed' ) ) );
 
-		$repository = new WpdbJobRepository( $connection, new TableNames( 'wp_' ) );
+		$repository = new WpdbJobReadRepository( $connection, new TableNames( 'wp_' ) );
 		self::assertInstanceOf( JobReadRepository::class, $repository );
 
 		$result = $repository->paginate( 2, 20 );
@@ -50,21 +51,28 @@ final class KnowledgeJobAdminTest extends TestCase {
 		self::assertSame( 'job-21', $result->items[0]->job_key );
 	}
 
-	/** Terminal cancellation is rejected before the concrete repository can mutate persisted state. */
+	/** Terminal cancellation is rejected before the concrete mutation repository can change persisted state. */
 	public function test_terminal_cancel_reads_persisted_job_and_performs_no_mutation_query(): void {
 		$connection = $this->createMock( Connection::class );
 		$connection->method( 'database_name' )->willReturn( 'wordpress_db' );
 		$connection->method( 'prefix' )->willReturn( 'wp_' );
-		$connection->expects( self::once() )->method( 'prepare' )->willReturn( 'job-query' );
+		$connection->expects( self::once() )->method( 'prepare' )->willReturnCallback(
+			static function ( string $query, mixed ...$args ): string {
+				self::assertStringContainsString( 'WHERE job_key = %s', $query );
+				self::assertSame( array( 'wp_rag_ai_jobs', 'job-terminal' ), $args );
+				return 'job-query';
+			}
+		);
 		$connection->expects( self::once() )->method( 'get_row' )->with( 'job-query' )->willReturn( self::row( 'job-terminal', 'failed' ) );
 		$connection->expects( self::never() )->method( 'query' );
 		$connection->expects( self::never() )->method( 'update' );
 
+		$reader     = new WpdbJobReadRepository( $connection, new TableNames( 'wp_' ) );
 		$repository = new WpdbJobRepository( $connection, new TableNames( 'wp_' ) );
 		$clock      = $this->createMock( Clock::class );
 		$clock->method( 'now' )->willReturn( new DateTimeImmutable( '2026-09-08T19:00:00+00:00' ) );
 		$resource_class = 'WpRagAiChatbot\\Admin\\Rest\\KnowledgeJobRestResource';
-		$resource       = new $resource_class( $repository, $repository, $clock );
+		$resource       = new $resource_class( $reader, $repository, $clock );
 
 		$response = call_user_func_array( array( $resource, 'cancel' ), array( 'job-terminal' ) );
 		self::assertIsArray( $response );
@@ -72,7 +80,7 @@ final class KnowledgeJobAdminTest extends TestCase {
 	}
 
 	/**
-	 * Build a persisted row accepted by the existing M09 hydrator.
+	 * Build a persisted row accepted by the existing M09 job record contract.
 	 *
 	 * @param string $job_key Stable job identity.
 	 * @param string $status Persisted status value.
