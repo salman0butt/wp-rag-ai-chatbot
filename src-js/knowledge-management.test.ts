@@ -127,16 +127,17 @@ describe( 'KnowledgeManagementScreen', () => {
 			root.querySelector( '[aria-current="true"]' )?.textContent
 		).toBe( 'Product Catalog' );
 		expect(
-			root.querySelector( '[data-knowledge-selected-source]' )?.textContent
+			root.querySelector( '[data-knowledge-selected-source]' )
+				?.textContent
 		).toContain( 'Product Catalog' );
 		expect(
 			root.querySelector( '[aria-label="Knowledge source pagination"]' )
 				?.textContent
 		).toContain( 'Page 1 of 2' );
 		expect(
-			root.querySelector( '[data-knowledge-page="next"]' )?.getAttribute(
-				'href'
-			)
+			root
+				.querySelector( '[data-knowledge-page="next"]' )
+				?.getAttribute( 'href' )
 		).toBe( '#/knowledge?page=2' );
 	} );
 } );
