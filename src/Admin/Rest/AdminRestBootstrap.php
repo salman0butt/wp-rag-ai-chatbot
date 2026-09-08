@@ -452,12 +452,7 @@ final class AdminRestBootstrap {
 	 * @return array<string,mixed>
 	 */
 	public static function enqueue_knowledge_job( WP_REST_Request $request ): array {
-		$payload = $request->get_json_params();
-		if ( null === $payload ) {
-			return self::invalid_request();
-		}
-
-		return self::knowledge_jobs()->enqueue( $payload );
+		return self::knowledge_jobs()->enqueue( $request->get_json_params() );
 	}
 
 	/**
