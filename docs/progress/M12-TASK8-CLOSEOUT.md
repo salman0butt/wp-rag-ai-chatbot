@@ -22,7 +22,7 @@ Task 8 was developed as multiple bounded behavioral slices. The repository recor
 
 Representative final-slice evidence:
 
-- Destructive deletion genuine RED: `158c9f17c4c1020d06919b58782d8fe727589835` / CI `34192114972` — lint/typecheck passed, Jest ran 35 tests with exactly the new deletion behavior failing. Verified implementation `e0d36cc634ff27cdf2e989ca19c58f3c7d33a5f9` is superseded by later Task 8 heads; deletion remained green through final exact-head CI.
+- Destructive deletion genuine RED: `158c9f17c4c1020d06919b58782d8fe727589835` / CI `34192114972` — lint/typecheck passed, Jest ran 35 tests with exactly the new deletion behavior failing. Verified implementation `e0d36cc634ff27cdf2e9892d348276e76e7121bc` is superseded by later Task 8 heads; deletion remained green through final exact-head CI.
 - Pagination/selected-record context genuine RED: `85e6181ab2dad4df0a85b3aa3549952c6231a411` / CI `34196934058` — lint/typecheck passed, Jest ran 37 tests with exactly two new pagination/accessibility expectations failing. Verified implementation `3d1557dafd0576f444c989ca19c58f3c7d33a5f9` / CI `34197337518` passed all permanent jobs.
 - Responsive-admin genuine RED: `819d0703efcfd7dc0013e63bd34959ef0077022a` / CI `34201262961` — static analysis passed, PHPUnit ran 666 tests / 2,766 assertions with exactly one error because the required plugin-screen stylesheet enqueue was absent. Responsive implementation `0abdcae1a71677819590e4d49d3dac0e02b89dfc` / CI `34201450083` passed all permanent jobs.
 
