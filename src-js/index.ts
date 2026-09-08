@@ -813,8 +813,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			if (
 				typeof model !== 'object' ||
 				model === null ||
-				!( 'model_id' in model ) ||
-				!( 'display_name' in model ) ||
+				! ( 'model_id' in model ) ||
+				! ( 'display_name' in model ) ||
 				typeof model.model_id !== 'string' ||
 				typeof model.display_name !== 'string'
 			) {
