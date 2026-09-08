@@ -20,11 +20,13 @@ use WpRagAiChatbot\Admin\Rest\AdminRestBootstrap;
  * Verifies the knowledge inventory route uses the centralized admin capability.
  */
 final class KnowledgeSourceRoutesTest extends TestCase {
+	/** Start Brain Monkey before each test. */
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
 	}
 
+	/** Tear Brain Monkey down after each test. */
 	protected function tearDown(): void {
 		Monkey\tearDown();
 		parent::tearDown();
