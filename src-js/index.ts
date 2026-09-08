@@ -97,7 +97,7 @@ export const createAdminApiClient = (
 };
 
 export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
-export type AdminScreen = 'onboarding' | 'bots' | 'providers';
+export type AdminScreen = 'onboarding' | 'bots' | 'providers' | 'knowledge';
 export type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
 export type OnboardingIssue =
 	| 'provider_unavailable'
@@ -118,6 +118,8 @@ export interface AdminShellProps {
 	onboardingIssue?: OnboardingIssue;
 	botPage?: BotPage;
 	selectedBotId?: string;
+	knowledgePage?: KnowledgeSourcePage;
+	selectedKnowledgeSourceId?: string;
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
 	providerModels?: ReadonlyArray< ProviderModelChoice >;
@@ -237,6 +239,7 @@ const ADMIN_SCREENS: ReadonlyArray< {
 	{ screen: 'onboarding', label: 'Onboarding' },
 	{ screen: 'bots', label: 'Bots' },
 	{ screen: 'providers', label: 'Providers' },
+	{ screen: 'knowledge', label: 'Knowledge' },
 ];
 
 const ONBOARDING_HEADINGS: Readonly< Record< OnboardingStep, string > > = {
@@ -295,7 +298,7 @@ export const resolveAdminScreen = ( hash: string ): AdminScreen => {
 	return screen?.screen ?? 'onboarding';
 };
 
-const resolveBotPage = ( hash: string ): number => {
+const resolvePage = ( hash: string ): number => {
 	const query = normalizeAdminHash( hash ).split( '?' )[ 1 ] ?? '';
 	const pageValue = new URLSearchParams( query ).get( 'page' );
 	const page = pageValue === null ? 1 : Number( pageValue );
@@ -303,10 +306,29 @@ const resolveBotPage = ( hash: string ): number => {
 	return Number.isSafeInteger( page ) && page >= 1 ? page : 1;
 };
 
+const resolveBotPage = ( hash: string ): number => resolvePage( hash );
+const resolveKnowledgePage = ( hash: string ): number => resolvePage( hash );
+
 const resolveSelectedBotId = ( hash: string ): string | undefined => {
 	const segments = resolveHashPath( hash ).split( '/' );
 
 	if ( segments[ 0 ] !== 'bots' || ! segments[ 1 ] ) {
+		return undefined;
+	}
+
+	try {
+		return decodeURIComponent( segments[ 1 ] );
+	} catch {
+		return undefined;
+	}
+};
+
+const resolveSelectedKnowledgeSourceId = (
+	hash: string
+): string | undefined => {
+	const segments = resolveHashPath( hash ).split( '/' );
+
+	if ( segments[ 0 ] !== 'knowledge' || ! segments[ 1 ] ) {
 		return undefined;
 	}
 
@@ -696,6 +718,8 @@ export const AdminShell = ( {
 	onboardingIssue,
 	botPage,
 	selectedBotId,
+	knowledgePage,
+	selectedKnowledgeSourceId,
 	providerId,
 	providerCredential,
 	providerModels,
@@ -771,6 +795,16 @@ export const AdminShell = ( {
 				onDelete: onDeleteBot,
 			} )
 		);
+	} else if ( screen === 'knowledge' && knowledgePage !== undefined ) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			KnowledgeManagementScreen( {
+				page: knowledgePage,
+				selectedSourceId: selectedKnowledgeSourceId,
+			} )
+		);
 	} else if (
 		screen === 'providers' &&
 		providerId !== undefined &&
@@ -810,6 +844,8 @@ const renderAdminShell = (
 	onboardingIssue?: OnboardingIssue,
 	botPage?: BotPage,
 	selectedBotId?: string,
+	knowledgePage?: KnowledgeSourcePage,
+	selectedKnowledgeSourceId?: string,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
@@ -827,6 +863,8 @@ const renderAdminShell = (
 			onboardingIssue,
 			botPage,
 			selectedBotId,
+			knowledgePage,
+			selectedKnowledgeSourceId,
 			providerId,
 			providerCredential,
 			providerModels,
@@ -853,6 +891,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
+	let currentKnowledgePage: KnowledgeSourcePage | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let currentProviderIssue: ProviderSettingsIssue | undefined;
@@ -881,6 +920,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentOnboardingIssue,
 			currentBotPage,
 			resolveSelectedBotId( currentHash() ),
+			currentKnowledgePage,
+			resolveSelectedKnowledgeSourceId( currentHash() ),
 			providerId,
 			providerId === loadedProviderId
 				? currentProviderCredential
@@ -923,6 +964,13 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	): Promise< void > => {
 		currentBotPage = await client.request< BotPage >(
 			`/admin/bots?page=${ page }&per_page=20`
+		);
+	};
+	const refreshKnowledgePage = async (
+		page = resolveKnowledgePage( currentHash() )
+	): Promise< void > => {
+		currentKnowledgePage = await client.request< KnowledgeSourcePage >(
+			`/admin/knowledge/sources?page=${ page }&per_page=20`
 		);
 	};
 	const refreshProviderCredential = async (
@@ -1014,6 +1062,20 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				currentBotPage.page !== targetPage )
 		) {
 			void refreshBotPage( targetPage )
+				.then( () => renderState( stateFromReadiness() ) )
+				.catch( () => renderState( 'error' ) );
+			return;
+		}
+
+		const targetKnowledgePage = resolveKnowledgePage( currentHash() );
+
+		if (
+			screen === 'knowledge' &&
+			( currentKnowledgePage === undefined ||
+				currentKnowledgePage.page !== targetKnowledgePage )
+		) {
+			currentKnowledgePage = undefined;
+			void refreshKnowledgePage( targetKnowledgePage )
 				.then( () => renderState( stateFromReadiness() ) )
 				.catch( () => renderState( 'error' ) );
 			return;
@@ -1127,6 +1189,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 			if ( screen === 'bots' ) {
 				await refreshBotPage();
+			}
+
+			if ( screen === 'knowledge' ) {
+				await refreshKnowledgePage();
 			}
 
 			if ( screen === 'providers' ) {
