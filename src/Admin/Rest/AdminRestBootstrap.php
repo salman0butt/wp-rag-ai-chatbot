@@ -12,7 +12,6 @@ namespace WpRagAiChatbot\Admin\Rest;
 use WP_REST_Request;
 use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
-use WpRagAiChatbot\Database\Repository\WpdbKnowledgeSourceRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
 use WpRagAiChatbot\Providers\Credentials\AuthenticatedCredentialCipher;
@@ -31,7 +30,7 @@ final class AdminRestBootstrap {
 	public const REST_NAMESPACE = 'wp-rag-ai-chatbot/v1';
 
 	/**
-	 * Register administration REST routes.
+	 * Register M12 administration REST routes.
 	 */
 	public static function register_routes(): void {
 		register_rest_route(
@@ -121,16 +120,6 @@ final class AdminRestBootstrap {
 			array(
 				'methods'             => 'GET',
 				'callback'            => array( self::class, 'get_onboarding_readiness' ),
-				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
-			)
-		);
-
-		register_rest_route(
-			self::REST_NAMESPACE,
-			'/admin/knowledge/sources',
-			array(
-				'methods'             => 'GET',
-				'callback'            => array( self::class, 'list_knowledge_sources' ),
 				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 			)
 		);
@@ -291,23 +280,6 @@ final class AdminRestBootstrap {
 	}
 
 	/**
-	 * Return one bounded page of safe persisted knowledge-source fields.
-	 *
-	 * @param WP_REST_Request $request REST request.
-	 * @return array<string,mixed>
-	 */
-	public static function list_knowledge_sources( WP_REST_Request $request ): array {
-		$page     = self::request_positive_int( $request->get_param( 'page' ), 1 );
-		$per_page = self::request_positive_int( $request->get_param( 'per_page' ), 20 );
-
-		if ( null === $page || null === $per_page || $per_page > 100 ) {
-			return self::invalid_request();
-		}
-
-		return self::knowledge_sources()->list( $page, $per_page );
-	}
-
-	/**
 	 * Build the repository-backed bot resource from WordPress services.
 	 */
 	private static function bots(): BotRestResource {
@@ -346,22 +318,6 @@ final class AdminRestBootstrap {
 			ProviderBootstrap::registry(),
 			ProviderBootstrap::configuration(),
 			new WpdbBotRepository(
-				$connection,
-				new TableNames( $connection->prefix() )
-			)
-		);
-	}
-
-	/**
-	 * Build the M13 knowledge inventory from the established source repository.
-	 */
-	private static function knowledge_sources(): KnowledgeSourceRestResource {
-		global $wpdb;
-
-		$connection = new WpdbConnection( $wpdb );
-
-		return new KnowledgeSourceRestResource(
-			new WpdbKnowledgeSourceRepository(
 				$connection,
 				new TableNames( $connection->prefix() )
 			)
