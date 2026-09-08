@@ -76,7 +76,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 	/** Failed document-index jobs retry by enqueuing through the existing M09 contract. */
 	public function test_retry_failed_document_index_job_enqueues_new_generation(): void {
 		$resource_class = $this->resource_class();
-		$failed         = $this->job( JobStatus::FAILED );
+		$failed         = $this->job( JobStatus::FAILED, 'job-123', false );
 		$reader         = $this->reader();
 		$reader->expects( self::once() )->method( 'findByKey' )->with( 'job-123' )->willReturn( $failed );
 		$repository = $this->repository();
@@ -112,7 +112,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 				self::callback(
 					static fn ( JobRequest $request ): bool => 'index.document' === $request->type
 						&& $payload === $request->payload
-					),
+				),
 				$now
 			)
 			->willReturn( $this->job( JobStatus::QUEUED, 'job-new' ) );
@@ -164,8 +164,12 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 	}
 
 	/** Build one persisted M09 job fixture containing fields that must remain server-side. */
-	private function job( JobStatus $status, string $job_key = 'job-123' ): JobRecord {
-		$now = new DateTimeImmutable( '2026-09-08T18:40:00+00:00' );
+	private function job( JobStatus $status, string $job_key = 'job-123', bool $include_secret = true ): JobRecord {
+		$now     = new DateTimeImmutable( '2026-09-08T18:40:00+00:00' );
+		$payload = $this->payload();
+		if ( $include_secret ) {
+			$payload['secret'] = 'PAYLOAD-SECRET';
+		}
 
 		return new JobRecord(
 			1,
@@ -173,7 +177,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 			'index.document',
 			$status,
 			'IDEMPOTENCY-SECRET',
-			$this->payload() + array( 'secret' => 'PAYLOAD-SECRET' ),
+			$payload,
 			1,
 			3,
 			$now,
