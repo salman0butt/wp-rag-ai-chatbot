@@ -436,7 +436,9 @@ export const BotManagementScreen = ( {
 		page.items[ 0 ];
 	const rows = page.items.map( ( item ) => {
 		const linkProps: Record< string, unknown > = {
-			href: `#/bots/${ encodeURIComponent( item.id ) }?page=${ page.page }`,
+			href: `#/bots/${ encodeURIComponent( item.id ) }?page=${
+				page.page
+			}`,
 		};
 
 		if ( item.id === selectedBot.id ) {
@@ -726,7 +728,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		if (
 			screen === 'bots' &&
-			( currentBotPage === undefined || currentBotPage.page !== targetPage )
+			( currentBotPage === undefined ||
+				currentBotPage.page !== targetPage )
 		) {
 			void refreshBotPage( targetPage )
 				.then( () => renderState( stateFromReadiness() ) )
