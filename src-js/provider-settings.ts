@@ -6,6 +6,7 @@ export interface ProviderCredentialState {
 export interface ProviderSettingsScreenProps {
 	providerId: string;
 	credential: ProviderCredentialState;
+	onReplace?: ( credential: string ) => Promise< void >;
 }
 
 type ElementFactory = (
@@ -24,6 +25,7 @@ const SOURCE_LABELS: Readonly< Record< string, string > > = {
 export const ProviderSettingsScreen = ( {
 	providerId,
 	credential,
+	onReplace,
 }: ProviderSettingsScreenProps ): unknown => {
 	const createElement = window.wp.element
 		.createElement as unknown as ElementFactory;
@@ -44,15 +46,45 @@ export const ProviderSettingsScreen = ( {
 		),
 		createElement( 'p', { 'data-credential-source': true }, sourceLabel ),
 		createElement(
-			'label',
-			{ htmlFor: credentialId },
-			credential.configured ? 'Replace credential' : 'Credential'
-		),
-		createElement( 'input', {
-			autoComplete: 'new-password',
-			id: credentialId,
-			name: 'credential',
-			type: 'password',
-		} )
+			'form',
+			{
+				'data-provider-credential-form': true,
+				onSubmit: async ( event: Event ) => {
+					event.preventDefault();
+
+					if ( onReplace === undefined ) {
+						return;
+					}
+
+					const form = event.currentTarget as HTMLFormElement;
+					const input = form.elements.namedItem(
+						'credential'
+					) as HTMLInputElement | null;
+
+					if ( input === null || input.value.trim() === '' ) {
+						return;
+					}
+
+					await onReplace( input.value );
+					input.value = '';
+				},
+			},
+			createElement(
+				'label',
+				{ htmlFor: credentialId },
+				credential.configured ? 'Replace credential' : 'Credential'
+			),
+			createElement( 'input', {
+				autoComplete: 'new-password',
+				id: credentialId,
+				name: 'credential',
+				type: 'password',
+			} ),
+			createElement(
+				'button',
+				{ type: 'submit' },
+				credential.configured ? 'Replace credential' : 'Save credential'
+			)
+		)
 	);
 };
