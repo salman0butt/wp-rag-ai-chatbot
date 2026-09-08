@@ -247,9 +247,7 @@ export const OnboardingFlow = ( {
 	);
 };
 
-export const BotEditorScreen = ( {
-	mode,
-}: BotEditorScreenProps ): unknown => {
+export const BotEditorScreen = ( { mode }: BotEditorScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
 	return createElement(
