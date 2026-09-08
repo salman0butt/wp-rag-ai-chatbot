@@ -275,7 +275,9 @@ export const BotEditorScreen = ( {
 				}
 
 				const form = event.currentTarget as HTMLFormElement;
-				const name = form.elements.namedItem( 'name' ) as HTMLInputElement;
+				const name = form.elements.namedItem(
+					'name'
+				) as HTMLInputElement;
 				const provider = form.elements.namedItem(
 					'provider_id'
 				) as HTMLInputElement;
@@ -485,7 +487,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
-	let createBot: ( draft: BotDraft ) => Promise< void > = async () => undefined;
+	let createBot: ( draft: BotDraft ) => Promise< void > =
+		async () => undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -544,13 +547,15 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			} );
 			await refreshBotPage();
 			renderState( stateFromReadiness() );
-		} catch ( error ) {
+		} catch {
 			renderState( 'error' );
 		}
 	};
 
 	void client
-		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
+		.request< AdminOnboardingReadiness >(
+			'/admin/onboarding/readiness'
+		)
 		.then( async ( readiness ) => {
 			currentOnboardingStep = readiness.next_step;
 			currentOnboardingIssue = readiness.issue;
