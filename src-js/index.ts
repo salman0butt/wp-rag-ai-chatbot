@@ -450,6 +450,8 @@ export const BotManagementScreen = ( {
 			onClick: () => {
 				if (
 					onDelete !== undefined &&
+					// Browser-native confirmation is intentional for this destructive action.
+					// eslint-disable-next-line no-alert
 					window.confirm(
 						`Delete ${ selectedBot.name }? This action cannot be undone.`
 					)
