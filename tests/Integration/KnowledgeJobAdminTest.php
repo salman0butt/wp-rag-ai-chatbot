@@ -71,7 +71,12 @@ final class KnowledgeJobAdminTest extends TestCase {
 		self::assertSame( 'invalid_transition', $response['error']['code'] );
 	}
 
-	/** Build a persisted row accepted by the existing M09 hydrator. */
+	/**
+	 * Build a persisted row accepted by the existing M09 hydrator.
+	 *
+	 * @param string $job_key Stable job identity.
+	 * @param string $status Persisted status value.
+	 */
 	private static function row( string $job_key, string $status ): array {
 		return array(
 			'id'                  => 21,
