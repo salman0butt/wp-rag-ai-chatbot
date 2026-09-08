@@ -118,7 +118,9 @@ describe( 'ProviderSettingsScreen', () => {
 		}
 
 		credentialInput.value = 'sk-new-only';
-		form.dispatchEvent( new Event( 'submit', { bubbles: true, cancelable: true } ) );
+		form.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
 		await Promise.resolve();
 		await Promise.resolve();
 
