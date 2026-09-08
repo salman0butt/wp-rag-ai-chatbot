@@ -132,6 +132,10 @@ interface BotManagementScreenProps {
 	page: BotPage;
 }
 
+interface BotEditorScreenProps {
+	mode: 'create' | 'edit';
+}
+
 type ElementFactory = (
 	type: string,
 	props: Record< string, unknown > | null,
@@ -240,6 +244,43 @@ export const OnboardingFlow = ( {
 		{ 'data-onboarding-step': nextStep },
 		createElement( 'h2', null, ONBOARDING_HEADINGS[ nextStep ] ),
 		issueContent
+	);
+};
+
+export const BotEditorScreen = ( {
+	mode,
+}: BotEditorScreenProps ): unknown => {
+	const createElement = window.wp.element.createElement;
+
+	return createElement(
+		'form',
+		{ 'data-bot-editor': mode },
+		createElement( 'label', { htmlFor: 'bot-name' }, 'Bot name' ),
+		createElement( 'input', {
+			id: 'bot-name',
+			name: 'name',
+			required: true,
+			type: 'text',
+		} ),
+		createElement( 'label', { htmlFor: 'bot-provider' }, 'Provider' ),
+		createElement( 'input', {
+			id: 'bot-provider',
+			name: 'provider_id',
+			required: true,
+			type: 'text',
+		} ),
+		createElement( 'label', { htmlFor: 'bot-model' }, 'Model' ),
+		createElement( 'input', {
+			id: 'bot-model',
+			name: 'model_id',
+			required: true,
+			type: 'text',
+		} ),
+		createElement(
+			'button',
+			{ type: 'submit' },
+			mode === 'create' ? 'Create bot' : 'Save bot'
+		)
 	);
 };
 
