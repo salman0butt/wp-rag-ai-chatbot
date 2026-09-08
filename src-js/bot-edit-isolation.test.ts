@@ -137,13 +137,14 @@ describe( 'bot editor record isolation', () => {
 		const alphaEditor = root.querySelector(
 			'form[data-bot-editor="edit"][data-edit-bot-id="bot-a"]'
 		);
-		const alphaName = alphaEditor?.querySelector< HTMLInputElement >(
-			'input[name="name"]'
-		);
+		const alphaName =
+			alphaEditor?.querySelector< HTMLInputElement >(
+				'input[name="name"]'
+			);
 
-		expect( root.querySelectorAll( 'form[data-bot-editor="edit"]' ) ).toHaveLength(
-			1
-		);
+		expect(
+			root.querySelectorAll( 'form[data-bot-editor="edit"]' )
+		).toHaveLength( 1 );
 		expect( alphaName?.value ).toBe( 'Alpha Bot' );
 		alphaName!.value = 'Unsaved Alpha Draft';
 
@@ -153,13 +154,12 @@ describe( 'bot editor record isolation', () => {
 		const betaEditor = root.querySelector(
 			'form[data-bot-editor="edit"][data-edit-bot-id="bot-b"]'
 		);
-		const betaName = betaEditor?.querySelector< HTMLInputElement >(
-			'input[name="name"]'
-		);
+		const betaName =
+			betaEditor?.querySelector< HTMLInputElement >( 'input[name="name"]' );
 
-		expect( root.querySelectorAll( 'form[data-bot-editor="edit"]' ) ).toHaveLength(
-			1
-		);
+		expect(
+			root.querySelectorAll( 'form[data-bot-editor="edit"]' )
+		).toHaveLength( 1 );
 		expect( root.querySelector( '[data-edit-bot-id="bot-a"]' ) ).toBeNull();
 		expect( betaName?.value ).toBe( 'Beta Bot' );
 	} );
