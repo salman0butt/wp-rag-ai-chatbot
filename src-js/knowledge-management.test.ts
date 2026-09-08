@@ -1,7 +1,7 @@
 import * as plugin from './index';
 
 interface KnowledgeSourceItem {
-	id: string;
+	id: string | number | null;
 	source_key: string;
 	source_type: string;
 	external_id: string | null;
@@ -79,7 +79,10 @@ const configureTestRuntime = (): void => {
 	} );
 };
 
-const source = ( id: string, title: string ): KnowledgeSourceItem => ( {
+const source = (
+	id: string | number,
+	title: string
+): KnowledgeSourceItem => ( {
 	id,
 	source_key: `source-${ id }`,
 	source_type: 'wordpress_posts',
@@ -139,5 +142,35 @@ describe( 'KnowledgeManagementScreen', () => {
 				.querySelector( '[data-knowledge-page="next"]' )
 				?.getAttribute( 'href' )
 		).toBe( '#/knowledge?page=2' );
+	} );
+
+	it( 'selects persisted numeric source IDs from the server DTO', () => {
+		configureTestRuntime();
+		const exports = plugin as unknown as Record< string, unknown >;
+		const KnowledgeManagementScreen = exports.KnowledgeManagementScreen;
+		const root = document.createElement( 'div' );
+
+		root.append(
+			( KnowledgeManagementScreen as KnowledgeManagementComponent )( {
+				page: {
+					items: [
+						source( 11, 'Support Articles' ),
+						source( 17, 'Product Catalog' ),
+					],
+					total: 2,
+					page: 1,
+					per_page: 20,
+				},
+				selectedSourceId: '17',
+			} )
+		);
+
+		expect(
+			root.querySelector( '[aria-current="true"]' )?.textContent
+		).toBe( 'Product Catalog' );
+		expect(
+			root.querySelector( '[data-knowledge-selected-source]' )
+				?.getAttribute( 'data-knowledge-selected-source' )
+		).toBe( '17' );
 	} );
 } );
