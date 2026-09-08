@@ -40,18 +40,30 @@
 - Review `5146492264`: 0 Critical / 0 Important.
 - Evidence: `docs/progress/M13-TASK3-JOB-LIFECYCLE.md`.
 
+### Task 4 — Knowledge manager admin UI: ACTIVE
+
+Completed bounded slice — server-supplied knowledge-source rendering:
+
+- `KnowledgeManagementScreen` renders the bounded source page, deterministic selected context, labelled pagination, and an explicit empty state.
+- Source identifiers are URI-encoded in hash navigation; displayed summary fields are limited to the existing allow-listed source DTO.
+- Initial test checkpoint `f33f0f26d4ce0d237de0b55edc106b612c548ca0` / CI `34274206561` is **not RED** because Prettier stopped before Jest.
+- Genuine RED `d6e3d6c44bc3a1ea72b65b59ab6482449ccae76b` / CI `34274361994`: lint and typecheck passed; Jest ran 46 tests with 45 passed / exactly 1 expected missing-screen failure.
+- GREEN implementation `dc64aaa502d94504b8619bcf55aa2d600d655b53` / CI `34274863066`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN.
+- Scoped review `5146690487`: 0 Critical / 0 Important.
+- Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-SOURCE-RENDERING.md`.
+
 ## Current work
 
-**Task 4 — Knowledge manager admin UI** is the authoritative next unfinished unit.
+**Task 4 — Knowledge manager admin UI** remains the authoritative unfinished unit.
 
-Per the approved M13 plan:
+Exact continuation:
 
-- consume Tasks 1–3 REST DTOs through the existing typed nonce-authenticated admin client;
-- begin with genuine Jest RED coverage for paginated source rendering, selected detail, loading/empty/error states, supported job actions, and keyboard-labelled controls;
-- keep pagination and lifecycle mutation refresh server-authoritative;
+- add `knowledge` to the existing admin router/navigation and load the bounded source page through the existing nonce-authenticated client from `GET /admin/knowledge/sources`;
+- resolve source/page state from the hash and refresh server-authoritatively on navigation;
+- then integrate bounded Task 2 source/document/chunk detail plus Task 3 job inventory/actions with loading/empty/error and stable lifecycle-error states;
 - do not cache secret or unbounded data in browser state;
-- add constrained-width and long-content accessibility/CSS coverage;
-- verify Jest, PHP integration, package, and complete WordPress smoke before advancing to Task 5.
+- add constrained-width, long-content, keyboard/accessibility, and responsive CSS coverage;
+- complete final Task 4 scoped/independent review and exact-final-SHA CI before advancing to Task 5.
 
 ## Durable recovery
 
@@ -61,4 +73,5 @@ Per the approved M13 plan:
 - `docs/progress/M13-TASK1-KNOWLEDGE-SOURCES.md` — Task 1 evidence.
 - `docs/progress/M13-TASK2-KNOWLEDGE-DETAIL.md` — Task 2 evidence.
 - `docs/progress/M13-TASK3-JOB-LIFECYCLE.md` — Task 3 evidence.
+- `docs/progress/M13-TASK4-KNOWLEDGE-SOURCE-RENDERING.md` — Task 4 source-rendering slice evidence.
 - PR #18 — milestone-wide draft integration record.
