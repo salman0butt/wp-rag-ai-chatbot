@@ -125,7 +125,9 @@ final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionSto
 			)
 		);
 		$sql      = $this->connection->prepare(
-			'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, content_hash, language, visibility, sequence, metadata_json FROM %i WHERE document_key = %s ORDER BY sequence ASC, chunk_key ASC LIMIT %d OFFSET %d',
+			'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, '
+				. 'content_hash, language, visibility, sequence, metadata_json FROM %i WHERE document_key = %s '
+				. 'ORDER BY sequence ASC, chunk_key ASC LIMIT %d OFFSET %d',
 			$this->tables->chunk_search(),
 			$document_key,
 			$per_page,
