@@ -8,10 +8,16 @@ export interface ProviderModelChoice {
 	display_name: string;
 }
 
+export type ProviderSettingsIssue =
+	| 'missing_credential'
+	| 'provider_unavailable'
+	| 'unsupported_capability';
+
 export interface ProviderSettingsScreenProps {
 	providerId: string;
 	credential: ProviderCredentialState;
 	models?: ReadonlyArray< ProviderModelChoice >;
+	issue?: ProviderSettingsIssue;
 	onReplace?: ( credential: string ) => Promise< void >;
 }
 
@@ -28,10 +34,20 @@ const SOURCE_LABELS: Readonly< Record< string, string > > = {
 	none: 'Not configured',
 };
 
+const ISSUE_MESSAGES: Readonly< Record< ProviderSettingsIssue, string > > = {
+	missing_credential:
+		'Add a provider credential to load compatible generation models.',
+	provider_unavailable:
+		'This provider is currently unavailable. Try again or choose another provider.',
+	unsupported_capability:
+		'This provider does not offer compatible generation models. Choose another provider.',
+};
+
 export const ProviderSettingsScreen = ( {
 	providerId,
 	credential,
 	models = [],
+	issue,
 	onReplace,
 }: ProviderSettingsScreenProps ): unknown => {
 	const createElement = window.wp.element
@@ -40,6 +56,14 @@ export const ProviderSettingsScreen = ( {
 		SOURCE_LABELS[ credential.source ] ?? 'Configured externally';
 	const credentialId = `provider-${ providerId }-credential`;
 	const modelId = `provider-${ providerId }-model`;
+	const issueContent =
+		issue === undefined
+			? undefined
+			: createElement(
+					'div',
+					{ 'data-provider-issue': issue, role: 'alert' },
+					ISSUE_MESSAGES[ issue ]
+			  );
 	const modelOptions = models.map( ( model ) =>
 		createElement(
 			'option',
@@ -74,6 +98,7 @@ export const ProviderSettingsScreen = ( {
 				: 'Credential not configured'
 		),
 		createElement( 'p', { 'data-credential-source': true }, sourceLabel ),
+		issueContent,
 		createElement(
 			'form',
 			{
