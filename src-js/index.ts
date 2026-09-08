@@ -120,6 +120,8 @@ export interface AdminShellProps {
 	selectedBotId?: string;
 	knowledgePage?: KnowledgeSourcePage;
 	selectedKnowledgeSourceId?: string;
+	knowledgeDetail?: KnowledgeSourceDetail;
+	knowledgeDocuments?: KnowledgeDocumentPage;
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
 	providerModels?: ReadonlyArray< ProviderModelChoice >;
@@ -172,9 +174,46 @@ interface KnowledgeSourcePage {
 	per_page: number;
 }
 
+interface KnowledgeSourceDetail {
+	id: number;
+	source_key: string;
+	source_type: string;
+	external_id: string | null;
+	title: string;
+	canonical_url: string | null;
+	status: string;
+	last_synced_at: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+interface KnowledgeDocumentItem {
+	id: number;
+	document_key: string;
+	source_id: number;
+	external_id: string | null;
+	document_type: string;
+	title: string;
+	canonical_url: string | null;
+	source_version: string;
+	language: string | null;
+	visibility: string;
+	created_at: string;
+	updated_at: string;
+}
+
+interface KnowledgeDocumentPage {
+	items: KnowledgeDocumentItem[];
+	total: number;
+	page: number;
+	per_page: number;
+}
+
 interface KnowledgeManagementScreenProps {
 	page: KnowledgeSourcePage;
 	selectedSourceId?: string;
+	detail?: KnowledgeSourceDetail;
+	documents?: KnowledgeDocumentPage;
 }
 
 interface BotManagementScreenProps {
@@ -337,6 +376,16 @@ const resolveSelectedKnowledgeSourceId = (
 	} catch {
 		return undefined;
 	}
+};
+
+const resolveSelectedPersistedKnowledgeSourceId = (
+	hash: string
+): string | undefined => {
+	const sourceId = resolveSelectedKnowledgeSourceId( hash );
+
+	return sourceId !== undefined && /^[1-9]\d*$/.test( sourceId )
+		? sourceId
+		: undefined;
 };
 
 const resolveSelectedProviderId = ( hash: string ): string | undefined => {
@@ -625,6 +674,8 @@ export const BotManagementScreen = ( {
 export const KnowledgeManagementScreen = ( {
 	page,
 	selectedSourceId,
+	detail,
+	documents,
 }: KnowledgeManagementScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
@@ -692,17 +743,68 @@ export const KnowledgeManagementScreen = ( {
 		);
 	}
 
+	const selectedSummary =
+		detail === undefined
+			? createElement(
+					'article',
+					{ 'data-knowledge-selected-source': selectedSource.id },
+					createElement( 'h2', null, selectedSource.title ),
+					createElement(
+						'p',
+						null,
+						`Type: ${ selectedSource.source_type }`
+					),
+					createElement( 'p', null, `Status: ${ selectedSource.status }` )
+			  )
+			: createElement(
+					'article',
+					{ 'data-knowledge-selected-detail': String( detail.id ) },
+					createElement( 'h2', null, detail.title ),
+					createElement( 'p', null, `Type: ${ detail.source_type }` ),
+					createElement( 'p', null, `Status: ${ detail.status }` )
+			  );
+	const documentContent =
+		documents === undefined
+			? undefined
+			: createElement(
+					'section',
+					{ 'data-knowledge-documents': 'list' },
+					createElement( 'h2', null, 'Documents' ),
+					documents.items.length === 0
+						? createElement( 'p', null, 'No documents found.' )
+						: createElement(
+								'ul',
+								null,
+								...documents.items.map( ( item ) =>
+									createElement(
+										'li',
+										{
+											key: item.document_key,
+											'data-knowledge-document-key':
+												item.document_key,
+										},
+										createElement( 'h3', null, item.title ),
+										createElement(
+											'p',
+											null,
+											`Type: ${ item.document_type }`
+										),
+										createElement(
+											'p',
+											null,
+											`Visibility: ${ item.visibility }`
+										)
+									)
+								)
+							  )
+			  );
+
 	return createElement(
 		'section',
 		{ 'data-knowledge-management': 'list' },
 		createElement( 'ul', null, ...rows ),
-		createElement(
-			'article',
-			{ 'data-knowledge-selected-source': selectedSource.id },
-			createElement( 'h2', null, selectedSource.title ),
-			createElement( 'p', null, `Type: ${ selectedSource.source_type }` ),
-			createElement( 'p', null, `Status: ${ selectedSource.status }` )
-		),
+		selectedSummary,
+		documentContent,
 		createElement(
 			'nav',
 			{ 'aria-label': 'Knowledge source pagination' },
@@ -720,6 +822,8 @@ export const AdminShell = ( {
 	selectedBotId,
 	knowledgePage,
 	selectedKnowledgeSourceId,
+	knowledgeDetail,
+	knowledgeDocuments,
 	providerId,
 	providerCredential,
 	providerModels,
@@ -803,6 +907,8 @@ export const AdminShell = ( {
 			KnowledgeManagementScreen( {
 				page: knowledgePage,
 				selectedSourceId: selectedKnowledgeSourceId,
+				detail: knowledgeDetail,
+				documents: knowledgeDocuments,
 			} )
 		);
 	} else if (
@@ -846,6 +952,8 @@ const renderAdminShell = (
 	selectedBotId?: string,
 	knowledgePage?: KnowledgeSourcePage,
 	selectedKnowledgeSourceId?: string,
+	knowledgeDetail?: KnowledgeSourceDetail,
+	knowledgeDocuments?: KnowledgeDocumentPage,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
@@ -865,6 +973,8 @@ const renderAdminShell = (
 			selectedBotId,
 			knowledgePage,
 			selectedKnowledgeSourceId,
+			knowledgeDetail,
+			knowledgeDocuments,
 			providerId,
 			providerCredential,
 			providerModels,
@@ -892,6 +1002,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
 	let currentKnowledgePage: KnowledgeSourcePage | undefined;
+	let currentKnowledgeDetail: KnowledgeSourceDetail | undefined;
+	let currentKnowledgeDocuments: KnowledgeDocumentPage | undefined;
+	let loadedKnowledgeSourceId: string | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let currentProviderIssue: ProviderSettingsIssue | undefined;
@@ -912,6 +1025,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
 		const providerId = resolveSelectedProviderId( currentHash() );
+		const selectedKnowledgeSourceId =
+			resolveSelectedPersistedKnowledgeSourceId( currentHash() );
 		renderAdminShell(
 			root,
 			state,
@@ -922,6 +1037,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			resolveSelectedBotId( currentHash() ),
 			currentKnowledgePage,
 			resolveSelectedKnowledgeSourceId( currentHash() ),
+			selectedKnowledgeSourceId === loadedKnowledgeSourceId
+				? currentKnowledgeDetail
+				: undefined,
+			selectedKnowledgeSourceId === loadedKnowledgeSourceId
+				? currentKnowledgeDocuments
+				: undefined,
 			providerId,
 			providerId === loadedProviderId
 				? currentProviderCredential
@@ -972,6 +1093,16 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		currentKnowledgePage = await client.request< KnowledgeSourcePage >(
 			`/admin/knowledge/sources?page=${ page }&per_page=20`
 		);
+	};
+	const refreshKnowledgeDetail = async ( sourceId: string ): Promise< void > => {
+		const encodedSourceId = encodeURIComponent( sourceId );
+		currentKnowledgeDetail = await client.request< KnowledgeSourceDetail >(
+			`/admin/knowledge/sources/${ encodedSourceId }`
+		);
+		currentKnowledgeDocuments = await client.request< KnowledgeDocumentPage >(
+			`/admin/knowledge/sources/${ encodedSourceId }/documents?page=1&per_page=20`
+		);
+		loadedKnowledgeSourceId = sourceId;
 	};
 	const refreshProviderCredential = async (
 		providerId: string
@@ -1057,6 +1188,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		if ( screen !== 'knowledge' ) {
 			currentKnowledgePage = undefined;
+			currentKnowledgeDetail = undefined;
+			currentKnowledgeDocuments = undefined;
+			loadedKnowledgeSourceId = undefined;
 		}
 
 		const targetPage = resolveBotPage( currentHash() );
@@ -1073,6 +1207,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		}
 
 		const targetKnowledgePage = resolveKnowledgePage( currentHash() );
+		const selectedKnowledgeSourceId =
+			resolveSelectedPersistedKnowledgeSourceId( currentHash() );
 
 		if (
 			screen === 'knowledge' &&
@@ -1080,10 +1216,34 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				currentKnowledgePage.page !== targetKnowledgePage )
 		) {
 			currentKnowledgePage = undefined;
+			currentKnowledgeDetail = undefined;
+			currentKnowledgeDocuments = undefined;
+			loadedKnowledgeSourceId = undefined;
 			void refreshKnowledgePage( targetKnowledgePage )
+				.then( async () => {
+					if ( selectedKnowledgeSourceId !== undefined ) {
+						await refreshKnowledgeDetail( selectedKnowledgeSourceId );
+					}
+				} )
 				.then( () => renderState( stateFromReadiness() ) )
 				.catch( () => renderState( 'error' ) );
 			return;
+		}
+
+		if (
+			screen === 'knowledge' &&
+			selectedKnowledgeSourceId !== loadedKnowledgeSourceId
+		) {
+			currentKnowledgeDetail = undefined;
+			currentKnowledgeDocuments = undefined;
+			loadedKnowledgeSourceId = undefined;
+
+			if ( selectedKnowledgeSourceId !== undefined ) {
+				void refreshKnowledgeDetail( selectedKnowledgeSourceId )
+					.then( () => renderState( stateFromReadiness() ) )
+					.catch( () => renderState( 'error' ) );
+				return;
+			}
 		}
 
 		const providerId = resolveSelectedProviderId( currentHash() );
@@ -1198,6 +1358,13 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 			if ( screen === 'knowledge' ) {
 				await refreshKnowledgePage();
+				const sourceId = resolveSelectedPersistedKnowledgeSourceId(
+					currentHash()
+				);
+
+				if ( sourceId !== undefined ) {
+					await refreshKnowledgeDetail( sourceId );
+				}
 			}
 
 			if ( screen === 'providers' ) {
