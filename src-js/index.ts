@@ -717,8 +717,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	) => Promise< void > = async () => undefined;
 	let deleteBot: ( bot: BotListItem ) => Promise< void > = async () =>
 		undefined;
-	let replaceProviderCredential: ( credential: string ) => Promise< void > =
-		async () => undefined;
+	let replaceProviderCredential: (
+		credential: string
+	) => Promise< void > = async () => undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -796,7 +797,6 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		const screen = resolveAdminScreen( currentHash() );
 		const targetPage = resolveBotPage( currentHash() );
-		const providerId = resolveSelectedProviderId( currentHash() );
 
 		if (
 			screen === 'bots' &&
@@ -808,6 +808,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				.catch( () => renderState( 'error' ) );
 			return;
 		}
+
+		const providerId = resolveSelectedProviderId( currentHash() );
 
 		if (
 			screen === 'providers' &&
@@ -870,7 +872,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			renderState( 'error' );
 		}
 	};
-	replaceProviderCredential = async ( credential: string ): Promise< void > => {
+	replaceProviderCredential = async (
+		credential: string
+	): Promise< void > => {
 		const providerId = resolveSelectedProviderId( currentHash() );
 
 		if ( providerId === undefined ) {
@@ -879,7 +883,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		try {
 			await client.request< { managed: true } >(
-				`/admin/providers/${ encodeURIComponent( providerId ) }/credential`,
+				`/admin/providers/${ encodeURIComponent(
+					providerId
+				) }/credential`,
 				{
 					method: 'PUT',
 					body: { credential },
