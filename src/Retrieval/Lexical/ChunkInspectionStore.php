@@ -22,5 +22,5 @@ interface ChunkInspectionStore {
 	 * @param int    $page One-based page.
 	 * @param int    $per_page Requested page size.
 	 */
-	public function paginateByDocument( string $document_key, int $page = 1, int $per_page = 20 ): PagedResult;
+	public function paginate_document_chunks( string $document_key, int $page = 1, int $per_page = 20 ): PagedResult;
 }
