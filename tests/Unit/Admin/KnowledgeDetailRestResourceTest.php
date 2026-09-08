@@ -116,7 +116,7 @@ final class KnowledgeDetailRestResourceTest extends TestCase {
 			'chunks',
 			array( 7, 'doc:42', 1, 20 )
 		);
-		$content = $response['items'][0]['content'];
+		$content  = $response['items'][0]['content'];
 
 		self::assertIsString( $content );
 		self::assertLessThanOrEqual( 2000, strlen( $content ) );
