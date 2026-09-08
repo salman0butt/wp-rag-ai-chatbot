@@ -91,6 +91,49 @@ const sourcePageResponse = ( title: string ) => ( {
 	} ),
 } );
 
+const sourceDetailResponse = {
+	ok: true,
+	status: 200,
+	json: async () => ( {
+		id: 17,
+		source_key: 'source-17',
+		source_type: 'wordpress_posts',
+		external_id: null,
+		title: 'Support Source',
+		canonical_url: 'https://example.test/support',
+		status: 'indexed',
+		last_synced_at: null,
+		created_at: '2026-09-08T18:00:00+00:00',
+		updated_at: '2026-09-08T19:05:00+00:00',
+	} ),
+};
+
+const documentPageResponse = {
+	ok: true,
+	status: 200,
+	json: async () => ( {
+		items: [
+			{
+				id: 31,
+				document_key: 'doc-support',
+				source_id: 17,
+				external_id: 'post-31',
+				document_type: 'post',
+				title: 'Reset your password',
+				canonical_url: 'https://example.test/support/reset-password',
+				source_version: '7',
+				language: 'en',
+				visibility: 'public',
+				created_at: '2026-09-08T18:10:00+00:00',
+				updated_at: '2026-09-08T19:00:00+00:00',
+			},
+		],
+		total: 1,
+		page: 1,
+		per_page: 20,
+	} ),
+};
+
 describe( 'knowledge admin bootstrap', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
@@ -173,5 +216,47 @@ describe( 'knowledge admin bootstrap', () => {
 			root.querySelector( '[data-knowledge-source-id="source-alpha"]' )
 				?.textContent
 		).toBe( 'Updated Articles' );
+	} );
+
+	it( 'loads selected source detail and a bounded document page through the admin client', async () => {
+		const fetcher = jest
+			.fn()
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
+				json: async () => ( { ready: true, next_step: 'complete' } ),
+			} )
+			.mockResolvedValueOnce( sourcePageResponse( 'Support Articles' ) )
+			.mockResolvedValueOnce( sourceDetailResponse )
+			.mockResolvedValueOnce( documentPageResponse );
+		const root = configureAdminRuntime( fetcher );
+
+		window.location.hash = '#/knowledge/17?page=2';
+		expect( bootstrapAdminApp() ).toBe( true );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( fetcher ).toHaveBeenNthCalledWith(
+			3,
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/17',
+			expect.objectContaining( {
+				headers: expect.objectContaining( {
+					'X-WP-Nonce': 'rest-nonce',
+				} ),
+			} )
+		);
+		expect( fetcher ).toHaveBeenNthCalledWith(
+			4,
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/17/documents?page=1&per_page=20',
+			expect.objectContaining( {
+				headers: expect.objectContaining( {
+					'X-WP-Nonce': 'rest-nonce',
+				} ),
+			} )
+		);
+		expect(
+			root.querySelector( '[data-knowledge-document-key="doc-support"]' )
+				?.textContent
+		).toContain( 'Reset your password' );
 	} );
 } );
