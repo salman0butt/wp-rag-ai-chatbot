@@ -180,12 +180,9 @@ describe( 'AdminShell', () => {
 		const nav = root.querySelector( 'nav[aria-label="Administration"]' );
 		const links = Array.from( nav?.querySelectorAll( 'a' ) ?? [] );
 
-		expect( links.map( ( link ) => link.getAttribute( 'href' ) ) ).toEqual( [
-			'#/onboarding',
-			'#/bots',
-			'#/providers',
-			'#/knowledge',
-		] );
+		expect( links.map( ( link ) => link.getAttribute( 'href' ) ) ).toEqual(
+			[ '#/onboarding', '#/bots', '#/providers', '#/knowledge' ]
+		);
 		expect(
 			nav?.querySelector( 'a[aria-current="page"]' )?.textContent
 		).toBe( 'Bots' );
