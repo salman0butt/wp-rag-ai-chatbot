@@ -107,9 +107,8 @@ describe( 'bot create validation', () => {
 		await tick();
 
 		const form = root.querySelector( 'form[data-bot-editor="create"]' );
-		const name = form?.querySelector< HTMLInputElement >(
-			'input[name="name"]'
-		);
+		const name =
+			form?.querySelector< HTMLInputElement >( 'input[name="name"]' );
 
 		expect( form ).not.toBeNull();
 		expect( name ).not.toBeNull();
