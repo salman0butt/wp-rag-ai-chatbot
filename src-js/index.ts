@@ -110,6 +110,7 @@ export interface AdminShellProps {
 	onboardingStep?: OnboardingStep;
 	onboardingIssue?: OnboardingIssue;
 	botPage?: BotPage;
+	selectedBotId?: string;
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >;
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 }
@@ -139,6 +140,7 @@ interface BotPage {
 
 interface BotManagementScreenProps {
 	page: BotPage;
+	selectedBotId?: string;
 	onCreate?: ( draft: BotDraft ) => Promise< void >;
 	onUpdate?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 }
@@ -226,6 +228,20 @@ export const resolveAdminScreen = ( hash: string ): AdminScreen => {
 	const screen = ADMIN_SCREENS.find( ( item ) => item.screen === candidate );
 
 	return screen?.screen ?? 'onboarding';
+};
+
+const resolveSelectedBotId = ( hash: string ): string | undefined => {
+	const segments = hash.replace( /^#\/?/, '' ).split( '/' );
+
+	if ( segments[ 0 ] !== 'bots' || ! segments[ 1 ] ) {
+		return undefined;
+	}
+
+	try {
+		return decodeURIComponent( segments[ 1 ] );
+	} catch {
+		return undefined;
+	}
 };
 
 export const OnboardingFlow = ( {
@@ -374,6 +390,7 @@ export const BotEditorScreen = ( {
 
 export const BotManagementScreen = ( {
 	page,
+	selectedBotId,
 	onCreate,
 	onUpdate,
 }: BotManagementScreenProps ): unknown => {
@@ -397,6 +414,8 @@ export const BotManagementScreen = ( {
 	}
 
 	const totalPages = Math.max( 1, Math.ceil( page.total / page.per_page ) );
+	const selectedBot =
+		page.items.find( ( item ) => item.id === selectedBotId ) ?? page.items[ 0 ];
 	const rows = page.items.map( ( item ) =>
 		createElement(
 			'li',
@@ -404,26 +423,28 @@ export const BotManagementScreen = ( {
 				key: item.id,
 				'data-bot-id': item.id,
 			},
-			item.name
+			createElement(
+				'a',
+				{ href: `#/bots/${ encodeURIComponent( item.id ) }` },
+				item.name
+			)
 		)
 	);
-	const editors = page.items.map( ( item ) =>
-		BotEditorScreen( {
-			mode: 'edit',
-			bot: item,
-			onSave:
-				onUpdate === undefined
-					? undefined
-					: ( draft ) => onUpdate( item, draft ),
-		} )
-	);
+	const editor = BotEditorScreen( {
+		mode: 'edit',
+		bot: selectedBot,
+		onSave:
+			onUpdate === undefined
+				? undefined
+				: ( draft ) => onUpdate( selectedBot, draft ),
+	} );
 
 	return createElement(
 		'section',
 		{ 'data-bot-management': 'list' },
 		createEditor,
 		createElement( 'ul', null, ...rows ),
-		...editors,
+		editor,
 		createElement(
 			'nav',
 			{ 'aria-label': 'Bot list pagination' },
@@ -438,6 +459,7 @@ export const AdminShell = ( {
 	onboardingStep,
 	onboardingIssue,
 	botPage,
+	selectedBotId,
 	onCreateBot,
 	onUpdateBot,
 }: AdminShellProps ): unknown => {
@@ -501,6 +523,7 @@ export const AdminShell = ( {
 			createElement( 'h1', null, selectedLabel ),
 			BotManagementScreen( {
 				page: botPage,
+				selectedBotId,
 				onCreate: onCreateBot,
 				onUpdate: onUpdateBot,
 			} )
@@ -526,6 +549,7 @@ const renderAdminShell = (
 	onboardingStep?: OnboardingStep,
 	onboardingIssue?: OnboardingIssue,
 	botPage?: BotPage,
+	selectedBotId?: string,
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >,
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >
 ): void => {
@@ -536,6 +560,7 @@ const renderAdminShell = (
 			onboardingStep,
 			onboardingIssue,
 			botPage,
+			selectedBotId,
 			onCreateBot,
 			onUpdateBot,
 		} ),
@@ -572,6 +597,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentOnboardingStep,
 			currentOnboardingIssue,
 			currentBotPage,
+			resolveSelectedBotId( currentHash() ),
 			createBot,
 			updateBot
 		);
