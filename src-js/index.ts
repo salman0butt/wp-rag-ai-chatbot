@@ -1,5 +1,6 @@
 import {
 	ProviderCredentialState,
+	ProviderModelChoice,
 	ProviderSettingsScreen,
 } from './provider-settings';
 
@@ -118,6 +119,7 @@ export interface AdminShellProps {
 	selectedBotId?: string;
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
+	providerModels?: ReadonlyArray< ProviderModelChoice >;
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >;
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >;
@@ -179,6 +181,10 @@ interface AdminOnboardingReadiness {
 	ready: boolean;
 	next_step: OnboardingStep;
 	issue?: OnboardingIssue;
+}
+
+interface AdminProviderModels {
+	models?: unknown;
 }
 
 interface OnboardingIssueCopy {
@@ -560,6 +566,7 @@ export const AdminShell = ( {
 	selectedBotId,
 	providerId,
 	providerCredential,
+	providerModels,
 	onCreateBot,
 	onUpdateBot,
 	onDeleteBot,
@@ -643,6 +650,7 @@ export const AdminShell = ( {
 			ProviderSettingsScreen( {
 				providerId,
 				credential: providerCredential,
+				models: providerModels,
 				onReplace: onReplaceProviderCredential,
 			} )
 		);
@@ -670,6 +678,7 @@ const renderAdminShell = (
 	selectedBotId?: string,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
+	providerModels?: ReadonlyArray< ProviderModelChoice >,
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >,
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >,
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >,
@@ -685,6 +694,7 @@ const renderAdminShell = (
 			selectedBotId,
 			providerId,
 			providerCredential,
+			providerModels,
 			onCreateBot,
 			onUpdateBot,
 			onDeleteBot,
@@ -708,7 +718,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
+	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let loadedProviderId: string | undefined;
+	let loadedProviderModelsId: string | undefined;
 	let createBot: ( draft: BotDraft ) => Promise< void > = async () =>
 		undefined;
 	let updateBot: (
@@ -735,6 +747,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			providerId,
 			providerId === loadedProviderId
 				? currentProviderCredential
+				: undefined,
+			providerId === loadedProviderModelsId
+				? currentProviderModels
 				: undefined,
 			createBot,
 			updateBot,
@@ -785,6 +800,42 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		};
 		loadedProviderId = providerId;
 	};
+	const refreshProviderModels = async (
+		providerId: string
+	): Promise< void > => {
+		const response = await client.request< AdminProviderModels >(
+			`/admin/models?provider_id=${ encodeURIComponent(
+				providerId
+			) }&purpose=generation`
+		);
+		const models = Array.isArray( response.models ) ? response.models : [];
+		currentProviderModels = models.flatMap( ( model ) => {
+			if (
+				typeof model !== 'object' ||
+				model === null ||
+				!( 'model_id' in model ) ||
+				!( 'display_name' in model ) ||
+				typeof model.model_id !== 'string' ||
+				typeof model.display_name !== 'string'
+			) {
+				return [];
+			}
+
+			return [
+				{
+					model_id: model.model_id,
+					display_name: model.display_name,
+				},
+			];
+		} );
+		loadedProviderModelsId = providerId;
+	};
+	const refreshProviderSettings = async (
+		providerId: string
+	): Promise< void > => {
+		await refreshProviderCredential( providerId );
+		await refreshProviderModels( providerId );
+	};
 
 	if ( activeHashChangeHandler !== null ) {
 		window.removeEventListener( 'hashchange', activeHashChangeHandler );
@@ -814,10 +865,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		if (
 			screen === 'providers' &&
 			providerId !== undefined &&
-			providerId !== loadedProviderId
+			( providerId !== loadedProviderId ||
+				providerId !== loadedProviderModelsId )
 		) {
 			currentProviderCredential = undefined;
-			void refreshProviderCredential( providerId )
+			currentProviderModels = undefined;
+			void refreshProviderSettings( providerId )
 				.then( () => renderState( stateFromReadiness() ) )
 				.catch( () => renderState( 'error' ) );
 			return;
@@ -913,7 +966,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				const providerId = resolveSelectedProviderId( currentHash() );
 
 				if ( providerId !== undefined ) {
-					await refreshProviderCredential( providerId );
+					await refreshProviderSettings( providerId );
 				}
 			}
 
