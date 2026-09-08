@@ -48,15 +48,18 @@ const tick = async (): Promise< void > => {
 const issueCases = [
 	{
 		code: 'missing_credential',
-		message: 'Add a provider credential to load compatible generation models.',
+		message:
+			'Add a provider credential to load compatible generation models.',
 	},
 	{
 		code: 'provider_unavailable',
-		message: 'This provider is currently unavailable. Try again or choose another provider.',
+		message:
+			'This provider is currently unavailable. Try again or choose another provider.',
 	},
 	{
 		code: 'unsupported_capability',
-		message: 'This provider does not offer compatible generation models. Choose another provider.',
+		message:
+			'This provider does not offer compatible generation models. Choose another provider.',
 	},
 ] as const;
 
@@ -93,7 +96,11 @@ describe( 'provider error states', () => {
 					nonce: 'rest-nonce',
 				},
 			} );
-			const response = ( payload: unknown, ok = true, status = 200 ) => ( {
+			const response = (
+				payload: unknown,
+				ok = true,
+				status = 200
+			) => ( {
 				ok,
 				status,
 				json: async () => payload,
@@ -104,7 +111,11 @@ describe( 'provider error states', () => {
 					response( { ready: false, next_step: 'model' } )
 				)
 				.mockResolvedValueOnce(
-					response( { configured: code !== 'missing_credential', source: code === 'missing_credential' ? 'none' : 'managed' } )
+					response( {
+						configured: code !== 'missing_credential',
+						source:
+							code === 'missing_credential' ? 'none' : 'managed',
+					} )
 				)
 				.mockResolvedValueOnce(
 					response(
@@ -121,7 +132,9 @@ describe( 'provider error states', () => {
 				value: fetcher,
 			} );
 
-			expect( bootstrapAdminApp( '#/providers/openai_direct' ) ).toBe( true );
+			expect(
+				bootstrapAdminApp( '#/providers/openai_direct' )
+			).toBe( true );
 			await tick();
 			await tick();
 
@@ -131,9 +144,13 @@ describe( 'provider error states', () => {
 			expect( alert ).not.toBeNull();
 			expect( alert?.textContent ).toContain( message );
 			expect( root.textContent ).not.toContain( 'upstream secret' );
-			expect( root.textContent ).not.toContain( 'sk-should-never-render' );
+			expect( root.textContent ).not.toContain(
+				'sk-should-never-render'
+			);
 			expect(
-				root.querySelector< HTMLInputElement >( 'input[name="credential"]' )
+				root.querySelector< HTMLInputElement >(
+					'input[name="credential"]'
+				)
 			).not.toBeNull();
 		}
 	);
