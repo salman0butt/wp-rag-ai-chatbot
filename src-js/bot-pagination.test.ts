@@ -142,14 +142,19 @@ describe( 'Task 8 bot pagination navigation', () => {
 		);
 
 		expect(
-			root.querySelector( 'a[href="#/bots/bot-beta?page=2"]' )
+			root
+				.querySelector( 'a[href="#/bots/bot-beta?page=2"]' )
 				?.getAttribute( 'aria-current' )
 		).toBe( 'true' );
 		expect(
-			root.querySelector( 'a[data-bot-page="previous"]' )?.getAttribute( 'href' )
+			root
+				.querySelector( 'a[data-bot-page="previous"]' )
+				?.getAttribute( 'href' )
 		).toBe( '#/bots?page=1' );
 		expect(
-			root.querySelector( 'a[data-bot-page="next"]' )?.getAttribute( 'href' )
+			root
+				.querySelector( 'a[data-bot-page="next"]' )
+				?.getAttribute( 'href' )
 		).toBe( '#/bots?page=3' );
 	} );
 
