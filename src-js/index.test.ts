@@ -1,78 +1,80 @@
 import * as plugin from './index';
 
+type AdminClientFactory = ( config: {
+	baseUrl: string;
+	nonce: string;
+	fetcher: typeof fetch;
+} ) => {
+	request: < T >(
+		path: string,
+		options?: { method?: string; body?: unknown }
+	) => Promise< T >;
+};
+
+type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
+type AdminScreen = 'onboarding' | 'bots' | 'providers';
+
+type AdminShellComponent = ( props: {
+	state: AdminShellState;
+	screen?: AdminScreen;
+} ) => Node;
+
+type TestElementProps = Record< string, string > | null;
+type TestRender = ( element: Node, root: Element ) => void;
+
 const createTestElement = (
 	tagName: string,
-	props: Record< string, unknown > | null,
-	...children: Array< Node | string | undefined >
+	props: TestElementProps,
+	...children: Array< Node | string >
 ): HTMLElement => {
 	const element = document.createElement( tagName );
 
 	for ( const [ key, value ] of Object.entries( props ?? {} ) ) {
-		if ( key === 'key' || value === undefined ) {
-			continue;
+		if ( key === 'className' ) {
+			element.className = value;
+		} else {
+			element.setAttribute( key, value );
 		}
-
-		if ( typeof value === 'boolean' ) {
-			if ( value ) {
-				element.setAttribute( key, '' );
-			}
-			continue;
-		}
-
-		element.setAttribute(
-			key === 'htmlFor' ? 'for' : key,
-			String( value )
-		);
 	}
 
 	for ( const child of children ) {
-		if ( child !== undefined ) {
-			element.append( child );
-		}
+		element.append( child );
 	}
 
 	return element;
 };
 
-type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
-type AdminScreen = 'onboarding' | 'bots' | 'providers' | 'knowledge';
-
-const renderAdminShell = (
-	state: AdminShellState,
-	screen?: AdminScreen
-): HTMLElement => {
-	const exports = plugin as unknown as Record< string, unknown >;
-	const AdminShell = exports.AdminShell as
-		| ( ( props: {
-				state: AdminShellState;
-				screen?: AdminScreen;
-		  } ) => Node )
-		| undefined;
-
-	expect( typeof AdminShell ).toBe( 'function' );
-
-	return AdminShell?.( { state, screen } ) as HTMLElement;
-};
-
-beforeEach( () => {
+const configureTestElementRuntime = ( render?: TestRender ): void => {
 	Object.defineProperty( window, 'wp', {
 		configurable: true,
 		value: {
 			element: {
 				createElement: createTestElement,
-				render: jest.fn(),
+				...( render ? { render } : {} ),
 			},
 		},
 	} );
-} );
+};
 
-afterEach( () => {
-	document.body.innerHTML = '';
-	Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
-} );
+const renderAdminShell = (
+	state: AdminShellState,
+	screen?: AdminScreen
+): HTMLElement => {
+	configureTestElementRuntime();
 
-describe( 'plugin identity', () => {
-	it( 'exports the expected plugin slug and development version', () => {
+	const exports = plugin as unknown as Record< string, unknown >;
+	const AdminShell = exports.AdminShell;
+
+	expect( typeof AdminShell ).toBe( 'function' );
+
+	const root = document.createElement( 'div' );
+	root.append( ( AdminShell as AdminShellComponent )( { state, screen } ) );
+
+	return root;
+};
+
+describe( 'pluginIdentity', () => {
+	it( 'uses the canonical plugin slug and development version', () => {
 		expect( plugin.pluginIdentity ).toEqual( {
 			slug: 'wp-rag-ai-chatbot',
 			version: '0.1.0-dev',
@@ -81,62 +83,80 @@ describe( 'plugin identity', () => {
 } );
 
 describe( 'createAdminApiClient', () => {
-	it( 'uses the WordPress nonce and same-origin credentials for requests', async () => {
+	it( 'sends WordPress REST nonce and JSON headers without putting the nonce in the URL', async () => {
+		const exports = plugin as unknown as Record< string, unknown >;
+		const createAdminApiClient = exports.createAdminApiClient;
+
+		expect( typeof createAdminApiClient ).toBe( 'function' );
+
 		const fetcher = jest.fn().mockResolvedValue( {
 			ok: true,
-			status: 200,
-			json: async () => ( { ok: true } ),
+			json: async () => ( { ready: true } ),
 		} );
-		const client = plugin.createAdminApiClient( {
-			baseUrl: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/',
+		const client = ( createAdminApiClient as AdminClientFactory )( {
+			baseUrl: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
 			nonce: 'rest-nonce',
-			fetcher,
+			fetcher: fetcher as unknown as typeof fetch,
 		} );
 
-		await client.request( '/admin/example' );
-
+		await expect(
+			client.request< { ready: boolean } >( '/admin/bootstrap' )
+		).resolves.toEqual( { ready: true } );
 		expect( fetcher ).toHaveBeenCalledWith(
-			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/example',
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bootstrap',
 			expect.objectContaining( {
-				credentials: 'same-origin',
 				headers: expect.objectContaining( {
+					Accept: 'application/json',
+					'Content-Type': 'application/json',
 					'X-WP-Nonce': 'rest-nonce',
 				} ),
-				method: 'GET',
 			} )
 		);
+		expect( fetcher.mock.calls[ 0 ][ 0 ] ).not.toContain( 'rest-nonce' );
 	} );
 
-	it( 'maps server failures to a stable admin error without backend detail leakage', async () => {
+	it( 'normalizes failed REST responses without exposing arbitrary response messages', async () => {
 		const fetcher = jest.fn().mockResolvedValue( {
 			ok: false,
-			status: 500,
+			status: 403,
 			json: async () => ( {
-				code: 'provider_unavailable',
-				message: 'secret upstream details',
+				code: 'rest_forbidden',
+				message: 'provider-secret-upstream-detail',
 			} ),
 		} );
 		const client = plugin.createAdminApiClient( {
 			baseUrl: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
 			nonce: 'rest-nonce',
-			fetcher,
+			fetcher: fetcher as unknown as typeof fetch,
 		} );
+		let failure: unknown;
 
-		await expect( client.request( '/admin/example' ) ).rejects.toMatchObject( {
+		try {
+			await client.request( '/admin/bootstrap' );
+		} catch ( error ) {
+			failure = error;
+		}
+
+		expect( failure ).toMatchObject( {
 			name: 'AdminApiError',
+			code: 'rest_forbidden',
+			status: 403,
 			message: 'The admin request could not be completed.',
-			code: 'provider_unavailable',
-			status: 500,
 		} );
+		expect( ( failure as Error ).message ).not.toContain(
+			'provider-secret-upstream-detail'
+		);
 	} );
 } );
 
 describe( 'AdminShell', () => {
-	it( 'announces loading state accessibly', () => {
+	it( 'announces loading state without exposing interactive content', () => {
 		const root = renderAdminShell( 'loading' );
 
-		expect( root.getAttribute( 'role' ) ).toBe( 'status' );
-		expect( root.getAttribute( 'aria-live' ) ).toBe( 'polite' );
+		expect( root.querySelector( '[role="status"]' )?.textContent ).toBe(
+			'Loading administration data…'
+		);
+		expect( root.querySelector( 'nav' ) ).toBeNull();
 	} );
 
 	it( 'renders an explicit empty state', () => {
@@ -185,5 +205,88 @@ describe( 'resolveAdminScreen', () => {
 		expect( resolveAdminScreen?.( '#/providers' ) ).toBe( 'providers' );
 		expect( resolveAdminScreen?.( '#/unknown' ) ).toBe( 'onboarding' );
 		expect( resolveAdminScreen?.( '' ) ).toBe( 'onboarding' );
+	} );
+} );
+
+describe( 'bootstrapAdminApp', () => {
+	afterEach( () => {
+		document.body.innerHTML = '';
+		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
+		Reflect.deleteProperty( window, 'fetch' );
+	} );
+
+	it( 'does nothing when the admin mount boundary is absent', () => {
+		const render = jest.fn();
+		configureTestElementRuntime( render );
+		const exports = plugin as unknown as Record< string, unknown >;
+		const bootstrapAdminApp = exports.bootstrapAdminApp as
+			| ( ( hash?: string ) => boolean )
+			| undefined;
+
+		expect( typeof bootstrapAdminApp ).toBe( 'function' );
+		expect( bootstrapAdminApp?.( '#/bots' ) ).toBe( false );
+		expect( render ).not.toHaveBeenCalled();
+	} );
+
+	it( 'mounts the selected ready screen from the safe WordPress boot payload', async () => {
+		const render = jest.fn( ( element: Node, root: Element ) => {
+			root.replaceChildren( element );
+		} );
+		configureTestElementRuntime( render );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+		Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+			configurable: true,
+			value: {
+				plugin: 'wp-rag-ai-chatbot',
+				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+				nonce: 'rest-nonce',
+			},
+		} );
+		Object.defineProperty( window, 'fetch', {
+			configurable: true,
+			value: jest.fn().mockResolvedValue( {
+				ok: true,
+				status: 200,
+				json: async () => ( { ready: true, next_step: 'complete' } ),
+			} ),
+		} );
+		const exports = plugin as unknown as Record< string, unknown >;
+		const bootstrapAdminApp = exports.bootstrapAdminApp as
+			| ( ( hash?: string ) => boolean )
+			| undefined;
+
+		expect( bootstrapAdminApp?.( '#/providers' ) ).toBe( true );
+		expect( root.querySelector( '[role="status"]' )?.textContent ).toBe(
+			'Loading administration data…'
+		);
+
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( render.mock.calls[ 0 ][ 1 ] ).toBe( root );
+		expect(
+			root.querySelector( 'a[aria-current="page"]' )?.textContent
+		).toBe( 'Providers' );
+		expect( root.querySelector( 'main h1' )?.textContent ).toBe(
+			'Providers'
+		);
+	} );
+
+	it( 'mounts automatically when the admin bundle loads on the plugin screen', () => {
+		const render = jest.fn( ( element: Node, root: Element ) => {
+			root.append( element );
+		} );
+		configureTestElementRuntime( render );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+
+		jest.isolateModules( () => {
+			jest.requireActual( './index' );
+		} );
+
+		expect( render ).toHaveBeenCalledTimes( 1 );
+		expect( render.mock.calls[ 0 ][ 1 ] ).toBe( root );
 	} );
 } );
