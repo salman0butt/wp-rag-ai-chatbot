@@ -15,7 +15,13 @@ const createTestElement = (
 	const element = document.createElement( tagName );
 
 	for ( const [ key, value ] of Object.entries( props ?? {} ) ) {
-		if ( key.startsWith( 'on' ) || value === undefined ) {
+		if ( key.startsWith( 'on' ) && typeof value === 'function' ) {
+			const eventName = key.slice( 2 ).toLowerCase();
+			element.addEventListener( eventName, value as EventListener );
+			continue;
+		}
+
+		if ( value === undefined ) {
 			continue;
 		}
 
@@ -36,9 +42,7 @@ const createTestElement = (
 	return element;
 };
 
-const renderProviderSettings = (
-	credential: ProviderCredentialState
-): HTMLElement => {
+const installElementFactory = (): void => {
 	Object.defineProperty( window, 'wp', {
 		configurable: true,
 		value: {
@@ -47,6 +51,12 @@ const renderProviderSettings = (
 			},
 		},
 	} );
+};
+
+const renderProviderSettings = (
+	credential: ProviderCredentialState
+): HTMLElement => {
+	installElementFactory();
 
 	const root = document.createElement( 'div' );
 	root.append(
@@ -76,5 +86,45 @@ describe( 'ProviderSettingsScreen', () => {
 		expect( credentialInput?.value ).toBe( '' );
 		expect( credentialInput?.getAttribute( 'value' ) ).toBeNull();
 		expect( root.innerHTML ).not.toContain( 'sk-' );
+	} );
+
+	it( 'submits only the newly entered replacement credential and clears it after success', async () => {
+		installElementFactory();
+		const onReplace = jest.fn().mockResolvedValue( undefined );
+		const root = document.createElement( 'div' );
+		const render = ProviderSettingsScreen as unknown as ( props: {
+			providerId: string;
+			credential: ProviderCredentialState;
+			onReplace: ( credential: string ) => Promise< void >;
+		} ) => Node;
+		root.append(
+			render( {
+				providerId: 'openai-direct',
+				credential: { configured: true, source: 'managed' },
+				onReplace,
+			} )
+		);
+		const form = root.querySelector< HTMLFormElement >(
+			'form[data-provider-credential-form]'
+		);
+		const credentialInput = root.querySelector< HTMLInputElement >(
+			'input[name="credential"]'
+		);
+
+		expect( form ).not.toBeNull();
+		expect( credentialInput ).not.toBeNull();
+		if ( form === null || credentialInput === null ) {
+			return;
+		}
+
+		credentialInput.value = 'sk-new-only';
+		form.dispatchEvent( new Event( 'submit', { bubbles: true, cancelable: true } ) );
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect( onReplace ).toHaveBeenCalledTimes( 1 );
+		expect( onReplace ).toHaveBeenCalledWith( 'sk-new-only' );
+		expect( credentialInput.value ).toBe( '' );
+		expect( root.innerHTML ).not.toContain( 'sk-new-only' );
 	} );
 } );
