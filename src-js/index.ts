@@ -1,3 +1,8 @@
+import {
+	ProviderCredentialState,
+	ProviderSettingsScreen,
+} from './provider-settings';
+
 export const pluginIdentity = Object.freeze( {
 	slug: 'wp-rag-ai-chatbot',
 	version: '0.1.0-dev',
@@ -111,9 +116,12 @@ export interface AdminShellProps {
 	onboardingIssue?: OnboardingIssue;
 	botPage?: BotPage;
 	selectedBotId?: string;
+	providerId?: string;
+	providerCredential?: ProviderCredentialState;
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >;
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >;
+	onReplaceProviderCredential?: ( credential: string ) => Promise< void >;
 }
 
 export interface OnboardingFlowProps {
@@ -250,6 +258,20 @@ const resolveSelectedBotId = ( hash: string ): string | undefined => {
 	const segments = resolveHashPath( hash ).split( '/' );
 
 	if ( segments[ 0 ] !== 'bots' || ! segments[ 1 ] ) {
+		return undefined;
+	}
+
+	try {
+		return decodeURIComponent( segments[ 1 ] );
+	} catch {
+		return undefined;
+	}
+};
+
+const resolveSelectedProviderId = ( hash: string ): string | undefined => {
+	const segments = resolveHashPath( hash ).split( '/' );
+
+	if ( segments[ 0 ] !== 'providers' || ! segments[ 1 ] ) {
 		return undefined;
 	}
 
@@ -536,9 +558,12 @@ export const AdminShell = ( {
 	onboardingIssue,
 	botPage,
 	selectedBotId,
+	providerId,
+	providerCredential,
 	onCreateBot,
 	onUpdateBot,
 	onDeleteBot,
+	onReplaceProviderCredential,
 }: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
@@ -606,6 +631,21 @@ export const AdminShell = ( {
 				onDelete: onDeleteBot,
 			} )
 		);
+	} else if (
+		screen === 'providers' &&
+		providerId !== undefined &&
+		providerCredential !== undefined
+	) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			ProviderSettingsScreen( {
+				providerId,
+				credential: providerCredential,
+				onReplace: onReplaceProviderCredential,
+			} )
+		);
 	}
 
 	return createElement(
@@ -628,9 +668,12 @@ const renderAdminShell = (
 	onboardingIssue?: OnboardingIssue,
 	botPage?: BotPage,
 	selectedBotId?: string,
+	providerId?: string,
+	providerCredential?: ProviderCredentialState,
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >,
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >,
-	onDeleteBot?: ( bot: BotListItem ) => Promise< void >
+	onDeleteBot?: ( bot: BotListItem ) => Promise< void >,
+	onReplaceProviderCredential?: ( credential: string ) => Promise< void >
 ): void => {
 	window.wp.element.render(
 		AdminShell( {
@@ -640,9 +683,12 @@ const renderAdminShell = (
 			onboardingIssue,
 			botPage,
 			selectedBotId,
+			providerId,
+			providerCredential,
 			onCreateBot,
 			onUpdateBot,
 			onDeleteBot,
+			onReplaceProviderCredential,
 		} ),
 		root
 	);
@@ -661,6 +707,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
+	let currentProviderCredential: ProviderCredentialState | undefined;
+	let loadedProviderId: string | undefined;
 	let createBot: ( draft: BotDraft ) => Promise< void > = async () =>
 		undefined;
 	let updateBot: (
@@ -669,9 +717,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	) => Promise< void > = async () => undefined;
 	let deleteBot: ( bot: BotListItem ) => Promise< void > = async () =>
 		undefined;
+	let replaceProviderCredential: ( credential: string ) => Promise< void > =
+		async () => undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
+		const providerId = resolveSelectedProviderId( currentHash() );
 		renderAdminShell(
 			root,
 			state,
@@ -680,9 +731,14 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentOnboardingIssue,
 			currentBotPage,
 			resolveSelectedBotId( currentHash() ),
+			providerId,
+			providerId === loadedProviderId
+				? currentProviderCredential
+				: undefined,
 			createBot,
 			updateBot,
-			deleteBot
+			deleteBot,
+			replaceProviderCredential
 		);
 	};
 
@@ -713,6 +769,21 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			`/admin/bots?page=${ page }&per_page=20`
 		);
 	};
+	const refreshProviderCredential = async (
+		providerId: string
+	): Promise< void > => {
+		const credential = await client.request< ProviderCredentialState >(
+			`/admin/providers/${ encodeURIComponent( providerId ) }/credential`
+		);
+		currentProviderCredential = {
+			configured: credential.configured === true,
+			source:
+				typeof credential.source === 'string'
+					? credential.source
+					: 'none',
+		};
+		loadedProviderId = providerId;
+	};
 
 	if ( activeHashChangeHandler !== null ) {
 		window.removeEventListener( 'hashchange', activeHashChangeHandler );
@@ -725,6 +796,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		const screen = resolveAdminScreen( currentHash() );
 		const targetPage = resolveBotPage( currentHash() );
+		const providerId = resolveSelectedProviderId( currentHash() );
 
 		if (
 			screen === 'bots' &&
@@ -732,6 +804,18 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				currentBotPage.page !== targetPage )
 		) {
 			void refreshBotPage( targetPage )
+				.then( () => renderState( stateFromReadiness() ) )
+				.catch( () => renderState( 'error' ) );
+			return;
+		}
+
+		if (
+			screen === 'providers' &&
+			providerId !== undefined &&
+			providerId !== loadedProviderId
+		) {
+			currentProviderCredential = undefined;
+			void refreshProviderCredential( providerId )
 				.then( () => renderState( stateFromReadiness() ) )
 				.catch( () => renderState( 'error' ) );
 			return;
@@ -786,15 +870,45 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			renderState( 'error' );
 		}
 	};
+	replaceProviderCredential = async ( credential: string ): Promise< void > => {
+		const providerId = resolveSelectedProviderId( currentHash() );
+
+		if ( providerId === undefined ) {
+			return;
+		}
+
+		try {
+			await client.request< { managed: true } >(
+				`/admin/providers/${ encodeURIComponent( providerId ) }/credential`,
+				{
+					method: 'PUT',
+					body: { credential },
+				}
+			);
+			await refreshProviderCredential( providerId );
+			renderState( stateFromReadiness() );
+		} catch {
+			renderState( 'error' );
+		}
+	};
 
 	void client
 		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
 		.then( async ( readiness ) => {
 			currentOnboardingStep = readiness.next_step;
 			currentOnboardingIssue = readiness.issue;
+			const screen = resolveAdminScreen( currentHash() );
 
-			if ( resolveAdminScreen( currentHash() ) === 'bots' ) {
+			if ( screen === 'bots' ) {
 				await refreshBotPage();
+			}
+
+			if ( screen === 'providers' ) {
+				const providerId = resolveSelectedProviderId( currentHash() );
+
+				if ( providerId !== undefined ) {
+					await refreshProviderCredential( providerId );
+				}
 			}
 
 			renderState( stateFromReadiness() );
