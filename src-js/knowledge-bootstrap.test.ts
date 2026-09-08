@@ -255,8 +255,9 @@ describe( 'knowledge admin bootstrap', () => {
 			} )
 		);
 		expect(
-			root.querySelector( '[data-knowledge-document-key="doc-support"]' )
-				?.textContent
+			root.querySelector(
+				'[data-knowledge-document-key="doc-support"]'
+			)?.textContent
 		).toContain( 'Reset your password' );
 	} );
 } );
