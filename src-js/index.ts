@@ -268,15 +268,16 @@ export const BotEditorScreen = ( {
 	const createElement = window.wp.element.createElement;
 	const editorId = bot?.id ?? 'create';
 	const validationId = `bot-${ editorId }-validation`;
-	const nameId = `bot-${ editorId }-name`;
-	const providerId = `bot-${ editorId }-provider`;
-	const modelId = `bot-${ editorId }-model`;
+	const nameId = bot === undefined ? 'bot-name' : `bot-${ editorId }-name`;
+	const providerId =
+		bot === undefined ? 'bot-provider' : `bot-${ editorId }-provider`;
+	const modelId = bot === undefined ? 'bot-model' : `bot-${ editorId }-model`;
 
 	return createElement(
 		'form',
 		{
 			'data-bot-editor': mode,
-			'data-bot-id': bot?.id,
+			'data-edit-bot-id': bot?.id,
 			onSubmit: ( event: Event ) => {
 				event.preventDefault();
 
@@ -403,16 +404,18 @@ export const BotManagementScreen = ( {
 				key: item.id,
 				'data-bot-id': item.id,
 			},
-			item.name,
-			BotEditorScreen( {
-				mode: 'edit',
-				bot: item,
-				onSave:
-					onUpdate === undefined
-						? undefined
-						: ( draft ) => onUpdate( item, draft ),
-			} )
+			item.name
 		)
+	);
+	const editors = page.items.map( ( item ) =>
+		BotEditorScreen( {
+			mode: 'edit',
+			bot: item,
+			onSave:
+				onUpdate === undefined
+					? undefined
+					: ( draft ) => onUpdate( item, draft ),
+		} )
 	);
 
 	return createElement(
@@ -420,6 +423,7 @@ export const BotManagementScreen = ( {
 		{ 'data-bot-management': 'list' },
 		createEditor,
 		createElement( 'ul', null, ...rows ),
+		...editors,
 		createElement(
 			'nav',
 			{ 'aria-label': 'Bot list pagination' },
