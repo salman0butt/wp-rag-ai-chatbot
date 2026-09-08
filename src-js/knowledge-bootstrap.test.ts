@@ -127,9 +127,9 @@ describe( 'knowledge admin bootstrap', () => {
 				?.textContent
 		).toBe( 'Support Articles' );
 		expect(
-			root
-				.querySelector( 'nav[aria-label="Administration"] a[aria-current="page"]' )
-				?.textContent
+			root.querySelector(
+				'nav[aria-label="Administration"] a[aria-current="page"]'
+			)?.textContent
 		).toBe( 'Knowledge' );
 	} );
 } );
