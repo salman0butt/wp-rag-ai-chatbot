@@ -42,7 +42,10 @@ const createTestElement = (
 			continue;
 		}
 
-		element.setAttribute( key === 'htmlFor' ? 'for' : key, String( value ) );
+		element.setAttribute(
+			key === 'htmlFor' ? 'for' : key,
+			String( value )
+		);
 	}
 
 	for ( const child of children ) {
