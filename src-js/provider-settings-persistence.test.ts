@@ -95,6 +95,11 @@ describe( 'persisted provider credential replacement', () => {
 			.mockResolvedValueOnce( {
 				ok: true,
 				status: 200,
+				json: async () => ( { models: [] } ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
 				json: async () => ( { managed: true } ),
 			} )
 			.mockResolvedValueOnce( {
@@ -142,7 +147,7 @@ describe( 'persisted provider credential replacement', () => {
 		await tick();
 
 		expect( fetcher ).toHaveBeenNthCalledWith(
-			3,
+			4,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/providers/openai_direct/credential',
 			expect.objectContaining( {
 				method: 'PUT',
@@ -153,7 +158,7 @@ describe( 'persisted provider credential replacement', () => {
 			} )
 		);
 		expect( fetcher ).toHaveBeenNthCalledWith(
-			4,
+			5,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/providers/openai_direct/credential',
 			expect.objectContaining( {
 				headers: expect.objectContaining( {
