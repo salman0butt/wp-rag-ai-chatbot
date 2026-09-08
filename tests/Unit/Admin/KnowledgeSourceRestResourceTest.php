@@ -21,7 +21,7 @@ use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 final class KnowledgeSourceRestResourceTest extends TestCase {
 	/** Source configuration and content hashes must never leak into the inventory DTO. */
 	public function test_list_projects_only_safe_source_fields(): void {
-		$record = new KnowledgeSourceRecord(
+		$record     = new KnowledgeSourceRecord(
 			7,
 			'wp:post:42',
 			'wordpress_post',
