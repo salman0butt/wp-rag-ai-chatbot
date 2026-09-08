@@ -146,7 +146,7 @@ describe( 'persisted bot editing', () => {
 		await tick();
 
 		const form = root.querySelector(
-			'form[data-bot-editor="edit"][data-bot-id="bot-existing"]'
+			'form[data-bot-editor="edit"][data-edit-bot-id="bot-existing"]'
 		);
 		const name =
 			form?.querySelector< HTMLInputElement >( 'input[name="name"]' );
@@ -198,6 +198,6 @@ describe( 'persisted bot editing', () => {
 		);
 		expect(
 			root.querySelector( '[data-bot-id="bot-existing"]' )?.textContent
-		).toContain( 'Updated Bot' );
+		).toBe( 'Updated Bot' );
 	} );
 } );
