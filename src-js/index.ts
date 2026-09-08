@@ -286,6 +286,7 @@ export const BotManagementScreen = ( {
 	page,
 }: BotManagementScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
+	const createEditor = BotEditorScreen( { mode: 'create' } );
 
 	if ( page.items.length === 0 ) {
 		return createElement(
@@ -295,7 +296,8 @@ export const BotManagementScreen = ( {
 				'p',
 				{ 'data-bot-list-empty': true },
 				'No bots configured yet.'
-			)
+			),
+			createEditor
 		);
 	}
 
@@ -314,6 +316,7 @@ export const BotManagementScreen = ( {
 	return createElement(
 		'section',
 		{ 'data-bot-management': 'list' },
+		createEditor,
 		createElement( 'ul', null, ...rows ),
 		createElement(
 			'nav',
