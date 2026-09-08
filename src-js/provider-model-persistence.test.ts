@@ -95,7 +95,10 @@ describe( 'provider model resource persistence', () => {
 					purpose: 'generation',
 					capability: null,
 					models: [
-						{ model_id: 'gpt-generation', display_name: 'GPT Generation' },
+						{
+							model_id: 'gpt-generation',
+							display_name: 'GPT Generation',
+						},
 					],
 				} )
 			)
@@ -108,7 +111,10 @@ describe( 'provider model resource persistence', () => {
 					purpose: 'generation',
 					capability: null,
 					models: [
-						{ model_id: 'router-generation', display_name: 'Router Generation' },
+						{
+							model_id: 'router-generation',
+							display_name: 'Router Generation',
+						},
 					],
 				} )
 			);
@@ -125,12 +131,16 @@ describe( 'provider model resource persistence', () => {
 			3,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/models?provider_id=openai_direct&purpose=generation',
 			expect.objectContaining( {
-				headers: expect.objectContaining( { 'X-WP-Nonce': 'rest-nonce' } ),
+				headers: expect.objectContaining( {
+					'X-WP-Nonce': 'rest-nonce',
+				} ),
 			} )
 		);
 		expect(
 			Array.from(
-				root.querySelectorAll< HTMLOptionElement >( 'select[name="model_id"] option' )
+				root.querySelectorAll< HTMLOptionElement >(
+					'select[name="model_id"] option'
+				)
 			).map( ( option ) => option.value )
 		).toEqual( [ 'gpt-generation' ] );
 
@@ -143,7 +153,9 @@ describe( 'provider model resource persistence', () => {
 			5,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/models?provider_id=openrouter_direct&purpose=generation',
 			expect.objectContaining( {
-				headers: expect.objectContaining( { 'X-WP-Nonce': 'rest-nonce' } ),
+				headers: expect.objectContaining( {
+					'X-WP-Nonce': 'rest-nonce',
+				} ),
 			} )
 		);
 		expect( root.textContent ).toContain( 'Router Generation' );
