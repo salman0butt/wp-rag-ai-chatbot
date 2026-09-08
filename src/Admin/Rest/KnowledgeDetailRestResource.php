@@ -169,6 +169,9 @@ final class KnowledgeDetailRestResource {
 	 */
 	private static function project_chunk( ChunkSearchRecord $record ): array {
 		$truncated = strlen( $record->content ) > self::MAX_CHUNK_CONTENT_BYTES;
+		$content   = $truncated
+			? self::truncate_utf8_bytes( $record->content, self::MAX_CHUNK_CONTENT_BYTES )
+			: $record->content;
 
 		return array(
 			'chunk_key'         => $record->chunk_key,
@@ -177,12 +180,28 @@ final class KnowledgeDetailRestResource {
 			'document_type'     => $record->document_type,
 			'title'             => $record->title,
 			'canonical_url'     => $record->canonical_url,
-			'content'           => substr( $record->content, 0, self::MAX_CHUNK_CONTENT_BYTES ),
+			'content'           => $content,
 			'content_truncated' => $truncated,
 			'language'          => $record->language,
 			'visibility'        => $record->visibility,
 			'sequence'          => $record->sequence,
 		);
+	}
+
+	/**
+	 * Truncate to a byte limit without leaving an incomplete trailing UTF-8 sequence.
+	 *
+	 * @param string $content Persisted chunk content.
+	 * @param int    $max_bytes Maximum serialized content bytes.
+	 */
+	private static function truncate_utf8_bytes( string $content, int $max_bytes ): string {
+		$truncated = substr( $content, 0, $max_bytes );
+
+		while ( '' !== $truncated && 1 !== preg_match( '//u', $truncated ) ) {
+			$truncated = substr( $truncated, 0, -1 );
+		}
+
+		return $truncated;
 	}
 
 	/**
