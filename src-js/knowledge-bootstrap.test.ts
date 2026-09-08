@@ -218,48 +218,45 @@ describe( 'knowledge admin bootstrap', () => {
 		).toBe( 'Updated Articles' );
 	} );
 
-	it(
-		'loads selected source detail and a bounded document page through the admin client',
-		async () => {
-			const fetcher = jest
-				.fn()
-				.mockResolvedValueOnce( {
-					ok: true,
-					status: 200,
-					json: async () => ( { ready: true, next_step: 'complete' } ),
-				} )
-				.mockResolvedValueOnce( sourcePageResponse( 'Support Articles' ) )
-				.mockResolvedValueOnce( sourceDetailResponse )
-				.mockResolvedValueOnce( documentPageResponse );
-			const root = configureAdminRuntime( fetcher );
+	it( 'loads selected source detail and a bounded document page through the admin client', async () => {
+		const fetcher = jest
+			.fn()
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
+				json: async () => ( { ready: true, next_step: 'complete' } ),
+			} )
+			.mockResolvedValueOnce( sourcePageResponse( 'Support Articles' ) )
+			.mockResolvedValueOnce( sourceDetailResponse )
+			.mockResolvedValueOnce( documentPageResponse );
+		const root = configureAdminRuntime( fetcher );
 
-			window.location.hash = '#/knowledge/17?page=2';
-			expect( bootstrapAdminApp() ).toBe( true );
-			await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
-			await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		window.location.hash = '#/knowledge/17?page=2';
+		expect( bootstrapAdminApp() ).toBe( true );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
-			expect( fetcher ).toHaveBeenNthCalledWith(
-				3,
-				'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/17',
-				expect.objectContaining( {
-					headers: expect.objectContaining( {
-						'X-WP-Nonce': 'rest-nonce',
-					} ),
-				} )
-			);
-			expect( fetcher ).toHaveBeenNthCalledWith(
-				4,
-				'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/17/documents?page=1&per_page=20',
-				expect.objectContaining( {
-					headers: expect.objectContaining( {
-						'X-WP-Nonce': 'rest-nonce',
-					} ),
-				} )
-			);
-			expect(
-				root.querySelector( '[data-knowledge-document-key="doc-support"]' )
-					?.textContent
-			).toContain( 'Reset your password' );
-		}
-	);
+		expect( fetcher ).toHaveBeenNthCalledWith(
+			3,
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/17',
+			expect.objectContaining( {
+				headers: expect.objectContaining( {
+					'X-WP-Nonce': 'rest-nonce',
+				} ),
+			} )
+		);
+		expect( fetcher ).toHaveBeenNthCalledWith(
+			4,
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/17/documents?page=1&per_page=20',
+			expect.objectContaining( {
+				headers: expect.objectContaining( {
+					'X-WP-Nonce': 'rest-nonce',
+				} ),
+			} )
+		);
+		expect(
+			root.querySelector( '[data-knowledge-document-key="doc-support"]' )
+				?.textContent
+		).toContain( 'Reset your password' );
+	} );
 } );
