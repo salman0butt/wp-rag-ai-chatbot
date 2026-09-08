@@ -1,14 +1,9 @@
-import * as plugin from './index';
+import { ProviderSettingsScreen } from './provider-settings';
 
 type ProviderCredentialState = {
 	configured: boolean;
 	source: string;
 };
-
-type ProviderSettingsComponent = ( props: {
-	providerId: string;
-	credential: ProviderCredentialState;
-} ) => Node;
 
 type TestElementProps = Record< string, unknown > | null;
 
@@ -53,17 +48,12 @@ const renderProviderSettings = (
 		},
 	} );
 
-	const exports = plugin as unknown as Record< string, unknown >;
-	const ProviderSettingsScreen = exports.ProviderSettingsScreen;
-
-	expect( typeof ProviderSettingsScreen ).toBe( 'function' );
-
 	const root = document.createElement( 'div' );
 	root.append(
-		( ProviderSettingsScreen as ProviderSettingsComponent )( {
+		ProviderSettingsScreen( {
 			providerId: 'openai-direct',
 			credential,
-		} )
+		} ) as Node
 	);
 
 	return root;
