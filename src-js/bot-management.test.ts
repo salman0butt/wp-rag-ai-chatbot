@@ -153,6 +153,19 @@ describe( 'BotManagementScreen', () => {
 				?.textContent
 		).toContain( 'Page 1 of 2' );
 	} );
+
+	it( 'mounts the create editor alongside a populated bot list', () => {
+		const root = renderBotManagement( {
+			items: [ bot( 'bot-alpha', 'Support Bot' ) ],
+			total: 1,
+			page: 1,
+			per_page: 20,
+		} );
+
+		expect(
+			root.querySelector( 'form[data-bot-editor="create"]' )
+		).not.toBeNull();
+	} );
 } );
 
 describe( 'BotEditorScreen', () => {
