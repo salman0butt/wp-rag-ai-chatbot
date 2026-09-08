@@ -122,7 +122,7 @@ describe( 'bot create validation', () => {
 		expect( root.querySelector( '[role="alert"]' )?.textContent ).toContain(
 			'Complete the required bot fields.'
 		);
-		expect( name ).toHaveAttribute( 'aria-invalid', 'true' );
+		expect( name?.getAttribute( 'aria-invalid' ) ).toBe( 'true' );
 		expect( name!.ownerDocument.activeElement ).toBe( name );
 	} );
 } );
