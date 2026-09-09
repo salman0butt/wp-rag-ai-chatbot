@@ -26,10 +26,15 @@ const createTestElement = (
 			continue;
 		}
 
-		element.setAttribute(
-			key === 'htmlFor' ? 'for' : key === 'className' ? 'class' : key,
-			String( value )
-		);
+		let attributeName = key;
+
+		if ( key === 'htmlFor' ) {
+			attributeName = 'for';
+		} else if ( key === 'className' ) {
+			attributeName = 'class';
+		}
+
+		element.setAttribute( attributeName, String( value ) );
 	}
 
 	for ( const child of children ) {
@@ -128,11 +133,14 @@ describe( 'knowledge navigation request ordering', () => {
 	} );
 
 	it( 'ignores a stale source response after a newer source selection has loaded', async () => {
-		let resolveSource17: ( value: ReturnType< typeof detail > ) => void = () =>
-			undefined;
-		const source17 = new Promise< ReturnType< typeof detail > >( ( resolve ) => {
-			resolveSource17 = resolve;
-		} );
+		let resolveSource17: (
+			value: ReturnType< typeof detail >
+		) => void = () => undefined;
+		const source17 = new Promise< ReturnType< typeof detail > >(
+			( resolve ) => {
+				resolveSource17 = resolve;
+			}
+		);
 		const fetcher = jest.fn( ( input: RequestInfo | URL ) => {
 			const url = String( input );
 
@@ -141,7 +149,9 @@ describe( 'knowledge navigation request ordering', () => {
 					okJson( { ready: true, next_step: 'complete' } )
 				);
 			}
-			if ( url.endsWith( '/admin/knowledge/sources?page=1&per_page=20' ) ) {
+			if (
+				url.endsWith( '/admin/knowledge/sources?page=1&per_page=20' )
+			) {
 				return Promise.resolve( sourcePage );
 			}
 			if ( url.endsWith( '/admin/knowledge/sources/17' ) ) {
