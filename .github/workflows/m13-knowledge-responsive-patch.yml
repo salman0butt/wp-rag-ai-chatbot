@@ -75,3 +75,4 @@ jobs:
           git add src-js/index.ts assets/admin.css .github/workflows/m13-knowledge-responsive-patch.yml
           git commit -m 'feat(m13): make knowledge manager responsive'
           git push origin HEAD:feat/m13-knowledge-manager-debugger
+# retrigger after recovered responsive RED
