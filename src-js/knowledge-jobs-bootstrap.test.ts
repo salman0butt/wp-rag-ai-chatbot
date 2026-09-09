@@ -132,9 +132,8 @@ describe( 'knowledge job inventory bootstrap', () => {
 			} )
 		);
 		expect(
-			root.querySelector(
-				'[data-knowledge-job-key="job-123"]'
-			)?.textContent
+			root.querySelector( '[data-knowledge-job-key="job-123"]' )
+				?.textContent
 		).toContain( 'provider_unavailable' );
 		expect( root.textContent ).not.toContain( 'PAYLOAD-SECRET' );
 	} );
