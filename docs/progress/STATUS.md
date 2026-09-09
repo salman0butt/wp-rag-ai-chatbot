@@ -89,14 +89,25 @@ Completed bounded slice — selected-document persisted chunk inspection and acc
 - Scoped coordinator review: 0 Critical / 0 Important; independent subagent transport remained unavailable, so final Task 4 independent review remains outstanding.
 - Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-CHUNKS.md`.
 
+Completed bounded slice — Task 3 job inventory integration:
+
+- Top-level Knowledge loads `GET /admin/knowledge/jobs?page=1&per_page=20` through the existing nonce-authenticated same-origin admin client.
+- Inventory state is server-authoritative and discarded when Knowledge is left; the job list still renders when the source page is empty.
+- Browser state mirrors only the existing Task 3 allow-listed DTO and renders bounded operational status/progress plus sanitized persisted error code/message; payload, idempotency and lease internals remain absent.
+- Genuine RED `b89241f9c8f9a2735e2b42a1e3cfc18770988b6b` / CI `34312568823`: lint/typecheck passed; Jest 20 suites / 53 tests with 52 passed / exactly 1 missing-job-request failure; PHP/package/full WordPress smoke GREEN.
+- `0ae391bfce7f6c7b7db8f5860dcdae0c74c0ab46` / CI `34316447840` is **not RED or GREEN** because a test-only formatting experiment stopped at Prettier before Jest; `b4149ae99ca8a6faf80327be7b8f7ed2769b9d24` restored the verified RED bytes.
+- GREEN implementation `ec9089ddd9cd7e503a848007effa68015af521e2` / CI `34317251523`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN; Jest 20/20 suites and 53/53 tests GREEN.
+- Scoped review `5150358437`: 0 Critical / 0 Important. Independent reviewer-subagent transport remained unavailable, so final Task 4 independent closeout review remains outstanding.
+- Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-JOBS.md`.
+
 ## Current work
 
 **Task 4 — Knowledge manager admin UI** remains the authoritative unfinished unit.
 
 Exact continuation:
 
-- start with a fresh genuine Jest RED for integrating the existing Task 3 bounded job inventory into the Knowledge screen;
-- add only the existing enqueue/cancel/retry lifecycle actions through the nonce-authenticated admin client and surface stable `invalid_transition` errors without raw exception/provider payloads;
+- start with a fresh genuine Jest RED for the existing Task 3 lifecycle mutation contracts: `POST /admin/knowledge/jobs` enqueue, then `{job_key}/cancel` and `{job_key}/retry`;
+- refresh the bounded job inventory server-authoritatively after mutations and surface stable `invalid_transition` plus sanitized persisted errors without raw exception/provider payloads;
 - do not cache secret-bearing, raw document, raw provider, job payload, lease/idempotency, or unbounded data in browser state;
 - add explicit loading/empty/error behavior plus constrained-width, long-content, keyboard/accessibility, and responsive CSS coverage;
 - complete final Task 4 correctness/security/accessibility/performance and independent review and exact-final-SHA CI before advancing to Task 5.
@@ -113,4 +124,5 @@ Exact continuation:
 - `docs/progress/M13-TASK4-KNOWLEDGE-BOOTSTRAP.md` — Task 4 router/bootstrap/source-loading evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-DETAIL-UI.md` — Task 4 selected-source detail/document and persisted-ID compatibility evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-CHUNKS.md` — Task 4 selected-document chunk inspection and accessible navigation evidence.
+- `docs/progress/M13-TASK4-KNOWLEDGE-JOBS.md` — Task 4 bounded job-inventory UI evidence.
 - PR #18 — milestone-wide draft integration record.
