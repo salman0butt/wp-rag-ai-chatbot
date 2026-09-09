@@ -98,6 +98,7 @@ export const createAdminApiClient = (
 
 export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
 export type AdminScreen = 'onboarding' | 'bots' | 'providers' | 'knowledge';
+type KnowledgeJobMutationError = 'invalid_transition' | 'admin_request_failed';
 export type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
 export type OnboardingIssue =
 	| 'provider_unavailable'
@@ -125,6 +126,7 @@ export interface AdminShellProps {
 	knowledgeDocuments?: KnowledgeDocumentPage;
 	knowledgeChunks?: KnowledgeChunkPage;
 	knowledgeJobs?: KnowledgeJobPage;
+	knowledgeJobMutationError?: KnowledgeJobMutationError;
 	onEnqueueKnowledgeJob?: (
 		draft: KnowledgeJobEnqueueDraft
 	) => Promise< void >;
@@ -272,6 +274,7 @@ interface KnowledgeManagementScreenProps {
 	documents?: KnowledgeDocumentPage;
 	chunks?: KnowledgeChunkPage;
 	jobs?: KnowledgeJobPage;
+	mutationError?: KnowledgeJobMutationError;
 	onEnqueueJob?: ( draft: KnowledgeJobEnqueueDraft ) => Promise< void >;
 	onCancelJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	onRetryJob?: ( job: KnowledgeJobItem ) => Promise< void >;
@@ -365,6 +368,21 @@ const ONBOARDING_ISSUES: Readonly<
 		action: 'Review compatible models',
 	},
 };
+
+const KNOWLEDGE_JOB_MUTATION_ERROR_MESSAGES: Readonly<
+	Record< KnowledgeJobMutationError, string >
+> = {
+	invalid_transition:
+		'The job state changed. Refresh and try the action again.',
+	admin_request_failed: 'The job action could not be completed. Try again.',
+};
+
+const knowledgeJobMutationErrorFromError = (
+	error: unknown
+): KnowledgeJobMutationError =>
+	error instanceof AdminApiError && error.code === 'invalid_transition'
+		? 'invalid_transition'
+		: 'admin_request_failed';
 
 const providerSettingsIssueFromError = (
 	error: unknown
@@ -761,11 +779,23 @@ export const KnowledgeManagementScreen = ( {
 	documents,
 	chunks,
 	jobs,
+	mutationError,
 	onEnqueueJob,
 	onCancelJob,
 	onRetryJob,
 }: KnowledgeManagementScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
+	const mutationErrorContent =
+		mutationError === undefined
+			? undefined
+			: createElement(
+					'div',
+					{
+						role: 'alert',
+						'data-knowledge-job-error': mutationError,
+					},
+					KNOWLEDGE_JOB_MUTATION_ERROR_MESSAGES[ mutationError ]
+			  );
 	const jobRows =
 		jobs?.items.map( ( item ) => {
 			const progress = `${ item.progress_current } of ${ item.progress_total }`;
@@ -925,6 +955,7 @@ export const KnowledgeManagementScreen = ( {
 					'section',
 					{ 'data-knowledge-jobs': 'list' },
 					createElement( 'h2', null, 'Indexing jobs' ),
+					mutationErrorContent,
 					enqueueForm,
 					jobRows.length === 0
 						? createElement( 'p', null, 'No indexing jobs found.' )
@@ -1114,6 +1145,7 @@ export const AdminShell = ( {
 	knowledgeDocuments,
 	knowledgeChunks,
 	knowledgeJobs,
+	knowledgeJobMutationError,
 	onEnqueueKnowledgeJob,
 	onCancelKnowledgeJob,
 	onRetryKnowledgeJob,
@@ -1205,6 +1237,7 @@ export const AdminShell = ( {
 				documents: knowledgeDocuments,
 				chunks: knowledgeChunks,
 				jobs: knowledgeJobs,
+				mutationError: knowledgeJobMutationError,
 				onEnqueueJob: onEnqueueKnowledgeJob,
 				onCancelJob: onCancelKnowledgeJob,
 				onRetryJob: onRetryKnowledgeJob,
@@ -1256,6 +1289,7 @@ const renderAdminShell = (
 	knowledgeDocuments?: KnowledgeDocumentPage,
 	knowledgeChunks?: KnowledgeChunkPage,
 	knowledgeJobs?: KnowledgeJobPage,
+	knowledgeJobMutationError?: KnowledgeJobMutationError,
 	onEnqueueKnowledgeJob?: (
 		draft: KnowledgeJobEnqueueDraft
 	) => Promise< void >,
@@ -1285,6 +1319,7 @@ const renderAdminShell = (
 			knowledgeDocuments,
 			knowledgeChunks,
 			knowledgeJobs,
+			knowledgeJobMutationError,
 			onEnqueueKnowledgeJob,
 			onCancelKnowledgeJob,
 			onRetryKnowledgeJob,
@@ -1319,6 +1354,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentKnowledgeDocuments: KnowledgeDocumentPage | undefined;
 	let currentKnowledgeChunks: KnowledgeChunkPage | undefined;
 	let currentKnowledgeJobs: KnowledgeJobPage | undefined;
+	let currentKnowledgeJobMutationError: KnowledgeJobMutationError | undefined;
 	let enqueueKnowledgeJob: (
 		draft: KnowledgeJobEnqueueDraft
 	) => Promise< void > = async () => undefined;
@@ -1377,6 +1413,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				: undefined,
 			resolveHashPath( currentHash() ) === 'knowledge'
 				? currentKnowledgeJobs
+				: undefined,
+			resolveHashPath( currentHash() ) === 'knowledge'
+				? currentKnowledgeJobMutationError
 				: undefined,
 			enqueueKnowledgeJob,
 			cancelKnowledgeJob,
@@ -1563,6 +1602,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentKnowledgeDocuments = undefined;
 			currentKnowledgeChunks = undefined;
 			currentKnowledgeJobs = undefined;
+			currentKnowledgeJobMutationError = undefined;
 			loadedKnowledgeSourceId = undefined;
 			loadedKnowledgeDocumentKey = undefined;
 		}
@@ -1594,6 +1634,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentKnowledgeDocuments = undefined;
 			currentKnowledgeChunks = undefined;
 			currentKnowledgeJobs = undefined;
+			currentKnowledgeJobMutationError = undefined;
 			loadedKnowledgeSourceId = undefined;
 			loadedKnowledgeDocumentKey = undefined;
 			void refreshKnowledgePage( targetKnowledgePage )
@@ -1721,6 +1762,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	enqueueKnowledgeJob = async (
 		draft: KnowledgeJobEnqueueDraft
 	): Promise< void > => {
+		currentKnowledgeJobMutationError = undefined;
+		renderState( stateFromReadiness() );
 		try {
 			await client.request< KnowledgeJobItem >( '/admin/knowledge/jobs', {
 				method: 'POST',
@@ -1728,14 +1771,18 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			} );
 			await refreshKnowledgeJobs();
 			renderState( stateFromReadiness() );
-		} catch {
-			renderState( 'error' );
+		} catch ( error ) {
+			currentKnowledgeJobMutationError =
+				knowledgeJobMutationErrorFromError( error );
+			renderState( stateFromReadiness() );
 		}
 	};
 	const mutateKnowledgeJob = async (
 		job: KnowledgeJobItem,
 		action: 'cancel' | 'retry'
 	): Promise< void > => {
+		currentKnowledgeJobMutationError = undefined;
+		renderState( stateFromReadiness() );
 		try {
 			await client.request< KnowledgeJobItem >(
 				`/admin/knowledge/jobs/${ encodeURIComponent(
@@ -1745,8 +1792,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			);
 			await refreshKnowledgeJobs();
 			renderState( stateFromReadiness() );
-		} catch {
-			renderState( 'error' );
+		} catch ( error ) {
+			currentKnowledgeJobMutationError =
+				knowledgeJobMutationErrorFromError( error );
+			renderState( stateFromReadiness() );
 		}
 	};
 	cancelKnowledgeJob = async ( job: KnowledgeJobItem ): Promise< void > =>
