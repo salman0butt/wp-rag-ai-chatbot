@@ -122,6 +122,7 @@ export interface AdminShellProps {
 	selectedKnowledgeSourceId?: string;
 	knowledgeDetail?: KnowledgeSourceDetail;
 	knowledgeDocuments?: KnowledgeDocumentPage;
+	knowledgeChunks?: KnowledgeChunkPage;
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
 	providerModels?: ReadonlyArray< ProviderModelChoice >;
@@ -209,11 +210,25 @@ interface KnowledgeDocumentPage {
 	per_page: number;
 }
 
+interface KnowledgeChunkItem {
+	content: string;
+	content_truncated: boolean;
+	sequence: number;
+}
+
+interface KnowledgeChunkPage {
+	items: KnowledgeChunkItem[];
+	total: number;
+	page: number;
+	per_page: number;
+}
+
 interface KnowledgeManagementScreenProps {
 	page: KnowledgeSourcePage;
 	selectedSourceId?: string;
 	detail?: KnowledgeSourceDetail;
 	documents?: KnowledgeDocumentPage;
+	chunks?: KnowledgeChunkPage;
 }
 
 interface BotManagementScreenProps {
@@ -386,6 +401,27 @@ const resolveSelectedPersistedKnowledgeSourceId = (
 	return sourceId !== undefined && /^[1-9]\d*$/.test( sourceId )
 		? sourceId
 		: undefined;
+};
+
+const resolveSelectedKnowledgeDocumentKey = (
+	hash: string
+): string | undefined => {
+	const segments = resolveHashPath( hash ).split( '/' );
+
+	if (
+		segments[ 0 ] !== 'knowledge' ||
+		! segments[ 1 ] ||
+		segments[ 2 ] !== 'documents' ||
+		! segments[ 3 ]
+	) {
+		return undefined;
+	}
+
+	try {
+		return decodeURIComponent( segments[ 3 ] );
+	} catch {
+		return undefined;
+	}
 };
 
 const resolveSelectedProviderId = ( hash: string ): string | undefined => {
@@ -676,6 +712,7 @@ export const KnowledgeManagementScreen = ( {
 	selectedSourceId,
 	detail,
 	documents,
+	chunks,
 }: KnowledgeManagementScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
@@ -791,6 +828,28 @@ export const KnowledgeManagementScreen = ( {
 						? createElement( 'p', null, 'No documents found.' )
 						: createElement( 'ul', null, ...documentRows )
 			  );
+	const chunkRows =
+		chunks?.items.map( ( item ) =>
+			createElement(
+				'li',
+				{
+					key: item.sequence,
+					'data-knowledge-chunk-sequence': item.sequence,
+				},
+				createElement( 'p', null, item.content )
+			)
+		) ?? [];
+	const chunkContent =
+		chunks === undefined
+			? undefined
+			: createElement(
+					'section',
+					{ 'data-knowledge-chunks': 'list' },
+					createElement( 'h2', null, 'Chunks' ),
+					chunkRows.length === 0
+						? createElement( 'p', null, 'No chunks found.' )
+						: createElement( 'ul', null, ...chunkRows )
+			  );
 
 	return createElement(
 		'section',
@@ -798,6 +857,7 @@ export const KnowledgeManagementScreen = ( {
 		createElement( 'ul', null, ...rows ),
 		selectedSummary,
 		documentContent,
+		chunkContent,
 		createElement(
 			'nav',
 			{ 'aria-label': 'Knowledge source pagination' },
@@ -817,6 +877,7 @@ export const AdminShell = ( {
 	selectedKnowledgeSourceId,
 	knowledgeDetail,
 	knowledgeDocuments,
+	knowledgeChunks,
 	providerId,
 	providerCredential,
 	providerModels,
@@ -902,6 +963,7 @@ export const AdminShell = ( {
 				selectedSourceId: selectedKnowledgeSourceId,
 				detail: knowledgeDetail,
 				documents: knowledgeDocuments,
+				chunks: knowledgeChunks,
 			} )
 		);
 	} else if (
@@ -947,6 +1009,7 @@ const renderAdminShell = (
 	selectedKnowledgeSourceId?: string,
 	knowledgeDetail?: KnowledgeSourceDetail,
 	knowledgeDocuments?: KnowledgeDocumentPage,
+	knowledgeChunks?: KnowledgeChunkPage,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
@@ -968,6 +1031,7 @@ const renderAdminShell = (
 			selectedKnowledgeSourceId,
 			knowledgeDetail,
 			knowledgeDocuments,
+			knowledgeChunks,
 			providerId,
 			providerCredential,
 			providerModels,
@@ -997,7 +1061,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentKnowledgePage: KnowledgeSourcePage | undefined;
 	let currentKnowledgeDetail: KnowledgeSourceDetail | undefined;
 	let currentKnowledgeDocuments: KnowledgeDocumentPage | undefined;
+	let currentKnowledgeChunks: KnowledgeChunkPage | undefined;
 	let loadedKnowledgeSourceId: string | undefined;
+	let loadedKnowledgeDocumentKey: string | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let currentProviderIssue: ProviderSettingsIssue | undefined;
@@ -1020,6 +1086,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		const providerId = resolveSelectedProviderId( currentHash() );
 		const selectedKnowledgeSourceId =
 			resolveSelectedPersistedKnowledgeSourceId( currentHash() );
+		const selectedKnowledgeDocumentKey =
+			resolveSelectedKnowledgeDocumentKey( currentHash() );
 		renderAdminShell(
 			root,
 			state,
@@ -1035,6 +1103,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				: undefined,
 			selectedKnowledgeSourceId === loadedKnowledgeSourceId
 				? currentKnowledgeDocuments
+				: undefined,
+			selectedKnowledgeSourceId === loadedKnowledgeSourceId &&
+				selectedKnowledgeDocumentKey === loadedKnowledgeDocumentKey
+				? currentKnowledgeChunks
 				: undefined,
 			providerId,
 			providerId === loadedProviderId
@@ -1099,6 +1171,29 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				`/admin/knowledge/sources/${ encodedSourceId }/documents?page=1&per_page=20`
 			);
 		loadedKnowledgeSourceId = sourceId;
+	};
+	const refreshKnowledgeChunks = async (
+		sourceId: string,
+		documentKey: string
+	): Promise< void > => {
+		currentKnowledgeChunks = await client.request< KnowledgeChunkPage >(
+			`/admin/knowledge/sources/${ encodeURIComponent(
+				sourceId
+			) }/documents/${ encodeURIComponent(
+				documentKey
+			) }/chunks?page=1&per_page=20`
+		);
+		loadedKnowledgeDocumentKey = documentKey;
+	};
+	const refreshKnowledgeSelection = async (
+		sourceId: string
+	): Promise< void > => {
+		await refreshKnowledgeDetail( sourceId );
+		const documentKey = resolveSelectedKnowledgeDocumentKey( currentHash() );
+
+		if ( documentKey !== undefined ) {
+			await refreshKnowledgeChunks( sourceId, documentKey );
+		}
 	};
 	const refreshProviderCredential = async (
 		providerId: string
@@ -1186,7 +1281,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentKnowledgePage = undefined;
 			currentKnowledgeDetail = undefined;
 			currentKnowledgeDocuments = undefined;
+			currentKnowledgeChunks = undefined;
 			loadedKnowledgeSourceId = undefined;
+			loadedKnowledgeDocumentKey = undefined;
 		}
 
 		const targetPage = resolveBotPage( currentHash() );
@@ -1205,6 +1302,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		const targetKnowledgePage = resolveKnowledgePage( currentHash() );
 		const selectedKnowledgeSourceId =
 			resolveSelectedPersistedKnowledgeSourceId( currentHash() );
+		const selectedKnowledgeDocumentKey =
+			resolveSelectedKnowledgeDocumentKey( currentHash() );
 
 		if (
 			screen === 'knowledge' &&
@@ -1214,11 +1313,13 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentKnowledgePage = undefined;
 			currentKnowledgeDetail = undefined;
 			currentKnowledgeDocuments = undefined;
+			currentKnowledgeChunks = undefined;
 			loadedKnowledgeSourceId = undefined;
+			loadedKnowledgeDocumentKey = undefined;
 			void refreshKnowledgePage( targetKnowledgePage )
 				.then( async () => {
 					if ( selectedKnowledgeSourceId !== undefined ) {
-						await refreshKnowledgeDetail(
+						await refreshKnowledgeSelection(
 							selectedKnowledgeSourceId
 						);
 					}
@@ -1234,10 +1335,32 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		) {
 			currentKnowledgeDetail = undefined;
 			currentKnowledgeDocuments = undefined;
+			currentKnowledgeChunks = undefined;
 			loadedKnowledgeSourceId = undefined;
+			loadedKnowledgeDocumentKey = undefined;
 
 			if ( selectedKnowledgeSourceId !== undefined ) {
-				void refreshKnowledgeDetail( selectedKnowledgeSourceId )
+				void refreshKnowledgeSelection( selectedKnowledgeSourceId )
+					.then( () => renderState( stateFromReadiness() ) )
+					.catch( () => renderState( 'error' ) );
+				return;
+			}
+		}
+
+		if (
+			screen === 'knowledge' &&
+			selectedKnowledgeSourceId !== undefined &&
+			selectedKnowledgeSourceId === loadedKnowledgeSourceId &&
+			selectedKnowledgeDocumentKey !== loadedKnowledgeDocumentKey
+		) {
+			currentKnowledgeChunks = undefined;
+			loadedKnowledgeDocumentKey = undefined;
+
+			if ( selectedKnowledgeDocumentKey !== undefined ) {
+				void refreshKnowledgeChunks(
+					selectedKnowledgeSourceId,
+					selectedKnowledgeDocumentKey
+				)
 					.then( () => renderState( stateFromReadiness() ) )
 					.catch( () => renderState( 'error' ) );
 				return;
@@ -1361,7 +1484,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				);
 
 				if ( sourceId !== undefined ) {
-					await refreshKnowledgeDetail( sourceId );
+					await refreshKnowledgeSelection( sourceId );
 				}
 			}
 
