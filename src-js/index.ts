@@ -813,9 +813,9 @@ export const KnowledgeManagementScreen = ( {
 			const linkProps: Record< string, unknown > = {
 				href: `#/knowledge/${ encodeURIComponent(
 					documentSourceId
-				) }/documents/${ encodeURIComponent( item.document_key ) }?page=${
-					page.page
-				}`,
+				) }/documents/${ encodeURIComponent(
+					item.document_key
+				) }?page=${ page.page }`,
 			};
 
 			if ( item.document_key === selectedDocumentKey ) {
