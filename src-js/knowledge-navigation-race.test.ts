@@ -145,13 +145,13 @@ describe( 'knowledge navigation request ordering', () => {
 		Reflect.deleteProperty( window, 'fetch' );
 	} );
 
-	it( 'ignores a stale source response after a newer source selection has loaded', async () => {
-		let resolveSource17: (
-			value: ReturnType< typeof detail >
+	it( 'ignores stale documents after a newer source selection has loaded', async () => {
+		let resolveSource17Documents: (
+			value: ReturnType< typeof documents >
 		) => void = () => undefined;
-		const source17 = new Promise< ReturnType< typeof detail > >(
+		const source17Documents = new Promise< ReturnType< typeof documents > >(
 			( resolve ) => {
-				resolveSource17 = resolve;
+				resolveSource17Documents = resolve;
 			}
 		);
 		const fetcher = jest.fn( ( input: RequestInfo | URL ) => {
@@ -171,7 +171,7 @@ describe( 'knowledge navigation request ordering', () => {
 				return Promise.resolve( jobsPage );
 			}
 			if ( url.endsWith( '/admin/knowledge/sources/17' ) ) {
-				return source17;
+				return Promise.resolve( detail( 17 ) );
 			}
 			if ( url.endsWith( '/admin/knowledge/sources/18' ) ) {
 				return Promise.resolve( detail( 18 ) );
@@ -181,7 +181,7 @@ describe( 'knowledge navigation request ordering', () => {
 					'/admin/knowledge/sources/17/documents?page=1&per_page=20'
 				)
 			) {
-				return Promise.resolve( documents( 17, 'doc-17' ) );
+				return source17Documents;
 			}
 			if (
 				url.endsWith(
@@ -238,7 +238,7 @@ describe( 'knowledge navigation request ordering', () => {
 			root.querySelector( '[data-knowledge-document-key="doc-18"]' )
 		).not.toBeNull();
 
-		resolveSource17( detail( 17 ) );
+		resolveSource17Documents( documents( 17, 'doc-17' ) );
 		await flush();
 
 		expect(
@@ -247,5 +247,8 @@ describe( 'knowledge navigation request ordering', () => {
 		expect(
 			root.querySelector( '[data-knowledge-document-key="doc-18"]' )
 		).not.toBeNull();
+		expect(
+			root.querySelector( '[data-knowledge-document-key="doc-17"]' )
+		).toBeNull();
 	} );
 } );
