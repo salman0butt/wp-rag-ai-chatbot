@@ -1,0 +1,99 @@
+name: M13 enqueue GREEN patch
+on:
+  push:
+    branches: [feat/m13-knowledge-manager-debugger]
+    paths: [.github/workflows/m13-enqueue-green-patch.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/m13-knowledge-manager-debugger
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Apply minimum enqueue GREEN
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src-js/index.ts')
+          text = path.read_text()
+          def replace_once(old, new):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one replacement, found {count}: {old[:80]!r}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+          """interface KnowledgeJobPage {\n\titems: KnowledgeJobItem[];\n\ttotal: number;\n\tpage: number;\n\tper_page: number;\n}\n\ninterface KnowledgeManagementScreenProps {""",
+          """interface KnowledgeJobPage {\n\titems: KnowledgeJobItem[];\n\ttotal: number;\n\tpage: number;\n\tper_page: number;\n}\n\ninterface KnowledgeJobEnqueueDraft {\n\tdocument_key: string;\n\tsource_id: number;\n\tcollection_id: string;\n\tconfiguration_id: string;\n\tgeneration: string;\n}\n\ninterface KnowledgeManagementScreenProps {""")
+
+          replace_once(
+          """\tknowledgeJobs?: KnowledgeJobPage;\n\tonCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;""",
+          """\tknowledgeJobs?: KnowledgeJobPage;\n\tonEnqueueKnowledgeJob?: ( draft: KnowledgeJobEnqueueDraft ) => Promise< void >;\n\tonCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;""")
+
+          replace_once(
+          """\tjobs?: KnowledgeJobPage;\n\tonCancelJob?: ( job: KnowledgeJobItem ) => Promise< void >;""",
+          """\tjobs?: KnowledgeJobPage;\n\tonEnqueueJob?: ( draft: KnowledgeJobEnqueueDraft ) => Promise< void >;\n\tonCancelJob?: ( job: KnowledgeJobItem ) => Promise< void >;""")
+
+          replace_once(
+          """\tchunks,\n\tjobs,\n\tonCancelJob,""",
+          """\tchunks,\n\tjobs,\n\tonEnqueueJob,\n\tonCancelJob,""")
+
+          replace_once(
+          """\tconst jobContent =\n\t\tjobs === undefined""",
+          """\tconst enqueueForm = createElement(\n\t\t'form',\n\t\t{\n\t\t\t'data-knowledge-job-enqueue': 'true',\n\t\t\tonSubmit: ( event: Event ) => {\n\t\t\t\tevent.preventDefault();\n\n\t\t\t\tif ( onEnqueueJob === undefined ) {\n\t\t\t\t\treturn;\n\t\t\t\t}\n\n\t\t\t\tconst form = event.currentTarget as HTMLFormElement;\n\t\t\t\tconst documentKey = form.elements.namedItem(\n\t\t\t\t\t'document_key'\n\t\t\t\t) as HTMLInputElement;\n\t\t\t\tconst sourceId = form.elements.namedItem(\n\t\t\t\t\t'source_id'\n\t\t\t\t) as HTMLInputElement;\n\t\t\t\tconst collectionId = form.elements.namedItem(\n\t\t\t\t\t'collection_id'\n\t\t\t\t) as HTMLInputElement;\n\t\t\t\tconst configurationId = form.elements.namedItem(\n\t\t\t\t\t'configuration_id'\n\t\t\t\t) as HTMLInputElement;\n\t\t\t\tconst generation = form.elements.namedItem(\n\t\t\t\t\t'generation'\n\t\t\t\t) as HTMLInputElement;\n\n\t\t\t\tvoid onEnqueueJob( {\n\t\t\t\t\tdocument_key: documentKey.value.trim(),\n\t\t\t\t\tsource_id: Number.parseInt( sourceId.value, 10 ),\n\t\t\t\t\tcollection_id: collectionId.value.trim(),\n\t\t\t\t\tconfiguration_id: configurationId.value.trim(),\n\t\t\t\t\tgeneration: generation.value.trim(),\n\t\t\t\t} );\n\t\t\t},\n\t\t},\n\t\tcreateElement( 'label', { htmlFor: 'knowledge-job-document-key' }, 'Document key' ),\n\t\tcreateElement( 'input', {\n\t\t\tid: 'knowledge-job-document-key',\n\t\t\tname: 'document_key',\n\t\t\trequired: true,\n\t\t\ttype: 'text',\n\t\t} ),\n\t\tcreateElement( 'label', { htmlFor: 'knowledge-job-source-id' }, 'Source ID' ),\n\t\tcreateElement( 'input', {\n\t\t\tid: 'knowledge-job-source-id',\n\t\t\tmin: 1,\n\t\t\tname: 'source_id',\n\t\t\trequired: true,\n\t\t\ttype: 'number',\n\t\t} ),\n\t\tcreateElement( 'label', { htmlFor: 'knowledge-job-collection-id' }, 'Collection ID' ),\n\t\tcreateElement( 'input', {\n\t\t\tid: 'knowledge-job-collection-id',\n\t\t\tname: 'collection_id',\n\t\t\trequired: true,\n\t\t\ttype: 'text',\n\t\t} ),\n\t\tcreateElement(\n\t\t\t'label',\n\t\t\t{ htmlFor: 'knowledge-job-configuration-id' },\n\t\t\t'Configuration ID'\n\t\t),\n\t\tcreateElement( 'input', {\n\t\t\tid: 'knowledge-job-configuration-id',\n\t\t\tname: 'configuration_id',\n\t\t\trequired: true,\n\t\t\ttype: 'text',\n\t\t} ),\n\t\tcreateElement( 'label', { htmlFor: 'knowledge-job-generation' }, 'Generation' ),\n\t\tcreateElement( 'input', {\n\t\t\tid: 'knowledge-job-generation',\n\t\t\tname: 'generation',\n\t\t\trequired: true,\n\t\t\ttype: 'text',\n\t\t} ),\n\t\tcreateElement( 'button', { type: 'submit' }, 'Enqueue indexing job' )\n\t);\n\tconst jobContent =\n\t\tjobs === undefined""")
+
+          replace_once(
+          """\t\t\t\t\tcreateElement( 'h2', null, 'Indexing jobs' ),\n\t\t\t\t\tjobRows.length === 0""",
+          """\t\t\t\t\tcreateElement( 'h2', null, 'Indexing jobs' ),\n\t\t\t\t\tenqueueForm,\n\t\t\t\t\tjobRows.length === 0""")
+
+          replace_once(
+          """\tknowledgeJobs,\n\tonCancelKnowledgeJob,""",
+          """\tknowledgeJobs,\n\tonEnqueueKnowledgeJob,\n\tonCancelKnowledgeJob,""")
+
+          replace_once(
+          """\t\t\t\tjobs: knowledgeJobs,\n\t\t\t\tonCancelJob: onCancelKnowledgeJob,""",
+          """\t\t\t\tjobs: knowledgeJobs,\n\t\t\t\tonEnqueueJob: onEnqueueKnowledgeJob,\n\t\t\t\tonCancelJob: onCancelKnowledgeJob,""")
+
+          replace_once(
+          """\tknowledgeJobs?: KnowledgeJobPage,\n\tonCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,""",
+          """\tknowledgeJobs?: KnowledgeJobPage,\n\tonEnqueueKnowledgeJob?: ( draft: KnowledgeJobEnqueueDraft ) => Promise< void >,\n\tonCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,""")
+
+          replace_once(
+          """\t\t\tknowledgeJobs,\n\t\t\tonCancelKnowledgeJob,""",
+          """\t\t\tknowledgeJobs,\n\t\t\tonEnqueueKnowledgeJob,\n\t\t\tonCancelKnowledgeJob,""")
+
+          replace_once(
+          """\tlet currentKnowledgeJobs: KnowledgeJobPage | undefined;\n\tlet cancelKnowledgeJob:""",
+          """\tlet currentKnowledgeJobs: KnowledgeJobPage | undefined;\n\tlet enqueueKnowledgeJob: (\n\t\tdraft: KnowledgeJobEnqueueDraft\n\t) => Promise< void > = async () => undefined;\n\tlet cancelKnowledgeJob:""")
+
+          replace_once(
+          """\t\t\tresolveHashPath( currentHash() ) === 'knowledge'\n\t\t\t\t? currentKnowledgeJobs\n\t\t\t\t: undefined,\n\t\t\tcancelKnowledgeJob,""",
+          """\t\t\tresolveHashPath( currentHash() ) === 'knowledge'\n\t\t\t\t? currentKnowledgeJobs\n\t\t\t\t: undefined,\n\t\t\tenqueueKnowledgeJob,\n\t\t\tcancelKnowledgeJob,""")
+
+          replace_once(
+          """\tconst mutateKnowledgeJob = async (\n\t\tjob: KnowledgeJobItem,""",
+          """\tenqueueKnowledgeJob = async (\n\t\tdraft: KnowledgeJobEnqueueDraft\n\t): Promise< void > => {\n\t\ttry {\n\t\t\tawait client.request< KnowledgeJobItem >( '/admin/knowledge/jobs', {\n\t\t\t\tmethod: 'POST',\n\t\t\t\tbody: draft,\n\t\t\t} );\n\t\t\tawait refreshKnowledgeJobs();\n\t\t\trenderState( stateFromReadiness() );\n\t\t} catch {\n\t\t\trenderState( 'error' );\n\t\t}\n\t};\n\tconst mutateKnowledgeJob = async (\n\t\tjob: KnowledgeJobItem,""")
+
+          path.write_text(text)
+          PY
+      - name: Remove patch workflow
+        run: rm .github/workflows/m13-enqueue-green-patch.yml
+      - name: Format and verify GREEN
+        run: |
+          npx wp-scripts lint-js src-js/index.ts --fix
+          npm run verify:js
+      - name: Commit verified GREEN
+        run: |
+          git config user.name 'Salman Butt'
+          git config user.email '47062638+salman0butt@users.noreply.github.com'
+          git add src-js/index.ts .github/workflows/m13-enqueue-green-patch.yml
+          git commit -m 'feat(m13): enqueue knowledge jobs from admin'
+          git push origin HEAD:feat/m13-knowledge-manager-debugger
