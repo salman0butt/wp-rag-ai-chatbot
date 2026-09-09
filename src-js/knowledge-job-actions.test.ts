@@ -135,7 +135,10 @@ describe( 'knowledge job lifecycle actions', () => {
 			)
 			.mockResolvedValueOnce( okJson( jobPage( [ queued ] ) ) )
 			.mockResolvedValueOnce(
-				okJson( { ...queued, cancel_requested_at: '2026-09-09T05:01:00+00:00' } )
+				okJson( {
+					...queued,
+					cancel_requested_at: '2026-09-09T05:01:00+00:00',
+				} )
 			)
 			.mockResolvedValueOnce(
 				okJson(
