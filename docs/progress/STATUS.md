@@ -100,14 +100,25 @@ Completed bounded slice — Task 3 job inventory integration:
 - Scoped review `5150358437`: 0 Critical / 0 Important. Independent reviewer-subagent transport remained unavailable, so final Task 4 independent closeout review remains outstanding.
 - Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-JOBS.md`.
 
+Completed bounded slice — Task 3 cancel/retry lifecycle UI integration:
+
+- Queued/running jobs expose native `Cancel` buttons and failed jobs expose native `Retry` buttons; controls are not rendered for unsupported states.
+- Actions reuse the existing Task 3 `POST .../{job_key}/cancel` and `POST .../{job_key}/retry` contracts through the nonce-authenticated client, URI-encode job keys, then refetch `GET /admin/knowledge/jobs?page=1&per_page=20` before rerendering.
+- Browser state remains server-authoritative and continues to use only the existing safe Task 3 job DTO; no payload, idempotency, lease/lock, raw provider, credential, or raw document data was added.
+- Genuine RED `8ebfd5379e93de778f16ac78800c05b641e91d8c`: lint/typecheck passed; Jest 21 suites / 55 tests with 53 passed / exactly 2 missing-control failures (cancel and retry).
+- `157f73db8a296d8504ffa29b876e35caead6cf52` / runner `34321582894` and `bc6e5407e0c155e3933d3de68c8bb4d9a2eb3956` / runner `34321684507` are **not GREEN** because verification stopped at formatting/style gates before behavioral verification.
+- GREEN implementation `9eb9a5344c68a8b84b2fd43d7a7fddc2aefade63` / runner `34321869920`, job `102370108021`: lint/typecheck PASS; Jest 21/21 suites and 55/55 tests PASS; build, Pinecone live-gating, and Chroma live-gating PASS. The transient patch workflow deleted itself in this verified commit.
+- Scoped coordinator review: 0 Critical / 0 Important. Independent reviewer-subagent transport returned a transient 429 and no independent result is claimed; final Task 4 independent closeout review remains outstanding.
+- Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ACTIONS.md`.
+
 ## Current work
 
 **Task 4 — Knowledge manager admin UI** remains the authoritative unfinished unit.
 
 Exact continuation:
 
-- start with a fresh genuine Jest RED for the existing Task 3 lifecycle mutation contracts: `POST /admin/knowledge/jobs` enqueue, then `{job_key}/cancel` and `{job_key}/retry`;
-- refresh the bounded job inventory server-authoritatively after mutations and surface stable `invalid_transition` plus sanitized persisted errors without raw exception/provider payloads;
+- start with a fresh genuine Jest RED for the existing Task 3 enqueue contract `POST /admin/knowledge/jobs`, without changing the server contract;
+- after enqueue GREEN, add a separate RED/GREEN for stable `invalid_transition` presentation and sanitized mutation errors without raw exception/provider payloads;
 - do not cache secret-bearing, raw document, raw provider, job payload, lease/idempotency, or unbounded data in browser state;
 - add explicit loading/empty/error behavior plus constrained-width, long-content, keyboard/accessibility, and responsive CSS coverage;
 - complete final Task 4 correctness/security/accessibility/performance and independent review and exact-final-SHA CI before advancing to Task 5.
@@ -125,4 +136,5 @@ Exact continuation:
 - `docs/progress/M13-TASK4-KNOWLEDGE-DETAIL-UI.md` — Task 4 selected-source detail/document and persisted-ID compatibility evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-CHUNKS.md` — Task 4 selected-document chunk inspection and accessible navigation evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-JOBS.md` — Task 4 bounded job-inventory UI evidence.
+- `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ACTIONS.md` — Task 4 cancel/retry lifecycle UI evidence.
 - PR #18 — milestone-wide draft integration record.
