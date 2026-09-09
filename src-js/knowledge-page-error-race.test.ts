@@ -170,7 +170,9 @@ describe( 'knowledge page request error ordering', () => {
 		rejectPageOne( new Error( 'stale page failed' ) );
 		await flush();
 
-		expect( root.querySelector( '[data-knowledge-state="error"]' ) ).toBeNull();
+		expect(
+			root.querySelector( '[data-knowledge-state="error"]' )
+		).toBeNull();
 		expect( root.textContent ).toContain( 'Newest Page Source' );
 		expect( root.textContent ).toContain( 'Page 2 of 2' );
 	} );
