@@ -125,6 +125,8 @@ export interface AdminShellProps {
 	knowledgeDocuments?: KnowledgeDocumentPage;
 	knowledgeChunks?: KnowledgeChunkPage;
 	knowledgeJobs?: KnowledgeJobPage;
+	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
+	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
 	providerModels?: ReadonlyArray< ProviderModelChoice >;
@@ -259,6 +261,8 @@ interface KnowledgeManagementScreenProps {
 	documents?: KnowledgeDocumentPage;
 	chunks?: KnowledgeChunkPage;
 	jobs?: KnowledgeJobPage;
+	onCancelJob?: ( job: KnowledgeJobItem ) => Promise< void >;
+	onRetryJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 }
 
 interface BotManagementScreenProps {
@@ -745,6 +749,8 @@ export const KnowledgeManagementScreen = ( {
 	documents,
 	chunks,
 	jobs,
+	onCancelJob,
+	onRetryJob,
 }: KnowledgeManagementScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 	const jobRows =
@@ -769,7 +775,39 @@ export const KnowledgeManagementScreen = ( {
 					: createElement( 'p', null, item.progress_message ),
 				...diagnostics.map( ( value ) =>
 					createElement( 'p', { key: value }, value )
-				)
+				),
+				item.status === 'queued' || item.status === 'running'
+					? createElement(
+							'button',
+							{
+								type: 'button',
+								'data-knowledge-job-action': 'cancel',
+								'data-knowledge-job-key': item.job_key,
+								onClick: () => {
+									if ( onCancelJob !== undefined ) {
+										void onCancelJob( item );
+									}
+								},
+							},
+							'Cancel'
+					  )
+					: undefined,
+				item.status === 'failed'
+					? createElement(
+							'button',
+							{
+								type: 'button',
+								'data-knowledge-job-action': 'retry',
+								'data-knowledge-job-key': item.job_key,
+								onClick: () => {
+									if ( onRetryJob !== undefined ) {
+										void onRetryJob( item );
+									}
+								},
+							},
+							'Retry'
+					  )
+					: undefined
 			);
 		} ) ?? [];
 	const jobContent =
@@ -967,6 +1005,8 @@ export const AdminShell = ( {
 	knowledgeDocuments,
 	knowledgeChunks,
 	knowledgeJobs,
+	onCancelKnowledgeJob,
+	onRetryKnowledgeJob,
 	providerId,
 	providerCredential,
 	providerModels,
@@ -1055,6 +1095,8 @@ export const AdminShell = ( {
 				documents: knowledgeDocuments,
 				chunks: knowledgeChunks,
 				jobs: knowledgeJobs,
+				onCancelJob: onCancelKnowledgeJob,
+				onRetryJob: onRetryKnowledgeJob,
 			} )
 		);
 	} else if (
@@ -1103,6 +1145,8 @@ const renderAdminShell = (
 	knowledgeDocuments?: KnowledgeDocumentPage,
 	knowledgeChunks?: KnowledgeChunkPage,
 	knowledgeJobs?: KnowledgeJobPage,
+	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
+	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
@@ -1127,6 +1171,8 @@ const renderAdminShell = (
 			knowledgeDocuments,
 			knowledgeChunks,
 			knowledgeJobs,
+			onCancelKnowledgeJob,
+			onRetryKnowledgeJob,
 			providerId,
 			providerCredential,
 			providerModels,
@@ -1158,6 +1204,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentKnowledgeDocuments: KnowledgeDocumentPage | undefined;
 	let currentKnowledgeChunks: KnowledgeChunkPage | undefined;
 	let currentKnowledgeJobs: KnowledgeJobPage | undefined;
+	let cancelKnowledgeJob: (
+		job: KnowledgeJobItem
+	) => Promise< void > = async () => undefined;
+	let retryKnowledgeJob: (
+		job: KnowledgeJobItem
+	) => Promise< void > = async () => undefined;
 	let loadedKnowledgeSourceId: string | undefined;
 	let loadedKnowledgeDocumentKey: string | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
@@ -1208,6 +1260,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			resolveHashPath( currentHash() ) === 'knowledge'
 				? currentKnowledgeJobs
 				: undefined,
+			cancelKnowledgeJob,
+			retryKnowledgeJob,
 			providerId,
 			providerId === loadedProviderId
 				? currentProviderCredential
@@ -1545,6 +1599,28 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			renderState( 'error' );
 		}
 	};
+	const mutateKnowledgeJob = async (
+		job: KnowledgeJobItem,
+		action: 'cancel' | 'retry'
+	): Promise< void > => {
+		try {
+			await client.request< KnowledgeJobItem >(
+				`/admin/knowledge/jobs/${ encodeURIComponent(
+					job.job_key
+				) }/${ action }`,
+				{ method: 'POST' }
+			);
+			await refreshKnowledgeJobs();
+			renderState( stateFromReadiness() );
+		} catch {
+			renderState( 'error' );
+		}
+	};
+	cancelKnowledgeJob = async ( job: KnowledgeJobItem ): Promise< void > =>
+		mutateKnowledgeJob( job, 'cancel' );
+	retryKnowledgeJob = async ( job: KnowledgeJobItem ): Promise< void > =>
+		mutateKnowledgeJob( job, 'retry' );
+
 	deleteBot = async ( bot: BotListItem ): Promise< void > => {
 		try {
 			await client.request< { deleted: true } >(
