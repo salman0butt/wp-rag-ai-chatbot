@@ -1161,6 +1161,18 @@ export const AdminShell = ( {
 	const createElement = window.wp.element.createElement;
 
 	if ( state === 'loading' ) {
+		if ( screen === 'knowledge' ) {
+			return createElement(
+				'div',
+				{
+					role: 'status',
+					'aria-live': 'polite',
+					'data-knowledge-state': 'loading',
+				},
+				'Loading knowledge data…'
+			);
+		}
+
 		return createElement(
 			'div',
 			{ role: 'status', 'aria-live': 'polite' },
@@ -1169,6 +1181,14 @@ export const AdminShell = ( {
 	}
 
 	if ( state === 'error' ) {
+		if ( screen === 'knowledge' ) {
+			return createElement(
+				'div',
+				{ role: 'alert', 'data-knowledge-state': 'error' },
+				'Knowledge data could not be loaded.'
+			);
+		}
+
 		return createElement(
 			'div',
 			{ role: 'alert' },
