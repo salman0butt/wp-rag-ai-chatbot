@@ -1,0 +1,77 @@
+name: M13 guarded knowledge page race fix
+
+on:
+  push:
+    branches:
+      - feat/m13-knowledge-manager-debugger
+    paths:
+      - .github/workflows/m13-page-race-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.event.head_commit.message == 'chore(m13): stage guarded page race fix'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/m13-knowledge-manager-debugger
+          fetch-depth: 2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Guard exact RED parent
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "1caa472ed8da7cba4fb76d05bdf38e099800bc13"
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply latest-page-wins fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src-js/index.ts')
+          text = path.read_text()
+
+          old = """\tlet loadedKnowledgeDocumentKey: string | undefined;\n\tlet knowledgeSelectionGeneration = 0;\n\tlet currentProviderCredential: ProviderCredentialState | undefined;"""
+          new = """\tlet loadedKnowledgeDocumentKey: string | undefined;\n\tlet knowledgePageGeneration = 0;\n\tlet knowledgeSelectionGeneration = 0;\n\tlet currentProviderCredential: ProviderCredentialState | undefined;"""
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = """\tconst refreshKnowledgePage = async (\n\t\tpage = resolveKnowledgePage( currentHash() )\n\t): Promise< void > => {\n\t\tcurrentKnowledgePage = await client.request< KnowledgeSourcePage >(\n\t\t\t`/admin/knowledge/sources?page=${ page }&per_page=20`\n\t\t);\n\t};"""
+          new = """\tconst refreshKnowledgePage = async (\n\t\tpage = resolveKnowledgePage( currentHash() )\n\t): Promise< boolean > => {\n\t\tconst requestGeneration = ++knowledgePageGeneration;\n\t\tconst isCurrentRequest = (): boolean =>\n\t\t\trequestGeneration === knowledgePageGeneration &&\n\t\t\tresolveAdminScreen( currentHash() ) === 'knowledge' &&\n\t\t\tresolveKnowledgePage( currentHash() ) === page;\n\n\t\ttry {\n\t\t\tconst knowledgePage = await client.request< KnowledgeSourcePage >(\n\t\t\t\t`/admin/knowledge/sources?page=${ page }&per_page=20`\n\t\t\t);\n\n\t\t\tif ( ! isCurrentRequest() ) {\n\t\t\t\treturn false;\n\t\t\t}\n\n\t\t\tcurrentKnowledgePage = knowledgePage;\n\t\t\treturn true;\n\t\t} catch ( error ) {\n\t\t\tif ( ! isCurrentRequest() ) {\n\t\t\t\treturn false;\n\t\t\t}\n\n\t\t\tthrow error;\n\t\t}\n\t};"""
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = """\t\tif ( screen !== 'knowledge' ) {\n\t\t\tknowledgeSelectionGeneration += 1;"""
+          new = """\t\tif ( screen !== 'knowledge' ) {\n\t\t\tknowledgePageGeneration += 1;\n\t\t\tknowledgeSelectionGeneration += 1;"""
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = """\t\t\tvoid refreshKnowledgePage( targetKnowledgePage )\n\t\t\t\t.then( async () => {\n\t\t\t\t\tif ( resolveHashPath( currentHash() ) === 'knowledge' ) {\n\t\t\t\t\t\tawait refreshKnowledgeJobs();\n\t\t\t\t\t}\n\t\t\t\t\tif ( selectedKnowledgeSourceId !== undefined ) {\n\t\t\t\t\t\tawait refreshKnowledgeSelection(\n\t\t\t\t\t\t\tselectedKnowledgeSourceId\n\t\t\t\t\t\t);\n\t\t\t\t\t}\n\t\t\t\t} )\n\t\t\t\t.then( () => renderState( stateFromReadiness() ) )\n\t\t\t\t.catch( () => renderState( 'error' ) );"""
+          new = """\t\t\tvoid refreshKnowledgePage( targetKnowledgePage )\n\t\t\t\t.then( async ( isCurrentPage ) => {\n\t\t\t\t\tif ( ! isCurrentPage ) {\n\t\t\t\t\t\treturn false;\n\t\t\t\t\t}\n\t\t\t\t\tif ( resolveHashPath( currentHash() ) === 'knowledge' ) {\n\t\t\t\t\t\tawait refreshKnowledgeJobs();\n\t\t\t\t\t}\n\t\t\t\t\tif ( selectedKnowledgeSourceId !== undefined ) {\n\t\t\t\t\t\tawait refreshKnowledgeSelection(\n\t\t\t\t\t\t\tselectedKnowledgeSourceId\n\t\t\t\t\t\t);\n\t\t\t\t\t}\n\n\t\t\t\t\treturn true;\n\t\t\t\t} )\n\t\t\t\t.then( ( isCurrentPage ) => {\n\t\t\t\t\tif ( isCurrentPage ) {\n\t\t\t\t\t\trenderState( stateFromReadiness() );\n\t\t\t\t\t}\n\t\t\t\t} )\n\t\t\t\t.catch( () => renderState( 'error' ) );"""
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          old = """\t\t\tif ( screen === 'knowledge' ) {\n\t\t\t\tawait refreshKnowledgePage();\n\t\t\t\tif ( resolveHashPath( currentHash() ) === 'knowledge' ) {"""
+          new = """\t\t\tif ( screen === 'knowledge' ) {\n\t\t\t\tconst isCurrentKnowledgePage = await refreshKnowledgePage();\n\n\t\t\t\tif ( ! isCurrentKnowledgePage ) {\n\t\t\t\t\treturn;\n\t\t\t\t}\n\t\t\t\tif ( resolveHashPath( currentHash() ) === 'knowledge' ) {"""
+          assert old in text
+          text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+      - name: Verify JavaScript
+        run: npm run verify:js
+      - name: Commit verified fix and remove runner
+        run: |
+          set -euo pipefail
+          rm .github/workflows/m13-page-race-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src-js/index.ts .github/workflows/m13-page-race-fix.yml
+          git commit -m "fix(m13): keep newest knowledge page authoritative"
+          git push origin HEAD:feat/m13-knowledge-manager-debugger
