@@ -145,7 +145,7 @@ describe( 'knowledge navigation request ordering', () => {
 		Reflect.deleteProperty( window, 'fetch' );
 	} );
 
-	it( 'ignores stale documents after a newer source selection has loaded', async () => {
+	it( 'keeps the newest source authoritative while older documents are pending', async () => {
 		let resolveSource17Documents: (
 			value: ReturnType< typeof documents >
 		) => void = () => undefined;
@@ -227,10 +227,16 @@ describe( 'knowledge navigation request ordering', () => {
 
 		navigate( '#/knowledge/17' );
 		await flush();
-
 		navigate( '#/knowledge/18' );
 		await flush();
 
+		const requests = fetcher.mock.calls.map( ( [ input ] ) => String( input ) );
+		expect( requests ).toContain(
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/18'
+		);
+		expect( requests ).toContain(
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/18/documents?page=1&per_page=20'
+		);
 		expect(
 			root.querySelector( '[data-knowledge-selected-detail="18"]' )
 		).not.toBeNull();
