@@ -40,7 +40,7 @@
 - Review `5146492264`: 0 Critical / 0 Important.
 - Evidence: `docs/progress/M13-TASK3-JOB-LIFECYCLE.md`.
 
-### Task 4 — Knowledge manager admin UI: IMPLEMENTED / CLOSEOUT ACTIVE
+### Task 4 — Knowledge manager admin UI: COMPLETE
 
 Completed bounded slice — server-supplied knowledge-source rendering:
 
@@ -126,19 +126,27 @@ Completed bounded slice — latest-request-wins concurrent Knowledge navigation:
 - Redundant one-shot runner removed at `0b8664c342398b0d5ceeaf4372be7edbb426b97a`.
 - Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-NAVIGATION-RACE.md`.
 
-Scoped Task 4 coordinator reviews currently have **0 unresolved Critical / 0 Important** and PR #18 has no unresolved inline review threads. The mandatory final independent Task 4 review has not succeeded because the independent reviewer transport remains transiently unavailable; no independent result is claimed.
+Completed bounded slice — latest-request-wins top-level Knowledge source pagination:
+
+- A separate page-generation/current-route guard prevents stale bounded source-page successes from overwriting a newer hash-selected page and suppresses stale page failures after a newer page succeeds.
+- Genuine stale-success RED `78db64a04c4e960b377a7bb180d69402c8f0431b` / CI `34391739460`: lint/typecheck passed; Jest 27 suites / 64 tests with exactly one intended failure.
+- Combined genuine RED `1caa472ed8da7cba4fb76d05bdf38e099800bc13` / CI `34392061167`: lint/typecheck passed; Jest 28 suites / 65 tests with exactly two intended failures.
+- Production fix `73875144415582b9b77793498840cfa88595c301`; guarded GREEN runner `34392453519`: full `npm run verify:js`, Jest 28/28 suites / 65/65 tests, build and live-gating GREEN.
+- Fresh-session independent closeout review `5158649984`: one Important page race found/resolved; 0 Critical / 0 Important unresolved.
+- Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-PAGE-RACE.md`.
+
+Fresh-session independent Task 4 closeout review `5158649984` found one Important top-level source-page navigation race and resolved it under genuine RED → GREEN. Final Task 4 review state is **0 Critical / 0 Important unresolved** and PR #18 has no unresolved inline review threads. The page-level race evidence is `docs/progress/M13-TASK4-KNOWLEDGE-PAGE-RACE.md`.
 
 ## Current work
 
-**Task 4 — Knowledge manager admin UI closeout** remains the authoritative unfinished unit.
+**Task 5 — Structured debug trace projection and redaction** is the authoritative next unfinished unit.
 
-All planned Task 4 behavioral slices are implemented with genuine RED/GREEN evidence. Exact continuation:
+Task 4 is complete after fresh-session independent review `5158649984` found and resolved one Important top-level source-page race with 0 Critical / 0 Important unresolved. Exact continuation:
 
-- obtain the mandatory independent Task 4 correctness/security/performance/accessibility review over the complete UI surface, including latest-request-wins navigation;
-- resolve every Critical/Important finding under fresh RED -> GREEN evidence if any are found;
-- require all four permanent CI jobs GREEN on the exact final Task 4 SHA;
-- mark Task 4 COMPLETE only after those gates succeed;
-- only then begin Task 5 with a fresh RED for structured retrieval `DebugTrace` projection/redaction. Never serialize credentials, raw provider payloads, arbitrary upstream errors, unrestricted metadata, or unbounded chunk/candidate data.
+- begin Task 5 with a fresh genuine RED for structured retrieval `DebugTrace` projection/redaction;
+- use explicit allow-lists and hard bounds for trace/candidate/chunk diagnostic fields;
+- never serialize credentials, raw provider payloads, arbitrary upstream errors, unrestricted metadata, or unbounded chunk/candidate data;
+- reuse existing retrieval/domain seams rather than creating a parallel retrieval implementation.
 
 ## Durable recovery
 
@@ -159,4 +167,5 @@ All planned Task 4 behavioral slices are implemented with genuine RED/GREEN evid
 - `docs/progress/M13-TASK4-KNOWLEDGE-STATES.md` — loading/empty/error evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-RESPONSIVE.md` — responsive/long-content/keyboard evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-NAVIGATION-RACE.md` — latest-request-wins async navigation evidence.
+- `docs/progress/M13-TASK4-KNOWLEDGE-PAGE-RACE.md` — latest-request-wins top-level source-page evidence and independent closeout review.
 - PR #18 — milestone-wide draft integration record.

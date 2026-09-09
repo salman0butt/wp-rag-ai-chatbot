@@ -1,6 +1,6 @@
 # M13 — Knowledge Manager, Indexing UI, Playground & RAG Debugger
 
-Status: IN PROGRESS — Tasks 1-3 COMPLETE; Task 4 IMPLEMENTED / CLOSEOUT ACTIVE
+Status: IN PROGRESS — Tasks 1-4 COMPLETE; Task 5 NEXT
 
 ## Goal
 Expose knowledge/source/indexing operations and a deep retrieval/RAG diagnostic playground to administrators.
@@ -25,7 +25,7 @@ Admin can trace why a source/chunk was selected; secrets/personal data are redac
 1. **Knowledge source inventory — COMPLETE.** Protected bounded source inventory over the existing source repository. Evidence: `docs/progress/M13-TASK1-KNOWLEDGE-SOURCES.md`.
 2. **Source detail plus bounded document/chunk inspection — COMPLETE.** Protected allow-listed source detail and bounded persisted child inspection with source/document correlation and UTF-8-safe chunk truncation. Evidence: `docs/progress/M13-TASK2-KNOWLEDGE-DETAIL.md`.
 3. **Recoverable job status and safe lifecycle controls — COMPLETE.** Protected bounded persisted job status plus M09-backed enqueue/cancel/retry controls with stable invalid-transition guards and allow-listed safe diagnostics. Evidence: `docs/progress/M13-TASK3-JOB-LIFECYCLE.md`.
-4. **Knowledge manager admin UI — IMPLEMENTED; CLOSEOUT ACTIVE.** The existing nonce-authenticated admin client now consumes Tasks 1-3 with bounded server-authoritative source/detail/document/chunk/job state; enqueue/cancel/retry; safe stable mutation errors; explicit loading/empty/error states; responsive/long-content and keyboard-accessible navigation; and latest-request-wins async selection correlation. All planned Task 4 behavior has verified RED/GREEN evidence. Final independent Task 4 review is still mandatory before this task is marked COMPLETE. Evidence is in the `docs/progress/M13-TASK4-*` records, including `M13-TASK4-KNOWLEDGE-NAVIGATION-RACE.md`.
+4. **Knowledge manager admin UI — COMPLETE.** The existing nonce-authenticated admin client consumes Tasks 1-3 with bounded server-authoritative source/detail/document/chunk/job state; enqueue/cancel/retry; safe stable mutation errors; explicit loading/empty/error states; responsive/long-content and keyboard-accessible navigation; latest-request-wins source/detail/document/chunk selection; and latest-request-wins bounded source-page pagination. Fresh-session independent closeout review `5158649984` found one Important page-navigation race, resolved under genuine RED → GREEN evidence with 0 Critical / 0 Important unresolved. Evidence is in the `docs/progress/M13-TASK4-*` records, including `M13-TASK4-KNOWLEDGE-NAVIGATION-RACE.md` and `M13-TASK4-KNOWLEDGE-PAGE-RACE.md`.
 5. **Structured debug trace projection and redaction — PENDING.**
 6. **Playground REST execution — PENDING.**
 7. **Playground UI — PENDING.**
@@ -40,7 +40,8 @@ Admin can trace why a source/chunk was selected; secrets/personal data are redac
 - Task 3 genuine RED `c7e122f641c7734905711416a9bc318f8cc78fb0`, CI `34267619024`: static analysis clean; PHPUnit 687 tests / 2,897 assertions with exactly two expected missing-route errors; JS/package/WordPress smoke green.
 - Task 3 verified implementation/harness head `645f58fa08a1c3dff3d31128a700071a94c2c97a`, CI `34272705657` GREEN across `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`; PHPStan 288/288 clean and PHPUnit 687/687 tests / 2,897 assertions.
 - Task 4 is decomposed into bounded RED/GREEN UI slices with durable evidence under `docs/progress/M13-TASK4-*`.
-- Final Task 4 async-navigation race RED `e0d6332cf85b64dd07e108c488e79746a8bc00b9`, CI `34361171785`: lint/typecheck passed; Jest 26 suites / 63 tests with exactly one expected latest-selection failure. Production implementation `fab6a157bdeb3ef8095d0780a7980ea104b8ff88` makes the newest Knowledge route authoritative. Exact branch head `caba788276ce1c05ab042046e0f3032038e57f79`, CI `34361588728`, passed all four permanent jobs with Jest 26/26 suites and 63/63 tests GREEN.
+- Task 4 selected-route async-navigation race RED `e0d6332cf85b64dd07e108c488e79746a8bc00b9`, CI `34361171785`: lint/typecheck passed; Jest 26 suites / 63 tests with exactly one expected latest-selection failure. Production implementation `fab6a157bdeb3ef8095d0780a7980ea104b8ff88` makes the newest selected Knowledge route authoritative. Exact branch head `caba788276ce1c05ab042046e0f3032038e57f79`, CI `34361588728`, passed all four permanent jobs with Jest 26/26 suites and 63/63 tests GREEN.
+- Task 4 final page-navigation combined genuine RED `1caa472ed8da7cba4fb76d05bdf38e099800bc13`, CI `34392061167`: lint/typecheck passed; Jest 28 suites / 65 tests with exactly two expected failures (stale page success overwrite and stale page failure forcing error). Production fix `73875144415582b9b77793498840cfa88595c301`; guarded runner `34392453519` passed full JavaScript verification with 28/28 suites and 65/65 tests GREEN before committing the fix.
 
 ## Integration Test Evidence
 
@@ -58,20 +59,20 @@ Task 4 responsive/long-content/keyboard behavior has Jest coverage and exact-hea
 - Task 1 review `5144187297`: 0 Critical / 0 Important.
 - Task 2 final review `5145555022`: one Important UTF-8 truncation issue found and resolved; 0 Critical / 0 Important unresolved.
 - Task 3 review `5146492264`: 0 Critical / 0 Important. Job output excludes payload/idempotency/lease internals, routes use centralized admin capability, unsupported transitions are guarded before mutation, and error fields reuse the bounded M09 sanitized diagnostic contract.
-- Task 4 scoped reviews record 0 unresolved Critical / 0 Important across its completed slices. The final independent Task 4 closeout review remains outstanding because the independent reviewer transport is transiently unavailable; no independent result is claimed.
+- Fresh-session independent Task 4 closeout review `5158649984`: 1 Important page-navigation race found and resolved under genuine RED → GREEN; 0 Critical / 0 Important unresolved. Admin capability, safe allow-lists, sanitized error boundaries, bounded reads, constant-time request correlation, and UI accessibility semantics remain intact.
 - Admin capability and safe allow-list/redaction boundaries remain mandatory for all remaining tasks.
 
 ## Accessibility Review where UI exists
-Task 4 uses native links/buttons/forms, selected-state `aria-current`, labelled pagination/form controls, `role="status"`/polite live loading feedback, `role="alert"` safe error feedback, mobile-friendly targets, and responsive long-content handling. Final independent Task 4 accessibility review remains mandatory. Task 7 and final M13 closeout require another accessibility pass.
+Task 4 uses native links/buttons/forms, selected-state `aria-current`, labelled pagination/form controls, `role="status"`/polite live loading feedback, `role="alert"` safe error feedback, mobile-friendly targets, and responsive long-content handling. Fresh-session independent review `5158649984` found no unresolved accessibility issue. Task 7 and final M13 closeout require another accessibility pass.
 
 ## Performance Review where relevant
 Tasks 1-3 enforce bounded pagination; Task 2 additionally caps chunk text at 2,000 bytes while preserving valid UTF-8. Task 3 job projection is linear over a page capped at 100 and performs no provider/network work. Task 4 keeps page requests bounded at 20, adds no polling/unbounded browser cache, and uses constant-time selection-generation correlation for async navigation. Later trace/playground results must remain bounded.
 
 ## Code Review Findings
-Task 1: no blocking findings. Task 2: one Important UTF-8 truncation boundary issue resolved before closeout; no Critical/Important findings remain unresolved. Task 3: no Critical/Important findings. Task 4 scoped coordinator reviews: no unresolved Critical/Important finding; final independent review pending.
+Task 1: no blocking findings. Task 2: one Important UTF-8 truncation boundary issue resolved before closeout; no Critical/Important findings remain unresolved. Task 3: no Critical/Important findings. Fresh-session independent Task 4 closeout review `5158649984` found one Important top-level page-navigation race; `73875144415582b9b77793498840cfa88595c301` resolves it with 0 Critical / 0 Important unresolved.
 
 ## Fixes
-Task 2 replaced unsafe raw byte-boundary chunk truncation with UTF-8-safe trailing-byte correction after a genuine failing regression test. Task 3 corrected one impossible REST request null check and reconciled only stale aggregate route-count harness expectations after production routing was introduced. Task 4 latest-request-wins correlation prevents stale source/document/chunk responses from overwriting a newer hash selection.
+Task 2 replaced unsafe raw byte-boundary chunk truncation with UTF-8-safe trailing-byte correction after a genuine failing regression test. Task 3 corrected one impossible REST request null check and reconciled only stale aggregate route-count harness expectations after production routing was introduced. Task 4 latest-request-wins correlation prevents stale source/document/chunk responses and stale top-level source-page successes/failures from overwriting a newer hash-selected state.
 
 ## Fresh Verification Commands
 Repository CI (`composer verify:php`, JS verification, package assertion, complete WordPress smoke) remains authoritative at each exact task head.
@@ -86,13 +87,13 @@ See task progress evidence files and PR #18 for the complete milestone history.
 See PR #18.
 
 ## Known Limitations
-Task 4 cannot be marked COMPLETE until its mandatory independent closeout review succeeds. Tasks 5-8 remain unfinished; M13 is not merge-ready.
+Tasks 5-8 remain unfinished; M13 is not merge-ready. Task 5 structured debug-trace projection/redaction is the next unfinished unit.
 
 ## Documentation Updated
 Task 1-3 evidence plus bounded Task 4 evidence records, including loading/error, responsive/long-content, safe lifecycle errors, and concurrent navigation-race hardening; global `STATUS.md` remains the recovery index.
 
 ## Completion Checklist
-Incomplete. Final Task 4 independent review, Tasks 5-8, final milestone review, exact-final-head CI, merge and post-merge main verification remain mandatory.
+Incomplete. Task 4 is complete. Tasks 5-8, final milestone review, exact-final-head CI, merge and post-merge main verification remain mandatory.
 
 ## Next Milestone
 M14 — Frontend Chatbot/Customizer, only after genuine M13 completion.
