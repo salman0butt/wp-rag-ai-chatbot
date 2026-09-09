@@ -76,16 +76,28 @@ Completed bounded slice — selected-source detail/document loading and persiste
 - Scoped review `5148247521`: 0 Critical / 0 Important.
 - Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-DETAIL-UI.md`.
 
+Completed bounded slice — selected-document persisted chunk inspection and accessible document navigation:
+
+- Selected document routes reuse the existing Task 2 bounded chunk endpoint through the nonce-authenticated admin client with `per_page=20`.
+- Chunk state remains correlated to the selected persisted source/document and is discarded when Knowledge, source, page, or document selection changes.
+- Document titles are keyboard-focusable hash links that preserve source-page context and mark the selected document with `aria-current="true"`.
+- Genuine chunk-loading RED `99c4c892b680c6deefb303080f392f8eb51fd349` / CI `34301081848`: lint/typecheck passed; Jest 51 tests with 50 passed / exactly 1 missing bounded-chunk-request failure.
+- Chunk-loading GREEN `1b148d4828841c1d19214d932f49eb9d7697eb54` / CI `34308792575`: all four permanent jobs GREEN.
+- Genuine document-navigation RED `2764967d48bcf707771f1d91d82822ce0fe4468a` / CI `34309042300`: lint/typecheck passed; Jest 52 tests with 51 passed / exactly 1 missing-anchor failure.
+- `a01d9390b2311895f957a0b9c09be1f0fec5e455` / CI `34309325755` is **not GREEN** because Prettier stopped before Jest.
+- Formatting-only corrected GREEN `1c824f50b2dc1a7ddc82611bf55aca8f1bd45ad4` / CI `34309555272`: lint/typecheck passed; Jest 19/19 suites and 52/52 tests GREEN; build and JavaScript live/package gates GREEN.
+- Scoped coordinator review: 0 Critical / 0 Important; independent subagent transport remained unavailable, so final Task 4 independent review remains outstanding.
+- Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-CHUNKS.md`.
+
 ## Current work
 
 **Task 4 — Knowledge manager admin UI** remains the authoritative unfinished unit.
 
 Exact continuation:
 
-- start with a fresh genuine Jest RED for selected-document bounded chunk inspection through the existing Task 2 contract;
-- load/render only the selected document's bounded persisted chunk page, preserve source/document ownership and server-authoritative navigation, and never cache raw/unbounded document data;
-- integrate Task 3 bounded job inventory/enqueue/cancel/retry and stable `invalid_transition` lifecycle-error UI states;
-- do not cache secret-bearing, raw document, raw provider, or unbounded data in browser state;
+- start with a fresh genuine Jest RED for integrating the existing Task 3 bounded job inventory into the Knowledge screen;
+- add only the existing enqueue/cancel/retry lifecycle actions through the nonce-authenticated admin client and surface stable `invalid_transition` errors without raw exception/provider payloads;
+- do not cache secret-bearing, raw document, raw provider, job payload, lease/idempotency, or unbounded data in browser state;
 - add explicit loading/empty/error behavior plus constrained-width, long-content, keyboard/accessibility, and responsive CSS coverage;
 - complete final Task 4 correctness/security/accessibility/performance and independent review and exact-final-SHA CI before advancing to Task 5.
 
@@ -100,4 +112,5 @@ Exact continuation:
 - `docs/progress/M13-TASK4-KNOWLEDGE-SOURCE-RENDERING.md` — Task 4 source-rendering slice evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-BOOTSTRAP.md` — Task 4 router/bootstrap/source-loading evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-DETAIL-UI.md` — Task 4 selected-source detail/document and persisted-ID compatibility evidence.
+- `docs/progress/M13-TASK4-KNOWLEDGE-CHUNKS.md` — Task 4 selected-document chunk inspection and accessible navigation evidence.
 - PR #18 — milestone-wide draft integration record.
