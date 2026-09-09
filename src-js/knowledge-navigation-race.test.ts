@@ -127,8 +127,9 @@ const documents = ( sourceId: number, documentKey: string ) =>
 	} );
 
 const flush = async (): Promise< void > => {
-	await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
-	await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+	for ( let tick = 0; tick < 5; tick += 1 ) {
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+	}
 };
 
 describe( 'knowledge navigation request ordering', () => {
