@@ -61,7 +61,7 @@ const job = ( jobKey: string, status: string ) => ( {
 	attempts: status === 'failed' ? 1 : 0,
 	max_attempts: 3,
 	available_at: '2026-09-09T05:00:00+00:00',
-	cancel_requested_at: null,
+	cancel_requested_at: null as string | null,
 	progress_current: 0,
 	progress_total: 10,
 	progress_message: null,
@@ -197,7 +197,8 @@ describe( 'knowledge job lifecycle actions', () => {
 			.mockResolvedValueOnce(
 				okJson( { items: [], total: 0, page: 1, per_page: 20 } )
 			)
-			.mockResolvedValueOnce( okJson( jobPage( [ failed ] ) ) )
+			.mockResolvedValueOnce( okJson( jobPage( [ failed ] ) )
+			)
 			.mockResolvedValueOnce( okJson( retry ) )
 			.mockResolvedValueOnce( okJson( jobPage( [ retry ] ) ) );
 		const root = configureAdminRuntime( fetcher );
