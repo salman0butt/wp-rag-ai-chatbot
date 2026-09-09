@@ -26,8 +26,12 @@ const createTestElement = (
 			continue;
 		}
 
-		const attributeName =
-			key === 'htmlFor' ? 'for' : key === 'className' ? 'class' : key;
+		let attributeName = key;
+		if ( key === 'htmlFor' ) {
+			attributeName = 'for';
+		} else if ( key === 'className' ) {
+			attributeName = 'class';
+		}
 		element.setAttribute( attributeName, String( value ) );
 	}
 
@@ -93,8 +97,9 @@ describe( 'knowledge page request ordering', () => {
 	} );
 
 	it( 'keeps the newest source page authoritative when an older page resolves later', async () => {
-		let resolvePageOne: ( value: ReturnType< typeof sourcePage > ) => void =
-			() => undefined;
+		let resolvePageOne: (
+			value: ReturnType< typeof sourcePage >
+		) => void = () => undefined;
 		const pageOne = new Promise< ReturnType< typeof sourcePage > >(
 			( resolve ) => {
 				resolvePageOne = resolve;
@@ -116,7 +121,9 @@ describe( 'knowledge page request ordering', () => {
 			if (
 				url.endsWith( '/admin/knowledge/sources?page=2&per_page=20' )
 			) {
-				return Promise.resolve( sourcePage( 2, 21, 'Newest Page Source' ) );
+				return Promise.resolve(
+					sourcePage( 2, 21, 'Newest Page Source' )
+				);
 			}
 			if ( url.endsWith( '/admin/knowledge/jobs?page=1&per_page=20' ) ) {
 				return Promise.resolve( jobsPage );
