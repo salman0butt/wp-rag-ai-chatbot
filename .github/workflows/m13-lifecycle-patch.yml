@@ -42,8 +42,8 @@ jobs:
           PY
           rm .github/workflows/m13-lifecycle-patch.yml
       - run: npm ci
-      - name: Format production patch
-        run: npx prettier --write src-js/index.ts
+      - name: Format production patch with repository rules
+        run: npx wp-scripts lint-js src-js/index.ts --fix
       - name: Verify JavaScript
         run: npm run verify:js
       - name: Commit verified source
