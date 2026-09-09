@@ -120,6 +120,7 @@ export interface AdminShellProps {
 	selectedBotId?: string;
 	knowledgePage?: KnowledgeSourcePage;
 	selectedKnowledgeSourceId?: string;
+	selectedKnowledgeDocumentKey?: string;
 	knowledgeDetail?: KnowledgeSourceDetail;
 	knowledgeDocuments?: KnowledgeDocumentPage;
 	knowledgeChunks?: KnowledgeChunkPage;
@@ -226,6 +227,7 @@ interface KnowledgeChunkPage {
 interface KnowledgeManagementScreenProps {
 	page: KnowledgeSourcePage;
 	selectedSourceId?: string;
+	selectedDocumentKey?: string;
 	detail?: KnowledgeSourceDetail;
 	documents?: KnowledgeDocumentPage;
 	chunks?: KnowledgeChunkPage;
@@ -710,6 +712,7 @@ export const BotManagementScreen = ( {
 export const KnowledgeManagementScreen = ( {
 	page,
 	selectedSourceId,
+	selectedDocumentKey,
 	detail,
 	documents,
 	chunks,
@@ -804,19 +807,36 @@ export const KnowledgeManagementScreen = ( {
 					createElement( 'p', null, `Type: ${ detail.source_type }` ),
 					createElement( 'p', null, `Status: ${ detail.status }` )
 			  );
+	const documentSourceId = String( detail?.id ?? selectedSource.id );
 	const documentRows =
-		documents?.items.map( ( item ) =>
-			createElement(
+		documents?.items.map( ( item ) => {
+			const linkProps: Record< string, unknown > = {
+				href: `#/knowledge/${ encodeURIComponent(
+					documentSourceId
+				) }/documents/${ encodeURIComponent( item.document_key ) }?page=${
+					page.page
+				}`,
+			};
+
+			if ( item.document_key === selectedDocumentKey ) {
+				linkProps[ 'aria-current' ] = 'true';
+			}
+
+			return createElement(
 				'li',
 				{
 					key: item.document_key,
 					'data-knowledge-document-key': item.document_key,
 				},
-				createElement( 'h3', null, item.title ),
+				createElement(
+					'h3',
+					null,
+					createElement( 'a', linkProps, item.title )
+				),
 				createElement( 'p', null, `Type: ${ item.document_type }` ),
 				createElement( 'p', null, `Visibility: ${ item.visibility }` )
-			)
-		) ?? [];
+			);
+		} ) ?? [];
 	const documentContent =
 		documents === undefined
 			? undefined
@@ -875,6 +895,7 @@ export const AdminShell = ( {
 	selectedBotId,
 	knowledgePage,
 	selectedKnowledgeSourceId,
+	selectedKnowledgeDocumentKey,
 	knowledgeDetail,
 	knowledgeDocuments,
 	knowledgeChunks,
@@ -961,6 +982,7 @@ export const AdminShell = ( {
 			KnowledgeManagementScreen( {
 				page: knowledgePage,
 				selectedSourceId: selectedKnowledgeSourceId,
+				selectedDocumentKey: selectedKnowledgeDocumentKey,
 				detail: knowledgeDetail,
 				documents: knowledgeDocuments,
 				chunks: knowledgeChunks,
@@ -1007,6 +1029,7 @@ const renderAdminShell = (
 	selectedBotId?: string,
 	knowledgePage?: KnowledgeSourcePage,
 	selectedKnowledgeSourceId?: string,
+	selectedKnowledgeDocumentKey?: string,
 	knowledgeDetail?: KnowledgeSourceDetail,
 	knowledgeDocuments?: KnowledgeDocumentPage,
 	knowledgeChunks?: KnowledgeChunkPage,
@@ -1029,6 +1052,7 @@ const renderAdminShell = (
 			selectedBotId,
 			knowledgePage,
 			selectedKnowledgeSourceId,
+			selectedKnowledgeDocumentKey,
 			knowledgeDetail,
 			knowledgeDocuments,
 			knowledgeChunks,
@@ -1098,6 +1122,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			resolveSelectedBotId( currentHash() ),
 			currentKnowledgePage,
 			resolveSelectedKnowledgeSourceId( currentHash() ),
+			selectedKnowledgeDocumentKey,
 			selectedKnowledgeSourceId === loadedKnowledgeSourceId
 				? currentKnowledgeDetail
 				: undefined,
