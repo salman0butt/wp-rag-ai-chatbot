@@ -1,0 +1,53 @@
+name: M13 lifecycle patch runner
+on:
+  push:
+    branches: [feat/m13-knowledge-manager-debugger]
+    paths: [.github/workflows/m13-lifecycle-patch.yml]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/m13-knowledge-manager-debugger
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - name: Patch source
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('src-js/index.ts')
+          s = p.read_text()
+          def r(a,b):
+              global s
+              n=s.count(a)
+              if n != 1: raise SystemExit(f'match count {n}: {a[:80]!r}')
+              s=s.replace(a,b,1)
+          r("\tknowledgeJobs?: KnowledgeJobPage;\n\tproviderId?: string;", "\tknowledgeJobs?: KnowledgeJobPage;\n\tonCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;\n\tonRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;\n\tproviderId?: string;")
+          r("\tjobs?: KnowledgeJobPage;\n}", "\tjobs?: KnowledgeJobPage;\n\tonCancelJob?: ( job: KnowledgeJobItem ) => Promise< void >;\n\tonRetryJob?: ( job: KnowledgeJobItem ) => Promise< void >;\n}")
+          r("\tchunks,\n\tjobs,\n}: KnowledgeManagementScreenProps ): unknown => {", "\tchunks,\n\tjobs,\n\tonCancelJob,\n\tonRetryJob,\n}: KnowledgeManagementScreenProps ): unknown => {")
+          r("\t\t\t\t...diagnostics.map( ( value ) =>\n\t\t\t\t\tcreateElement( 'p', { key: value }, value )\n\t\t\t\t)\n\t\t\t);", "\t\t\t\t...diagnostics.map( ( value ) =>\n\t\t\t\t\tcreateElement( 'p', { key: value }, value )\n\t\t\t\t),\n\t\t\t\titem.status === 'queued' || item.status === 'running'\n\t\t\t\t\t? createElement( 'button', { type: 'button', 'data-knowledge-job-action': 'cancel', 'data-knowledge-job-key': item.job_key, onClick: () => { if ( onCancelJob !== undefined ) { void onCancelJob( item ); } } }, 'Cancel' )\n\t\t\t\t\t: undefined,\n\t\t\t\titem.status === 'failed'\n\t\t\t\t\t? createElement( 'button', { type: 'button', 'data-knowledge-job-action': 'retry', 'data-knowledge-job-key': item.job_key, onClick: () => { if ( onRetryJob !== undefined ) { void onRetryJob( item ); } } }, 'Retry' )\n\t\t\t\t\t: undefined\n\t\t\t);")
+          r("\tknowledgeJobs,\n\tproviderId,", "\tknowledgeJobs,\n\tonCancelKnowledgeJob,\n\tonRetryKnowledgeJob,\n\tproviderId,")
+          r("\t\t\t\tjobs: knowledgeJobs,\n\t\t\t} )", "\t\t\t\tjobs: knowledgeJobs,\n\t\t\t\tonCancelJob: onCancelKnowledgeJob,\n\t\t\t\tonRetryJob: onRetryKnowledgeJob,\n\t\t\t} )")
+          r("\tknowledgeJobs?: KnowledgeJobPage,\n\tproviderId?: string,", "\tknowledgeJobs?: KnowledgeJobPage,\n\tonCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,\n\tonRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,\n\tproviderId?: string,")
+          r("\t\t\tknowledgeJobs,\n\t\t\tproviderId,", "\t\t\tknowledgeJobs,\n\t\t\tonCancelKnowledgeJob,\n\t\t\tonRetryKnowledgeJob,\n\t\t\tproviderId,")
+          r("\tlet currentKnowledgeJobs: KnowledgeJobPage | undefined;\n\tlet loadedKnowledgeSourceId: string | undefined;", "\tlet currentKnowledgeJobs: KnowledgeJobPage | undefined;\n\tlet cancelKnowledgeJob: ( job: KnowledgeJobItem ) => Promise< void > = async () => undefined;\n\tlet retryKnowledgeJob: ( job: KnowledgeJobItem ) => Promise< void > = async () => undefined;\n\tlet loadedKnowledgeSourceId: string | undefined;")
+          r("\t\t\tresolveHashPath( currentHash() ) === 'knowledge'\n\t\t\t\t? currentKnowledgeJobs\n\t\t\t\t: undefined,\n\t\t\tproviderId,", "\t\t\tresolveHashPath( currentHash() ) === 'knowledge'\n\t\t\t\t? currentKnowledgeJobs\n\t\t\t\t: undefined,\n\t\t\tcancelKnowledgeJob,\n\t\t\tretryKnowledgeJob,\n\t\t\tproviderId,")
+          r("\tdeleteBot = async ( bot: BotListItem ): Promise< void > => {", "\tconst mutateKnowledgeJob = async ( job: KnowledgeJobItem, action: 'cancel' | 'retry' ): Promise< void > => {\n\t\ttry {\n\t\t\tawait client.request< KnowledgeJobItem >( `/admin/knowledge/jobs/${ encodeURIComponent( job.job_key ) }/${ action }`, { method: 'POST' } );\n\t\t\tawait refreshKnowledgeJobs();\n\t\t\trenderState( stateFromReadiness() );\n\t\t} catch {\n\t\t\trenderState( 'error' );\n\t\t}\n\t};\n\tcancelKnowledgeJob = async ( job: KnowledgeJobItem ): Promise< void > => mutateKnowledgeJob( job, 'cancel' );\n\tretryKnowledgeJob = async ( job: KnowledgeJobItem ): Promise< void > => mutateKnowledgeJob( job, 'retry' );\n\n\tdeleteBot = async ( bot: BotListItem ): Promise< void > => {")
+          p.write_text(s)
+          PY
+          rm .github/workflows/m13-lifecycle-patch.yml
+      - run: npm ci
+      - name: Verify JavaScript
+        run: npm run verify:js
+      - name: Commit verified source
+        run: |
+          git config user.name 'Salman Butt'
+          git config user.email '47062638+salman0butt@users.noreply.github.com'
+          git add src-js/index.ts .github/workflows/m13-lifecycle-patch.yml
+          git commit -m 'feat(m13): add knowledge job lifecycle controls'
+          git push origin HEAD:feat/m13-knowledge-manager-debugger
