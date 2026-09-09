@@ -111,14 +111,25 @@ Completed bounded slice — Task 3 cancel/retry lifecycle UI integration:
 - Scoped coordinator review: 0 Critical / 0 Important. Independent reviewer-subagent transport returned a transient 429 and no independent result is claimed; final Task 4 independent closeout review remains outstanding.
 - Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ACTIONS.md`.
 
+Completed bounded slice — Task 3 enqueue lifecycle UI integration:
+
+- Top-level Knowledge exposes a labelled native enqueue form for the existing Task 3 identifier-only payload: `document_key`, numeric `source_id`, `collection_id`, `configuration_id`, and `generation`.
+- Enqueue reuses the existing nonce-authenticated `POST /admin/knowledge/jobs` contract, then refetches `GET /admin/knowledge/jobs?page=1&per_page=20` before rerendering; no optimistic queue state is retained.
+- Browser state does not add source config, credentials, raw documents, raw provider payloads, queue payload internals, idempotency keys, or lease/lock data.
+- Initial test checkpoint required formatting before behavioral verification and is not counted as RED.
+- Genuine RED `99ff3bea50c89df4ec135852932c0529894b3fe4` / probe `34326208932`: engines, package lint, JavaScript lint, and TypeScript all passed; the enqueue-specific Jest step alone failed because the enqueue form/action was absent.
+- GREEN implementation `a0f185bd3b17f62833d6e799e16bafacbfd32f54`: the full `npm run verify:js` gate passed before commit in runner `34326380942`.
+- Clean implementation head `38e44dd72246713bbe97bfb0deb3a79749c01843` / CI `34326516720`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN.
+- Scoped correctness/security/accessibility/performance review: 0 Critical / 0 Important. Independent reviewer-subagent transport remains unavailable, so final Task 4 independent closeout review remains outstanding.
+- Evidence: `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ENQUEUE.md`.
+
 ## Current work
 
 **Task 4 — Knowledge manager admin UI** remains the authoritative unfinished unit.
 
 Exact continuation:
 
-- start with a fresh genuine Jest RED for the existing Task 3 enqueue contract `POST /admin/knowledge/jobs`, without changing the server contract;
-- after enqueue GREEN, add a separate RED/GREEN for stable `invalid_transition` presentation and sanitized mutation errors without raw exception/provider payloads;
+- start with a fresh genuine Jest RED for stable `invalid_transition` presentation and sanitized enqueue/cancel/retry mutation errors without raw exception/provider payloads;
 - do not cache secret-bearing, raw document, raw provider, job payload, lease/idempotency, or unbounded data in browser state;
 - add explicit loading/empty/error behavior plus constrained-width, long-content, keyboard/accessibility, and responsive CSS coverage;
 - complete final Task 4 correctness/security/accessibility/performance and independent review and exact-final-SHA CI before advancing to Task 5.
@@ -137,4 +148,5 @@ Exact continuation:
 - `docs/progress/M13-TASK4-KNOWLEDGE-CHUNKS.md` — Task 4 selected-document chunk inspection and accessible navigation evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-JOBS.md` — Task 4 bounded job-inventory UI evidence.
 - `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ACTIONS.md` — Task 4 cancel/retry lifecycle UI evidence.
+- `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ENQUEUE.md` — Task 4 enqueue lifecycle UI evidence.
 - PR #18 — milestone-wide draft integration record.
