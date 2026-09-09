@@ -12,21 +12,22 @@ permissions:
 
 jobs:
   apply-and-verify:
-    if: github.event.head_commit.message == 'chore(m13): stage guarded page race fix'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
         with:
           ref: feat/m13-knowledge-manager-debugger
-          fetch-depth: 2
+          fetch-depth: 3
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: npm
-      - name: Guard exact RED parent
+      - name: Guard exact staged RED tree
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "1caa472ed8da7cba4fb76d05bdf38e099800bc13"
+          test "$(git rev-parse HEAD^)" = "b63e964fe4c2ad37152f8b8b7cff888ebe977712"
+          test "$(git rev-parse HEAD^^)" = "1caa472ed8da7cba4fb76d05bdf38e099800bc13"
+          test "$(git hash-object src-js/index.ts)" = "43f51bc89a3d3b3b0b52b7e6fd3f8d9572a33603"
       - name: Install dependencies
         run: npm ci
       - name: Apply latest-page-wins fix
