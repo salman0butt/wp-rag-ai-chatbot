@@ -1,111 +1,189 @@
 #wp-rag-ai-chatbot-admin {
-	box-sizing: border-box;
-	max-width: 1120px;
-	margin: 20px 20px 0 0;
+  box-sizing: border-box;
+  max-width: 1120px;
+  margin: 20px 20px 0 0;
 }
 
-#wp-rag-ai-chatbot-admin [data-bot-management='list'] {
-	display: grid;
-	grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
-	gap: 16px 24px;
-	align-items: start;
+#wp-rag-ai-chatbot-admin [data-bot-management="list"] {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 16px 24px;
+  align-items: start;
 }
 
 #wp-rag-ai-chatbot-admin [data-bot-editor] {
-	display: grid;
-	grid-template-columns: minmax(110px, 160px) minmax(0, 1fr);
-	gap: 10px 12px;
-	min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(110px, 160px) minmax(0, 1fr);
+  gap: 10px 12px;
+  min-width: 0;
 }
 
-#wp-rag-ai-chatbot-admin [data-bot-editor='create'] {
-	grid-column: 1 / -1;
+#wp-rag-ai-chatbot-admin [data-bot-editor="create"] {
+  grid-column: 1 / -1;
 }
 
-#wp-rag-ai-chatbot-admin [data-bot-editor] > [role='alert'],
+#wp-rag-ai-chatbot-admin [data-bot-editor] > [role="alert"],
 #wp-rag-ai-chatbot-admin [data-bot-editor] > button {
-	grid-column: 1 / -1;
+  grid-column: 1 / -1;
 }
 
 #wp-rag-ai-chatbot-admin [data-bot-editor] input {
-	box-sizing: border-box;
-	width: 100%;
-	max-width: 100%;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
 }
 
-#wp-rag-ai-chatbot-admin [data-bot-management='list'] > ul {
-	grid-column: 1;
-	grid-row: 2 / span 3;
-	min-width: 0;
-	margin: 0;
+#wp-rag-ai-chatbot-admin [data-bot-management="list"] > ul {
+  grid-column: 1;
+  grid-row: 2 / span 3;
+  min-width: 0;
+  margin: 0;
 }
 
-#wp-rag-ai-chatbot-admin [data-bot-management='list'] > ul a {
-	display: block;
-	overflow-wrap: anywhere;
-	padding: 8px 10px;
+#wp-rag-ai-chatbot-admin [data-bot-management="list"] > ul a {
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 8px 10px;
 }
 
-#wp-rag-ai-chatbot-admin [data-bot-management='list'] > [data-bot-editor='edit'] {
-	grid-column: 2;
-	grid-row: 2;
+#wp-rag-ai-chatbot-admin
+  [data-bot-management="list"]
+  > [data-bot-editor="edit"] {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 #wp-rag-ai-chatbot-admin [data-delete-bot-id] {
-	grid-column: 2;
-	grid-row: 3;
-	justify-self: start;
-	min-height: 40px;
+  grid-column: 2;
+  grid-row: 3;
+  justify-self: start;
+  min-height: 40px;
 }
 
-#wp-rag-ai-chatbot-admin [aria-label='Bot list pagination'] {
-	grid-column: 1 / -1;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px 16px;
-	align-items: center;
+#wp-rag-ai-chatbot-admin [aria-label="Bot list pagination"] {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
 }
 
-#wp-rag-ai-chatbot-admin [aria-label='Bot list pagination'] a {
-	display: inline-flex;
-	align-items: center;
-	min-height: 40px;
+#wp-rag-ai-chatbot-admin [aria-label="Bot list pagination"] a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management {
+  min-width: 0;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management > *,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management ul,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management li,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management article,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management section,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management form,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management nav {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management a,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management p,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management h2,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management h3 {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue="true"] {
+  display: grid;
+  grid-template-columns: minmax(140px, 190px) minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: center;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue="true"] input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue="true"] > button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 40px;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-job-action] {
+  min-height: 40px;
+}
+
+#wp-rag-ai-chatbot-admin [aria-label="Knowledge source pagination"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+
+#wp-rag-ai-chatbot-admin [aria-label="Knowledge source pagination"] a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
 }
 
 @media screen and (max-width: 782px) {
-	#wp-rag-ai-chatbot-admin {
-		width: auto;
-		max-width: none;
-		margin-right: 10px;
-	}
+  #wp-rag-ai-chatbot-admin {
+    width: auto;
+    max-width: none;
+    margin-right: 10px;
+  }
 
-	#wp-rag-ai-chatbot-admin [data-bot-management='list'] {
-		grid-template-columns: minmax(0, 1fr);
-		gap: 16px;
-	}
+  #wp-rag-ai-chatbot-admin [data-bot-management="list"] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
 
-	#wp-rag-ai-chatbot-admin [data-bot-management='list'] > *,
-	#wp-rag-ai-chatbot-admin [data-bot-management='list'] > ul,
-	#wp-rag-ai-chatbot-admin [data-bot-management='list'] > [data-bot-editor='edit'],
-	#wp-rag-ai-chatbot-admin [data-delete-bot-id],
-	#wp-rag-ai-chatbot-admin [aria-label='Bot list pagination'] {
-		grid-column: 1;
-		grid-row: auto;
-	}
+  #wp-rag-ai-chatbot-admin [data-bot-management="list"] > *,
+  #wp-rag-ai-chatbot-admin [data-bot-management="list"] > ul,
+  #wp-rag-ai-chatbot-admin
+    [data-bot-management="list"]
+    > [data-bot-editor="edit"],
+  #wp-rag-ai-chatbot-admin [data-delete-bot-id],
+  #wp-rag-ai-chatbot-admin [aria-label="Bot list pagination"] {
+    grid-column: 1;
+    grid-row: auto;
+  }
 
-	#wp-rag-ai-chatbot-admin [data-bot-editor] {
-		grid-template-columns: minmax(0, 1fr);
-	}
+  #wp-rag-ai-chatbot-admin [data-bot-editor] {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-	#wp-rag-ai-chatbot-admin [data-bot-editor] > *,
-	#wp-rag-ai-chatbot-admin [data-bot-editor] > [role='alert'],
-	#wp-rag-ai-chatbot-admin [data-bot-editor] > button {
-		grid-column: 1;
-	}
+  #wp-rag-ai-chatbot-admin [data-bot-editor] > *,
+  #wp-rag-ai-chatbot-admin [data-bot-editor] > [role="alert"],
+  #wp-rag-ai-chatbot-admin [data-bot-editor] > button {
+    grid-column: 1;
+  }
 
-	#wp-rag-ai-chatbot-admin [data-bot-editor] button,
-	#wp-rag-ai-chatbot-admin [data-delete-bot-id],
-	#wp-rag-ai-chatbot-admin [aria-label='Bot list pagination'] a {
-		min-height: 44px;
-	}
+  #wp-rag-ai-chatbot-admin [data-bot-editor] button,
+  #wp-rag-ai-chatbot-admin [data-delete-bot-id],
+  #wp-rag-ai-chatbot-admin [aria-label="Bot list pagination"] a {
+    min-height: 44px;
+  }
+
+  #wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue="true"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue="true"] > * {
+    grid-column: 1;
+  }
+
+  #wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue="true"] button,
+  #wp-rag-ai-chatbot-admin [data-knowledge-job-action],
+  #wp-rag-ai-chatbot-admin [aria-label="Knowledge source pagination"] a {
+    min-height: 44px;
+  }
 }

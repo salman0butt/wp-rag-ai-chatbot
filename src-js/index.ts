@@ -965,7 +965,10 @@ export const KnowledgeManagementScreen = ( {
 	if ( page.items.length === 0 ) {
 		return createElement(
 			'section',
-			{ 'data-knowledge-management': 'empty' },
+			{
+				className: 'wp-rag-ai-chatbot-knowledge-management',
+				'data-knowledge-management': 'empty',
+			},
 			createElement( 'p', null, 'No knowledge sources found.' ),
 			jobContent
 		);
@@ -1117,7 +1120,10 @@ export const KnowledgeManagementScreen = ( {
 
 	return createElement(
 		'section',
-		{ 'data-knowledge-management': 'list' },
+		{
+			className: 'wp-rag-ai-chatbot-knowledge-management',
+			'data-knowledge-management': 'list',
+		},
 		createElement( 'ul', null, ...rows ),
 		selectedSummary,
 		documentContent,
