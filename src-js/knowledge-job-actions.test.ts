@@ -197,8 +197,7 @@ describe( 'knowledge job lifecycle actions', () => {
 			.mockResolvedValueOnce(
 				okJson( { items: [], total: 0, page: 1, per_page: 20 } )
 			)
-			.mockResolvedValueOnce( okJson( jobPage( [ failed ] ) )
-			)
+			.mockResolvedValueOnce( okJson( jobPage( [ failed ] ) ) )
 			.mockResolvedValueOnce( okJson( retry ) )
 			.mockResolvedValueOnce( okJson( jobPage( [ retry ] ) ) );
 		const root = configureAdminRuntime( fetcher );
