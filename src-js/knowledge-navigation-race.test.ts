@@ -230,7 +230,9 @@ describe( 'knowledge navigation request ordering', () => {
 		navigate( '#/knowledge/18' );
 		await flush();
 
-		const requests = fetcher.mock.calls.map( ( [ input ] ) => String( input ) );
+		const requests = fetcher.mock.calls.map( ( [ input ] ) =>
+			String( input )
+		);
 		expect( requests ).toContain(
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/sources/18'
 		);
