@@ -22,12 +22,12 @@ jobs:
           p = Path('src-js/index.ts')
           s = p.read_text()
 
-          def r(a, b):
+          def r(a, b, expected=1):
               global s
               n = s.count(a)
-              if n != 1:
-                  raise SystemExit(f'match count {n}: {a[:100]!r}')
-              s = s.replace(a, b, 1)
+              if n != expected:
+                  raise SystemExit(f'match count {n}, expected {expected}: {a[:100]!r}')
+              s = s.replace(a, b, expected)
 
           r(
               "export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';\nexport type AdminScreen = 'onboarding' | 'bots' | 'providers' | 'knowledge';\n",
@@ -80,6 +80,7 @@ jobs:
           r(
               "\t\t\tcurrentKnowledgeChunks = undefined;\n\t\t\tcurrentKnowledgeJobs = undefined;\n\t\t\tloadedKnowledgeSourceId = undefined;",
               "\t\t\tcurrentKnowledgeChunks = undefined;\n\t\t\tcurrentKnowledgeJobs = undefined;\n\t\t\tcurrentKnowledgeJobMutationError = undefined;\n\t\t\tloadedKnowledgeSourceId = undefined;",
+              expected=2,
           )
           r(
               "\tenqueueKnowledgeJob = async (\n\t\tdraft: KnowledgeJobEnqueueDraft\n\t): Promise< void > => {\n\t\ttry {",
