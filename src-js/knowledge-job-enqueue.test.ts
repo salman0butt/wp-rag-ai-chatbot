@@ -106,7 +106,9 @@ const configureAdminRuntime = ( fetcher: jest.Mock ): HTMLElement => {
 };
 
 const setInput = ( root: HTMLElement, name: string, value: string ): void => {
-	const input = root.querySelector< HTMLInputElement >( `input[name="${ name }"]` );
+	const input = root.querySelector< HTMLInputElement >(
+		`input[name="${ name }"]`
+	);
 	expect( input ).not.toBeNull();
 	input!.value = value;
 };
@@ -157,7 +159,9 @@ describe( 'knowledge job enqueue action', () => {
 			'form[data-knowledge-job-enqueue="true"]'
 		);
 		expect( form ).not.toBeNull();
-		form!.dispatchEvent( new Event( 'submit', { bubbles: true, cancelable: true } ) );
+		form!.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
 		await tick();
 		await tick();
 
