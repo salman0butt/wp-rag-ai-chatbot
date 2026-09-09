@@ -1,0 +1,30 @@
+name: M13 enqueue test formatter
+on:
+  push:
+    branches: [feat/m13-knowledge-manager-debugger]
+    paths: [.github/workflows/m13-enqueue-test-format.yml]
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/m13-knowledge-manager-debugger
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format test-only checkpoint
+        run: npx wp-scripts lint-js src-js/knowledge-job-enqueue.test.ts --fix
+      - name: Remove transient probes
+        run: rm .github/workflows/m13-enqueue-red-probe.yml .github/workflows/m13-enqueue-test-format.yml
+      - name: Commit test-only checkpoint
+        run: |
+          git config user.name 'Salman Butt'
+          git config user.email '47062638+salman0butt@users.noreply.github.com'
+          git add src-js/knowledge-job-enqueue.test.ts .github/workflows/m13-enqueue-red-probe.yml .github/workflows/m13-enqueue-test-format.yml
+          git commit -m 'test(m13): format knowledge job enqueue RED'
+          git push origin HEAD:feat/m13-knowledge-manager-debugger
