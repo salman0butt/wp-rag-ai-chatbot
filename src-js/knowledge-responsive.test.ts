@@ -53,10 +53,9 @@ const createTestElement = (
 			continue;
 		}
 
-		element.setAttribute(
-			key === 'htmlFor' ? 'for' : key,
-			String( value )
-		);
+		const attribute =
+			key === 'htmlFor' ? 'for' : key === 'className' ? 'class' : key;
+		element.setAttribute( attribute, String( value ) );
 	}
 
 	for ( const child of children ) {
