@@ -125,6 +125,9 @@ export interface AdminShellProps {
 	knowledgeDocuments?: KnowledgeDocumentPage;
 	knowledgeChunks?: KnowledgeChunkPage;
 	knowledgeJobs?: KnowledgeJobPage;
+	onEnqueueKnowledgeJob?: (
+		draft: KnowledgeJobEnqueueDraft
+	) => Promise< void >;
 	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	providerId?: string;
@@ -253,6 +256,14 @@ interface KnowledgeJobPage {
 	per_page: number;
 }
 
+interface KnowledgeJobEnqueueDraft {
+	document_key: string;
+	source_id: number;
+	collection_id: string;
+	configuration_id: string;
+	generation: string;
+}
+
 interface KnowledgeManagementScreenProps {
 	page: KnowledgeSourcePage;
 	selectedSourceId?: string;
@@ -261,6 +272,7 @@ interface KnowledgeManagementScreenProps {
 	documents?: KnowledgeDocumentPage;
 	chunks?: KnowledgeChunkPage;
 	jobs?: KnowledgeJobPage;
+	onEnqueueJob?: ( draft: KnowledgeJobEnqueueDraft ) => Promise< void >;
 	onCancelJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	onRetryJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 }
@@ -749,6 +761,7 @@ export const KnowledgeManagementScreen = ( {
 	documents,
 	chunks,
 	jobs,
+	onEnqueueJob,
 	onCancelJob,
 	onRetryJob,
 }: KnowledgeManagementScreenProps ): unknown => {
@@ -810,6 +823,101 @@ export const KnowledgeManagementScreen = ( {
 					: undefined
 			);
 		} ) ?? [];
+	const enqueueForm = createElement(
+		'form',
+		{
+			'data-knowledge-job-enqueue': 'true',
+			onSubmit: ( event: Event ) => {
+				event.preventDefault();
+
+				if ( onEnqueueJob === undefined ) {
+					return;
+				}
+
+				const form = event.currentTarget as HTMLFormElement;
+				const documentKey = form.elements.namedItem(
+					'document_key'
+				) as HTMLInputElement;
+				const sourceId = form.elements.namedItem(
+					'source_id'
+				) as HTMLInputElement;
+				const collectionId = form.elements.namedItem(
+					'collection_id'
+				) as HTMLInputElement;
+				const configurationId = form.elements.namedItem(
+					'configuration_id'
+				) as HTMLInputElement;
+				const generation = form.elements.namedItem(
+					'generation'
+				) as HTMLInputElement;
+
+				void onEnqueueJob( {
+					document_key: documentKey.value.trim(),
+					source_id: Number.parseInt( sourceId.value, 10 ),
+					collection_id: collectionId.value.trim(),
+					configuration_id: configurationId.value.trim(),
+					generation: generation.value.trim(),
+				} );
+			},
+		},
+		createElement(
+			'label',
+			{ htmlFor: 'knowledge-job-document-key' },
+			'Document key'
+		),
+		createElement( 'input', {
+			id: 'knowledge-job-document-key',
+			name: 'document_key',
+			required: true,
+			type: 'text',
+		} ),
+		createElement(
+			'label',
+			{ htmlFor: 'knowledge-job-source-id' },
+			'Source ID'
+		),
+		createElement( 'input', {
+			id: 'knowledge-job-source-id',
+			min: 1,
+			name: 'source_id',
+			required: true,
+			type: 'number',
+		} ),
+		createElement(
+			'label',
+			{ htmlFor: 'knowledge-job-collection-id' },
+			'Collection ID'
+		),
+		createElement( 'input', {
+			id: 'knowledge-job-collection-id',
+			name: 'collection_id',
+			required: true,
+			type: 'text',
+		} ),
+		createElement(
+			'label',
+			{ htmlFor: 'knowledge-job-configuration-id' },
+			'Configuration ID'
+		),
+		createElement( 'input', {
+			id: 'knowledge-job-configuration-id',
+			name: 'configuration_id',
+			required: true,
+			type: 'text',
+		} ),
+		createElement(
+			'label',
+			{ htmlFor: 'knowledge-job-generation' },
+			'Generation'
+		),
+		createElement( 'input', {
+			id: 'knowledge-job-generation',
+			name: 'generation',
+			required: true,
+			type: 'text',
+		} ),
+		createElement( 'button', { type: 'submit' }, 'Enqueue indexing job' )
+	);
 	const jobContent =
 		jobs === undefined
 			? undefined
@@ -817,6 +925,7 @@ export const KnowledgeManagementScreen = ( {
 					'section',
 					{ 'data-knowledge-jobs': 'list' },
 					createElement( 'h2', null, 'Indexing jobs' ),
+					enqueueForm,
 					jobRows.length === 0
 						? createElement( 'p', null, 'No indexing jobs found.' )
 						: createElement( 'ul', null, ...jobRows )
@@ -1005,6 +1114,7 @@ export const AdminShell = ( {
 	knowledgeDocuments,
 	knowledgeChunks,
 	knowledgeJobs,
+	onEnqueueKnowledgeJob,
 	onCancelKnowledgeJob,
 	onRetryKnowledgeJob,
 	providerId,
@@ -1095,6 +1205,7 @@ export const AdminShell = ( {
 				documents: knowledgeDocuments,
 				chunks: knowledgeChunks,
 				jobs: knowledgeJobs,
+				onEnqueueJob: onEnqueueKnowledgeJob,
 				onCancelJob: onCancelKnowledgeJob,
 				onRetryJob: onRetryKnowledgeJob,
 			} )
@@ -1145,6 +1256,9 @@ const renderAdminShell = (
 	knowledgeDocuments?: KnowledgeDocumentPage,
 	knowledgeChunks?: KnowledgeChunkPage,
 	knowledgeJobs?: KnowledgeJobPage,
+	onEnqueueKnowledgeJob?: (
+		draft: KnowledgeJobEnqueueDraft
+	) => Promise< void >,
 	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
 	providerId?: string,
@@ -1171,6 +1285,7 @@ const renderAdminShell = (
 			knowledgeDocuments,
 			knowledgeChunks,
 			knowledgeJobs,
+			onEnqueueKnowledgeJob,
 			onCancelKnowledgeJob,
 			onRetryKnowledgeJob,
 			providerId,
@@ -1204,6 +1319,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentKnowledgeDocuments: KnowledgeDocumentPage | undefined;
 	let currentKnowledgeChunks: KnowledgeChunkPage | undefined;
 	let currentKnowledgeJobs: KnowledgeJobPage | undefined;
+	let enqueueKnowledgeJob: (
+		draft: KnowledgeJobEnqueueDraft
+	) => Promise< void > = async () => undefined;
 	let cancelKnowledgeJob: (
 		job: KnowledgeJobItem
 	) => Promise< void > = async () => undefined;
@@ -1260,6 +1378,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			resolveHashPath( currentHash() ) === 'knowledge'
 				? currentKnowledgeJobs
 				: undefined,
+			enqueueKnowledgeJob,
 			cancelKnowledgeJob,
 			retryKnowledgeJob,
 			providerId,
@@ -1594,6 +1713,20 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				}
 			);
 			await refreshBotPage( 1 );
+			renderState( stateFromReadiness() );
+		} catch {
+			renderState( 'error' );
+		}
+	};
+	enqueueKnowledgeJob = async (
+		draft: KnowledgeJobEnqueueDraft
+	): Promise< void > => {
+		try {
+			await client.request< KnowledgeJobItem >( '/admin/knowledge/jobs', {
+				method: 'POST',
+				body: draft,
+			} );
+			await refreshKnowledgeJobs();
 			renderState( stateFromReadiness() );
 		} catch {
 			renderState( 'error' );
