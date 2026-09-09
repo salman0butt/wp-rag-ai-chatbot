@@ -82,6 +82,13 @@ const sourcePage = okJson( {
 	per_page: 20,
 } );
 
+const jobsPage = okJson( {
+	items: [],
+	total: 0,
+	page: 1,
+	per_page: 20,
+} );
+
 const detail = ( id: number ) =>
 	okJson( {
 		id,
@@ -154,6 +161,9 @@ describe( 'knowledge navigation request ordering', () => {
 			) {
 				return Promise.resolve( sourcePage );
 			}
+			if ( url.endsWith( '/admin/knowledge/jobs?page=1&per_page=20' ) ) {
+				return Promise.resolve( jobsPage );
+			}
 			if ( url.endsWith( '/admin/knowledge/sources/17' ) ) {
 				return source17;
 			}
@@ -205,8 +215,12 @@ describe( 'knowledge navigation request ordering', () => {
 		root.id = 'wp-rag-ai-chatbot-admin';
 		document.body.append( root );
 
-		window.location.hash = '#/knowledge/17';
+		window.location.hash = '#/knowledge';
 		expect( bootstrapAdminApp() ).toBe( true );
+		await flush();
+
+		window.location.hash = '#/knowledge/17';
+		window.dispatchEvent( new Event( 'hashchange' ) );
 		await flush();
 
 		window.location.hash = '#/knowledge/18';
