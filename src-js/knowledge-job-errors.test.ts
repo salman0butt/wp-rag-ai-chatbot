@@ -170,7 +170,8 @@ describe( 'knowledge job mutation errors', () => {
 	} );
 
 	it( 'uses a stable generic message for other mutation failures', async () => {
-		const secretBackendDetail = 'raw-provider-exception-should-never-render';
+		const secretBackendDetail =
+			'raw-provider-exception-should-never-render';
 		const fetcher = jest
 			.fn()
 			.mockResolvedValueOnce(
