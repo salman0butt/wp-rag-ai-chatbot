@@ -1392,6 +1392,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	) => Promise< void > = async () => undefined;
 	let loadedKnowledgeSourceId: string | undefined;
 	let loadedKnowledgeDocumentKey: string | undefined;
+	let knowledgePageGeneration = 0;
 	let knowledgeSelectionGeneration = 0;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
@@ -1493,10 +1494,31 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	};
 	const refreshKnowledgePage = async (
 		page = resolveKnowledgePage( currentHash() )
-	): Promise< void > => {
-		currentKnowledgePage = await client.request< KnowledgeSourcePage >(
-			`/admin/knowledge/sources?page=${ page }&per_page=20`
-		);
+	): Promise< boolean > => {
+		const requestGeneration = ++knowledgePageGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === knowledgePageGeneration &&
+			resolveAdminScreen( currentHash() ) === 'knowledge' &&
+			resolveKnowledgePage( currentHash() ) === page;
+
+		try {
+			const knowledgePage = await client.request< KnowledgeSourcePage >(
+				`/admin/knowledge/sources?page=${ page }&per_page=20`
+			);
+
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+
+			currentKnowledgePage = knowledgePage;
+			return true;
+		} catch ( error ) {
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+
+			throw error;
+		}
 	};
 	const refreshKnowledgeJobs = async (): Promise< void > => {
 		currentKnowledgeJobs = await client.request< KnowledgeJobPage >(
@@ -1672,6 +1694,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		const screen = resolveAdminScreen( currentHash() );
 
 		if ( screen !== 'knowledge' ) {
+			knowledgePageGeneration += 1;
 			knowledgeSelectionGeneration += 1;
 			currentKnowledgePage = undefined;
 			currentKnowledgeDetail = undefined;
@@ -1714,7 +1737,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			loadedKnowledgeSourceId = undefined;
 			loadedKnowledgeDocumentKey = undefined;
 			void refreshKnowledgePage( targetKnowledgePage )
-				.then( async () => {
+				.then( async ( isCurrentPage ) => {
+					if ( ! isCurrentPage ) {
+						return false;
+					}
 					if ( resolveHashPath( currentHash() ) === 'knowledge' ) {
 						await refreshKnowledgeJobs();
 					}
@@ -1723,8 +1749,14 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 							selectedKnowledgeSourceId
 						);
 					}
+
+					return true;
 				} )
-				.then( () => renderState( stateFromReadiness() ) )
+				.then( ( isCurrentPage ) => {
+					if ( isCurrentPage ) {
+						renderState( stateFromReadiness() );
+					}
+				} )
 				.catch( () => renderState( 'error' ) );
 			return;
 		}
@@ -1936,7 +1968,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			}
 
 			if ( screen === 'knowledge' ) {
-				await refreshKnowledgePage();
+				const isCurrentKnowledgePage = await refreshKnowledgePage();
+
+				if ( ! isCurrentKnowledgePage ) {
+					return;
+				}
 				if ( resolveHashPath( currentHash() ) === 'knowledge' ) {
 					await refreshKnowledgeJobs();
 				}
