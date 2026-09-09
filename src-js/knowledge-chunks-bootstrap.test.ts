@@ -161,8 +161,7 @@ describe( 'knowledge document chunk bootstrap', () => {
 			);
 		const root = configureAdminRuntime( fetcher );
 
-		window.location.hash =
-			'#/knowledge/17/documents/doc-support?page=2';
+		window.location.hash = '#/knowledge/17/documents/doc-support?page=2';
 		expect( bootstrapAdminApp() ).toBe( true );
 		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
