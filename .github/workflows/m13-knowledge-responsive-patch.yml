@@ -17,6 +17,7 @@ jobs:
       - name: Patch Knowledge responsive structure and CSS
         run: |
           python3 <<'PY'
+          import base64
           from pathlib import Path
 
           p = Path('src-js/index.ts')
@@ -46,68 +47,7 @@ jobs:
           if marker in css:
               raise SystemExit('Knowledge responsive CSS already present')
 
-          responsive = r'''
-
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management {
-	min-width: 0;
-}
-
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management > *,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management ul,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management li,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management article,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management section,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management form,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management nav {
-	box-sizing: border-box;
-	min-width: 0;
-	max-width: 100%;
-}
-
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management a,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management p,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management h2,
-#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management h3 {
-	overflow-wrap: anywhere;
-	word-break: break-word;
-}
-
-#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue='true'] {
-	display: grid;
-	grid-template-columns: minmax(140px, 190px) minmax(0, 1fr);
-	gap: 10px 12px;
-	align-items: center;
-}
-
-#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue='true'] input {
-	box-sizing: border-box;
-	width: 100%;
-	max-width: 100%;
-}
-
-#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue='true'] > button {
-	grid-column: 1 / -1;
-	justify-self: start;
-	min-height: 40px;
-}
-
-#wp-rag-ai-chatbot-admin [data-knowledge-job-action] {
-	min-height: 40px;
-}
-
-#wp-rag-ai-chatbot-admin [aria-label='Knowledge source pagination'] {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px 16px;
-	align-items: center;
-}
-
-#wp-rag-ai-chatbot-admin [aria-label='Knowledge source pagination'] a {
-	display: inline-flex;
-	align-items: center;
-	min-height: 40px;
-}
-'''
+          responsive = base64.b64decode('Cgojd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gLndwLXJhZy1haS1jaGF0Ym90LWtub3dsZWRnZS1tYW5hZ2VtZW50IHsKCW1pbi13aWR0aDogMDsKfQoKI3dwLXJhZy1haS1jaGF0Ym90LWFkbWluIC53cC1yYWctYWktY2hhdGJvdC1rbm93bGVkZ2UtbWFuYWdlbWVudCA+ICosCiN3cC1yYWctYWktY2hhdGJvdC1hZG1pbiAud3AtcmFnLWFpLWNoYXRib3Qta25vd2xlZGdlLW1hbmFnZW1lbnQgdWwsCiN3cC1yYWctYWktY2hhdGJvdC1hZG1pbiAud3AtcmFnLWFpLWNoYXRib3Qta25vd2xlZGdlLW1hbmFnZW1lbnQgbGksCiN3cC1yYWctYWktY2hhdGJvdC1hZG1pbiAud3AtcmFnLWFpLWNoYXRib3Qta25vd2xlZGdlLW1hbmFnZW1lbnQgYXJ0aWNsZSwKI3dwLXJhZy1haS1jaGF0Ym90LWFkbWluIC53cC1yYWctYWktY2hhdGJvdC1rbm93bGVkZ2UtbWFuYWdlbWVudCBzZWN0aW9uLAojd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gLndwLXJhZy1haS1jaGF0Ym90LWtub3dsZWRnZS1tYW5hZ2VtZW50IGZvcm0sCiN3cC1yYWctYWktY2hhdGJvdC1hZG1pbiAud3AtcmFnLWFpLWNoYXRib3Qta25vd2xlZGdlLW1hbmFnZW1lbnQgbmF2IHsKCWJveC1zaXppbmc6IGJvcmRlci1ib3g7CgltaW4td2lkdGg6IDA7CgltYXgtd2lkdGg6IDEwMCU7Cn0KCiN3cC1yYWctYWktY2hhdGJvdC1hZG1pbiAud3AtcmFnLWFpLWNoYXRib3Qta25vd2xlZGdlLW1hbmFnZW1lbnQgYSwKI3dwLXJhZy1haS1jaGF0Ym90LWFkbWluIC53cC1yYWctYWktY2hhdGJvdC1rbm93bGVkZ2UtbWFuYWdlbWVudCBwLAojd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gLndwLXJhZy1haS1jaGF0Ym90LWtub3dsZWRnZS1tYW5hZ2VtZW50IGgyLAojd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gLndwLXJhZy1haS1jaGF0Ym90LWtub3dsZWRnZS1tYW5hZ2VtZW50IGgzIHsKCW92ZXJmbG93LXdyYXA6IGFueXdoZXJlOwoJd29yZC1icmVhazogYnJlYWstd29yZDsKfQoKI3dwLXJhZy1haS1jaGF0Ym90LWFkbWluIFtkYXRhLWtub3dsZWRnZS1qb2ItZW5xdWV1ZT0ndHJ1ZSddIHsKCWRpc3BsYXk6IGdyaWQ7CglncmlkLXRlbXBsYXRlLWNvbHVtbnM6IG1pbm1heCgxNDBweCwgMTkwcHgpIG1pbm1heCgwLCAxZnIpOwoJZ2FwOiAxMHB4IDEycHg7CglhbGlnbi1pdGVtczogY2VudGVyOwp9Cgojd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gW2RhdGEta25vd2xlZGdlLWpvYi1lbnF1ZXVlPSd0cnVlJ10gaW5wdXQgewoJYm94LXNpemluZzogYm9yZGVyLWJveDsKCXdpZHRoOiAxMDAlOwoJbWF4LXdpZHRoOiAxMDAlOwp9Cgojd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gW2RhdGEta25vd2xlZGdlLWpvYi1lbnF1ZXVlPSd0cnVlJ10gPiBidXR0b24gewoJZ3JpZC1jb2x1bW46IDEgLyAtMTsKCWp1c3RpZnktc2VsZjogc3RhcnQ7CgltaW4taGVpZ2h0OiA0MHB4Owp9Cgojd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gW2RhdGEta25vd2xlZGdlLWpvYi1hY3Rpb25dIHsKCW1pbi1oZWlnaHQ6IDQwcHg7Cn0KCiN3cC1yYWctYWktY2hhdGJvdC1hZG1pbiBbYXJpYS1sYWJlbD0nS25vd2xlZGdlIHNvdXJjZSBwYWdpbmF0aW9uJ10gewoJZGlzcGxheTogZmxleDsKCWZsZXgtd3JhcDogd3JhcDsKCWdhcDogOHB4IDE2cHg7CglhbGlnbi1pdGVtczogY2VudGVyOwp9Cgojd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gW2FyaWEtbGFiZWw9J0tub3dsZWRnZSBzb3VyY2UgcGFnaW5hdGlvbiddIGEgewoJZGlzcGxheTogaW5saW5lLWZsZXg7CglhbGlnbi1pdGVtczogY2VudGVyOwoJbWluLWhlaWdodDogNDBweDsKfQo=').decode()
           media = "@media screen and (max-width: 782px) {"
           if css.count(media) != 1:
               raise SystemExit(f'mobile media match count {css.count(media)}, expected 1')
@@ -116,23 +56,8 @@ jobs:
           mobile_anchor = "\t#wp-rag-ai-chatbot-admin [data-bot-editor] button,\n\t#wp-rag-ai-chatbot-admin [data-delete-bot-id],\n\t#wp-rag-ai-chatbot-admin [aria-label='Bot list pagination'] a {\n\t\tmin-height: 44px;\n\t}\n"
           if css.count(mobile_anchor) != 1:
               raise SystemExit(f'mobile anchor match count {css.count(mobile_anchor)}, expected 1')
-          mobile_knowledge = mobile_anchor + r'''
-
-	#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue='true'] {
-		grid-template-columns: minmax(0, 1fr);
-	}
-
-	#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue='true'] > * {
-		grid-column: 1;
-	}
-
-	#wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue='true'] button,
-	#wp-rag-ai-chatbot-admin [data-knowledge-job-action],
-	#wp-rag-ai-chatbot-admin [aria-label='Knowledge source pagination'] a {
-		min-height: 44px;
-	}
-'''
-          css = css.replace(mobile_anchor, mobile_knowledge, 1)
+          mobile_extra = base64.b64decode('Cgkjd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gW2RhdGEta25vd2xlZGdlLWpvYi1lbnF1ZXVlPSd0cnVlJ10gewoJCWdyaWQtdGVtcGxhdGUtY29sdW1uczogbWlubWF4KDAsIDFmcik7Cgl9CgoJI3dwLXJhZy1haS1jaGF0Ym90LWFkbWluIFtkYXRhLWtub3dsZWRnZS1qb2ItZW5xdWV1ZT0ndHJ1ZSddID4gKiB7CgkJZ3JpZC1jb2x1bW46IDE7Cgl9CgoJI3dwLXJhZy1haS1jaGF0Ym90LWFkbWluIFtkYXRhLWtub3dsZWRnZS1qb2ItZW5xdWV1ZT0ndHJ1ZSddIGJ1dHRvbiwKCSN3cC1yYWctYWktY2hhdGJvdC1hZG1pbiBbZGF0YS1rbm93bGVkZ2Utam9iLWFjdGlvbl0sCgkjd3AtcmFnLWFpLWNoYXRib3QtYWRtaW4gW2FyaWEtbGFiZWw9J0tub3dsZWRnZSBzb3VyY2UgcGFnaW5hdGlvbiddIGEgewoJCW1pbi1oZWlnaHQ6IDQ0cHg7Cgl9Cg==').decode()
+          css = css.replace(mobile_anchor, mobile_anchor + mobile_extra, 1)
           css_path.write_text(css)
           PY
           rm .github/workflows/m13-knowledge-responsive-patch.yml
