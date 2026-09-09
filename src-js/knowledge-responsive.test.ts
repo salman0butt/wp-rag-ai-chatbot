@@ -53,8 +53,12 @@ const createTestElement = (
 			continue;
 		}
 
-		const attribute =
-			key === 'htmlFor' ? 'for' : key === 'className' ? 'class' : key;
+		let attribute = key;
+		if ( key === 'htmlFor' ) {
+			attribute = 'for';
+		} else if ( key === 'className' ) {
+			attribute = 'class';
+		}
 		element.setAttribute( attribute, String( value ) );
 	}
 
