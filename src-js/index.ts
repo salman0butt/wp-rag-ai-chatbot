@@ -124,6 +124,7 @@ export interface AdminShellProps {
 	knowledgeDetail?: KnowledgeSourceDetail;
 	knowledgeDocuments?: KnowledgeDocumentPage;
 	knowledgeChunks?: KnowledgeChunkPage;
+	knowledgeJobs?: KnowledgeJobPage;
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
 	providerModels?: ReadonlyArray< ProviderModelChoice >;
@@ -224,6 +225,32 @@ interface KnowledgeChunkPage {
 	per_page: number;
 }
 
+interface KnowledgeJobItem {
+	job_key: string;
+	type: string;
+	status: string;
+	attempts: number;
+	max_attempts: number;
+	available_at: string;
+	cancel_requested_at: string | null;
+	progress_current: number;
+	progress_total: number;
+	progress_message: string | null;
+	last_error_code: string | null;
+	last_error_message: string | null;
+	started_at: string | null;
+	completed_at: string | null;
+	created_at: string;
+	updated_at: string;
+}
+
+interface KnowledgeJobPage {
+	items: KnowledgeJobItem[];
+	total: number;
+	page: number;
+	per_page: number;
+}
+
 interface KnowledgeManagementScreenProps {
 	page: KnowledgeSourcePage;
 	selectedSourceId?: string;
@@ -231,6 +258,7 @@ interface KnowledgeManagementScreenProps {
 	detail?: KnowledgeSourceDetail;
 	documents?: KnowledgeDocumentPage;
 	chunks?: KnowledgeChunkPage;
+	jobs?: KnowledgeJobPage;
 }
 
 interface BotManagementScreenProps {
@@ -716,14 +744,52 @@ export const KnowledgeManagementScreen = ( {
 	detail,
 	documents,
 	chunks,
+	jobs,
 }: KnowledgeManagementScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
+	const jobRows =
+		jobs?.items.map( ( item ) => {
+			const progress = `${ item.progress_current } of ${ item.progress_total }`;
+			const diagnostics = [
+				item.last_error_code,
+				item.last_error_message,
+			].filter( ( value ): value is string => value !== null );
+
+			return createElement(
+				'li',
+				{
+					key: item.job_key,
+					'data-knowledge-job-key': item.job_key,
+				},
+				createElement( 'h3', null, item.type ),
+				createElement( 'p', null, `Status: ${ item.status }` ),
+				createElement( 'p', null, `Progress: ${ progress }` ),
+				item.progress_message === null
+					? undefined
+					: createElement( 'p', null, item.progress_message ),
+				...diagnostics.map( ( value ) =>
+					createElement( 'p', { key: value }, value )
+				)
+			);
+		} ) ?? [];
+	const jobContent =
+		jobs === undefined
+			? undefined
+			: createElement(
+					'section',
+					{ 'data-knowledge-jobs': 'list' },
+					createElement( 'h2', null, 'Indexing jobs' ),
+					jobRows.length === 0
+						? createElement( 'p', null, 'No indexing jobs found.' )
+						: createElement( 'ul', null, ...jobRows )
+			  );
 
 	if ( page.items.length === 0 ) {
 		return createElement(
 			'section',
 			{ 'data-knowledge-management': 'empty' },
-			createElement( 'p', null, 'No knowledge sources found.' )
+			createElement( 'p', null, 'No knowledge sources found.' ),
+			jobContent
 		);
 	}
 
@@ -878,6 +944,7 @@ export const KnowledgeManagementScreen = ( {
 		selectedSummary,
 		documentContent,
 		chunkContent,
+		jobContent,
 		createElement(
 			'nav',
 			{ 'aria-label': 'Knowledge source pagination' },
@@ -899,6 +966,7 @@ export const AdminShell = ( {
 	knowledgeDetail,
 	knowledgeDocuments,
 	knowledgeChunks,
+	knowledgeJobs,
 	providerId,
 	providerCredential,
 	providerModels,
@@ -986,6 +1054,7 @@ export const AdminShell = ( {
 				detail: knowledgeDetail,
 				documents: knowledgeDocuments,
 				chunks: knowledgeChunks,
+				jobs: knowledgeJobs,
 			} )
 		);
 	} else if (
@@ -1033,6 +1102,7 @@ const renderAdminShell = (
 	knowledgeDetail?: KnowledgeSourceDetail,
 	knowledgeDocuments?: KnowledgeDocumentPage,
 	knowledgeChunks?: KnowledgeChunkPage,
+	knowledgeJobs?: KnowledgeJobPage,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
@@ -1056,6 +1126,7 @@ const renderAdminShell = (
 			knowledgeDetail,
 			knowledgeDocuments,
 			knowledgeChunks,
+			knowledgeJobs,
 			providerId,
 			providerCredential,
 			providerModels,
@@ -1086,6 +1157,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentKnowledgeDetail: KnowledgeSourceDetail | undefined;
 	let currentKnowledgeDocuments: KnowledgeDocumentPage | undefined;
 	let currentKnowledgeChunks: KnowledgeChunkPage | undefined;
+	let currentKnowledgeJobs: KnowledgeJobPage | undefined;
 	let loadedKnowledgeSourceId: string | undefined;
 	let loadedKnowledgeDocumentKey: string | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
@@ -1132,6 +1204,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			selectedKnowledgeSourceId === loadedKnowledgeSourceId &&
 				selectedKnowledgeDocumentKey === loadedKnowledgeDocumentKey
 				? currentKnowledgeChunks
+				: undefined,
+			resolveHashPath( currentHash() ) === 'knowledge'
+				? currentKnowledgeJobs
 				: undefined,
 			providerId,
 			providerId === loadedProviderId
@@ -1182,6 +1257,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	): Promise< void > => {
 		currentKnowledgePage = await client.request< KnowledgeSourcePage >(
 			`/admin/knowledge/sources?page=${ page }&per_page=20`
+		);
+	};
+	const refreshKnowledgeJobs = async (): Promise< void > => {
+		currentKnowledgeJobs = await client.request< KnowledgeJobPage >(
+			'/admin/knowledge/jobs?page=1&per_page=20'
 		);
 	};
 	const refreshKnowledgeDetail = async (
@@ -1309,6 +1389,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentKnowledgeDetail = undefined;
 			currentKnowledgeDocuments = undefined;
 			currentKnowledgeChunks = undefined;
+			currentKnowledgeJobs = undefined;
 			loadedKnowledgeSourceId = undefined;
 			loadedKnowledgeDocumentKey = undefined;
 		}
@@ -1339,16 +1420,31 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentKnowledgeDetail = undefined;
 			currentKnowledgeDocuments = undefined;
 			currentKnowledgeChunks = undefined;
+			currentKnowledgeJobs = undefined;
 			loadedKnowledgeSourceId = undefined;
 			loadedKnowledgeDocumentKey = undefined;
 			void refreshKnowledgePage( targetKnowledgePage )
 				.then( async () => {
+					if ( resolveHashPath( currentHash() ) === 'knowledge' ) {
+						await refreshKnowledgeJobs();
+					}
 					if ( selectedKnowledgeSourceId !== undefined ) {
 						await refreshKnowledgeSelection(
 							selectedKnowledgeSourceId
 						);
 					}
 				} )
+				.then( () => renderState( stateFromReadiness() ) )
+				.catch( () => renderState( 'error' ) );
+			return;
+		}
+
+		if (
+			screen === 'knowledge' &&
+			resolveHashPath( currentHash() ) === 'knowledge' &&
+			currentKnowledgeJobs === undefined
+		) {
+			void refreshKnowledgeJobs()
 				.then( () => renderState( stateFromReadiness() ) )
 				.catch( () => renderState( 'error' ) );
 			return;
@@ -1507,6 +1603,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 			if ( screen === 'knowledge' ) {
 				await refreshKnowledgePage();
+				if ( resolveHashPath( currentHash() ) === 'knowledge' ) {
+					await refreshKnowledgeJobs();
+				}
 				const sourceId = resolveSelectedPersistedKnowledgeSourceId(
 					currentHash()
 				);
