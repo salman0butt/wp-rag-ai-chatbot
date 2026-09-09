@@ -42,6 +42,8 @@ jobs:
           PY
           rm .github/workflows/m13-lifecycle-patch.yml
       - run: npm ci
+      - name: Format production patch
+        run: npx prettier --write src-js/index.ts
       - name: Verify JavaScript
         run: npm run verify:js
       - name: Commit verified source
