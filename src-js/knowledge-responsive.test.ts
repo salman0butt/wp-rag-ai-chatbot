@@ -143,7 +143,8 @@ describe( 'Knowledge manager responsive and keyboard structure', () => {
 		);
 
 		expect(
-			root.querySelector( '[data-knowledge-management="empty"]' )?.classList
+			root.querySelector( '[data-knowledge-management="empty"]' )
+				?.classList
 		).toContain( 'wp-rag-ai-chatbot-knowledge-management' );
 	} );
 } );
