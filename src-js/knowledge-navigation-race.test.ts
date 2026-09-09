@@ -132,10 +132,15 @@ const flush = async (): Promise< void > => {
 	}
 };
 
+const navigate = ( hash: string ): void => {
+	window.history.replaceState( null, '', hash );
+	window.dispatchEvent( new Event( 'hashchange' ) );
+};
+
 describe( 'knowledge navigation request ordering', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
-		window.location.hash = '';
+		window.history.replaceState( null, '', '#' );
 		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
 		Reflect.deleteProperty( window, 'fetch' );
 	} );
@@ -216,16 +221,14 @@ describe( 'knowledge navigation request ordering', () => {
 		root.id = 'wp-rag-ai-chatbot-admin';
 		document.body.append( root );
 
-		window.location.hash = '#/knowledge';
+		window.history.replaceState( null, '', '#/knowledge' );
 		expect( bootstrapAdminApp() ).toBe( true );
 		await flush();
 
-		window.location.hash = '#/knowledge/17';
-		window.dispatchEvent( new Event( 'hashchange' ) );
+		navigate( '#/knowledge/17' );
 		await flush();
 
-		window.location.hash = '#/knowledge/18';
-		window.dispatchEvent( new Event( 'hashchange' ) );
+		navigate( '#/knowledge/18' );
 		await flush();
 
 		expect(
