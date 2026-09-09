@@ -1392,6 +1392,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	) => Promise< void > = async () => undefined;
 	let loadedKnowledgeSourceId: string | undefined;
 	let loadedKnowledgeDocumentKey: string | undefined;
+	let knowledgeSelectionGeneration = 0;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let currentProviderIssue: ProviderSettingsIssue | undefined;
@@ -1504,40 +1505,88 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	};
 	const refreshKnowledgeDetail = async (
 		sourceId: string
-	): Promise< void > => {
+	): Promise< {
+		detail: KnowledgeSourceDetail;
+		documents: KnowledgeDocumentPage;
+	} > => {
 		const encodedSourceId = encodeURIComponent( sourceId );
-		currentKnowledgeDetail = await client.request< KnowledgeSourceDetail >(
+		const detail = await client.request< KnowledgeSourceDetail >(
 			`/admin/knowledge/sources/${ encodedSourceId }`
 		);
-		currentKnowledgeDocuments =
-			await client.request< KnowledgeDocumentPage >(
-				`/admin/knowledge/sources/${ encodedSourceId }/documents?page=1&per_page=20`
-			);
-		loadedKnowledgeSourceId = sourceId;
+		const documents = await client.request< KnowledgeDocumentPage >(
+			`/admin/knowledge/sources/${ encodedSourceId }/documents?page=1&per_page=20`
+		);
+
+		return { detail, documents };
 	};
 	const refreshKnowledgeChunks = async (
 		sourceId: string,
-		documentKey: string
-	): Promise< void > => {
-		currentKnowledgeChunks = await client.request< KnowledgeChunkPage >(
+		documentKey: string,
+		requestGeneration = knowledgeSelectionGeneration
+	): Promise< boolean > => {
+		const chunks = await client.request< KnowledgeChunkPage >(
 			`/admin/knowledge/sources/${ encodeURIComponent(
 				sourceId
 			) }/documents/${ encodeURIComponent(
 				documentKey
 			) }/chunks?page=1&per_page=20`
 		);
+
+		if (
+			requestGeneration !== knowledgeSelectionGeneration ||
+			resolveSelectedPersistedKnowledgeSourceId( currentHash() ) !==
+				sourceId ||
+			resolveSelectedKnowledgeDocumentKey( currentHash() ) !== documentKey
+		) {
+			return false;
+		}
+
+		currentKnowledgeChunks = chunks;
 		loadedKnowledgeDocumentKey = documentKey;
+		return true;
 	};
 	const refreshKnowledgeSelection = async (
 		sourceId: string
-	): Promise< void > => {
-		await refreshKnowledgeDetail( sourceId );
-		const documentKey = resolveSelectedKnowledgeDocumentKey(
-			currentHash()
-		);
+	): Promise< boolean > => {
+		const requestGeneration = ++knowledgeSelectionGeneration;
 
-		if ( documentKey !== undefined ) {
-			await refreshKnowledgeChunks( sourceId, documentKey );
+		try {
+			const { detail, documents } =
+				await refreshKnowledgeDetail( sourceId );
+
+			if (
+				requestGeneration !== knowledgeSelectionGeneration ||
+				resolveSelectedPersistedKnowledgeSourceId( currentHash() ) !==
+					sourceId
+			) {
+				return false;
+			}
+
+			currentKnowledgeDetail = detail;
+			currentKnowledgeDocuments = documents;
+			loadedKnowledgeSourceId = sourceId;
+
+			const documentKey = resolveSelectedKnowledgeDocumentKey(
+				currentHash()
+			);
+
+			if ( documentKey !== undefined ) {
+				return refreshKnowledgeChunks(
+					sourceId,
+					documentKey,
+					requestGeneration
+				);
+			}
+
+			currentKnowledgeChunks = undefined;
+			loadedKnowledgeDocumentKey = undefined;
+			return true;
+		} catch ( error ) {
+			if ( requestGeneration !== knowledgeSelectionGeneration ) {
+				return false;
+			}
+
+			throw error;
 		}
 	};
 	const refreshProviderCredential = async (
@@ -1623,6 +1672,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		const screen = resolveAdminScreen( currentHash() );
 
 		if ( screen !== 'knowledge' ) {
+			knowledgeSelectionGeneration += 1;
 			currentKnowledgePage = undefined;
 			currentKnowledgeDetail = undefined;
 			currentKnowledgeDocuments = undefined;
