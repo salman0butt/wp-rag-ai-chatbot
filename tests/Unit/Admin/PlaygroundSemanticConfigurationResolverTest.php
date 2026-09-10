@@ -27,7 +27,7 @@ use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 final class PlaygroundSemanticConfigurationResolverTest extends TestCase {
 	/** Explicit persisted semantic configuration must resolve without runtime defaults. */
 	public function test_resolves_explicit_persisted_semantic_configuration(): void {
-		$resolved = ( new PlaygroundSemanticConfigurationResolver() )->resolve(
+		$resolved        = ( new PlaygroundSemanticConfigurationResolver() )->resolve(
 			$this->configuration(
 				array(
 					'semantic_retrieval' => array(
