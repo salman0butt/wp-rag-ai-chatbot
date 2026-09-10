@@ -61,7 +61,7 @@ final class DebugTraceProjectorTest extends TestCase {
 			)
 		);
 
-		$projected = ( new DebugTraceProjector() )->projectRetrieval( $retrieval )->toArray();
+		$projected = ( new DebugTraceProjector() )->projectRetrieval( $retrieval )->to_array();
 		$json      = (string) wp_json_encode( $projected );
 
 		self::assertSame(
