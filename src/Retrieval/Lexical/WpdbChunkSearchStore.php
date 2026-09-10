@@ -108,7 +108,6 @@ final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionSto
 	 * @param string $collection_id Explicit persisted collection scope.
 	 * @param string $chunk_key Stable lowercase SHA-256 chunk key.
 	 * @throws InvalidArgumentException When the collection or chunk key is invalid.
-	 * @throws DatabaseException When stored projection data is invalid.
 	 */
 	public function find_chunk( string $collection_id, string $chunk_key ): ?ChunkSearchRecord {
 		new LexicalFilter( $collection_id );
