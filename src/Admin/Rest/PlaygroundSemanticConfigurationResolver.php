@@ -29,10 +29,10 @@ final class PlaygroundSemanticConfigurationResolver {
 			throw new UnexpectedValueException( 'Persisted semantic retrieval configuration is missing.' );
 		}
 
-		$provider_id    = $semantic['embedding_provider_id'] ?? null;
-		$model_id       = $semantic['embedding_model_id'] ?? null;
-		$dimensions     = $semantic['dimensions'] ?? null;
-		$normalization  = $semantic['normalization'] ?? null;
+		$provider_id     = $semantic['embedding_provider_id'] ?? null;
+		$model_id        = $semantic['embedding_model_id'] ?? null;
+		$dimensions      = $semantic['dimensions'] ?? null;
+		$normalization   = $semantic['normalization'] ?? null;
 		$vector_store_id = $semantic['vector_store_id'] ?? null;
 
 		if (
