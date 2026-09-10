@@ -76,7 +76,7 @@ final class PlaygroundRestResource {
 	 */
 	private function project_success( PlaygroundExecutionResult $result ): array {
 		$citations = array();
-		foreach ( $result->chat_result->citations as $citation ) {
+		foreach ( $result->chat->citations as $citation ) {
 			if ( ! $citation instanceof Citation ) {
 				continue;
 			}
@@ -93,13 +93,13 @@ final class PlaygroundRestResource {
 
 		return array(
 			'ok'          => true,
-			'answer'      => $result->chat_result->answer,
-			'no_answer'   => $result->chat_result->no_answer,
+			'answer'      => $result->chat->answer,
+			'no_answer'   => $result->chat->no_answer,
 			'citations'   => $citations,
 			'model_id'    => $result->model_id,
 			'latency_ms'  => $result->latency_ms,
-			'usage'       => $this->project_usage( $result->chat_result->usage ),
-			'debug_trace' => $result->debug_trace->to_array(),
+			'usage'       => $this->project_usage( $result->chat->usage ),
+			'debug_trace' => $result->debug->to_array(),
 		);
 	}
 
