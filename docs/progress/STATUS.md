@@ -5,7 +5,7 @@
 - M12 PR: **#17 — MERGED** at merge SHA `206dbfcef42cfcee2a998d7f3c386abdb97425a0`.
 - Current milestone: **M13 — Knowledge Manager, Indexing UI, Playground & RAG Debugger**.
 - Active M13 integration PR: **#18 — OPEN, DRAFT**.
-- M13 status: **Tasks 1-5 COMPLETE; Task 6 NEXT; Tasks 7-8 PENDING**.
+- M13 status: **Tasks 1-5 COMPLETE; Task 6 IN PROGRESS; Tasks 7-8 PENDING**.
 
 This file is the concise recovery index. Detailed RED/GREEN, CI, review, security, accessibility, and implementation history remains in the per-task progress records and the M13 milestone ledger linked below.
 
@@ -25,42 +25,38 @@ Protected bounded job inventory plus M09-backed enqueue/cancel/retry controls wi
 
 ### Task 4 — Knowledge manager admin UI: COMPLETE
 
-Bounded server-authoritative Knowledge UI over Tasks 1-3 with source/detail/document/chunk/job inspection, lifecycle actions, safe errors, loading/empty/error states, responsive/keyboard-accessible navigation, and latest-request-wins correlation for selected-resource and source-page requests.
-
-Fresh-session closeout review found one Important top-level source-page navigation race and resolved it under genuine RED → GREEN. Final Task 4 state: **0 Critical / 0 Important unresolved**. Evidence: the `docs/progress/M13-TASK4-*` records, especially `M13-TASK4-KNOWLEDGE-NAVIGATION-RACE.md` and `M13-TASK4-KNOWLEDGE-PAGE-RACE.md`.
+Bounded server-authoritative Knowledge UI over Tasks 1-3 with source/detail/document/chunk/job inspection, lifecycle actions, safe errors, loading/empty/error states, responsive/keyboard-accessible navigation, and latest-request-wins correlation for selected-resource and source-page requests. Fresh-session closeout review found one Important top-level source-page navigation race and resolved it under genuine RED → GREEN. Final Task 4 state: **0 Critical / 0 Important unresolved**. Evidence: the `docs/progress/M13-TASK4-*` records.
 
 ### Task 5 — structured retrieval debug trace projection/redaction: COMPLETE
 
-Administrator-safe `DebugTrace` projection over existing M10 retrieval evidence:
-
-- raw query omitted in favor of SHA-256 query hash + byte count;
-- explicit field projection, never recursive/raw provider serialization;
-- channel diagnostics restricted to repository-owned `semantic` / `lexical` identifiers;
-- at most 20 candidate projections;
-- at most 4 approved channel-evidence rows per candidate;
-- at most 2,000 UTF-8-safe bytes of candidate content with truncation indicator;
-- at most 256 UTF-8-safe bytes for candidate identifier/classification strings;
-- existing stable retrieval failure/rerank codes reused.
-
-Fresh-session Task 5 closeout review found one Important remaining boundedness defect: candidate scalar strings were not hard-capped. Genuine RED `98bea8bb675d2eafc77f6117565ccd9d396d2049` / CI `34438769550` reached PHPUnit with 691 tests / 2,917 assertions and exactly one expected 385-byte scalar-bound failure. GREEN production fix `fb774b832594a19b702d4c6caabacc5094b5e30b` / CI `34438873422` passed `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`. Final Task 5 review state: **0 Critical / 0 Important unresolved**.
-
-Evidence: `docs/progress/M13-TASK5-DEBUG-TRACE.md`.
+Administrator-safe `DebugTrace` projection over existing M10 retrieval evidence with raw-query omission, explicit field/channel allow-lists, at most 20 candidates, at most 4 approved channel-evidence rows per candidate, 2,000-byte UTF-8-safe content bounds, and 256-byte UTF-8-safe candidate scalar bounds. Fresh-session closeout resolved the final Important boundedness defect under genuine RED → GREEN. Final Task 5 state: **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M13-TASK5-DEBUG-TRACE.md`.
 
 ## Current work
 
-**Task 6 — Playground REST execution** is the authoritative next unfinished unit.
+### Task 6 — Playground REST execution: IN PROGRESS
 
-Required continuation:
+The first production seam is complete and exact-head verified:
 
-- add protected `POST /admin/debug/playground` behind `AdminCapability::can_manage`;
-- bound and validate the test question and explicit existing bot/retrieval configuration identifiers;
-- execute existing M10/M11 production retrieval/RAG seams without duplicating retrieval, scoring, reranking, persistence, or provider logic;
-- project retrieval diagnostics through the completed Task 5 `DebugTraceProjector`;
-- expose only bounded/allow-listed answer, citation, model, latency, usage/cost fields already available from production results;
-- map internal/provider failures to stable repository-owned safe codes such as `retrieval_unavailable` and `playground_failed` without serializing raw exception/provider bodies;
-- follow strict TDD with genuine RED → GREEN evidence, fresh review, and exact-head four-job CI before Task 6 completion.
+- `ChatRetrievalObserver` is an optional request-local M11 observer contract.
+- `ChatOrchestrator` invokes it once immediately after successful existing M10 retrieval, passing the exact `RetrievalResult` subsequently used by grounding/prompt/generation/citation flow.
+- This prevents the playground from running retrieval/scoring/reranking a second time merely to obtain diagnostics.
+- Existing callers remain compatible because the observer defaults to `null`.
+- Genuine RED `2a598018070a37f83e8d254c5e6918774a0bb6a2` / CI `34442552312`: PHPStan clean; PHPUnit 693 tests / 2,930 assertions with exactly two missing-observer-contract failures.
+- GREEN production head `060fd76f9b97a587f612edb56dc4bf61832f3751` / CI `34443128752`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN.
 
-Tasks 7-8 remain pending. Do not merge PR #18 until all M13 tasks, final milestone review, exact-final-head CI, and post-merge `main` verification are complete.
+Durable evidence and continuation details: `docs/progress/M13-TASK6-PLAYGROUND-REST.md`.
+
+### Exact next Task 6 work
+
+1. Recover the concrete M03/M10/M11 production dependency factories/registries used for provider, retrieval, memory, grounding, prompt, and citation services.
+2. Add the smallest request-local production chat composition/executor seam that can accept `ChatRetrievalObserver`; do not build a parallel retrieval/provider stack.
+3. Under fresh genuine RED, add protected `POST /admin/debug/playground` behind `AdminCapability::can_manage`.
+4. Bound/validate the test question and explicit existing bot/retrieval configuration identifiers.
+5. Execute the existing M11 pipeline once, capture the exact M10 retrieval through the observer, project it with Task 5 `DebugTraceProjector`, and serialize only bounded/allow-listed answer/citation/model/latency/usage fields already available from production outputs.
+6. Map internal/provider failures to stable repository-owned codes such as `retrieval_unavailable` and `playground_failed`; never serialize raw upstream messages.
+7. Add REST/integration/smoke coverage and perform a genuinely fresh independent correctness/security/performance review before marking Task 6 COMPLETE.
+
+Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete. Do not merge PR #18 until all M13 tasks, final milestone review, exact-final-head CI, and post-merge `main` verification are complete.
 
 ## Durable recovery
 
@@ -83,3 +79,4 @@ Tasks 7-8 remain pending. Do not merge PR #18 until all M13 tasks, final milesto
 - `docs/progress/M13-TASK4-KNOWLEDGE-NAVIGATION-RACE.md` — Task 4 selected-resource race hardening.
 - `docs/progress/M13-TASK4-KNOWLEDGE-PAGE-RACE.md` — Task 4 page race hardening/closeout.
 - `docs/progress/M13-TASK5-DEBUG-TRACE.md` — Task 5 debug trace/redaction/boundedness evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-REST.md` — Task 6 observer seam and continuation evidence.
