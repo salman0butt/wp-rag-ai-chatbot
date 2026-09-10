@@ -57,10 +57,22 @@ final class DebugTraceProjector {
 	 * @return array<string,mixed>
 	 */
 	private static function project_candidate( RetrievalCandidate $candidate ): array {
-		$truncated = strlen( $candidate->content ) > self::MAX_CHUNK_CONTENT_BYTES;
-		$content   = $truncated
+		$truncated       = strlen( $candidate->content ) > self::MAX_CHUNK_CONTENT_BYTES;
+		$content         = $truncated
 			? self::truncate_utf8_bytes( $candidate->content, self::MAX_CHUNK_CONTENT_BYTES )
 			: $candidate->content;
+		$channel_evidence = array();
+
+		foreach ( $candidate->channel_evidence as $evidence ) {
+			if ( ! in_array( $evidence->channel, array( 'semantic', 'lexical' ), true ) ) {
+				continue;
+			}
+
+			$channel_evidence[] = self::project_channel_evidence( $evidence );
+			if ( count( $channel_evidence ) >= self::MAX_CHANNEL_EVIDENCE ) {
+				break;
+			}
+		}
 
 		return array(
 			'chunk_id'          => $candidate->chunk_id,
@@ -70,10 +82,7 @@ final class DebugTraceProjector {
 			'visibility'        => $candidate->visibility,
 			'fused_score'       => $candidate->fused_score,
 			'rerank_score'      => $candidate->rerank_score,
-			'channel_evidence'  => array_map(
-				self::project_channel_evidence( ... ),
-				array_slice( $candidate->channel_evidence, 0, self::MAX_CHANNEL_EVIDENCE )
-			),
+			'channel_evidence'  => $channel_evidence,
 			'content'           => $content,
 			'content_truncated' => $truncated,
 		);
