@@ -47,36 +47,36 @@ final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionSto
 			if ( $chunk->document_key !== $document_key ) {
 				throw new InvalidArgumentException( 'Projected chunk belongs to another document.' );
 			}
+		}
 
-			$this->delete_document( $collection_id, $document_key );
-			foreach ( $chunks as $chunk ) {
-				$metadata_json = wp_json_encode( $chunk->metadata );
-				if ( false === $metadata_json ) {
-					throw new DatabaseException( 'Could not encode chunk-search metadata.' );
-				}
+		$this->delete_document( $collection_id, $document_key );
+		foreach ( $chunks as $chunk ) {
+			$metadata_json = wp_json_encode( $chunk->metadata );
+			if ( false === $metadata_json ) {
+				throw new DatabaseException( 'Could not encode chunk-search metadata.' );
+			}
 
-				$inserted = $this->connection->insert(
-					$this->tables->chunk_search(),
-					array(
-						'collection_id' => $collection_id,
-						'chunk_key'     => $chunk->chunk_key,
-						'document_key'  => $chunk->document_key,
-						'source_id'     => $chunk->source_id,
-						'document_type' => $chunk->document_type,
-						'title'         => $chunk->title,
-						'canonical_url' => $chunk->canonical_url,
-						'content'       => $chunk->content,
-						'content_hash'  => $chunk->content_hash,
-						'language'      => $chunk->language,
-						'visibility'    => $chunk->visibility,
-						'sequence'      => $chunk->sequence,
-						'metadata_json' => $metadata_json,
-						'updated_at'    => gmdate( 'Y-m-d H:i:s' ),
-					)
-				);
-				if ( false === $inserted ) {
-					throw new DatabaseException( 'Could not persist chunk-search projection.' );
-				}
+			$inserted = $this->connection->insert(
+				$this->tables->chunk_search(),
+				array(
+					'collection_id' => $collection_id,
+					'chunk_key'     => $chunk->chunk_key,
+					'document_key'  => $chunk->document_key,
+					'source_id'     => $chunk->source_id,
+					'document_type' => $chunk->document_type,
+					'title'         => $chunk->title,
+					'canonical_url' => $chunk->canonical_url,
+					'content'       => $chunk->content,
+					'content_hash'  => $chunk->content_hash,
+					'language'      => $chunk->language,
+					'visibility'    => $chunk->visibility,
+					'sequence'      => $chunk->sequence,
+					'metadata_json' => $metadata_json,
+					'updated_at'    => gmdate( 'Y-m-d H:i:s' ),
+				)
+			);
+			if ( false === $inserted ) {
+				throw new DatabaseException( 'Could not persist chunk-search projection.' );
 			}
 		}
 	}
