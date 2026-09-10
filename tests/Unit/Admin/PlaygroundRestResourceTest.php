@@ -41,10 +41,12 @@ final class PlaygroundRestResourceTest extends TestCase {
 			throw new RetrievalException( 'PROVIDER-SECRET-SENTINEL' );
 		};
 
-		$response = $this->call_run( $executor, 'How does retrieval work?' );
+		$response   = $this->call_run( $executor, 'How does retrieval work?' );
+		$serialized = wp_json_encode( $response );
+		self::assertIsString( $serialized );
 
 		self::assertSame( 'retrieval_unavailable', $response['error']['code'] );
-		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', wp_json_encode( $response ) ?: '' );
+		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', $serialized );
 	}
 
 	/** Other internal failures expose only the generic Playground failure code. */
@@ -53,10 +55,12 @@ final class PlaygroundRestResourceTest extends TestCase {
 			throw new RuntimeException( 'INTERNAL-SECRET-SENTINEL' );
 		};
 
-		$response = $this->call_run( $executor, 'Explain the answer.' );
+		$response   = $this->call_run( $executor, 'Explain the answer.' );
+		$serialized = wp_json_encode( $response );
+		self::assertIsString( $serialized );
 
 		self::assertSame( 'playground_failed', $response['error']['code'] );
-		self::assertStringNotContainsString( 'INTERNAL-SECRET-SENTINEL', wp_json_encode( $response ) ?: '' );
+		self::assertStringNotContainsString( 'INTERNAL-SECRET-SENTINEL', $serialized );
 	}
 
 	/**
