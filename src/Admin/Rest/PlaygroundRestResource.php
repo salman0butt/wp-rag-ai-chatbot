@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Admin\Rest;
 
-use Closure;
 use Throwable;
 use WpRagAiChatbot\Citations\Citation;
 use WpRagAiChatbot\Providers\Usage;
@@ -23,19 +22,11 @@ final class PlaygroundRestResource {
 	private const MAX_QUESTION_BYTES = 16384;
 
 	/**
-	 * Request-local production executor.
-	 *
-	 * @var Closure
-	 */
-	private Closure $executor;
-
-	/**
 	 * Create the Playground resource.
 	 *
-	 * @param Closure $executor Request-local production executor.
+	 * @param PlaygroundExecutor $executor Request-local production executor.
 	 */
-	public function __construct( Closure $executor ) {
-		$this->executor = $executor;
+	public function __construct( private readonly PlaygroundExecutor $executor ) {
 	}
 
 	/**
@@ -52,7 +43,7 @@ final class PlaygroundRestResource {
 		}
 
 		try {
-			$response = ( $this->executor )( $question );
+			$response = $this->executor->execute( $question );
 		} catch ( RetrievalException $exception ) {
 			unset( $exception );
 
@@ -63,9 +54,7 @@ final class PlaygroundRestResource {
 			return $this->error( 'playground_failed' );
 		}
 
-		return $response instanceof PlaygroundExecutionResult
-			? $this->project_success( $response )
-			: $this->error( 'playground_failed' );
+		return $this->project_success( $response );
 	}
 
 	/**
