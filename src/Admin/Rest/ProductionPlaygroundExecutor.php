@@ -23,12 +23,12 @@ final class ProductionPlaygroundExecutor implements PlaygroundExecutor {
 	/**
 	 * Create one request-local production executor.
 	 *
-	 * @param ChatOrchestrator            $orchestrator Existing M11 production pipeline.
-	 * @param ChatAccessContext           $access Trusted server-side retrieval scope.
+	 * @param ChatOrchestrator           $orchestrator Existing M11 production pipeline.
+	 * @param ChatAccessContext          $access Trusted server-side retrieval scope.
 	 * @param PlaygroundRetrievalCapture $capture Request-local exact retrieval observer.
-	 * @param DebugTraceProjector         $projector Task 5 bounded/redacted retrieval projector.
-	 * @param string                      $model_id Selected generation model identifier.
-	 * @param GroundingMode               $grounding_mode Selected M11 grounding policy.
+	 * @param DebugTraceProjector        $projector Task 5 bounded/redacted retrieval projector.
+	 * @param string                     $model_id Selected generation model identifier.
+	 * @param GroundingMode              $grounding_mode Selected M11 grounding policy.
 	 */
 	public function __construct(
 		private readonly ChatOrchestrator $orchestrator,
