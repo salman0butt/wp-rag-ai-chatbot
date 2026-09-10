@@ -18,9 +18,10 @@ use WpRagAiChatbot\Retrieval\RetrievalResult;
  * Projects production retrieval evidence into a bounded allow-listed debug DTO.
  */
 final class DebugTraceProjector {
-	private const MAX_CANDIDATES          = 20;
-	private const MAX_CHANNEL_EVIDENCE    = 4;
-	private const MAX_CHUNK_CONTENT_BYTES = 2000;
+	private const MAX_CANDIDATES             = 20;
+	private const MAX_CHANNEL_EVIDENCE       = 4;
+	private const MAX_CANDIDATE_SCALAR_BYTES = 256;
+	private const MAX_CHUNK_CONTENT_BYTES    = 2000;
 
 	/**
 	 * Project one production M10 retrieval result.
@@ -75,11 +76,11 @@ final class DebugTraceProjector {
 		}
 
 		return array(
-			'chunk_id'          => $candidate->chunk_id,
-			'document_id'       => $candidate->document_id,
+			'chunk_id'          => self::bound_scalar( $candidate->chunk_id ),
+			'document_id'       => self::bound_scalar( $candidate->document_id ),
 			'source_id'         => $candidate->source_id,
-			'language'          => $candidate->language,
-			'visibility'        => $candidate->visibility,
+			'language'          => null === $candidate->language ? null : self::bound_scalar( $candidate->language ),
+			'visibility'        => self::bound_scalar( $candidate->visibility ),
 			'fused_score'       => $candidate->fused_score,
 			'rerank_score'      => $candidate->rerank_score,
 			'channel_evidence'  => $channel_evidence,
@@ -102,6 +103,19 @@ final class DebugTraceProjector {
 			'weight'           => $evidence->weight,
 			'rrf_contribution' => $evidence->rrf_contribution,
 		);
+	}
+
+	/**
+	 * Bound one candidate scalar before it crosses the debug DTO boundary.
+	 *
+	 * @param string $value Candidate scalar value.
+	 */
+	private static function bound_scalar( string $value ): string {
+		if ( strlen( $value ) <= self::MAX_CANDIDATE_SCALAR_BYTES ) {
+			return $value;
+		}
+
+		return self::truncate_utf8_bytes( $value, self::MAX_CANDIDATE_SCALAR_BYTES );
 	}
 
 	/**
