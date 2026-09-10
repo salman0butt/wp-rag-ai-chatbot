@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Admin;
 
+use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Admin\Rest\PlaygroundRetrievalConfiguration;
 use WpRagAiChatbot\Admin\Rest\PlaygroundSemanticConfiguration;
@@ -26,7 +27,21 @@ final class PlaygroundVectorCollectionResolverTest extends TestCase {
 	public function test_resolves_canonical_vector_collection(): void {
 		$embedding = new EmbeddingProfile( 'openai', 'text-embedding-3-small', 1536, NormalizationMode::L2 );
 		$semantic  = new PlaygroundSemanticConfiguration( $embedding, DistanceMetric::COSINE, 'local-wordpress' );
-		$source    = $this->createStub( KnowledgeSourceRecord::class );
+		$now       = new DateTimeImmutable( '2026-09-10T10:00:00+00:00' );
+		$source    = new KnowledgeSourceRecord(
+			7,
+			'wordpress-posts',
+			'wordpress_posts',
+			null,
+			'WordPress Posts',
+			null,
+			'indexed',
+			array(),
+			null,
+			$now,
+			$now,
+			$now
+		);
 		$retrieval = new PlaygroundRetrievalConfiguration( $source, 'production-rag' );
 
 		$collection = ( new PlaygroundVectorCollectionResolver() )->resolve( $retrieval, $semantic );
