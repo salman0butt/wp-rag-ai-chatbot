@@ -173,6 +173,13 @@ final class ChatOrchestrator {
 	}
 
 	/**
+	 * Read the optional retrieval observer dependency without executing it.
+	 */
+	private function retrieval_observer(): ?ChatRetrievalObserver {
+		return $this->retrieval_observer;
+	}
+
+	/**
 	 * Construct and emit one non-critical sanitized analytics event when configured.
 	 *
 	 * @param bool        $no_answer Whether deterministic no-answer was returned.
