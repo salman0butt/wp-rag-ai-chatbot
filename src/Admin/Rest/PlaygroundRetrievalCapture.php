@@ -18,6 +18,8 @@ use WpRagAiChatbot\Retrieval\RetrievalResult;
 final class PlaygroundRetrievalCapture implements ChatRetrievalObserver {
 	/**
 	 * Exact observed production retrieval result.
+	 *
+	 * @var RetrievalResult|null
 	 */
 	private ?RetrievalResult $result = null;
 
