@@ -52,7 +52,11 @@ final class PlaygroundBotConfigurationResolverTest extends TestCase {
 		$resolver->resolve( $bot->id->value );
 	}
 
-	/** Build one persisted bot fixture. */
+	/**
+	 * Build one persisted bot fixture.
+	 *
+	 * @param bool $enabled Whether the fixture is enabled.
+	 */
 	private function bot( bool $enabled ): Bot {
 		return new Bot(
 			new BotId( 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' ),
@@ -66,7 +70,11 @@ final class PlaygroundBotConfigurationResolverTest extends TestCase {
 		);
 	}
 
-	/** Build a repository double returning one selected bot. */
+	/**
+	 * Build a repository double returning one selected bot.
+	 *
+	 * @param Bot|null $bot Persisted bot returned by the repository.
+	 */
 	private function repository( ?Bot $bot ): BotRepository&MockObject {
 		$repository = $this->createMock( BotRepository::class );
 		$repository->method( 'find' )->willReturn( $bot );
