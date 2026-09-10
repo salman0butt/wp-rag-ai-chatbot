@@ -41,7 +41,7 @@ final readonly class DebugTrace {
 	 *
 	 * @return array<string,mixed>
 	 */
-	public function toArray(): array {
+	public function to_array(): array {
 		return array(
 			'query'         => array(
 				'hash'  => $this->query_hash,
