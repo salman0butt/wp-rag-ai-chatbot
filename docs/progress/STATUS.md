@@ -43,24 +43,27 @@ Completed and exact-head-verified Task 6 composition prerequisites now include:
 - explicit fail-closed persisted bot/provider/model selection through `PlaygroundBotConfigurationResolver`;
 - explicit fail-closed persisted knowledge-source/vector-collection selection through `PlaygroundRetrievalConfigurationResolver`;
 - closed `PlaygroundConfiguration` aggregate combining those resolved persisted objects;
-- `PlaygroundConfigurationResolver`, composing the existing persisted bot and retrieval resolvers from explicit bot/source/collection identifiers without fallbacks or arbitrary request-level runtime options.
+- `PlaygroundConfigurationResolver`, composing the existing persisted bot and retrieval resolvers from explicit bot/source/collection identifiers without fallbacks or arbitrary request-level runtime options;
+- `PlaygroundGenerationProviderResolver`, resolving the exact persisted `Bot::provider_id` through the existing `ProviderRegistry::generation()` authority without fallback, request-supplied provider/model overrides, credentials, or generation work.
 
-Latest resolver TDD evidence:
+Latest generation-provider resolver TDD evidence:
 
-- `06703d49d771d00f0ccbe31e9900704c74c98c10` / CI `34485206226` stopped at PHPCS alignment warnings and is **NOT RED**.
-- Genuine RED `7dfdbdee7c8e60551dd5f3651f2b106a2a1e79e5` / CI `34485370927`: PHPStan clean; PHPUnit **709 tests / 3,011 assertions / exactly 1 error** because `PlaygroundConfigurationResolver` did not exist.
-- GREEN production `fa9e1a64b4825f01f45a57bf53702663a5a23a8c` / CI `34485530222`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN.
+- `ed760a7918cda9ad035c23ff075eece46f30662c` / CI `34505228459` stopped at PHPCS documentation errors and is **NOT RED**.
+- Genuine RED `00273462aefbc9bf053279d830c64019fe3eb614` / CI `34510501349`: conventions and PHPStan passed; PHPUnit **713 tests / 3,026 assertions / exactly 2 errors** because `PlaygroundGenerationProviderResolver` did not exist.
+- `70a14b6236354aeb3a14d58cf86a7b150b0a77f0` / CI `34510634553` is **NOT GREEN**: production resolver existed, but PHPUnit exposed an invalid test-only `BotId` fixture; production code was not changed to accommodate the invalid fixture.
+- GREEN `5d50bdf1fcca1c418311bbfb072687a3b659098d` / CI `34510755522`: after correcting only the fixture to a canonical 32-lowercase-hex bot ID, `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed.
 
-Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION-RESOLVER.md` plus the earlier Task 6 progress records.
+Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-GENERATION-PROVIDER.md` plus the earlier Task 6 progress records.
 
 ### Exact next Task 6 work
 
-1. Recover the concrete existing factories/registries for generation provider, embedding/vector retrieval, lexical retrieval, grounding, prompt, memory, and citations.
-2. Under fresh genuine RED, implement the smallest request-local **production dependency composition** seam consuming resolved `PlaygroundConfiguration` and constructing one `PlaygroundRetrievalCapture`, one `ChatOrchestrator`, and one `ProductionPlaygroundExecutor`.
-3. Reuse the existing M10/M11 pipeline exactly once. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, or retrieval limits.
-4. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
-5. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
-6. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
+1. Recover the authoritative persisted embedding profile/vector-search-store composition already used by production indexing/retrieval; do not infer those dependencies from `collection_id` alone.
+2. Under fresh genuine RED, implement the smallest request-local typed seam that resolves those existing semantic-retrieval dependencies from repository-owned persisted state and combines them with the already-completed generation-provider selection.
+3. Continue production composition using the existing lexical retrieval, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
+4. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
+5. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
+6. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
+7. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
 
 Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete. Do not merge PR #18 until all M13 tasks, final milestone review, exact-final-head CI, and post-merge `main` verification are complete.
 
@@ -78,4 +81,5 @@ Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete
 - `docs/progress/M13-TASK6-PLAYGROUND-BOT-CONFIGURATION.md` — persisted bot selector evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-RETRIEVAL-CONFIGURATION.md` — persisted source/collection selector evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION.md` — closed configuration aggregate evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION-RESOLVER.md` — explicit selector composition evidence and current continuation point.
+- `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION-RESOLVER.md` — explicit selector composition evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-GENERATION-PROVIDER.md` — persisted generation-provider resolution evidence and current continuation point.
