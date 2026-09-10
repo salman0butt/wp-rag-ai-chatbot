@@ -78,11 +78,19 @@ final class PlaygroundRestResourceTest extends TestCase {
 	 */
 	private function executor( Closure $operation ): PlaygroundExecutor {
 		return new class( $operation ) implements PlaygroundExecutor {
-			/** @param Closure $operation Executor behavior. */
+			/**
+			 * Store the executor behavior.
+			 *
+			 * @param Closure $operation Executor behavior.
+			 */
 			public function __construct( private readonly Closure $operation ) {
 			}
 
-			/** Execute the supplied test behavior. */
+			/**
+			 * Execute the supplied test behavior.
+			 *
+			 * @param string $question Question input.
+			 */
 			public function execute( string $question ): PlaygroundExecutionResult {
 				return ( $this->operation )( $question );
 			}
