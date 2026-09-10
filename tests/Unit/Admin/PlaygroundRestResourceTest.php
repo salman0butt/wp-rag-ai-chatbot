@@ -11,6 +11,8 @@ namespace WpRagAiChatbot\Tests\Unit\Admin;
 
 use Closure;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use WpRagAiChatbot\Retrieval\RetrievalException;
 
 /**
  * Verifies Playground requests are bounded before production execution begins.
@@ -33,8 +35,32 @@ final class PlaygroundRestResourceTest extends TestCase {
 		self::assertSame( 0, $executions );
 	}
 
+	/** Retrieval failures expose only the stable repository-owned error code. */
+	public function test_run_maps_retrieval_failure_without_leaking_message(): void {
+		$executor = static function (): array {
+			throw new RetrievalException( 'PROVIDER-SECRET-SENTINEL' );
+		};
+
+		$response = $this->call_run( $executor, 'How does retrieval work?' );
+
+		self::assertSame( 'retrieval_unavailable', $response['error']['code'] );
+		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', wp_json_encode( $response ) ?: '' );
+	}
+
+	/** Other internal failures expose only the generic Playground failure code. */
+	public function test_run_maps_internal_failure_without_leaking_message(): void {
+		$executor = static function (): array {
+			throw new RuntimeException( 'INTERNAL-SECRET-SENTINEL' );
+		};
+
+		$response = $this->call_run( $executor, 'Explain the answer.' );
+
+		self::assertSame( 'playground_failed', $response['error']['code'] );
+		self::assertStringNotContainsString( 'INTERNAL-SECRET-SENTINEL', wp_json_encode( $response ) ?: '' );
+	}
+
 	/**
-	 * Invoke the not-yet-implemented resource dynamically so static analysis reaches PHPUnit RED.
+	 * Invoke the resource dynamically so static analysis can reach PHPUnit behavior checks.
 	 *
 	 * @param Closure $executor Request-local production executor fixture.
 	 * @param string  $question Question input.
