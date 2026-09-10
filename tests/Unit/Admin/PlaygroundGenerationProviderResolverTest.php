@@ -50,10 +50,18 @@ final class PlaygroundGenerationProviderResolverTest extends TestCase {
 		$resolver->resolve( $this->configuration( 'missing-provider' ) );
 	}
 
-	/** Build one deterministic generation-provider fixture. */
+	/**
+	 * Build one deterministic generation-provider fixture.
+	 *
+	 * @param string $provider_id Provider ID exposed by the fixture.
+	 */
 	private function provider( string $provider_id ): GenerationProvider {
 		return new class( $provider_id ) implements GenerationProvider {
-			/** Create the deterministic provider fixture. */
+			/**
+			 * Create the deterministic provider fixture.
+			 *
+			 * @param string $id Provider ID exposed by the fixture.
+			 */
 			public function __construct( private readonly string $id ) {
 			}
 
@@ -67,14 +75,23 @@ final class PlaygroundGenerationProviderResolverTest extends TestCase {
 				return true;
 			}
 
-			/** Generation is outside this resolver contract. */
+			/**
+			 * Generation is outside this resolver contract.
+			 *
+			 * @param GenerationRequest $request Generation request that must never be executed here.
+			 * @throws LogicException Always, because generation is outside resolver scope.
+			 */
 			public function generate( GenerationRequest $request ): GenerationResult {
 				throw new LogicException( 'Generation must not run while resolving a provider.' );
 			}
 		};
 	}
 
-	/** Build one closed persisted Playground configuration. */
+	/**
+	 * Build one closed persisted Playground configuration.
+	 *
+	 * @param string $provider_id Persisted provider ID selected by the bot.
+	 */
 	private function configuration( string $provider_id ): PlaygroundConfiguration {
 		$now    = new DateTimeImmutable( '2026-09-10T10:00:00+00:00' );
 		$source = new KnowledgeSourceRecord(
