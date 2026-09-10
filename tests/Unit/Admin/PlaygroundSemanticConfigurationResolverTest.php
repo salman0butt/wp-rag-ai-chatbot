@@ -4,6 +4,7 @@
  *
  * @package WpRagAiChatbot
  */
+
 declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Admin;
@@ -74,10 +75,14 @@ final class PlaygroundSemanticConfigurationResolverTest extends TestCase {
 		);
 	}
 
-	/** Build one closed Playground configuration around persisted source config. */
+	/**
+	 * Build one closed Playground configuration around persisted source config.
+	 *
+	 * @param array<string, mixed> $source_config Persisted knowledge-source configuration.
+	 */
 	private function configuration( array $source_config ): PlaygroundConfiguration {
-		$now = new DateTimeImmutable( '2026-09-10T10:00:00+00:00' );
-		$bot = new Bot(
+		$now    = new DateTimeImmutable( '2026-09-10T10:00:00+00:00' );
+		$bot    = new Bot(
 			new BotId( 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' ),
 			'Production Bot',
 			true,
