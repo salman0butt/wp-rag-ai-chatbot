@@ -24,6 +24,8 @@ final class DebugTraceProjector {
 
 	/**
 	 * Project one production M10 retrieval result.
+	 *
+	 * @param RetrievalResult $result Production retrieval result to project.
 	 */
 	public function projectRetrieval( RetrievalResult $result ): DebugTrace {
 		$candidates = array();
@@ -44,6 +46,7 @@ final class DebugTraceProjector {
 	/**
 	 * Project one retrieval candidate without recursive/raw object serialization.
 	 *
+	 * @param RetrievalCandidate $candidate Retrieval candidate to project.
 	 * @return array<string,mixed>
 	 */
 	private static function project_candidate( RetrievalCandidate $candidate ): array {
@@ -72,6 +75,7 @@ final class DebugTraceProjector {
 	/**
 	 * Project one allow-listed channel evidence value.
 	 *
+	 * @param ChannelEvidence $evidence Channel evidence to project.
 	 * @return array<string,int|float|string>
 	 */
 	private static function project_channel_evidence( ChannelEvidence $evidence ): array {
@@ -86,6 +90,9 @@ final class DebugTraceProjector {
 
 	/**
 	 * Truncate to a byte limit without leaving an incomplete trailing UTF-8 sequence.
+	 *
+	 * @param string $content Content to truncate.
+	 * @param int    $max_bytes Maximum UTF-8-safe byte length.
 	 */
 	private static function truncate_utf8_bytes( string $content, int $max_bytes ): string {
 		$truncated = substr( $content, 0, $max_bytes );
