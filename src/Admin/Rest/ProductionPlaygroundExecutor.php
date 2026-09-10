@@ -34,7 +34,7 @@ final class ProductionPlaygroundExecutor implements PlaygroundExecutor {
 		private readonly ChatOrchestrator $orchestrator,
 		private readonly ChatAccessContext $access,
 		private readonly PlaygroundRetrievalCapture $capture,
-		private readonly DebugTraceProjector $projector,
+		private readonly DebugTraceProjector $projector, // @phpstan-ignore property.onlyWritten -- The read is after an observer callback PHPStan cannot correlate across the injected orchestrator.
 		private readonly string $model_id,
 		private readonly GroundingMode $grounding_mode
 	) {
@@ -42,6 +42,11 @@ final class ProductionPlaygroundExecutor implements PlaygroundExecutor {
 
 	/**
 	 * Execute one bounded question through M11 exactly once.
+	 *
+	 * The request-local orchestrator is composed with this same capture instance. PHPStan cannot
+	 * correlate the observer callback performed inside the injected final orchestrator with the
+	 * subsequent capture read here, so the two flow-analysis suppressions below are intentionally
+	 * limited to that cross-object callback boundary.
 	 *
 	 * @param string $question Validated administrator question.
 	 * @throws LogicException When this request-local executor is reused or retrieval was not observed.
@@ -58,10 +63,11 @@ final class ProductionPlaygroundExecutor implements PlaygroundExecutor {
 		);
 		$retrieval  = $this->capture->result();
 
-		if ( null === $retrieval ) {
+		if ( null === $retrieval ) { // @phpstan-ignore identical.alwaysTrue -- The injected orchestrator observes into this request-local capture.
 			throw new LogicException( 'Playground retrieval observation was not produced.' );
 		}
 
+		// @phpstan-ignore-next-line -- Reachable when the injected orchestrator has invoked the request-local observer.
 		$latency_ms = (int) floor( ( hrtime( true ) - $started_at ) / 1_000_000 );
 
 		return new PlaygroundExecutionResult(
