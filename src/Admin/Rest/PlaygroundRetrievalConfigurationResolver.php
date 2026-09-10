@@ -54,7 +54,7 @@ final class PlaygroundRetrievalConfigurationResolver {
 			throw new RuntimeException( 'Playground retrieval source was not found.' );
 		}
 
-		$sql = $this->connection->prepare(
+		$sql                  = $this->connection->prepare(
 			'SELECT collection_key FROM %i WHERE collection_key = %s LIMIT 1',
 			$this->tables->vector_collections(),
 			$collection_id
