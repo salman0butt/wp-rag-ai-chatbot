@@ -42,7 +42,10 @@ final class PlaygroundSuccessProjectionTest extends TestCase {
 		$trace    = new DebugTrace(
 			str_repeat( 'a', 64 ),
 			28,
-			array( 'semantic' => 1, 'lexical' => 1 ),
+			array(
+				'semantic' => 1,
+				'lexical'  => 1,
+			),
 			array(),
 			'applied',
 			array()
@@ -57,10 +60,10 @@ final class PlaygroundSuccessProjectionTest extends TestCase {
 
 		self::assertSame(
 			array(
-				'ok'         => true,
-				'answer'     => 'Refunds are available. [C1]',
-				'no_answer'  => false,
-				'citations'  => array(
+				'ok'          => true,
+				'answer'      => 'Refunds are available. [C1]',
+				'no_answer'   => false,
+				'citations'   => array(
 					array(
 						'id'            => 'C1',
 						'chunk_id'      => 'chunk-1',
