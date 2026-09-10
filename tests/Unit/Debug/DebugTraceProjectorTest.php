@@ -105,7 +105,7 @@ final class DebugTraceProjectorTest extends TestCase {
 				hash( 'sha256', 'safe query' ),
 				10,
 				array(
-					'semantic'               => 3,
+					'semantic'                => 3,
 					'SECRET-CHANNEL-SENTINEL' => 99,
 				)
 			)
