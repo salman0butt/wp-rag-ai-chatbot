@@ -17,6 +17,7 @@ use WpRagAiChatbot\Admin\Rest\PlaygroundRetrievalConfiguration;
 use WpRagAiChatbot\Admin\Rest\PlaygroundSemanticConfigurationResolver;
 use WpRagAiChatbot\Bots\Bot;
 use WpRagAiChatbot\Bots\BotId;
+use WpRagAiChatbot\Embeddings\DistanceMetric;
 use WpRagAiChatbot\Embeddings\NormalizationMode;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 
@@ -34,6 +35,7 @@ final class PlaygroundSemanticConfigurationResolverTest extends TestCase {
 						'embedding_model_id'    => 'text-embedding-3-small',
 						'dimensions'            => 1536,
 						'normalization'         => 'l2',
+						'distance'              => 'cosine',
 						'vector_store_id'       => 'local',
 					),
 				)
@@ -44,6 +46,7 @@ final class PlaygroundSemanticConfigurationResolverTest extends TestCase {
 		self::assertSame( 'text-embedding-3-small', $resolved->embedding_profile->model_id );
 		self::assertSame( 1536, $resolved->embedding_profile->dimensions );
 		self::assertSame( NormalizationMode::L2, $resolved->embedding_profile->normalization );
+		self::assertSame( DistanceMetric::COSINE, $resolved->distance );
 		self::assertSame( 'local', $resolved->vector_store_id );
 	}
 
@@ -68,6 +71,28 @@ final class PlaygroundSemanticConfigurationResolverTest extends TestCase {
 						'embedding_model_id'    => 'text-embedding-3-small',
 						'dimensions'            => 1536,
 						'normalization'         => 'unsupported',
+						'distance'              => 'cosine',
+						'vector_store_id'       => 'local',
+					),
+				)
+			)
+		);
+	}
+
+	/** Invalid persisted distance must fail before a vector collection can be reconstructed. */
+	public function test_rejects_invalid_persisted_distance(): void {
+		$this->expectException( UnexpectedValueException::class );
+		$this->expectExceptionMessage( 'Persisted semantic retrieval distance is invalid.' );
+
+		( new PlaygroundSemanticConfigurationResolver() )->resolve(
+			$this->configuration(
+				array(
+					'semantic_retrieval' => array(
+						'embedding_provider_id' => 'openai',
+						'embedding_model_id'    => 'text-embedding-3-small',
+						'dimensions'            => 1536,
+						'normalization'         => 'l2',
+						'distance'              => 'unsupported',
 						'vector_store_id'       => 'local',
 					),
 				)
