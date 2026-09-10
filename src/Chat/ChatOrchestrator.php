@@ -85,6 +85,10 @@ final class ChatOrchestrator {
 			throw new ChatException( ChatFailureReason::RETRIEVAL_UNAVAILABLE, 'Retrieval is unavailable.' );
 		}
 
+		if ( null !== $this->retrieval_observer ) {
+			$this->retrieval_observer->observe( $retrieval );
+		}
+
 		$grounding = $this->grounding_policy->decide( $request->grounding_mode, $retrieval->candidates );
 		if ( ! $grounding->may_generate ) {
 			$no_answer = $grounding->no_answer;
@@ -170,13 +174,6 @@ final class ChatOrchestrator {
 			$validation->citations,
 			$request->conversation_id
 		);
-	}
-
-	/**
-	 * Read the optional retrieval observer dependency without executing it.
-	 */
-	private function retrieval_observer(): ?ChatRetrievalObserver {
-		return $this->retrieval_observer;
 	}
 
 	/**
