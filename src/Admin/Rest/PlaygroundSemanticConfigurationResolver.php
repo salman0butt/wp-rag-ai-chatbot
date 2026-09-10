@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Admin\Rest;
 
 use UnexpectedValueException;
+use WpRagAiChatbot\Embeddings\DistanceMetric;
 use WpRagAiChatbot\Embeddings\EmbeddingProfile;
 use WpRagAiChatbot\Embeddings\NormalizationMode;
 
@@ -33,6 +34,7 @@ final class PlaygroundSemanticConfigurationResolver {
 		$model_id        = $semantic['embedding_model_id'] ?? null;
 		$dimensions      = $semantic['dimensions'] ?? null;
 		$normalization   = $semantic['normalization'] ?? null;
+		$distance        = $semantic['distance'] ?? null;
 		$vector_store_id = $semantic['vector_store_id'] ?? null;
 
 		if (
@@ -45,6 +47,7 @@ final class PlaygroundSemanticConfigurationResolver {
 			|| ! is_string( $vector_store_id )
 			|| '' === trim( $vector_store_id )
 			|| ! is_string( $normalization )
+			|| ! is_string( $distance )
 		) {
 			throw new UnexpectedValueException( 'Persisted semantic retrieval configuration is invalid.' );
 		}
@@ -54,6 +57,11 @@ final class PlaygroundSemanticConfigurationResolver {
 			throw new UnexpectedValueException( 'Persisted semantic retrieval normalization is invalid.' );
 		}
 
+		$distance_metric = DistanceMetric::tryFrom( $distance );
+		if ( null === $distance_metric ) {
+			throw new UnexpectedValueException( 'Persisted semantic retrieval distance is invalid.' );
+		}
+
 		return new PlaygroundSemanticConfiguration(
 			new EmbeddingProfile(
 				trim( $provider_id ),
@@ -61,6 +69,7 @@ final class PlaygroundSemanticConfigurationResolver {
 				$dimensions,
 				$normalization_mode
 			),
+			$distance_metric,
 			trim( $vector_store_id )
 		);
 	}
