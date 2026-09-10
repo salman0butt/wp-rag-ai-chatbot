@@ -57,8 +57,8 @@ final class DebugTraceProjector {
 	 * @return array<string,mixed>
 	 */
 	private static function project_candidate( RetrievalCandidate $candidate ): array {
-		$truncated       = strlen( $candidate->content ) > self::MAX_CHUNK_CONTENT_BYTES;
-		$content         = $truncated
+		$truncated        = strlen( $candidate->content ) > self::MAX_CHUNK_CONTENT_BYTES;
+		$content          = $truncated
 			? self::truncate_utf8_bytes( $candidate->content, self::MAX_CHUNK_CONTENT_BYTES )
 			: $candidate->content;
 		$channel_evidence = array();
