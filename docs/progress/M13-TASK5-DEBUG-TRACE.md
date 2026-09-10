@@ -1,6 +1,6 @@
 # M13 Task 5 — Structured Retrieval Debug Trace
 
-Status: **IMPLEMENTED / INDEPENDENT REVIEW PENDING**
+Status: **COMPLETE**
 
 ## Scope completed
 
@@ -14,6 +14,7 @@ The implementation adds:
 - hard cap of 20 candidate projections;
 - hard cap of 4 approved channel-evidence entries per candidate;
 - UTF-8-safe candidate content truncation at 2000 bytes plus `content_truncated`;
+- UTF-8-safe 256-byte cap for candidate identifier/classification scalar strings before serialization;
 - explicit candidate field allow-list;
 - explicit `semantic` / `lexical` channel-count allow-list;
 - explicit `semantic` / `lexical` candidate channel-evidence allow-list;
@@ -60,9 +61,20 @@ Fresh security review also found that `ChannelEvidence::$channel` accepts arbitr
 - `7d5a9dafa4fad2946e508ebc8a273b6a6cdeeb5f` was not claimed GREEN because PHPCS stopped before PHPUnit on assignment alignment only.
 - Formatting-only correction `5f2a05f70a199df697a8cc0474d9987fa62f80ea` preserved production behavior.
 
+### Candidate scalar boundedness closeout review
+
+A separate fresh-session correctness/security/performance review found one Important boundedness defect: `chunk_id`, `document_id`, `language`, and `visibility` were copied verbatim even though `RetrievalCandidate` accepts arbitrary-length strings. Candidate count and content bounds therefore did not guarantee a bounded serialized trace.
+
+- Genuine RED `98bea8bb675d2eafc77f6117565ccd9d396d2049` / CI `34438769550`:
+  - PHPStan completed cleanly;
+  - PHPUnit executed 691 tests / 2917 assertions;
+  - exactly one failure proved an oversized candidate scalar remained 385 bytes instead of the required maximum 256 bytes.
+- GREEN production fix `fb774b832594a19b702d4c6caabacc5094b5e30b` adds a projection-owned 256-byte UTF-8-safe cap for candidate identifier/classification scalar strings without changing M10 retrieval/ranking objects or behavior.
+- Exact production CI `34438873422` is GREEN across `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`.
+
 ## Exact-head verification
 
-Exact production head `5f2a05f70a199df697a8cc0474d9987fa62f80ea` / CI `34435507190` is fully GREEN:
+Exact production head `fb774b832594a19b702d4c6caabacc5094b5e30b` / CI `34438873422` is fully GREEN:
 
 - `php-quality`: SUCCESS;
 - `js-quality`: SUCCESS;
@@ -71,19 +83,22 @@ Exact production head `5f2a05f70a199df697a8cc0474d9987fa62f80ea` / CI `344355071
 
 ## Security / privacy review
 
-Implemented boundaries now ensure:
+Final boundaries ensure:
 
 - raw query content is not serialized;
 - candidates are hard bounded and candidate content is UTF-8-safe truncated;
+- candidate identifier/classification strings are capped at 256 UTF-8-safe bytes;
 - candidates use an explicit field allow-list rather than object recursion;
 - arbitrary channel-count names cannot cross the DTO boundary;
 - arbitrary candidate evidence channel names cannot cross the DTO boundary or consume bounded evidence slots;
 - stable M10 failure/rerank codes are reused rather than upstream error bodies;
 - no provider credentials, authorization material, provider payloads, environment/config dumps, or unrestricted metadata are added by Task 5.
 
+Fresh-session closeout review after `fb774b832594a19b702d4c6caabacc5094b5e30b` found **0 Critical / 0 Important unresolved**. Query diagnostics are fixed-shape (`sha256` hash plus byte count), failure/rerank strings are constrained by `RetrievalTrace`, candidate/channel collections are hard-capped, and all candidate free-form serialized strings are now bounded.
+
 ## Performance review
 
-Projection work is bounded and linear over at most 20 candidates. Each projected candidate emits at most four approved channel-evidence records and at most 2000 bytes of content. No repository scan, network request, provider call, unbounded cache, or polling loop is introduced.
+Projection work is bounded and linear over at most 20 candidates. Each projected candidate emits at most four approved channel-evidence records, at most 2000 bytes of content, and at most 256 bytes for each candidate identifier/classification string. No repository scan, network request, provider call, unbounded cache, or polling loop is introduced.
 
 ## Accessibility
 
@@ -91,4 +106,4 @@ Task 5 is a server-side DTO/projection unit and introduces no interactive UI. Ac
 
 ## Closeout state
 
-Task 5 implementation and exact-head verification are complete. The mandatory independent correctness/security/performance closeout review remains outstanding. Do not mark Task 5 complete or begin Task 6 until a genuinely separate fresh-session reviewer verifies this projection and all Critical/Important findings are resolved under the repository evidence rules.
+Task 5 is **COMPLETE**. Genuine RED/GREEN evidence exists for the initial projection and every Important closeout finding; the final fresh-session review has 0 Critical / 0 Important unresolved; exact production SHA `fb774b832594a19b702d4c6caabacc5094b5e30b` is green across all four permanent CI jobs. The next unfinished unit is Task 6 — protected `POST /admin/debug/playground` execution over existing M10/M11 production seams and this projector.
