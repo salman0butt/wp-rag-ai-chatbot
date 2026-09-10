@@ -1,6 +1,6 @@
 # M13 Task 6 — Playground REST Execution
 
-Status: **IN PROGRESS — exact-retrieval observation seam complete; REST composition/resource pending**
+Status: **IN PROGRESS — exact-retrieval observation seam plus bounded/sanitized resource boundary complete; production composition/REST registration pending**
 
 ## Goal
 
@@ -12,7 +12,7 @@ Add protected `POST /admin/debug/playground` execution that reuses the existing 
 
 Task 6 therefore first adds a request-local optional `ChatRetrievalObserver` seam. `ChatOrchestrator` invokes it immediately after the one successful production retrieval and passes the exact `RetrievalResult` that continues into grounding, prompt construction, generation, and citation validation. Existing callers remain compatible because the dependency defaults to `null`.
 
-## TDD evidence
+## TDD evidence — exact retrieval observation seam
 
 ### Test preparation — not RED
 
@@ -49,14 +49,69 @@ Exact-head CI `34443128752` for `060fd76f9b97a587f612edb56dc4bf61832f3751` is GR
 - `package`;
 - complete `wordpress-smoke`.
 
-## Security / correctness review of this subunit
+## TDD evidence — bounded/sanitized Playground resource boundary
+
+### Question-bound test preparation — not RED
+
+`5a38f3aa719e7359453749dd9a2c99837264a5a8` added the test-only `PlaygroundRestResource` question-bound contract. CI `34447357683` stopped in PHPCS before PHPUnit because of a test docblock callable-shape convention. This is explicitly **not** counted as RED.
+
+### Genuine question-bound RED
+
+`03185abaf040a333937b73fe9f8a38b7bb65352c` / CI `34447433278`:
+
+- PHPCS and PHPStan passed;
+- PHPUnit reached the new regression;
+- 694 tests / 2,938 assertions;
+- exactly 1 failure proving `PlaygroundRestResource` did not yet exist.
+
+### Question-bound GREEN implementation
+
+`d883c452615ce91b06ed1dda7e89f9c48921b681` introduced the smallest request-local resource boundary:
+
+- mirrors the production `ChatRequest` 16,384-byte question ceiling;
+- trims and rejects empty questions;
+- rejects invalid input before the executor can run;
+- delegates valid input only to its request-local executor seam.
+
+### Safe-error test preparation — not RED
+
+`c0af08627c4a3aa7e485cbe78cf2d6889031d53c` added retrieval/internal exception sentinel regressions, but CI `34447703276` stopped in PHPCS on two test-only short-ternary expressions. This is explicitly **not** counted as RED.
+
+### Genuine safe-error RED
+
+`ffad1ab31a98665d92dbed813e1479af63ac49fd` / CI `34447775577`:
+
+- PHPCS and PHPStan passed;
+- PHPUnit reached the two new exception regressions;
+- both errored because exceptions escaped the resource boundary;
+- the thrown messages contained the provider/internal sentinel strings, proving the boundary had no stable sanitization yet.
+
+### Safe-error GREEN
+
+`8900e407fad0dadcab2540b47091a808306672ef` adds the minimal typed failure normalization:
+
+- `RetrievalException` -> repository-owned `retrieval_unavailable`;
+- every other `Throwable` -> repository-owned `playground_failed`;
+- raw provider/internal exception messages are never copied into the response;
+- invalid/non-array executor output also becomes `playground_failed`.
+
+Exact-head CI `34447914219` for `8900e407fad0dadcab2540b47091a808306672ef` is GREEN across all four permanent jobs:
+
+- `php-quality`;
+- `js-quality`;
+- `package`;
+- complete `wordpress-smoke`, including activation, database, provider, knowledge, file-ingestion, WooCommerce-knowledge, and environment cleanup steps.
+
+## Security / correctness review of completed Task 6 subunits
 
 - No raw provider payload, credential, query, or exception data is newly serialized.
-- Observer input is the existing M10 `RetrievalResult`; REST projection still must pass through the completed Task 5 `DebugTraceProjector`.
-- Observation happens only after successful retrieval, so retrieval exceptions retain the existing M11 safe `retrieval_unavailable` mapping.
+- Observer input is the existing M10 `RetrievalResult`; final REST projection still must pass through the completed Task 5 `DebugTraceProjector`.
+- Observation happens only after successful retrieval, so retrieval exceptions retain the existing M11-safe classification and the Playground resource maps them to `retrieval_unavailable`.
 - Existing callers are unchanged because the observer dependency is nullable and defaults to `null`.
 - Retrieval is not duplicated: the observer receives the same object used by downstream grounding/prompt/generation flow.
 - The observer is request-local by contract; Task 6 must not store it globally or across requests.
+- The Playground resource now rejects empty/oversized questions before execution and owns stable safe error envelopes rather than serializing throwable messages.
+- The resource executor remains an internal request-local seam; production composition must return only an allow-listed typed/bounded result and must not pass arbitrary provider arrays through to HTTP unchanged.
 
 This is a coordinator review, **not** the mandatory fresh-session independent Task 6 closeout review.
 
@@ -64,14 +119,17 @@ This is a coordinator review, **not** the mandatory fresh-session independent Ta
 
 The current plugin bootstrap registers provider, knowledge, job, and admin foundations, but there is no existing HTTP chat composition root that can simply be reused by the new admin playground route. Completing Task 6 therefore requires a small production runtime/composition seam that assembles existing M03/M10/M11 dependencies once for a request and allows the playground to attach its request-local retrieval observer. It must not create a second retrieval/provider implementation.
 
+`AdminRestBootstrap` already establishes the correct WordPress pattern for protected administrator resources: request-local resource construction plus `AdminCapability::can_manage` permission callbacks. The Playground route should follow that pattern after the production chat executor/composition seam exists.
+
 ## Next unfinished work
 
-1. Recover the concrete M03/M10/M11 dependency factories/registries used to create providers, vector/lexical retrieval, grounding, prompt, memory, and citation services.
+1. Finish recovering the concrete M03/M10/M11 dependency factories/registries used to create providers, vector/lexical retrieval, grounding, prompt, memory, and citation services.
 2. Establish the smallest request-local production chat composition/executor seam that can accept `ChatRetrievalObserver` without duplicating M10/M11 logic.
-3. Under a new genuine RED, add `PlaygroundRestResource` with `AdminCapability::can_manage`, bounded question plus explicit existing bot/retrieval configuration identifiers, and stable safe error mapping.
-4. Execute one M11 request, capture its exact M10 result through the observer, project it with `DebugTraceProjector`, and combine only bounded/allow-listed `ChatResult` diagnostics.
-5. Add REST registration/integration/smoke coverage.
-6. Perform a genuinely fresh independent correctness/security/performance review, resolve all Critical/Important findings under RED → GREEN, and require all four permanent jobs GREEN on the final Task 6 SHA before marking Task 6 COMPLETE or starting Task 7.
+3. Define a typed/allow-listed Playground execution result so the HTTP resource never trusts arbitrary executor arrays as public output.
+4. Under a new genuine RED, register protected `POST /admin/debug/playground` behind `AdminCapability::can_manage` and bind request JSON to the resource.
+5. Execute one M11 request, capture its exact M10 result through the observer, project it with `DebugTraceProjector`, and combine only bounded/allow-listed `ChatResult` diagnostics.
+6. Add REST registration/integration/smoke coverage.
+7. Perform a genuinely fresh independent correctness/security/performance review, resolve all Critical/Important findings under RED -> GREEN, and require all four permanent jobs GREEN on the final Task 6 SHA before marking Task 6 COMPLETE or starting Task 7.
 
 ## Merge state
 
