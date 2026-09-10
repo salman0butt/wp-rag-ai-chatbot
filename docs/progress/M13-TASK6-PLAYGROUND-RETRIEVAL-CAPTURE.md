@@ -1,6 +1,6 @@
 # M13 Task 6 — Playground Retrieval Capture
 
-Status: **IMPLEMENTED — exact-head CI verification pending on this documentation SHA**
+Status: **COMPLETE SUBUNIT — verified GREEN; Task 6 overall remains IN PROGRESS**
 
 ## Purpose
 
@@ -25,9 +25,16 @@ This is the genuine RED witness for the new production behavior.
 
 `20ee8a821734ebd8c74747effe1a136493ebca16` introduced the minimal request-local observer implementation, but CI `34460133517` stopped in PHPCS because the private retrieval-result property docblock lacked an `@var` tag. PHPUnit did not run on that SHA, so it is explicitly **not** claimed as GREEN.
 
-### Style closeout / GREEN candidate
+### GREEN
 
-`09beea60ab8773e4cbafe81a1e6e58a0b5186fff` added only the missing property type documentation. Exact-head CI `34460212845` has `php-quality`, `js-quality`, and `package` green; complete `wordpress-smoke` must also finish green before this SHA is treated as the final GREEN witness.
+`09beea60ab8773e4cbafe81a1e6e58a0b5186fff` added only the missing property type documentation. Exact-head CI `34460212845` completed successfully across all four permanent jobs:
+
+- `php-quality`;
+- `js-quality`;
+- `package`;
+- complete `wordpress-smoke`, including environment startup, activation, database, providers, knowledge, file-ingestion, WooCommerce-knowledge, and environment cleanup.
+
+This is the final GREEN witness for the retrieval-capture subunit.
 
 ## Correctness / security / performance review
 
@@ -43,7 +50,7 @@ This is a coordinator review of this bounded subunit, not the mandatory fresh-se
 
 ## Exact continuation point
 
-After this documentation SHA is fully green, continue Task 6 without reimplementing retrieval:
+Continue Task 6 without reimplementing retrieval:
 
 1. Build the smallest request-local production `PlaygroundExecutor` implementation around the existing M03/M10/M11 services.
 2. Instantiate one `PlaygroundRetrievalCapture` per execution and pass it as the `ChatRetrievalObserver` to `ChatOrchestrator`.
