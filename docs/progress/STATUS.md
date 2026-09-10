@@ -35,26 +35,32 @@ Administrator-safe `DebugTrace` projection over existing M10 retrieval evidence 
 
 ### Task 6 — Playground REST execution: IN PROGRESS
 
-The first production seam is complete and exact-head verified:
+Completed and exact-head-verified Task 6 composition prerequisites now include:
 
-- `ChatRetrievalObserver` is an optional request-local M11 observer contract.
-- `ChatOrchestrator` invokes it once immediately after successful existing M10 retrieval, passing the exact `RetrievalResult` subsequently used by grounding/prompt/generation/citation flow.
-- This prevents the playground from running retrieval/scoring/reranking a second time merely to obtain diagnostics.
-- Existing callers remain compatible because the observer defaults to `null`.
-- Genuine RED `2a598018070a37f83e8d254c5e6918774a0bb6a2` / CI `34442552312`: PHPStan clean; PHPUnit 693 tests / 2,930 assertions with exactly two missing-observer-contract failures.
-- GREEN production head `060fd76f9b97a587f612edb56dc4bf61832f3751` / CI `34443128752`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN.
+- `ChatRetrievalObserver` plus request-local `PlaygroundRetrievalCapture`, preserving the exact M10 `RetrievalResult` already used by M11 without duplicate retrieval/scoring/reranking;
+- typed `PlaygroundExecutor` / `PlaygroundExecutionResult` contracts and `ProductionPlaygroundExecutor`;
+- bounded/sanitized `PlaygroundRestResource` behavior and allow-listed success projection;
+- explicit fail-closed persisted bot/provider/model selection through `PlaygroundBotConfigurationResolver`;
+- explicit fail-closed persisted knowledge-source/vector-collection selection through `PlaygroundRetrievalConfigurationResolver`;
+- closed `PlaygroundConfiguration` aggregate combining those resolved persisted objects;
+- `PlaygroundConfigurationResolver`, composing the existing persisted bot and retrieval resolvers from explicit bot/source/collection identifiers without fallbacks or arbitrary request-level runtime options.
 
-Durable evidence and continuation details: `docs/progress/M13-TASK6-PLAYGROUND-REST.md`.
+Latest resolver TDD evidence:
+
+- `06703d49d771d00f0ccbe31e9900704c74c98c10` / CI `34485206226` stopped at PHPCS alignment warnings and is **NOT RED**.
+- Genuine RED `7dfdbdee7c8e60551dd5f3651f2b106a2a1e79e5` / CI `34485370927`: PHPStan clean; PHPUnit **709 tests / 3,011 assertions / exactly 1 error** because `PlaygroundConfigurationResolver` did not exist.
+- GREEN production `fa9e1a64b4825f01f45a57bf53702663a5a23a8c` / CI `34485530222`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all GREEN.
+
+Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION-RESOLVER.md` plus the earlier Task 6 progress records.
 
 ### Exact next Task 6 work
 
-1. Recover the concrete M03/M10/M11 production dependency factories/registries used for provider, retrieval, memory, grounding, prompt, and citation services.
-2. Add the smallest request-local production chat composition/executor seam that can accept `ChatRetrievalObserver`; do not build a parallel retrieval/provider stack.
-3. Under fresh genuine RED, add protected `POST /admin/debug/playground` behind `AdminCapability::can_manage`.
-4. Bound/validate the test question and explicit existing bot/retrieval configuration identifiers.
-5. Execute the existing M11 pipeline once, capture the exact M10 retrieval through the observer, project it with Task 5 `DebugTraceProjector`, and serialize only bounded/allow-listed answer/citation/model/latency/usage fields already available from production outputs.
-6. Map internal/provider failures to stable repository-owned codes such as `retrieval_unavailable` and `playground_failed`; never serialize raw upstream messages.
-7. Add REST/integration/smoke coverage and perform a genuinely fresh independent correctness/security/performance review before marking Task 6 COMPLETE.
+1. Recover the concrete existing factories/registries for generation provider, embedding/vector retrieval, lexical retrieval, grounding, prompt, memory, and citations.
+2. Under fresh genuine RED, implement the smallest request-local **production dependency composition** seam consuming resolved `PlaygroundConfiguration` and constructing one `PlaygroundRetrievalCapture`, one `ChatOrchestrator`, and one `ProductionPlaygroundExecutor`.
+3. Reuse the existing M10/M11 pipeline exactly once. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, or retrieval limits.
+4. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
+5. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
+6. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
 
 Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete. Do not merge PR #18 until all M13 tasks, final milestone review, exact-final-head CI, and post-merge `main` verification are complete.
 
@@ -66,17 +72,10 @@ Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete
 - `docs/progress/M13-TASK1-KNOWLEDGE-SOURCES.md` — Task 1 evidence.
 - `docs/progress/M13-TASK2-KNOWLEDGE-DETAIL.md` — Task 2 evidence.
 - `docs/progress/M13-TASK3-JOB-LIFECYCLE.md` — Task 3 evidence.
-- `docs/progress/M13-TASK4-KNOWLEDGE-SOURCE-RENDERING.md` — Task 4 source rendering.
-- `docs/progress/M13-TASK4-KNOWLEDGE-BOOTSTRAP.md` — Task 4 router/bootstrap/loading.
-- `docs/progress/M13-TASK4-KNOWLEDGE-DETAIL-UI.md` — Task 4 selected source/document.
-- `docs/progress/M13-TASK4-KNOWLEDGE-CHUNKS.md` — Task 4 chunk inspection/navigation.
-- `docs/progress/M13-TASK4-KNOWLEDGE-JOBS.md` — Task 4 job inventory.
-- `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ACTIONS.md` — Task 4 cancel/retry.
-- `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ENQUEUE.md` — Task 4 enqueue.
-- `docs/progress/M13-TASK4-KNOWLEDGE-JOB-ERRORS.md` — Task 4 safe lifecycle errors.
-- `docs/progress/M13-TASK4-KNOWLEDGE-STATES.md` — Task 4 loading/empty/error.
-- `docs/progress/M13-TASK4-KNOWLEDGE-RESPONSIVE.md` — Task 4 responsive/accessibility.
-- `docs/progress/M13-TASK4-KNOWLEDGE-NAVIGATION-RACE.md` — Task 4 selected-resource race hardening.
-- `docs/progress/M13-TASK4-KNOWLEDGE-PAGE-RACE.md` — Task 4 page race hardening/closeout.
+- `docs/progress/M13-TASK4-*` — Task 4 implementation and closeout evidence.
 - `docs/progress/M13-TASK5-DEBUG-TRACE.md` — Task 5 debug trace/redaction/boundedness evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-REST.md` — Task 6 observer seam and continuation evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-REST.md` — Task 6 resource/observer continuation evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-BOT-CONFIGURATION.md` — persisted bot selector evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-RETRIEVAL-CONFIGURATION.md` — persisted source/collection selector evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION.md` — closed configuration aggregate evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION-RESOLVER.md` — explicit selector composition evidence and current continuation point.
