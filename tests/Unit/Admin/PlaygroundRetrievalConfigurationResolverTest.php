@@ -106,7 +106,8 @@ final class PlaygroundRetrievalConfigurationResolverTest extends TestCase {
 			->expects( self::once() )
 			->method( 'prepare' )
 			->with(
-				'SELECT collection_key FROM wp_rag_ai_vector_collections WHERE collection_key = %s LIMIT 1',
+				'SELECT collection_key FROM %i WHERE collection_key = %s LIMIT 1',
+				'wp_rag_ai_vector_collections',
 				'production-rag'
 			)
 			->willReturn( 'prepared-collection-query' );
