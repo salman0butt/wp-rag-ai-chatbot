@@ -15,7 +15,13 @@ use WpRagAiChatbot\Admin\Rest\PlaygroundConfiguration;
 use WpRagAiChatbot\Admin\Rest\PlaygroundRetrievalConfiguration;
 use WpRagAiChatbot\Bots\Bot;
 
+/**
+ * Verifies the closed typed persisted Playground configuration contract.
+ */
 final class PlaygroundConfigurationTest extends TestCase {
+	/**
+	 * The aggregate carries only already-resolved persisted configuration values.
+	 */
 	public function test_it_carries_only_the_resolved_bot_and_retrieval_selection(): void {
 		$bot       = ( new ReflectionClass( Bot::class ) )->newInstanceWithoutConstructor();
 		$retrieval = ( new ReflectionClass( PlaygroundRetrievalConfiguration::class ) )->newInstanceWithoutConstructor();
