@@ -94,4 +94,27 @@ final class DebugTraceProjectorTest extends TestCase {
 		self::assertStringNotContainsString( 'RAW-QUERY-SECRET-SENTINEL', $json );
 		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', $json );
 	}
+
+	/**
+	 * Only repository-owned retrieval channel identifiers may be serialized.
+	 */
+	public function test_filters_unapproved_channel_count_keys(): void {
+		$retrieval = new RetrievalResult(
+			array(),
+			new RetrievalTrace(
+				hash( 'sha256', 'safe query' ),
+				10,
+				array(
+					'semantic'               => 3,
+					'SECRET-CHANNEL-SENTINEL' => 99,
+				)
+			)
+		);
+
+		$projected = ( new DebugTraceProjector() )->projectRetrieval( $retrieval )->to_array();
+		$json      = (string) wp_json_encode( $projected );
+
+		self::assertSame( array( 'semantic' => 3 ), $projected['channels']['counts'] );
+		self::assertStringNotContainsString( 'SECRET-CHANNEL-SENTINEL', $json );
+	}
 }
