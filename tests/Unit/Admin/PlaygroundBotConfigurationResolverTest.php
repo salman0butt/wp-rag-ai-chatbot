@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Admin;
 
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use WpRagAiChatbot\Admin\Rest\PlaygroundBotConfigurationResolver;
@@ -22,7 +23,7 @@ use WpRagAiChatbot\Bots\BotRepository;
 final class PlaygroundBotConfigurationResolverTest extends TestCase {
 	/** Resolver must return the exact enabled persisted bot selected by canonical ID. */
 	public function test_resolves_enabled_bot_by_explicit_id(): void {
-		$bot = $this->bot( true );
+		$bot      = $this->bot( true );
 		$resolver = new PlaygroundBotConfigurationResolver( $this->repository( $bot ) );
 
 		$resolved = $resolver->resolve( $bot->id->value );
@@ -43,7 +44,7 @@ final class PlaygroundBotConfigurationResolverTest extends TestCase {
 
 	/** Disabled persisted bots must not be executed through the administrator playground. */
 	public function test_rejects_disabled_bot(): void {
-		$bot = $this->bot( false );
+		$bot      = $this->bot( false );
 		$resolver = new PlaygroundBotConfigurationResolver( $this->repository( $bot ) );
 
 		$this->expectException( RuntimeException::class );
@@ -51,6 +52,7 @@ final class PlaygroundBotConfigurationResolverTest extends TestCase {
 		$resolver->resolve( $bot->id->value );
 	}
 
+	/** Build one persisted bot fixture. */
 	private function bot( bool $enabled ): Bot {
 		return new Bot(
 			new BotId( 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' ),
@@ -64,40 +66,10 @@ final class PlaygroundBotConfigurationResolverTest extends TestCase {
 		);
 	}
 
-	private function repository( ?Bot $bot ): BotRepository {
-		return new class( $bot ) implements BotRepository {
-			public function __construct( private readonly ?Bot $bot ) {
-			}
-
-			public function create( string $name, bool $enabled, string $provider_id, string $model_id ): Bot {
-				throw new RuntimeException( 'Not used.' );
-			}
-
-			public function find( BotId $id ): ?Bot {
-				if ( null === $this->bot || $this->bot->id->value !== $id->value ) {
-					return null;
-				}
-				return $this->bot;
-			}
-
-			public function update(
-				BotId $id,
-				int $expected_version,
-				string $name,
-				bool $enabled,
-				string $provider_id,
-				string $model_id
-			): Bot {
-				throw new RuntimeException( 'Not used.' );
-			}
-
-			public function delete( BotId $id ): bool {
-				throw new RuntimeException( 'Not used.' );
-			}
-
-			public function list( int $page, int $per_page ): array {
-				throw new RuntimeException( 'Not used.' );
-			}
-		};
+	/** Build a repository double returning one selected bot. */
+	private function repository( ?Bot $bot ): BotRepository&MockObject {
+		$repository = $this->createMock( BotRepository::class );
+		$repository->method( 'find' )->willReturn( $bot );
+		return $repository;
 	}
 }
