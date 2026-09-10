@@ -29,11 +29,11 @@ use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 final class PlaygroundConfigurationResolverTest extends TestCase {
 	/** Explicit bot/source/collection selectors must resolve through existing persistence boundaries. */
 	public function test_resolves_explicit_persisted_configuration(): void {
-		$bot             = $this->bot();
-		$bot_repository  = $this->createMock( BotRepository::class );
-		$source          = $this->source();
+		$bot               = $this->bot();
+		$bot_repository    = $this->createMock( BotRepository::class );
+		$source            = $this->source();
 		$source_repository = $this->createMock( KnowledgeSourceRepository::class );
-		$connection      = $this->connection();
+		$connection        = $this->connection();
 
 		$bot_repository
 			->expects( self::once() )
