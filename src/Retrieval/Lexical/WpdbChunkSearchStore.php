@@ -19,7 +19,7 @@ use WpRagAiChatbot\Database\TableNames;
 /**
  * Stores bounded lexical rows and applies trusted filters in SQL.
  */
-final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionStore {
+final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionStore, ChunkLookupStore {
 	/**
 	 * Create the WordPress database projection adapter.
 	 *
@@ -47,36 +47,36 @@ final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionSto
 			if ( $chunk->document_key !== $document_key ) {
 				throw new InvalidArgumentException( 'Projected chunk belongs to another document.' );
 			}
-		}
 
-		$this->delete_document( $collection_id, $document_key );
-		foreach ( $chunks as $chunk ) {
-			$metadata_json = wp_json_encode( $chunk->metadata );
-			if ( false === $metadata_json ) {
-				throw new DatabaseException( 'Could not encode chunk-search metadata.' );
-			}
+			$this->delete_document( $collection_id, $document_key );
+			foreach ( $chunks as $chunk ) {
+				$metadata_json = wp_json_encode( $chunk->metadata );
+				if ( false === $metadata_json ) {
+					throw new DatabaseException( 'Could not encode chunk-search metadata.' );
+				}
 
-			$inserted = $this->connection->insert(
-				$this->tables->chunk_search(),
-				array(
-					'collection_id' => $collection_id,
-					'chunk_key'     => $chunk->chunk_key,
-					'document_key'  => $chunk->document_key,
-					'source_id'     => $chunk->source_id,
-					'document_type' => $chunk->document_type,
-					'title'         => $chunk->title,
-					'canonical_url' => $chunk->canonical_url,
-					'content'       => $chunk->content,
-					'content_hash'  => $chunk->content_hash,
-					'language'      => $chunk->language,
-					'visibility'    => $chunk->visibility,
-					'sequence'      => $chunk->sequence,
-					'metadata_json' => $metadata_json,
-					'updated_at'    => gmdate( 'Y-m-d H:i:s' ),
-				)
-			);
-			if ( false === $inserted ) {
-				throw new DatabaseException( 'Could not persist chunk-search projection.' );
+				$inserted = $this->connection->insert(
+					$this->tables->chunk_search(),
+					array(
+						'collection_id' => $collection_id,
+						'chunk_key'     => $chunk->chunk_key,
+						'document_key'  => $chunk->document_key,
+						'source_id'     => $chunk->source_id,
+						'document_type' => $chunk->document_type,
+						'title'         => $chunk->title,
+						'canonical_url' => $chunk->canonical_url,
+						'content'       => $chunk->content,
+						'content_hash'  => $chunk->content_hash,
+						'language'      => $chunk->language,
+						'visibility'    => $chunk->visibility,
+						'sequence'      => $chunk->sequence,
+						'metadata_json' => $metadata_json,
+						'updated_at'    => gmdate( 'Y-m-d H:i:s' ),
+					)
+				);
+				if ( false === $inserted ) {
+					throw new DatabaseException( 'Could not persist chunk-search projection.' );
+				}
 			}
 		}
 	}
@@ -100,6 +100,31 @@ final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionSto
 		if ( false === $deleted ) {
 			throw new DatabaseException( 'Could not delete chunk-search projection.' );
 		}
+	}
+
+	/**
+	 * Resolve one canonical persisted chunk without invoking lexical ranking.
+	 *
+	 * @param string $collection_id Explicit persisted collection scope.
+	 * @param string $chunk_key Stable lowercase SHA-256 chunk key.
+	 * @throws InvalidArgumentException When the collection or chunk key is invalid.
+	 * @throws DatabaseException When stored projection data is invalid.
+	 */
+	public function find_chunk( string $collection_id, string $chunk_key ): ?ChunkSearchRecord {
+		new LexicalFilter( $collection_id );
+		if ( 1 !== preg_match( '/^[a-f0-9]{64}$/', $chunk_key ) ) {
+			throw new InvalidArgumentException( 'Chunk lookup key must be a lowercase SHA-256 value.' );
+		}
+
+		$sql = $this->connection->prepare(
+			'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, content_hash, language, visibility, sequence, metadata_json FROM %i WHERE collection_id = %s AND chunk_key = %s LIMIT 1',
+			$this->tables->chunk_search(),
+			$collection_id,
+			$chunk_key
+		);
+		$row = $this->connection->get_row( $sql );
+
+		return null === $row ? null : $this->record_from_row( $row );
 	}
 
 	/**
