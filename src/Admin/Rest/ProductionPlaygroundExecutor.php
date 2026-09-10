@@ -34,7 +34,7 @@ final class ProductionPlaygroundExecutor implements PlaygroundExecutor {
 		private readonly ChatOrchestrator $orchestrator,
 		private readonly ChatAccessContext $access,
 		private readonly PlaygroundRetrievalCapture $capture,
-		private readonly DebugTraceProjector $projector, // @phpstan-ignore property.onlyWritten -- The read is after an observer callback PHPStan cannot correlate across the injected orchestrator.
+		private readonly DebugTraceProjector $projector, // @phpstan-ignore property.onlyWritten (Read follows an observer callback PHPStan cannot correlate across the injected orchestrator.)
 		private readonly string $model_id,
 		private readonly GroundingMode $grounding_mode
 	) {
@@ -63,11 +63,11 @@ final class ProductionPlaygroundExecutor implements PlaygroundExecutor {
 		);
 		$retrieval  = $this->capture->result();
 
-		if ( null === $retrieval ) { // @phpstan-ignore identical.alwaysTrue -- The injected orchestrator observes into this request-local capture.
+		if ( null === $retrieval ) { // @phpstan-ignore identical.alwaysTrue (The injected orchestrator observes into this request-local capture.)
 			throw new LogicException( 'Playground retrieval observation was not produced.' );
 		}
 
-		// @phpstan-ignore-next-line -- Reachable when the injected orchestrator has invoked the request-local observer.
+		// @phpstan-ignore-next-line (Reachable when the injected orchestrator has invoked the request-local observer.)
 		$latency_ms = (int) floor( ( hrtime( true ) - $started_at ) / 1_000_000 );
 
 		return new PlaygroundExecutionResult(
