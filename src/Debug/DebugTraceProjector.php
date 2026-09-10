@@ -33,10 +33,17 @@ final class DebugTraceProjector {
 			$candidates[] = self::project_candidate( $candidate );
 		}
 
+		$channel_counts = array();
+		foreach ( array( 'semantic', 'lexical' ) as $channel ) {
+			if ( array_key_exists( $channel, $result->trace->channel_counts ) ) {
+				$channel_counts[ $channel ] = $result->trace->channel_counts[ $channel ];
+			}
+		}
+
 		return new DebugTrace(
 			$result->trace->query_hash,
 			$result->trace->query_bytes,
-			$result->trace->channel_counts,
+			$channel_counts,
 			$result->trace->channel_failures,
 			$result->trace->rerank_status,
 			$candidates
