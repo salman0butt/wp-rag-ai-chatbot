@@ -96,6 +96,38 @@ final class DebugTraceProjectorTest extends TestCase {
 	}
 
 	/**
+	 * Candidate scalar strings must not bypass the bounded debug DTO contract.
+	 */
+	public function test_bounds_candidate_scalar_strings_before_serialization(): void {
+		$sentinel  = 'UNBOUNDED-SCALAR-SENTINEL';
+		$oversized = str_repeat( 'å', 180 ) . $sentinel;
+		$candidate = new RetrievalCandidate(
+			$oversized,
+			$oversized,
+			1,
+			'safe content',
+			$oversized,
+			$oversized,
+			array( new ChannelEvidence( 'semantic', 0.9, 1, 1.0, 0.01 ) ),
+			0.01
+		);
+		$retrieval = new RetrievalResult(
+			array( $candidate ),
+			new RetrievalTrace( hash( 'sha256', 'safe query' ), 10, array( 'semantic' => 1 ) )
+		);
+
+		$projected = ( new DebugTraceProjector() )->projectRetrieval( $retrieval )->to_array();
+		$json      = (string) wp_json_encode( $projected );
+		$fields    = array( 'chunk_id', 'document_id', 'language', 'visibility' );
+
+		foreach ( $fields as $field ) {
+			self::assertLessThanOrEqual( 256, strlen( $projected['candidates'][0][ $field ] ) );
+			self::assertSame( 1, preg_match( '//u', $projected['candidates'][0][ $field ] ) );
+		}
+		self::assertStringNotContainsString( $sentinel, $json );
+	}
+
+	/**
 	 * Only repository-owned retrieval channel identifiers may be serialized.
 	 */
 	public function test_filters_unapproved_channel_count_keys(): void {
