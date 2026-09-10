@@ -41,12 +41,14 @@ final class PlaygroundSemanticConfigurationResolverTest extends TestCase {
 				)
 			)
 		);
+		$resolved_fields = get_object_vars( $resolved );
 
 		self::assertSame( 'openai', $resolved->embedding_profile->provider_id );
 		self::assertSame( 'text-embedding-3-small', $resolved->embedding_profile->model_id );
 		self::assertSame( 1536, $resolved->embedding_profile->dimensions );
 		self::assertSame( NormalizationMode::L2, $resolved->embedding_profile->normalization );
-		self::assertSame( DistanceMetric::COSINE, $resolved->distance );
+		self::assertArrayHasKey( 'distance', $resolved_fields );
+		self::assertSame( DistanceMetric::COSINE, $resolved_fields['distance'] );
 		self::assertSame( 'local', $resolved->vector_store_id );
 	}
 
