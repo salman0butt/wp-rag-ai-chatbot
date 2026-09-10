@@ -19,7 +19,7 @@ use WpRagAiChatbot\Admin\Rest\PlaygroundExecutor;
 final class PlaygroundExecutorDependencyTest extends TestCase {
 	/** PlaygroundRestResource must depend on the typed production executor contract. */
 	public function test_resource_constructor_requires_playground_executor(): void {
-		$class = new ReflectionClass( 'WpRagAiChatbot\\Admin\\Rest\\PlaygroundRestResource' );
+		$class       = new ReflectionClass( 'WpRagAiChatbot\\Admin\\Rest\\PlaygroundRestResource' );
 		$constructor = $class->getConstructor();
 		self::assertNotNull( $constructor );
 		$parameters = $constructor->getParameters();
