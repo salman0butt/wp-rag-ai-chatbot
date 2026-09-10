@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Admin\Rest;
 
 use Closure;
+use Throwable;
+use WpRagAiChatbot\Retrieval\RetrievalException;
 
 /**
  * Validates bounded Playground input before delegating to production execution.
@@ -44,18 +46,34 @@ final class PlaygroundRestResource {
 		$question = trim( $question );
 
 		if ( '' === $question || strlen( $question ) > self::MAX_QUESTION_BYTES ) {
-			return array(
-				'error' => array(
-					'code' => 'invalid_request',
-				),
-			);
+			return $this->error( 'invalid_request' );
 		}
 
-		$response = ( $this->executor )( $question );
+		try {
+			$response = ( $this->executor )( $question );
+		} catch ( RetrievalException $exception ) {
+			unset( $exception );
 
-		return is_array( $response ) ? $response : array(
+			return $this->error( 'retrieval_unavailable' );
+		} catch ( Throwable $throwable ) {
+			unset( $throwable );
+
+			return $this->error( 'playground_failed' );
+		}
+
+		return is_array( $response ) ? $response : $this->error( 'playground_failed' );
+	}
+
+	/**
+	 * Create one stable safe error payload.
+	 *
+	 * @param string $code Repository-owned error code.
+	 * @return array<string,array<string,string>>
+	 */
+	private function error( string $code ): array {
+		return array(
 			'error' => array(
-				'code' => 'playground_failed',
+				'code' => $code,
 			),
 		);
 	}
