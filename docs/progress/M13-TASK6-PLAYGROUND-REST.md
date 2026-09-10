@@ -1,6 +1,6 @@
 # M13 Task 6 — Playground REST Execution
 
-Status: **IN PROGRESS — exact-retrieval observation seam plus bounded/sanitized resource boundary complete; production composition/REST registration pending**
+Status: **IN PROGRESS — exact-retrieval observation, bounded/sanitized resource, and typed execution contracts complete; production composition/REST registration pending**
 
 ## Goal
 
@@ -102,6 +102,33 @@ Exact-head CI `34447914219` for `8900e407fad0dadcab2540b47091a808306672ef` is GR
 - `package`;
 - complete `wordpress-smoke`, including activation, database, provider, knowledge, file-ingestion, WooCommerce-knowledge, and environment cleanup steps.
 
+## TDD evidence — typed Playground execution boundary
+
+### Genuine RED
+
+`da1c363d08649b7a38902ce38cdda950bcfef022` / CI `34452659355`:
+
+- PHP static analysis completed with no errors;
+- PHPUnit reached the new contract regression;
+- 697 tests / 2,955 assertions;
+- exactly 1 failure proving the typed Playground executor/result contracts did not yet exist.
+
+### GREEN
+
+Production contract commits:
+
+- `63bfc8cd6607f1755d3d1e998f771caed17a5a0e` — adds `PlaygroundExecutor::execute(string): PlaygroundExecutionResult`;
+- `8b83fcce93523c55f0006305f5aa527710a1d14e` — adds the final readonly `PlaygroundExecutionResult` carrying only normalized `ChatResult`, Task 5 `DebugTrace`, explicit model ID, and total latency.
+
+Exact-head CI `34452787873` for `8b83fcce93523c55f0006305f5aa527710a1d14e` is GREEN across all four permanent jobs:
+
+- `php-quality`;
+- `js-quality`;
+- `package`;
+- complete `wordpress-smoke` including activation, database, provider, knowledge, file-ingestion, WooCommerce-knowledge, and environment cleanup.
+
+This removes the need for the eventual HTTP route to trust an arbitrary closure-returned array as its production execution contract. `PlaygroundRestResource` still uses its earlier closure seam and must be migrated under a separate RED to consume the typed executor plus an explicit success projection; this subunit does not claim that migration is complete.
+
 ## Security / correctness review of completed Task 6 subunits
 
 - No raw provider payload, credential, query, or exception data is newly serialized.
@@ -111,7 +138,8 @@ Exact-head CI `34447914219` for `8900e407fad0dadcab2540b47091a808306672ef` is GR
 - Retrieval is not duplicated: the observer receives the same object used by downstream grounding/prompt/generation flow.
 - The observer is request-local by contract; Task 6 must not store it globally or across requests.
 - The Playground resource now rejects empty/oversized questions before execution and owns stable safe error envelopes rather than serializing throwable messages.
-- The resource executor remains an internal request-local seam; production composition must return only an allow-listed typed/bounded result and must not pass arbitrary provider arrays through to HTTP unchanged.
+- The new production executor contract is typed and cannot advertise an arbitrary array return shape; the result explicitly carries only `ChatResult`, redacted `DebugTrace`, model ID, and latency for a later allow-listed REST projection.
+- `PlaygroundRestResource` must not be wired to HTTP until its legacy closure seam is replaced with `PlaygroundExecutor` and its success response is projected explicitly rather than recursively serialized.
 
 This is a coordinator review, **not** the mandatory fresh-session independent Task 6 closeout review.
 
@@ -123,9 +151,9 @@ The current plugin bootstrap registers provider, knowledge, job, and admin found
 
 ## Next unfinished work
 
-1. Finish recovering the concrete M03/M10/M11 dependency factories/registries used to create providers, vector/lexical retrieval, grounding, prompt, memory, and citation services.
-2. Establish the smallest request-local production chat composition/executor seam that can accept `ChatRetrievalObserver` without duplicating M10/M11 logic.
-3. Define a typed/allow-listed Playground execution result so the HTTP resource never trusts arbitrary executor arrays as public output.
+1. Replace `PlaygroundRestResource`'s legacy closure dependency with `PlaygroundExecutor` under a genuine RED and add an explicit bounded/allow-listed success projection for `PlaygroundExecutionResult`; do not recursively serialize `ChatResult`, provider usage metadata, or arbitrary citation objects.
+2. Finish recovering and wire the concrete M03/M10/M11 dependency factories/registries used to create providers, vector/lexical retrieval, grounding, prompt, memory, and citation services.
+3. Establish the smallest request-local production executor implementation that accepts `ChatRetrievalObserver` and produces `PlaygroundExecutionResult` without duplicating M10/M11 logic.
 4. Under a new genuine RED, register protected `POST /admin/debug/playground` behind `AdminCapability::can_manage` and bind request JSON to the resource.
 5. Execute one M11 request, capture its exact M10 result through the observer, project it with `DebugTraceProjector`, and combine only bounded/allow-listed `ChatResult` diagnostics.
 6. Add REST registration/integration/smoke coverage.
