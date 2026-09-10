@@ -117,4 +117,34 @@ final class DebugTraceProjectorTest extends TestCase {
 		self::assertSame( array( 'semantic' => 3 ), $projected['channels']['counts'] );
 		self::assertStringNotContainsString( 'SECRET-CHANNEL-SENTINEL', $json );
 	}
+
+	/**
+	 * Candidate evidence must use only repository-owned retrieval channels.
+	 */
+	public function test_filters_unapproved_candidate_channel_evidence(): void {
+		$candidate = new RetrievalCandidate(
+			'chunk-1',
+			'doc-1',
+			1,
+			'safe content',
+			'en',
+			'public',
+			array(
+				new ChannelEvidence( 'SECRET-EVIDENCE-SENTINEL', 0.8, 1, 1.0, 0.01 ),
+				new ChannelEvidence( 'semantic', 0.7, 2, 1.0, 0.009 ),
+			),
+			0.019
+		);
+		$retrieval = new RetrievalResult(
+			array( $candidate ),
+			new RetrievalTrace( hash( 'sha256', 'safe query' ), 10, array( 'semantic' => 1 ) )
+		);
+
+		$projected = ( new DebugTraceProjector() )->projectRetrieval( $retrieval )->to_array();
+		$json      = (string) wp_json_encode( $projected );
+
+		self::assertCount( 1, $projected['candidates'][0]['channel_evidence'] );
+		self::assertSame( 'semantic', $projected['candidates'][0]['channel_evidence'][0]['channel'] );
+		self::assertStringNotContainsString( 'SECRET-EVIDENCE-SENTINEL', $json );
+	}
 }
