@@ -36,8 +36,8 @@ final class PlaygroundRestResourceTest extends TestCase {
 	/**
 	 * Invoke the not-yet-implemented resource dynamically so static analysis reaches PHPUnit RED.
 	 *
-	 * @param Closure():array<string,mixed> $executor Request-local production executor fixture.
-	 * @param string                        $question Question input.
+	 * @param Closure $executor Request-local production executor fixture.
+	 * @param string  $question Question input.
 	 * @return array<string,mixed>
 	 */
 	private function call_run( Closure $executor, string $question ): array {
