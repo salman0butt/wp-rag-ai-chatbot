@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Admin\Rest;
 
+use WpRagAiChatbot\Embeddings\DistanceMetric;
 use WpRagAiChatbot\Embeddings\EmbeddingProfile;
 
 // phpcs:disable WordPress.NamingConventions -- Public property name follows the existing provider/vector-store contracts.
@@ -20,10 +21,12 @@ final readonly class PlaygroundSemanticConfiguration {
 	 * Create one persisted semantic retrieval configuration.
 	 *
 	 * @param EmbeddingProfile $embedding_profile Persisted embedding compatibility profile.
+	 * @param DistanceMetric   $distance Persisted vector distance metric.
 	 * @param string           $vector_store_id Persisted vector-store provider identifier.
 	 */
 	public function __construct(
 		public EmbeddingProfile $embedding_profile,
+		public DistanceMetric $distance,
 		public string $vector_store_id
 	) {
 	}
