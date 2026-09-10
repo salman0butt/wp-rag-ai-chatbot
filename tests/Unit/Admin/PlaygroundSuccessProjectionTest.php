@@ -9,9 +9,9 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Admin;
 
-use Closure;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Admin\Rest\PlaygroundExecutionResult;
+use WpRagAiChatbot\Admin\Rest\PlaygroundExecutor;
 use WpRagAiChatbot\Chat\ChatResult;
 use WpRagAiChatbot\Citations\Citation;
 use WpRagAiChatbot\Debug\DebugTrace;
@@ -51,10 +51,21 @@ final class PlaygroundSuccessProjectionTest extends TestCase {
 			array()
 		);
 		$result   = new PlaygroundExecutionResult( $chat, $trace, 'model-test', 25 );
-		$executor = static fn (): PlaygroundExecutionResult => $result;
+		$executor = new class( $result ) implements PlaygroundExecutor {
+			/** @param PlaygroundExecutionResult $result Typed execution result. */
+			public function __construct( private readonly PlaygroundExecutionResult $result ) {
+			}
+
+			/** Return the typed execution result. */
+			public function execute( string $question ): PlaygroundExecutionResult {
+				unset( $question );
+
+				return $this->result;
+			}
+		};
 		$class    = 'WpRagAiChatbot\\Admin\\Rest\\PlaygroundRestResource';
 		self::assertTrue( class_exists( $class ) );
-		$resource = new $class( Closure::fromCallable( $executor ) );
+		$resource = new $class( $executor );
 		$response = call_user_func( array( $resource, 'run' ), 'What is the refund policy?' );
 		self::assertIsArray( $response );
 
