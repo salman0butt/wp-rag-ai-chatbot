@@ -109,7 +109,7 @@ final class PlaygroundGenerationProviderResolverTest extends TestCase {
 			$now
 		);
 		$bot    = new Bot(
-			new BotId( 'support-bot' ),
+			new BotId( '0123456789abcdef0123456789abcdef' ),
 			'Support',
 			true,
 			$provider_id,
