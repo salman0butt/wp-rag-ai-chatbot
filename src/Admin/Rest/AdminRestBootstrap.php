@@ -221,6 +221,18 @@ final class AdminRestBootstrap {
 	}
 
 	/**
+	 * Fail closed until the production Playground resource is bound to request-local services.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function run_playground( WP_REST_Request $request ): array {
+		unset( $request );
+
+		return self::invalid_request();
+	}
+
+	/**
 	 * Return one bounded deterministic bot page.
 	 *
 	 * @param WP_REST_Request $request REST request.
