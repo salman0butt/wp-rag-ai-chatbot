@@ -61,51 +61,77 @@ final class PlaygroundVectorStoreResolverTest extends TestCase {
 		$resolver->resolve( $this->semantic( 'write-only' ) );
 	}
 
-	/** Build one deterministic raw-vector search fixture. */
+	/**
+	 * Build one deterministic raw-vector search fixture.
+	 *
+	 * @param string $id Stable fixture store ID.
+	 */
 	private function search_store( string $id ): VectorSearchStore {
 		return new class( $id ) implements VectorSearchStore {
+			/** Create the deterministic fixture. */
 			public function __construct( private readonly string $id ) {
 			}
 
+			/** Return the stable fixture store ID. */
 			public function store_id(): string {
 				return $this->id;
 			}
 
+			/** Declare only raw-vector search capability. */
 			public function capabilities(): VectorStoreCapabilities {
 				return new VectorStoreCapabilities( false, false, true );
 			}
 
+			/** Test fixtures are healthy without external work. */
 			public function health(): VectorStoreHealth {
 				return VectorStoreHealth::healthy();
 			}
 
+			/**
+			 * Search is outside this resolver contract.
+			 *
+			 * @param VectorSearchRequest $request Search request that must never execute here.
+			 * @throws LogicException Always because search is outside resolver scope.
+			 */
 			public function search( VectorSearchRequest $request ): VectorSearchResult {
 				throw new LogicException( 'Vector search must not run while resolving a store.' );
 			}
 		};
 	}
 
-	/** Build one deterministic store fixture without raw-vector search support. */
+	/**
+	 * Build one deterministic store fixture without raw-vector search support.
+	 *
+	 * @param string $id Stable fixture store ID.
+	 */
 	private function base_store( string $id ): VectorStore {
 		return new class( $id ) implements VectorStore {
+			/** Create the deterministic fixture. */
 			public function __construct( private readonly string $id ) {
 			}
 
+			/** Return the stable fixture store ID. */
 			public function store_id(): string {
 				return $this->id;
 			}
 
+			/** Declare no optional operations. */
 			public function capabilities(): VectorStoreCapabilities {
 				return VectorStoreCapabilities::none();
 			}
 
+			/** Test fixtures are healthy without external work. */
 			public function health(): VectorStoreHealth {
 				return VectorStoreHealth::healthy();
 			}
 		};
 	}
 
-	/** Build one persisted semantic configuration with the selected vector-store ID. */
+	/**
+	 * Build one persisted semantic configuration with the selected vector-store ID.
+	 *
+	 * @param string $vector_store_id Persisted vector-store selector.
+	 */
 	private function semantic( string $vector_store_id ): PlaygroundSemanticConfiguration {
 		return new PlaygroundSemanticConfiguration(
 			new EmbeddingProfile( 'openai', 'text-embedding-3-small', 1536, NormalizationMode::L2 ),
