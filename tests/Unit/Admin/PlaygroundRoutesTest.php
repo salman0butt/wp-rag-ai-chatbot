@@ -50,4 +50,9 @@ final class PlaygroundRoutesTest extends TestCase {
 
 		AdminRestBootstrap::register_routes();
 	}
+
+	/** A registered WordPress REST callback must resolve to an actual callable. */
+	public function test_playground_route_callback_is_callable(): void {
+		self::assertTrue( is_callable( array( AdminRestBootstrap::class, 'run_playground' ) ) );
+	}
 }
