@@ -33,7 +33,7 @@ final class PlaygroundAccessContextResolverTest extends TestCase {
 		$resolver_class = 'WpRagAiChatbot\\Admin\\Rest\\PlaygroundAccessContextResolver';
 		self::assertTrue( class_exists( $resolver_class ), 'PlaygroundAccessContextResolver is missing.' );
 
-		$chunk = new ChunkSearchRecord(
+		$chunk         = new ChunkSearchRecord(
 			str_repeat( 'b', 64 ),
 			'document-key',
 			8,
@@ -46,7 +46,7 @@ final class PlaygroundAccessContextResolverTest extends TestCase {
 			'public',
 			0
 		);
-		$store = new class( $chunk ) implements ChunkLookupStore {
+		$store         = new class( $chunk ) implements ChunkLookupStore {
 			/**
 			 * Create the deterministic chunk lookup fake.
 			 *
@@ -55,17 +55,22 @@ final class PlaygroundAccessContextResolverTest extends TestCase {
 			public function __construct( private readonly ChunkSearchRecord $chunk ) {
 			}
 
-			/** {@inheritDoc} */
+			/**
+			 * Resolve the configured chunk inside its expected collection.
+			 *
+			 * @param string $collection_id Explicit persisted collection scope.
+			 * @param string $chunk_key Stable lowercase SHA-256 chunk key.
+			 */
 			public function find_chunk( string $collection_id, string $chunk_key ): ?ChunkSearchRecord {
 				return 'collection-1' === $collection_id && $this->chunk->chunk_key === $chunk_key
 					? $this->chunk
 					: null;
 			}
 		};
-		$source = new KnowledgeSourceRecord(
+		$source        = new KnowledgeSourceRecord(
 			8,
 			'source-key',
-			'wordpress',
+			'web',
 			null,
 			'Refunds',
 			null,
