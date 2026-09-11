@@ -114,64 +114,116 @@ final class PlaygroundSemanticRetrieverResolverTest extends TestCase {
 		);
 	}
 
-	/** Build a deterministic generation-provider registry fixture. */
+	/**
+	 * Build a deterministic generation-provider registry fixture.
+	 *
+	 * @param string $provider_id Provider ID exposed by the fixture.
+	 */
 	private function generation_provider( string $provider_id ): GenerationProvider {
 		return new class( $provider_id ) implements GenerationProvider {
+			/**
+			 * Create the deterministic generation fixture.
+			 *
+			 * @param string $id Provider ID exposed by the fixture.
+			 */
 			public function __construct( private readonly string $id ) {
 			}
 
+			/** Return the configured provider ID. */
 			public function provider_id(): string {
 				return $this->id;
 			}
 
+			/** Test fixtures are available without network work. */
 			public function available(): bool {
 				return true;
 			}
 
+			/**
+			 * Generation is outside this composition contract.
+			 *
+			 * @param GenerationRequest $request Generation request that must never execute here.
+			 * @throws LogicException Always, because generation is outside composition scope.
+			 */
 			public function generate( GenerationRequest $request ): GenerationResult {
 				throw new LogicException( 'Generation must not run while composing semantic retrieval.' );
 			}
 		};
 	}
 
-	/** Build a deterministic embedding-provider registry fixture. */
+	/**
+	 * Build a deterministic embedding-provider registry fixture.
+	 *
+	 * @param string $provider_id Provider ID exposed by the fixture.
+	 */
 	private function embedding_provider( string $provider_id ): EmbeddingProvider {
 		return new class( $provider_id ) implements EmbeddingProvider {
+			/**
+			 * Create the deterministic embedding fixture.
+			 *
+			 * @param string $id Provider ID exposed by the fixture.
+			 */
 			public function __construct( private readonly string $id ) {
 			}
 
+			/** Return the configured provider ID. */
 			public function provider_id(): string {
 				return $this->id;
 			}
 
+			/** Test fixtures are available without network work. */
 			public function available(): bool {
 				return true;
 			}
 
+			/**
+			 * Embedding is outside this composition contract.
+			 *
+			 * @param EmbeddingRequest $request Embedding request that must never execute here.
+			 * @throws LogicException Always, because embedding is outside composition scope.
+			 */
 			public function embed( EmbeddingRequest $request ): EmbeddingResult {
 				throw new LogicException( 'Embedding must not run while composing semantic retrieval.' );
 			}
 		};
 	}
 
-	/** Build a deterministic raw-vector search registry fixture. */
+	/**
+	 * Build a deterministic raw-vector search registry fixture.
+	 *
+	 * @param string $id Stable fixture store ID.
+	 */
 	private function search_store( string $id ): VectorSearchStore {
 		return new class( $id ) implements VectorSearchStore {
+			/**
+			 * Create the deterministic store fixture.
+			 *
+			 * @param string $id Stable fixture store ID.
+			 */
 			public function __construct( private readonly string $id ) {
 			}
 
+			/** Return the stable fixture store ID. */
 			public function store_id(): string {
 				return $this->id;
 			}
 
+			/** Declare only raw-vector search capability. */
 			public function capabilities(): VectorStoreCapabilities {
 				return new VectorStoreCapabilities( false, false, true );
 			}
 
+			/** Test fixtures are healthy without external work. */
 			public function health(): VectorStoreHealth {
 				return VectorStoreHealth::healthy();
 			}
 
+			/**
+			 * Search is outside this composition contract.
+			 *
+			 * @param VectorSearchRequest $request Search request that must never execute here.
+			 * @throws LogicException Always, because search is outside composition scope.
+			 */
 			public function search( VectorSearchRequest $request ): VectorSearchResult {
 				throw new LogicException( 'Vector search must not run while composing semantic retrieval.' );
 			}
