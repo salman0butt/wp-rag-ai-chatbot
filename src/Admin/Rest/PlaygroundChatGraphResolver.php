@@ -28,12 +28,12 @@ final class PlaygroundChatGraphResolver {
 	/**
 	 * Create the composition boundary from existing production collaborators.
 	 *
-	 * @param ChatRequestPolicy    $request_policy Existing M11 request policy.
-	 * @param MemoryAssembler      $memory Existing M11 memory assembler.
-	 * @param GroundingPolicy      $grounding Existing M11 grounding policy.
-	 * @param PromptBuilder        $prompt Existing M11 prompt builder.
-	 * @param CitationValidator    $citations Existing M11 citation validator.
-	 * @param DebugTraceProjector  $projector Existing M13 safe debug projector.
+	 * @param ChatRequestPolicy   $request_policy Existing M11 request policy.
+	 * @param MemoryAssembler     $memory Existing M11 memory assembler.
+	 * @param GroundingPolicy     $grounding Existing M11 grounding policy.
+	 * @param PromptBuilder       $prompt Existing M11 prompt builder.
+	 * @param CitationValidator   $citations Existing M11 citation validator.
+	 * @param DebugTraceProjector $projector Existing M13 safe debug projector.
 	 */
 	public function __construct(
 		private readonly ChatRequestPolicy $request_policy,
