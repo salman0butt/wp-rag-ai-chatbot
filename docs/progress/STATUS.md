@@ -42,30 +42,29 @@ Completed and exact-head-verified Task 6 composition prerequisites now include:
 - bounded/sanitized `PlaygroundRestResource` behavior and allow-listed success projection;
 - explicit fail-closed persisted bot/provider/model selection through `PlaygroundBotConfigurationResolver`;
 - explicit fail-closed persisted knowledge-source/vector-collection selection through `PlaygroundRetrievalConfigurationResolver`;
-- closed `PlaygroundConfiguration` aggregate combining those resolved persisted objects;
-- `PlaygroundConfigurationResolver`, composing the existing persisted bot and retrieval resolvers from explicit bot/source/collection identifiers without fallbacks or arbitrary request-level runtime options;
-- `PlaygroundGenerationProviderResolver`, resolving the exact persisted `Bot::provider_id` through the existing `ProviderRegistry::generation()` authority without fallback, request-supplied provider/model overrides, credentials, or generation work;
-- `PlaygroundSemanticConfiguration` plus `PlaygroundSemanticConfigurationResolver`, requiring explicit persisted embedding-provider/model/dimensions/normalization/vector-store identity from the selected source configuration and failing closed instead of inferring semantic runtime defaults from `collection_id`.
+- closed `PlaygroundConfiguration` aggregate and `PlaygroundConfigurationResolver` over the persisted bot/retrieval selectors;
+- `PlaygroundGenerationProviderResolver`, resolving persisted `Bot::provider_id` through `ProviderRegistry::generation()` without fallback or generation work;
+- `PlaygroundSemanticConfiguration` plus `PlaygroundSemanticConfigurationResolver`, requiring explicit persisted embedding provider/model/dimensions/normalization, distance metric, and vector-store identity rather than inferring runtime defaults from `collection_id`;
+- `PlaygroundVectorCollectionResolver`, reconstructing the canonical production `VectorCollection` from the explicit persisted collection ID plus canonical `VectorIndexProfile`, while leaving persisted fingerprint/dimension compatibility enforcement to the existing production vector-store authority.
 
-Latest semantic-configuration TDD evidence:
+Latest vector-collection TDD evidence:
 
-- `5c6d949dc7bf00d20793956a41472c2227ec6f8d` / CI `34529016929` stopped at PHPCS test conventions and is **NOT RED**.
-- Genuine RED `96df7c526a63b96fcbea4f0be63e87efc1b9aa38` / CI `34529123849`: PHPCS and PHPStan passed; PHPUnit **716 tests / 3,031 assertions / 1 error + 2 failures**, all caused by the intended missing `PlaygroundSemanticConfigurationResolver` class.
-- Production checkpoint `a9dcc88d7a89b83d5e1b25fc7039a794124e6bce` / CI `34529286769` is **NOT GREEN** because PHPCS stopped on four resolver assignment-alignment warnings before PHPStan/PHPUnit.
-- GREEN `b15207de8091bae02a3639b1626d9315eb6f9876` / CI `34529398321`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; PHPStan reported no errors, PHPUnit passed **716 tests / 3,038 assertions**, and Composer audit found no security advisories.
+- `49b50c43a158d6327e35dbb9734f66300288a469` is **NOT RED** because the initial test fixture strategy was invalid.
+- Genuine RED `ef31aeb2de91547d3192121aea05d96778fa43e5` / CI `34544180850`: PHPStan clean; PHPUnit **718 tests / 3,042 assertions** with exactly one intended error because `PlaygroundVectorCollectionResolver` did not exist. `js-quality`, `package`, and complete `wordpress-smoke` were GREEN.
+- GREEN `05db6a3db65a8c4db7a6b8cdf670fdc3c3301a4e` / CI `34559781767`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; PHPStan **306/306** with no errors; PHPUnit **718 tests / 3,045 assertions**; Composer audit found no security advisories.
+- Scoped cold correctness/security/performance review: **0 Critical / 0 Important unresolved**. This is not the final independent Task 6 closeout review.
 
-Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-CONFIGURATION.md` plus the earlier Task 6 progress records.
+Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-COLLECTION.md` plus the earlier Task 6 progress records.
 
 ### Exact next Task 6 work
 
-1. Load the selected persisted vector-collection metadata rather than relying on `collection_id` alone.
-2. Under fresh genuine RED, add the smallest typed compatibility boundary that verifies the selected collection dimensions/configuration fingerprint against the resolved `EmbeddingProfile` and fails closed on mismatch.
-3. Resolve the persisted embedding provider through the existing provider registry and the persisted vector-search provider through the existing vector-store registry/composition authority; do not add defaults for unknown identifiers.
-4. Compose the existing semantic + lexical retrieval, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
-5. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
-6. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
-7. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
-8. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
+1. Under a fresh genuine RED, resolve persisted `PlaygroundSemanticConfiguration::$vector_store_id` through the existing production `VectorStoreRegistry::search()` authority, failing closed for unknown or non-search-capable identifiers and adding no fallback/default store.
+2. Resolve the persisted embedding provider through the existing provider registry and compose the existing `EmbeddingService`, canonical `VectorCollection`, and production vector search implementation into `SemanticRetriever`.
+3. Compose the existing semantic + lexical retrieval, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
+4. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
+5. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
+6. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
+7. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
 
 Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete. Do not merge PR #18 until all M13 tasks, final milestone review, exact-final-head CI, and post-merge `main` verification are complete.
 
@@ -85,4 +84,5 @@ Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete
 - `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION.md` — closed configuration aggregate evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION-RESOLVER.md` — explicit selector composition evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-GENERATION-PROVIDER.md` — persisted generation-provider resolution evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-CONFIGURATION.md` — persisted embedding/vector-store semantic identity evidence and current continuation point.
+- `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-CONFIGURATION.md` — persisted embedding/vector-store semantic identity evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-COLLECTION.md` — canonical vector-collection reconstruction evidence and current continuation point.
