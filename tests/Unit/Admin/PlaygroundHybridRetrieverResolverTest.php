@@ -45,7 +45,11 @@ final class PlaygroundHybridRetrieverResolverTest extends TestCase {
 		);
 
 		$semantic = new class() implements SemanticRetrievalChannel {
-			/** @var int Number of retrieval calls observed. */
+			/**
+			 * Number of semantic retrieval calls observed.
+			 *
+			 * @var int
+			 */
 			public int $calls = 0;
 
 			/**
@@ -61,7 +65,11 @@ final class PlaygroundHybridRetrieverResolverTest extends TestCase {
 			}
 		};
 		$lexical  = new class() implements LexicalRetrievalChannel {
-			/** @var int Number of retrieval calls observed. */
+			/**
+			 * Number of lexical retrieval calls observed.
+			 *
+			 * @var int
+			 */
 			public int $calls = 0;
 
 			/**
@@ -77,7 +85,11 @@ final class PlaygroundHybridRetrieverResolverTest extends TestCase {
 			}
 		};
 		$access   = new class() implements CandidateAccessPolicy {
-			/** @var int Number of access checks observed. */
+			/**
+			 * Number of access checks observed.
+			 *
+			 * @var int
+			 */
 			public int $calls = 0;
 
 			/**
