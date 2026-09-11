@@ -45,26 +45,27 @@ Completed and exact-head-verified Task 6 composition prerequisites now include:
 - closed `PlaygroundConfiguration` aggregate and `PlaygroundConfigurationResolver` over the persisted bot/retrieval selectors;
 - `PlaygroundGenerationProviderResolver`, resolving persisted `Bot::provider_id` through `ProviderRegistry::generation()` without fallback or generation work;
 - `PlaygroundSemanticConfiguration` plus `PlaygroundSemanticConfigurationResolver`, requiring explicit persisted embedding provider/model/dimensions/normalization, distance metric, and vector-store identity rather than inferring runtime defaults from `collection_id`;
-- `PlaygroundVectorCollectionResolver`, reconstructing the canonical production `VectorCollection` from the explicit persisted collection ID plus canonical `VectorIndexProfile`, while leaving persisted fingerprint/dimension compatibility enforcement to the existing production vector-store authority.
+- `PlaygroundVectorCollectionResolver`, reconstructing the canonical production `VectorCollection` from the explicit persisted collection ID plus canonical `VectorIndexProfile`, while leaving persisted fingerprint/dimension compatibility enforcement to the existing production vector-store authority;
+- `PlaygroundVectorStoreResolver`, resolving persisted `vector_store_id` through `VectorStoreRegistry::search()` so unknown or non-search-capable stores fail closed through the existing production authority with no fallback/default.
 
-Latest vector-collection TDD evidence:
+Latest vector-store TDD evidence:
 
-- `49b50c43a158d6327e35dbb9734f66300288a469` is **NOT RED** because the initial test fixture strategy was invalid.
-- Genuine RED `ef31aeb2de91547d3192121aea05d96778fa43e5` / CI `34544180850`: PHPStan clean; PHPUnit **718 tests / 3,042 assertions** with exactly one intended error because `PlaygroundVectorCollectionResolver` did not exist. `js-quality`, `package`, and complete `wordpress-smoke` were GREEN.
-- GREEN `05db6a3db65a8c4db7a6b8cdf670fdc3c3301a4e` / CI `34559781767`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; PHPStan **306/306** with no errors; PHPUnit **718 tests / 3,045 assertions**; Composer audit found no security advisories.
+- Test-only checkpoints `5c165603c72458892652caa30711acd52b8552ba` and `0d8b12107950da502d15936f5f0b6e41ce6c1638` are **NOT RED** because PHP verification stopped at coding-standard failures before PHPUnit.
+- `52e50e55b7cbc1e9f23c99f719b705285b0dd289` is **NOT GREEN** because PHPCS rejected missing anonymous-constructor parameter documentation.
+- Genuine RED `64b511102e4c9c73a72c52025ab3b8c4efcddc25` / CI `34577015318`: PHPCS and PHPStan passed; PHPStan **306/306** with no errors; PHPUnit **721 tests / 3,045 assertions** with exactly three intended missing-resolver errors.
+- Genuine GREEN `e8096ad6b3734fb8a1d89adb35859f70708b0af2` / CI `34577117948`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; PHPStan **307/307** with no errors; PHPUnit **721 tests / 3,050 assertions**; Composer audit found no security advisories.
 - Scoped cold correctness/security/performance review: **0 Critical / 0 Important unresolved**. This is not the final independent Task 6 closeout review.
 
-Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-COLLECTION.md` plus the earlier Task 6 progress records.
+Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-STORE.md` plus the earlier Task 6 progress records.
 
 ### Exact next Task 6 work
 
-1. Under a fresh genuine RED, resolve persisted `PlaygroundSemanticConfiguration::$vector_store_id` through the existing production `VectorStoreRegistry::search()` authority, failing closed for unknown or non-search-capable identifiers and adding no fallback/default store.
-2. Resolve the persisted embedding provider through the existing provider registry and compose the existing `EmbeddingService`, canonical `VectorCollection`, and production vector search implementation into `SemanticRetriever`.
-3. Compose the existing semantic + lexical retrieval, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
-4. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
-5. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
-6. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
-7. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
+1. Under a fresh genuine RED, resolve the persisted embedding provider through the existing provider registry and compose the existing `EmbeddingService`, canonical `VectorCollection`, resolved `VectorSearchStore`, and production `SemanticRetriever`.
+2. Compose the existing semantic + lexical retrieval, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
+3. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
+4. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
+5. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
+6. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
 
 Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete. Do not merge PR #18 until all M13 tasks, final milestone review, exact-final-head CI, and post-merge `main` verification are complete.
 
@@ -85,4 +86,5 @@ Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete
 - `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION-RESOLVER.md` — explicit selector composition evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-GENERATION-PROVIDER.md` — persisted generation-provider resolution evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-CONFIGURATION.md` — persisted embedding/vector-store semantic identity evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-COLLECTION.md` — canonical vector-collection reconstruction evidence and current continuation point.
+- `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-COLLECTION.md` — canonical vector-collection reconstruction evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-STORE.md` — persisted vector-store resolution evidence and current continuation point.
