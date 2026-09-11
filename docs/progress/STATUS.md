@@ -47,27 +47,26 @@ Completed and exact-head-verified Task 6 composition prerequisites now include:
 - `PlaygroundSemanticConfiguration` plus `PlaygroundSemanticConfigurationResolver`, requiring explicit persisted embedding provider/model/dimensions/normalization, distance metric, and vector-store identity rather than inferring runtime defaults from `collection_id`;
 - `PlaygroundVectorCollectionResolver`, reconstructing the canonical production `VectorCollection` from the explicit persisted collection ID plus canonical `VectorIndexProfile`, while leaving persisted fingerprint/dimension compatibility enforcement to the existing production vector-store authority;
 - `PlaygroundVectorStoreResolver`, resolving persisted `vector_store_id` through `VectorStoreRegistry::search()` so unknown or non-search-capable stores fail closed through the existing production authority with no fallback/default;
-- `PlaygroundEmbeddingProviderResolver`, resolving the persisted `embedding_profile->provider_id` through `ProviderRegistry::embedding()` and failing closed for unknown providers or providers without embedding capability, with no fallback/default or embedding work.
+- `PlaygroundEmbeddingProviderResolver`, resolving the persisted `embedding_profile->provider_id` through `ProviderRegistry::embedding()` and failing closed for unknown providers or providers without embedding capability, with no fallback/default or embedding work;
+- `PlaygroundSemanticRetrieverResolver`, composing those persisted authorities into the existing production `EmbeddingService` and `SemanticRetriever` with explicit bounded batch/filter/retrieval configuration and no embedding/search execution during composition.
 
-Latest embedding-provider TDD evidence:
+Latest semantic-retriever composition TDD evidence:
 
-- Test-only checkpoint `2fd671ba6d138e8fa544aec880b2384f3e86c568` is **NOT RED** because PHP verification stopped at a coding-standard issue before the intended missing-resolver failure.
-- Initial implementation checkpoint `309b1887e0457f80317c10bd4f086cf458f60626` is **NOT GREEN** because the same coding-standard issue still stopped PHP verification.
-- Convention repair culminating at `8c5d2f6fa45f422875c134040f2cf5d1da0c3cf0` proved the implementation/test pair clean through PHP verification, JavaScript verification, and packaging; strict TDD evidence was then repaired rather than relabeling the invalid checkpoints.
-- Genuine RED `46c7e1c43dea99e15920b6fd4a2f15e311f73fae` / CI `34592282437`: the convention-clean tests remained while only the resolver was removed; `package` and `js-quality` passed while `php-quality` failed in `composer verify:php` at the intended absent-resolver contract.
-- Genuine GREEN `e1cea0467dd40bc356385625e3b67c3d7f888e48` / CI `34592394078`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; Composer validation, PHP verification, and Composer audit passed; WordPress smoke passed activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and environment shutdown.
-- Scoped cold correctness/security/performance review: **0 Critical / 0 Important unresolved**. This is not the final independent Task 6 closeout review.
+- Test-only checkpoint `35c4ad7b0eadf2a0b35d48e6cfe28218158737c0` is **NOT RED** because PHP verification stopped at test-file coding-standard issues before PHPUnit.
+- Genuine RED `7690eaef19980e676e978dc80019c3dd52fa2367` / CI `34599924148`: PHPStan clean; PHPUnit ran 725 tests / 3,055 assertions with exactly one intended missing-class error for `PlaygroundSemanticRetrieverResolver`; `js-quality` and `package` passed.
+- Initial implementation `4e9c2ef063824ced215c95a670699b7aef803942` is **NOT GREEN** because PHPCS stopped on three production docblock-alignment violations before PHP tests validated the implementation; its `js-quality`, `package`, and complete `wordpress-smoke` jobs passed.
+- Genuine GREEN `079fe4061f34aa4e0f36fbd542c47a5e4e4d9c86` / CI `34600110031`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; PHPStan 309/309 clean, PHPUnit 725/725 tests / 3,056 assertions, Composer audit clean, and WordPress smoke passed activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and shutdown.
+- Scoped correctness/security/performance review: **0 Critical / 0 Important unresolved**. Separate independent reviewer/subagent transport was not exposed, so this is not the final independent Task 6 closeout review.
 
-Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-EMBEDDING-PROVIDER.md` plus the earlier Task 6 progress records.
+Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-RETRIEVER.md` plus the earlier Task 6 progress records.
 
 ### Exact next Task 6 work
 
-1. Under a fresh genuine RED, compose the resolved embedding provider into the existing `EmbeddingService`, canonical `VectorCollection`, resolved `VectorSearchStore`, and production `SemanticRetriever`, using the exact persisted embedding profile/model/dimensions/normalization/distance identity and no runtime defaults.
-2. Compose the existing semantic + lexical retrieval, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
-3. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
-4. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
-5. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
-6. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
+1. Under a fresh genuine RED, compose the existing semantic + lexical retrieval, fusion/reranking, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
+2. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
+3. Once production chat composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage` under a new strict RED → GREEN cycle.
+4. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
+5. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
 
 Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete. Do not merge PR #18 until all M13 tasks, final milestone review, exact-final-head CI, and post-merge `main` verification are complete.
 
@@ -90,4 +89,5 @@ Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete
 - `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-CONFIGURATION.md` — persisted embedding/vector-store semantic identity evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-COLLECTION.md` — canonical vector-collection reconstruction evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-STORE.md` — persisted vector-store resolution evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-EMBEDDING-PROVIDER.md` — persisted embedding-provider resolution evidence and current continuation point.
+- `docs/progress/M13-TASK6-PLAYGROUND-EMBEDDING-PROVIDER.md` — persisted embedding-provider resolution evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-RETRIEVER.md` — production semantic-retriever composition evidence and current continuation point.
