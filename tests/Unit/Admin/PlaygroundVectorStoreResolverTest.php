@@ -68,7 +68,11 @@ final class PlaygroundVectorStoreResolverTest extends TestCase {
 	 */
 	private function search_store( string $id ): VectorSearchStore {
 		return new class( $id ) implements VectorSearchStore {
-			/** Create the deterministic fixture. */
+			/**
+			 * Create the deterministic fixture.
+			 *
+			 * @param string $id Stable fixture store ID.
+			 */
 			public function __construct( private readonly string $id ) {
 			}
 
@@ -106,7 +110,11 @@ final class PlaygroundVectorStoreResolverTest extends TestCase {
 	 */
 	private function base_store( string $id ): VectorStore {
 		return new class( $id ) implements VectorStore {
-			/** Create the deterministic fixture. */
+			/**
+			 * Create the deterministic fixture.
+			 *
+			 * @param string $id Stable fixture store ID.
+			 */
 			public function __construct( private readonly string $id ) {
 			}
 
