@@ -25,9 +25,9 @@ final readonly class PlaygroundSemanticRetrieverResolver {
 	 * @param PlaygroundEmbeddingProviderResolver $embedding_provider_resolver Persisted embedding-provider resolver.
 	 * @param PlaygroundVectorCollectionResolver  $collection_resolver Canonical vector-collection resolver.
 	 * @param PlaygroundVectorStoreResolver       $vector_store_resolver Persisted vector-store resolver.
-	 * @param EmbeddingBatchConfig                 $embedding_batch_config Bounded production embedding batch configuration.
-	 * @param VectorFilterMapper                   $filter_mapper Trusted retrieval-filter mapper.
-	 * @param RetrievalConfig                      $retrieval_config Bounded production retrieval configuration.
+	 * @param EmbeddingBatchConfig                $embedding_batch_config Bounded production embedding batch configuration.
+	 * @param VectorFilterMapper                  $filter_mapper Trusted retrieval-filter mapper.
+	 * @param RetrievalConfig                     $retrieval_config Bounded production retrieval configuration.
 	 */
 	public function __construct(
 		private PlaygroundEmbeddingProviderResolver $embedding_provider_resolver,
