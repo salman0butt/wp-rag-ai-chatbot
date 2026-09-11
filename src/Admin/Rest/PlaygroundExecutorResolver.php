@@ -39,12 +39,12 @@ final readonly class PlaygroundExecutorResolver {
 	 * @param PlaygroundConfiguration $configuration Closed persisted Playground configuration.
 	 */
 	public function resolve( PlaygroundConfiguration $configuration ): ProductionPlaygroundExecutor {
-		$semantic = $this->semantic_configuration->resolve( $configuration );
+		$semantic           = $this->semantic_configuration->resolve( $configuration );
 		$semantic_retriever = $this->semantic_retriever->resolve( $configuration->retrieval, $semantic );
-		$retriever = $this->hybrid_retriever->resolve( $semantic_retriever );
-		$provider = $this->generation_provider->resolve( $configuration );
-		$access = $this->access_context->resolve( $configuration );
-		$capture = new PlaygroundRetrievalCapture();
+		$retriever          = $this->hybrid_retriever->resolve( $semantic_retriever );
+		$provider           = $this->generation_provider->resolve( $configuration );
+		$access             = $this->access_context->resolve( $configuration );
+		$capture            = new PlaygroundRetrievalCapture();
 
 		return $this->chat_graph->resolve(
 			$retriever,
