@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Admin;
 
-use LogicException;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Admin\Rest\PlaygroundHybridRetrieverResolver;
 use WpRagAiChatbot\Retrieval\Access\CandidateAccessPolicy;
@@ -46,41 +45,50 @@ final class PlaygroundHybridRetrieverResolverTest extends TestCase {
 		);
 
 		$semantic = new class() implements SemanticRetrievalChannel {
+			/** Number of retrieval calls observed. */
+			public int $calls = 0;
+
 			/**
-			 * Retrieval must not run during composition.
+			 * Record semantic retrieval calls for the composition fixture.
 			 *
-			 * @param RetrievalQuery           $query Query that must not execute.
-			 * @param SemanticRetrievalContext $context Context that must not execute.
+			 * @param RetrievalQuery           $query Query fixture.
+			 * @param SemanticRetrievalContext $context Context fixture.
 			 * @return array
-			 * @throws LogicException Always, because retrieval is outside composition scope.
 			 */
 			public function retrieve( RetrievalQuery $query, SemanticRetrievalContext $context ): array {
-				throw new LogicException( 'Semantic retrieval must not run during composition.' );
+				++$this->calls;
+				return array();
 			}
 		};
 		$lexical  = new class() implements LexicalRetrievalChannel {
+			/** Number of retrieval calls observed. */
+			public int $calls = 0;
+
 			/**
-			 * Retrieval must not run during composition.
+			 * Record lexical retrieval calls for the composition fixture.
 			 *
-			 * @param RetrievalQuery $query Query that must not execute.
-			 * @param LexicalFilter  $filter Filter that must not execute.
+			 * @param RetrievalQuery $query Query fixture.
+			 * @param LexicalFilter  $filter Filter fixture.
 			 * @return array
-			 * @throws LogicException Always, because retrieval is outside composition scope.
 			 */
 			public function retrieve( RetrievalQuery $query, LexicalFilter $filter ): array {
-				throw new LogicException( 'Lexical retrieval must not run during composition.' );
+				++$this->calls;
+				return array();
 			}
 		};
 		$access   = new class() implements CandidateAccessPolicy {
+			/** Number of access checks observed. */
+			public int $calls = 0;
+
 			/**
-			 * Candidate access checks must not run during composition.
+			 * Record access-policy calls for the composition fixture.
 			 *
-			 * @param RetrievalCandidate $candidate Candidate that must not be inspected.
-			 * @param RetrievalFilter    $filter Trusted filter that must not be inspected.
-			 * @throws LogicException Always, because access evaluation is outside composition scope.
+			 * @param RetrievalCandidate $candidate Candidate fixture.
+			 * @param RetrievalFilter    $filter Trusted filter fixture.
 			 */
 			public function allows( RetrievalCandidate $candidate, RetrievalFilter $filter ): bool {
-				throw new LogicException( 'Candidate access checks must not run during composition.' );
+				++$this->calls;
+				return true;
 			}
 		};
 
@@ -93,5 +101,8 @@ final class PlaygroundHybridRetrieverResolverTest extends TestCase {
 		);
 
 		self::assertInstanceOf( HybridRetriever::class, $resolver->resolve( $semantic ) );
+		self::assertSame( 0, $semantic->calls );
+		self::assertSame( 0, $lexical->calls );
+		self::assertSame( 0, $access->calls );
 	}
 }
