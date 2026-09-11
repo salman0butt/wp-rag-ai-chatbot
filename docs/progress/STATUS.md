@@ -46,21 +46,23 @@ Completed and exact-head-verified Task 6 composition prerequisites now include:
 - `PlaygroundGenerationProviderResolver`, resolving persisted `Bot::provider_id` through `ProviderRegistry::generation()` without fallback or generation work;
 - `PlaygroundSemanticConfiguration` plus `PlaygroundSemanticConfigurationResolver`, requiring explicit persisted embedding provider/model/dimensions/normalization, distance metric, and vector-store identity rather than inferring runtime defaults from `collection_id`;
 - `PlaygroundVectorCollectionResolver`, reconstructing the canonical production `VectorCollection` from the explicit persisted collection ID plus canonical `VectorIndexProfile`, while leaving persisted fingerprint/dimension compatibility enforcement to the existing production vector-store authority;
-- `PlaygroundVectorStoreResolver`, resolving persisted `vector_store_id` through `VectorStoreRegistry::search()` so unknown or non-search-capable stores fail closed through the existing production authority with no fallback/default.
+- `PlaygroundVectorStoreResolver`, resolving persisted `vector_store_id` through `VectorStoreRegistry::search()` so unknown or non-search-capable stores fail closed through the existing production authority with no fallback/default;
+- `PlaygroundEmbeddingProviderResolver`, resolving the persisted `embedding_profile->provider_id` through `ProviderRegistry::embedding()` and failing closed for unknown providers or providers without embedding capability, with no fallback/default or embedding work.
 
-Latest vector-store TDD evidence:
+Latest embedding-provider TDD evidence:
 
-- Test-only checkpoints `5c165603c72458892652caa30711acd52b8552ba` and `0d8b12107950da502d15936f5f0b6e41ce6c1638` are **NOT RED** because PHP verification stopped at coding-standard failures before PHPUnit.
-- `52e50e55b7cbc1e9f23c99f719b705285b0dd289` is **NOT GREEN** because PHPCS rejected missing anonymous-constructor parameter documentation.
-- Genuine RED `64b511102e4c9c73a72c52025ab3b8c4efcddc25` / CI `34577015318`: PHPCS and PHPStan passed; PHPStan **306/306** with no errors; PHPUnit **721 tests / 3,045 assertions** with exactly three intended missing-resolver errors.
-- Genuine GREEN `e8096ad6b3734fb8a1d89adb35859f70708b0af2` / CI `34577117948`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; PHPStan **307/307** with no errors; PHPUnit **721 tests / 3,050 assertions**; Composer audit found no security advisories.
+- Test-only checkpoint `2fd671ba6d138e8fa544aec880b2384f3e86c568` is **NOT RED** because PHP verification stopped at a coding-standard issue before the intended missing-resolver failure.
+- Initial implementation checkpoint `309b1887e0457f80317c10bd4f086cf458f60626` is **NOT GREEN** because the same coding-standard issue still stopped PHP verification.
+- Convention repair culminating at `8c5d2f6fa45f422875c134040f2cf5d1da0c3cf0` proved the implementation/test pair clean through PHP verification, JavaScript verification, and packaging; strict TDD evidence was then repaired rather than relabeling the invalid checkpoints.
+- Genuine RED `46c7e1c43dea99e15920b6fd4a2f15e311f73fae` / CI `34592282437`: the convention-clean tests remained while only the resolver was removed; `package` and `js-quality` passed while `php-quality` failed in `composer verify:php` at the intended absent-resolver contract.
+- Genuine GREEN `e1cea0467dd40bc356385625e3b67c3d7f888e48` / CI `34592394078`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; Composer validation, PHP verification, and Composer audit passed; WordPress smoke passed activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and environment shutdown.
 - Scoped cold correctness/security/performance review: **0 Critical / 0 Important unresolved**. This is not the final independent Task 6 closeout review.
 
-Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-STORE.md` plus the earlier Task 6 progress records.
+Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-EMBEDDING-PROVIDER.md` plus the earlier Task 6 progress records.
 
 ### Exact next Task 6 work
 
-1. Under a fresh genuine RED, resolve the persisted embedding provider through the existing provider registry and compose the existing `EmbeddingService`, canonical `VectorCollection`, resolved `VectorSearchStore`, and production `SemanticRetriever`.
+1. Under a fresh genuine RED, compose the resolved embedding provider into the existing `EmbeddingService`, canonical `VectorCollection`, resolved `VectorSearchStore`, and production `SemanticRetriever`, using the exact persisted embedding profile/model/dimensions/normalization/distance identity and no runtime defaults.
 2. Compose the existing semantic + lexical retrieval, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
 3. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
 4. Once production composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage`.
@@ -87,4 +89,5 @@ Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete
 - `docs/progress/M13-TASK6-PLAYGROUND-GENERATION-PROVIDER.md` — persisted generation-provider resolution evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-CONFIGURATION.md` — persisted embedding/vector-store semantic identity evidence.
 - `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-COLLECTION.md` — canonical vector-collection reconstruction evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-STORE.md` — persisted vector-store resolution evidence and current continuation point.
+- `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-STORE.md` — persisted vector-store resolution evidence.
+- `docs/progress/M13-TASK6-PLAYGROUND-EMBEDDING-PROVIDER.md` — persisted embedding-provider resolution evidence and current continuation point.
