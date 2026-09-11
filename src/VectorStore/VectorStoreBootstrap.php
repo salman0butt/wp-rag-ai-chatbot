@@ -17,7 +17,11 @@ namespace WpRagAiChatbot\VectorStore;
  * rather than constructing request-local registries.
  */
 final class VectorStoreBootstrap {
-	/** Shared process-local registry. */
+	/**
+	 * Shared process-local registry.
+	 *
+	 * @var VectorStoreRegistry|null
+	 */
 	private static ?VectorStoreRegistry $registry = null;
 
 	/** Return the shared production registry without performing network I/O. */
