@@ -196,6 +196,16 @@ final class AdminRestBootstrap {
 				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 			)
 		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/debug/playground',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( self::class, 'run_playground' ),
+				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+			)
+		);
 	}
 
 	/**
