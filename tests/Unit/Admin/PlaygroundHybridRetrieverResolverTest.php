@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Admin;
 
+use LogicException;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Admin\Rest\PlaygroundHybridRetrieverResolver;
 use WpRagAiChatbot\Retrieval\Access\CandidateAccessPolicy;
@@ -45,26 +46,41 @@ final class PlaygroundHybridRetrieverResolverTest extends TestCase {
 		);
 
 		$semantic = new class() implements SemanticRetrievalChannel {
-			/** Retrieval must not run during composition. */
+			/**
+			 * Retrieval must not run during composition.
+			 *
+			 * @param RetrievalQuery           $query Query that must not execute.
+			 * @param SemanticRetrievalContext $context Context that must not execute.
+			 * @return array
+			 * @throws LogicException Always, because retrieval is outside composition scope.
+			 */
 			public function retrieve( RetrievalQuery $query, SemanticRetrievalContext $context ): array {
-				self::fail_if_called();
-			}
-
-			/** Fail if the composition path performs semantic work. */
-			private static function fail_if_called(): never {
-				throw new \LogicException( 'Semantic retrieval must not run during composition.' );
+				throw new LogicException( 'Semantic retrieval must not run during composition.' );
 			}
 		};
-		$lexical = new class() implements LexicalRetrievalChannel {
-			/** Retrieval must not run during composition. */
+		$lexical  = new class() implements LexicalRetrievalChannel {
+			/**
+			 * Retrieval must not run during composition.
+			 *
+			 * @param RetrievalQuery $query Query that must not execute.
+			 * @param LexicalFilter  $filter Filter that must not execute.
+			 * @return array
+			 * @throws LogicException Always, because retrieval is outside composition scope.
+			 */
 			public function retrieve( RetrievalQuery $query, LexicalFilter $filter ): array {
-				throw new \LogicException( 'Lexical retrieval must not run during composition.' );
+				throw new LogicException( 'Lexical retrieval must not run during composition.' );
 			}
 		};
-		$access = new class() implements CandidateAccessPolicy {
-			/** Allowing candidates is outside this composition contract. */
+		$access   = new class() implements CandidateAccessPolicy {
+			/**
+			 * Candidate access checks must not run during composition.
+			 *
+			 * @param RetrievalCandidate $candidate Candidate that must not be inspected.
+			 * @param RetrievalFilter    $filter Trusted filter that must not be inspected.
+			 * @throws LogicException Always, because access evaluation is outside composition scope.
+			 */
 			public function allows( RetrievalCandidate $candidate, RetrievalFilter $filter ): bool {
-				throw new \LogicException( 'Candidate access checks must not run during composition.' );
+				throw new LogicException( 'Candidate access checks must not run during composition.' );
 			}
 		};
 
