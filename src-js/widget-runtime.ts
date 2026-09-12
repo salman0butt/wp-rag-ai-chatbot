@@ -60,16 +60,23 @@ export const mountWidgets = (
 				`Close ${ config.config.name } chat`
 			);
 
+			const closePanel = (): void => {
+				launcher.setAttribute( 'aria-expanded', 'false' );
+				panel.hidden = true;
+				launcher.focus();
+			};
+
 			launcher.addEventListener( 'click', () => {
 				launcher.setAttribute( 'aria-expanded', 'true' );
 				panel.hidden = false;
 				close.focus();
 			} );
 
-			close.addEventListener( 'click', () => {
-				launcher.setAttribute( 'aria-expanded', 'false' );
-				panel.hidden = true;
-				launcher.focus();
+			close.addEventListener( 'click', closePanel );
+			panel.addEventListener( 'keydown', ( event ) => {
+				if ( event.key === 'Escape' && ! panel.hidden ) {
+					closePanel();
+				}
 			} );
 
 			panel.append( close );
