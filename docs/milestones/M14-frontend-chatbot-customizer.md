@@ -28,40 +28,43 @@ No provider secrets in bundles/HTML/API; widget works desktop/mobile; long answe
 - [x] Task 4 — public chat request/runtime composition, abuse controls, owner-scoped conversation history, REST integration, and review closeout.
 - [x] Task 5 — conditional public asset/bootstrap/shortcode mount.
 - [ ] Task 6 — floating launcher/panel UI.
+  - [x] Task 6A — deterministic accessible responsive launcher/panel shell.
+  - [ ] Task 6B — non-streaming public conversation submit/loading/error/retry behavior.
+  - [ ] Task 6C — safe message/citation/link/history presentation and Task 6 closeout.
 - [ ] Task 7 — streaming public chat UX.
 - [ ] Task 8 — administrator visual customizer/live preview.
 - [ ] Task 9 — block/direct/fullscreen embedding surfaces.
 - [ ] Task 10 — milestone integration, visual verification, review, and closeout.
 
 ## TDD Evidence
-Per-task RED/GREEN chronology is recorded under `docs/progress/M14-*`. Task 4 final production-composition chronology and invalid checkpoints are summarized in `docs/progress/M14-TASK4-CLOSEOUT.md`; Task 5 mount/build/smoke chronology, including the preserved representation-only NOT RED checkpoint, is recorded in `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md`.
+Per-task RED/GREEN chronology is recorded under `docs/progress/M14-*`. Task 4 final production-composition chronology and invalid checkpoints are summarized in `docs/progress/M14-TASK4-CLOSEOUT.md`; Task 5 mount/build/smoke chronology is recorded in `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md`; Task 6A shell chronology is recorded in `docs/progress/M14-TASK6A-WIDGET-SHELL.md`.
 
 ## Integration Test Evidence
-Task 4 real WordPress REST smoke covers malformed public requests, arbitrary runtime-override rejection, abuse-control ordering, and disabled-bot fail-closed behavior. Task 5 extends real WordPress smoke to prove shortcode registration, no eager assets, invalid/disabled fail-closed mounts, valid conditional asset enqueue, deterministic mount output, and public bootstrap secret/runtime-authority exclusion. Task 5 corrected verification head `18436c394f826e83885cbb43bff30b509a00a205` / CI `34722486144` is GREEN across all permanent jobs.
+Task 4 real WordPress REST smoke covers malformed public requests, arbitrary runtime-override rejection, abuse-control ordering, and disabled-bot fail-closed behavior. Task 5 proves shortcode registration, no eager assets, invalid/disabled fail-closed mounts, valid conditional asset enqueue, deterministic mount output, and public bootstrap secret/runtime-authority exclusion. Task 6A exact-head CI `34725063417` is GREEN across all permanent jobs at implementation SHA `772a125fd4cf7beb8705a3eecc2c136d4c9c71a6`.
 
 ## E2E / Visual Verification
-Pending Tasks 6-10: desktop/tablet/mobile, light/dark/system if implemented, loading/empty/error, long answer/URL, citation/source cards, keyboard.
+Task 6A now provides bounded desktop/mobile shell hooks, light/dark/system presentation, keyboard open/close/Escape behavior, focus restoration, and accessible launcher/dialog semantics. Task 6B/6C and Tasks 7-10 still require loading/error/chat-content, long-answer/URL/citation/source-card, streaming, customizer, embed, and final visual verification.
 
 ## Security Review
-Task 5 scoped fallback review: 0 Critical / 0 Important unresolved. Public browser bootstrap remains explicitly allow-listed; shortcode input cannot become provider/model/credential/embedding/vector/retrieval authority; invalid/disabled mounts fail closed. XSS/markdown/link handling, custom CSS policy, and UI-specific embed security remain gates for later UI tasks.
+Task 6A browser appearance projection is explicit and finite; it cannot become arbitrary CSS/HTML or provider/model/credential/embedding/vector/retrieval authority. The public chat browser work must continue to call the Task 4 server authority with only `bot_id`, `question`, and optional `conversation_id`. XSS/markdown/link handling and custom CSS policy remain later gates.
 
 ## Accessibility Review where UI exists
-Task 5 introduced only the mount/bootstrap shell. Accessibility becomes an active implementation/review gate in Task 6 and remains required for Tasks 6-10.
+Task 6A fallback review found one Important issue: visually blank launcher/close controls and an unnamed panel. A strict RED/GREEN remediation now renders visible labels and a bot-scoped named dialog. Final Task 6A review state is **0 Critical / 0 Important unresolved**.
 
 ## Performance Review where relevant
-Task 5 proves public widget script/style assets are not enqueued globally and are loaded only after a valid public mount resolves. The bootstrap enqueue path is idempotent. Rendering/stream frequency remains a Task 6/7 gate.
+Assets remain conditional from Task 5. Task 6A rendering is small and idempotent per mount. Task 6B/7 must retain in-flight request bounds and avoid duplicated network/runtime work.
 
 ## Code Review Findings
-Task 5 independent reviewer transport was unavailable; repository-approved scoped fallback correctness/security/performance/accessibility-boundary/architecture review found 0 Critical / 0 Important unresolved. Continue task-scoped review after every meaningful implementation unit.
+Independent reviewer transport was unavailable for Task 6A, so the repository-approved scoped fallback correctness/security/performance/accessibility/architecture review was used. The one Important accessibility/UX finding was resolved; **0 Critical / 0 Important unresolved** remain for Task 6A.
 
 ## Fixes
-Task 5 preserves `a1e0ad17905aba666444ce45c8f4db57db834272` / CI `34722293078` as **NOT RED** because its only failure was a smoke assertion representation mismatch for JSON-escaped slashes. The corrected verification-only checkpoint `18436c394f826e83885cbb43bff30b509a00a205` / CI `34722486144` is fully GREEN; no production behavior was rewritten to manufacture RED/GREEN chronology.
+Task 6A preserves invalid evidence honestly: `c9f5221cb4fb04a3b07f275f1bce5020ec8b5480` / CI `34723561305` and `8320fa84a797390260cc981cb6112509972e6be1` / CI `34724956542` are **NOT RED** because lint/formatting blocked the intended Jest assertions. Corrected genuine RED checkpoints and GREEN evidence are recorded in `docs/progress/M14-TASK6A-WIDGET-SHELL.md`.
 
 ## Fresh Verification Commands
 CI is authoritative for scheduled connector-only runs. Permanent gates include Composer validation/audit, PHPCS, PHPStan, PHPUnit, JavaScript verification/audit/gating, production package assertion, and real WordPress smoke.
 
 ## Fresh Verification Results
-Task 5 corrected verification head `18436c394f826e83885cbb43bff30b509a00a205`: CI `34722486144` GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
+Task 6A implementation head `772a125fd4cf7beb8705a3eecc2c136d4c9c71a6`: CI `34725063417` GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
 
 ## Commits
 See `docs/progress/M14-*` for exact task commit chronology. Active milestone PR is #19 on `feat/m14-frontend-chatbot-customizer`.
@@ -70,7 +73,7 @@ See `docs/progress/M14-*` for exact task commit chronology. Active milestone PR 
 Tracked by PR #19; per-task progress documents identify the focused implementation surfaces.
 
 ## Known Limitations
-Tasks 6-10 remain unfinished. The mount/bootstrap exists, but the interactive launcher/panel, streaming UX, customizer, broader embed surfaces, and final milestone verification are not complete yet.
+Task 6 is not complete: Task 6B/6C conversation interaction and safe presentation remain. Streaming UX, visual customizer, broader embed surfaces, and final milestone integration also remain Tasks 7-10.
 
 ## Documentation Updated
 `docs/progress/STATUS.md`, per-task M14 evidence records, this milestone ledger, and M14 Superpowers design/plans.
@@ -79,7 +82,7 @@ Tasks 6-10 remain unfinished. The mount/bootstrap exists, but the interactive la
 Milestone remains open until Tasks 6-10, final UI/security/accessibility/performance review, exact-final-head CI, merge gate, and post-merge main verification complete.
 
 ## Current Work
-Task 6 — floating launcher/panel UI. Build the interactive browser widget on the dedicated `src-js/widget.ts` entry and Task 5 bootstrap contract using strict JavaScript TDD, with accessibility and bounded public configuration as first-class gates. Do not create a second chat/retrieval/runtime authority.
+Task 6B — non-streaming public conversation submit/loading/error/retry behavior. Reuse the existing Task 4 `POST /wp-rag-ai-chatbot/v1/chat` authority and keep the browser request schema closed to `bot_id`, `question`, and optional `conversation_id`.
 
 ## Next Milestone
 M15 — Display Rules/RTL/Accessibility.
