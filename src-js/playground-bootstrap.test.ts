@@ -172,4 +172,99 @@ describe( 'Playground admin bootstrap', () => {
 		expect( root.textContent ).toContain( result.answer );
 		expect( root.textContent ).toContain( result.model_id );
 	} );
+
+	it( 'renders the live Playground loading status while the request is in flight', async () => {
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			value: {
+				element: {
+					createElement: createTestElement,
+					render: ( element: Node, root: Element ) => {
+						root.replaceChildren( element );
+					},
+				},
+			},
+		} );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+		window.location.hash = '#/playground';
+		Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+			configurable: true,
+			value: {
+				plugin: 'wp-rag-ai-chatbot',
+				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+				nonce: 'rest-nonce',
+			},
+		} );
+
+		let releasePlayground: ( () => void ) | undefined;
+		const playgroundGate = new Promise< void >( ( resolve ) => {
+			releasePlayground = resolve;
+		} );
+		const fetcher = jest.fn().mockImplementation( async ( url: string ) => {
+			if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+				return {
+					ok: true,
+					status: 200,
+					json: async () => ( {
+						ready: true,
+						next_step: 'complete',
+					} ),
+				};
+			}
+
+			await playgroundGate;
+			return {
+				ok: true,
+				status: 200,
+				json: async () => result,
+			};
+		} );
+		Object.defineProperty( window, 'fetch', {
+			configurable: true,
+			value: fetcher,
+		} );
+
+		expect( plugin.bootstrapAdminApp( '#/playground' ) ).toBe( true );
+		await settle();
+
+		const form = root.querySelector< HTMLFormElement >(
+			'[data-playground-form]'
+		);
+		expect( form ).not.toBeNull();
+		const values: Record< string, string > = {
+			bot_id: 'support-bot',
+			source_id: '9',
+			collection_id: 'support-docs',
+			question: 'What is the return window?',
+		};
+		for ( const [ name, value ] of Object.entries( values ) ) {
+			const field = form?.elements.namedItem( name );
+
+			if (
+				field instanceof HTMLInputElement ||
+				field instanceof HTMLTextAreaElement
+			) {
+				field.value = value;
+			}
+		}
+		form?.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
+
+		const status = root.querySelector< HTMLElement >(
+			'[data-playground-status="loading"]'
+		);
+		expect( status ).not.toBeNull();
+		expect( status?.getAttribute( 'role' ) ).toBe( 'status' );
+		expect( status?.getAttribute( 'aria-live' ) ).toBe( 'polite' );
+
+		releasePlayground?.();
+		await settle();
+		expect(
+			root.querySelector( '[data-playground-status="loading"]' )
+		).toBeNull();
+		expect( root.textContent ).toContain( result.answer );
+	} );
 } );
