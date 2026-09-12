@@ -42,18 +42,22 @@ Representative real WordPress smoke covers administrator Knowledge and Playgroun
 ### Task 2 — bot-scoped appearance persistence and public-safe widget configuration — COMPLETE
 Bot-scoped normalized appearance is persisted through the existing bot database authority, including safe defaults for legacy blank values. The browser-facing projection is an explicit allow-list of public bot identity/name plus normalized appearance and fails closed for missing/disabled bots. Task 2B genuine RED is `c70c02a7c6222a36c4b144c782b9c6d4a8562cb2` / CI `34686937908`; genuine GREEN is `d29d2b947a4c6c6ba3dfff67cc4ec4d203cb1bfa` / CI `34687055933`. Evidence: `docs/progress/M14-TASK2-WIDGET-CONFIG.md`.
 
-### Task 3 — protected admin appearance save/read contracts — IN PROGRESS
-Add administrator-only bounded read/save contracts over the existing `BotAppearanceRepository` and `AppearanceConfig` authority. Do not expose unrestricted bot/provider/runtime configuration. Validation remains server-authoritative and malformed/unknown appearance input fails closed.
+### Task 3 — protected admin appearance save/read contracts — COMPLETE
+Administrator-only bot-scoped appearance `GET`/`PUT` contracts reuse `BotAppearanceRepository`, `AppearanceConfig`, and `AdminCapability::can_manage`. Invalid identifiers, unknown/unsafe appearance input, and persistence failures fail closed with stable non-sensitive errors. Resource RED was `f2cd956482caa82cd5186ccbe6ad92c271475ec8` / CI `34687383105`, with GREEN `f67d97a1c433bf7c52e9c6d9aa99f902d5853e90` / CI `34687459910`. The route chronology preserves an initial NOT RED at `9215b4e7601a0057a42ef039f78181ef57e4ddec` / CI `34687646158`, a genuine repaired RED at `06895ac2505eaf846069f3a4f921de65f2e09b0e` / CI `34689869102`, two NOT GREEN implementation checkpoints, and final GREEN `078e74d8d373cd0ec0c1881dc6cb0b1122d87a1e` / CI `34690345814`. Evidence: `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md`.
+
+### Task 4 — public chat request/runtime composition and abuse controls — IN PROGRESS
+Add a narrowly-scoped public chat contract that bounds public question/conversation identifiers, resolves bot/provider/model/retrieval authority from persisted server-side configuration, applies explicit abuse controls, and delegates to existing M11 chat orchestration exactly once. Public requests must not select credentials, providers/models, embeddings, vector stores, or retrieval limits.
 
 ## Current work
 
-Continue M14 Task 3 on existing PR #19. Recover existing administrator REST conventions, create the smallest durable implementation plan if needed, then execute strict RED -> GREEN with exact-head CI and scoped review before continuing automatically to Task 4.
+Continue M14 Task 4 on existing PR #19. Recover the existing M11 chat request/access/orchestrator/runtime composition authorities and public WordPress REST conventions. Create/update a bounded Task 4 implementation plan, then execute strict RED -> GREEN beginning with the smallest public request/runtime authority and abuse-control seam. Verify exact-head CI, perform scoped review, persist evidence, and continue automatically through remaining Task 4 subunits.
 
 ## Durable recovery
 
 - `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md` — M14 auto-approved design and task order.
 - `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` — Task 1 evidence.
-- `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection RED/NOT RED/NOT GREEN/GREEN evidence and scoped review.
+- `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection evidence and scoped review.
+- `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md` — Task 3 protected REST RED/NOT RED/NOT GREEN/GREEN evidence and review.
 - PR #19 — active M14 implementation branch and execution source of truth.
 - `docs/milestones/M13-knowledge-manager-playground-debugger.md` — completed M13 milestone ledger.
 - `docs/progress/M13-TASK8-CLOSEOUT.md` — M13 final merge/post-merge evidence.
