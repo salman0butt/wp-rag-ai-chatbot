@@ -1,3 +1,5 @@
+export {};
+
 type WidgetBootstrapConfig = {
 	botId: string;
 	restBase: string;
@@ -38,9 +40,11 @@ const config: WidgetBootstrapConfig = {
 	},
 };
 
-const loadWidget = async (): Promise< void > => {
+const loadWidget = (): void => {
 	jest.resetModules();
-	await import( './widget' );
+	jest.isolateModules( () => {
+		require( './widget' );
+	} );
 };
 
 describe( 'public widget launcher and panel state', () => {
@@ -57,8 +61,8 @@ describe( 'public widget launcher and panel state', () => {
 		delete ( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs;
 	} );
 
-	it( 'mounts an accessible closed launcher and panel for matching bootstrap config', async () => {
-		await loadWidget();
+	it( 'mounts an accessible closed launcher and panel for matching bootstrap config', () => {
+		loadWidget();
 
 		const launcher = document.querySelector< HTMLButtonElement >(
 			'[data-wp-rag-ai-chatbot-launcher]'
