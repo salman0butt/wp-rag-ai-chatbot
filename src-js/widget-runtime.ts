@@ -61,6 +61,12 @@ export const mountWidgets = (
 				close.focus();
 			} );
 
+			close.addEventListener( 'click', () => {
+				launcher.setAttribute( 'aria-expanded', 'false' );
+				panel.hidden = true;
+				launcher.focus();
+			} );
+
 			panel.append( close );
 			mount.append( launcher, panel );
 			mounted += 1;
