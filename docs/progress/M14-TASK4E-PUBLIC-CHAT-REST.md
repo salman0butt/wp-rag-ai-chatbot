@@ -20,14 +20,14 @@ The WordPress REST route registration is also now wired into the plugin bootstra
 - route metadata exposes no caller-controlled runtime `args` surface;
 - `src/Core/Bootstrap.php` registers `PublicChatRestBootstrap::register_routes()` on the established REST bootstrap path.
 
-The trusted WordPress request adapter is now verified:
+The trusted WordPress request adapter is verified:
 
 - `PublicChatWordPressRequestAdapter::request()` delegates payload validation to the closed `PublicChatRequest` contract;
 - `PublicChatWordPressRequestAdapter::client_scope()` derives the anonymous scope only from trusted server-side `REMOTE_ADDR` and the server-owned secret supplied by composition;
 - spoofable `HTTP_X_FORWARDED_FOR` input is not consulted by this adapter;
 - caller-provided runtime override keys remain rejected by `PublicChatRequest`.
 
-`PublicChatRestBootstrap::run_chat()` intentionally still fails closed with `chat_unavailable`. Concrete WordPress persistence/runtime composition and delegation through `PublicChatRestResource` remain unfinished. Therefore Task 4E is not complete.
+The public callback now also parses the incoming JSON payload through that canonical adapter before any trusted runtime composition exists. Unknown caller-controlled runtime fields fail closed with the stable `invalid_request` code. A valid bounded request still intentionally returns `chat_unavailable` until concrete WordPress persistence/runtime composition and delegation through `PublicChatRestResource` are bound.
 
 This boundary is intentionally not a second RAG implementation. Production retrieval, grounding, prompt construction, memory, generation, citation validation, and persistence remain owned by the existing M11 graph reached through `ProductionPublicChatExecutor`.
 
@@ -106,6 +106,40 @@ This is a genuine behavioral RED.
 - `package`: PASS.
 - `wordpress-smoke`: PASS, including activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and Playground REST smoke.
 
+### Callback payload validation — NOT RED
+
+- SHA: `0dc211403e9c231646902bd2a9a5595e04f3afb9`
+- CI: `34703339674`
+- The intended malformed-request callback specification was present, but PHPCS rejected the original in-file `WP_REST_Request` test double before PHPStan or PHPUnit could reach the intended behavior.
+- This checkpoint is explicitly **NOT RED** and is preserved honestly.
+
+### Callback payload validation — genuine RED
+
+- SHA: `ff4e9890091dc7679b7c3c2f1f4ec503f4e1feb0`
+- CI: `34703461965`
+- The request double was moved into `tests/Fixtures/WP_REST_Request.php`, keeping one object and one namespace structure per file.
+- Composer validation: PASS.
+- PHPCS: PASS.
+- PHPStan: PASS.
+- PHPUnit executed 799 tests / 3,350 assertions and failed exactly one intended assertion: unknown caller-controlled `provider` input returned `chat_unavailable` instead of `invalid_request`.
+- This is a genuine behavior-level RED.
+
+### Callback payload validation — NOT GREEN
+
+- SHA: `5fb2de7058fe9f3cdf01a7a24b57454493d9fde0`
+- CI: `34703537099`
+- PHPCS passed, but PHPStan rejected a redundant `is_array()` guard because the WordPress `WP_REST_Request::get_json_params()` stub is already typed as an array. PHPUnit did not execute.
+- This checkpoint is explicitly **NOT GREEN**.
+
+### Callback payload validation — genuine GREEN
+
+- SHA: `d79f2064558e811a151a0ac4ca9fa42d1f49382c`
+- CI: `34703607078`
+- `php-quality`: PASS, including Composer validation, PHPCS, PHPStan, PHPUnit, and Composer audit.
+- `js-quality`: PASS.
+- `package`: PASS.
+- `wordpress-smoke`: PASS, including activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and Playground REST smoke.
+
 ## Scoped review
 
 Fallback scoped review is used where independent reviewer transport is unavailable.
@@ -116,7 +150,8 @@ Fallback scoped review is used where independent reviewer transport is unavailab
 - abuse control remains inside `PublicChatRestResource`, ahead of persisted runtime/provider/retrieval work;
 - the WordPress request adapter reuses the canonical `PublicChatRequest` parser rather than adding another payload contract;
 - client-scope derivation uses the existing `PublicChatClientScope` authority;
-- current `run_chat()` fails closed rather than pretending production composition is already available.
+- `run_chat()` now rejects malformed/override-bearing payloads through the canonical request contract before composition;
+- valid requests still fail closed with `chat_unavailable` rather than pretending production composition is already available.
 
 Unresolved Critical findings: 0.
 Unresolved Important findings: 0.
@@ -126,15 +161,15 @@ Unresolved Important findings: 0.
 - anonymous routing does not introduce provider/model/credential/retrieval override arguments;
 - trusted client identity is derived from server-side `REMOTE_ADDR` and does not trust caller-spoofable forwarded-address headers;
 - raw IP, user-agent, prompt text, credentials, and provider secrets are not persisted by the request adapter;
-- caller-provided runtime override keys remain rejected by the closed request contract;
-- current fail-closed callback leaks no sensitive runtime detail.
+- caller-provided runtime override keys are rejected by the closed request contract and callback;
+- current fail-closed valid-request path leaks no sensitive runtime detail.
 
 Unresolved Critical findings: 0.
 Unresolved Important findings: 0.
 
 ### Performance
 
-- route registration and the request adapter add no expensive retrieval/provider work;
+- route registration, request adaptation, and malformed-payload rejection add no expensive retrieval/provider work;
 - the intended callback composition must preserve the existing cheap abuse guard before runtime/database/provider work.
 
 Unresolved Important findings: 0.
@@ -151,11 +186,10 @@ Unresolved Important findings: 0.
 
 Continue under strict TDD with the thinnest WordPress callback/composition seam that:
 
-1. obtains the `WP_REST_Request` JSON payload and parses it only through `PublicChatWordPressRequestAdapter` / the closed `PublicChatRequest` contract;
-2. derives the client scope through `PublicChatWordPressRequestAdapter` from trusted server metadata plus a server-owned WordPress secret;
-3. uses `WpdbPublicChatRateLimitStore` / `PublicChatAbuseGuard` before expensive runtime/provider/retrieval work;
-4. resolves persisted bot/retrieval authority and delegates once through `PublicChatRestResource` / `ProductionPublicChatExecutor`;
-5. returns stable non-sensitive malformed/unavailable/rate-limited responses;
-6. never accepts caller-controlled credentials, provider/model, embedding, vector-store, grounding, output-token, source/collection, or retrieval-limit authority.
+1. derives the client scope through `PublicChatWordPressRequestAdapter` from trusted server metadata plus a server-owned WordPress secret;
+2. uses `WpdbPublicChatRateLimitStore` / `PublicChatAbuseGuard` before expensive runtime/provider/retrieval work;
+3. resolves persisted bot/retrieval authority and delegates once through `PublicChatRestResource` / `ProductionPublicChatExecutor`;
+4. returns stable non-sensitive unavailable/rate-limited responses;
+5. never accepts caller-controlled credentials, provider/model, embedding, vector-store, grounding, output-token, source/collection, or retrieval-limit authority.
 
 After the callback is exact-head GREEN, continue directly into Task 4F real WordPress integration/smoke coverage and final correctness/security/performance/architecture/privacy review before Task 5 starts.
