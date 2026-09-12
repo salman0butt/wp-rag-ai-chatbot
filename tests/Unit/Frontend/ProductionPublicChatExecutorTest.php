@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Tests\Unit\Frontend;
 
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Chat\ChatAccessContext;
+use WpRagAiChatbot\Chat\ChatOrchestrator;
 use WpRagAiChatbot\Chat\ChatRequest;
 use WpRagAiChatbot\Chat\ChatResponder;
 use WpRagAiChatbot\Chat\ChatResult;
@@ -29,6 +30,14 @@ use WpRagAiChatbot\Retrieval\Semantic\SemanticRetrievalContext;
  * Specifies the thin public adapter over the existing M11 chat responder.
  */
 final class ProductionPublicChatExecutorTest extends TestCase {
+	/** The existing production M11 orchestrator is the concrete responder authority. */
+	public function test_chat_orchestrator_implements_public_responder_boundary(): void {
+		self::assertTrue(
+			is_a( ChatOrchestrator::class, ChatResponder::class, true ),
+			'ChatOrchestrator must implement ChatResponder so public chat reuses the production M11 graph.'
+		);
+	}
+
 	/** Public execution uses persisted policy once and exposes only widget-safe result data. */
 	public function test_executes_existing_chat_responder_once_with_server_owned_policy(): void {
 		self::assertTrue( interface_exists( ChatResponder::class ), 'ChatResponder is missing.' );
