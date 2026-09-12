@@ -11,16 +11,28 @@
 use Throwable;
 use WP_REST_Request;
 use WpRagAiChatbot\Admin\Rest\AdminRestBootstrap;
+use WpRagAiChatbot\Bots\BotId;
+use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
+use WpRagAiChatbot\Database\TableNames;
+use WpRagAiChatbot\Database\WpdbConnection;
 use WpRagAiChatbot\Frontend\PublicChatRestBootstrap;
 
-$user_id             = 0;
+$user_id              = 0;
+$disabled_bot_id       = null;
 $original_remote_addr = $_SERVER['REMOTE_ADDR'] ?? null;
 
-$cleanup = static function () use ( &$user_id, $original_remote_addr ): void {
+$cleanup = static function () use ( &$user_id, &$disabled_bot_id, $original_remote_addr ): void {
 	wp_set_current_user( 0 );
 	if ( $user_id > 0 ) {
 		wp_delete_user( $user_id );
 		$user_id = 0;
+	}
+	if ( null !== $disabled_bot_id ) {
+		global $wpdb;
+		$connection = new WpdbConnection( $wpdb );
+		$repository = new WpdbBotRepository( $connection, new TableNames( $connection->prefix() ) );
+		$repository->delete( new BotId( $disabled_bot_id ) );
+		$disabled_bot_id = null;
 	}
 	if ( null === $original_remote_addr ) {
 		unset( $_SERVER['REMOTE_ADDR'] );
@@ -117,6 +129,18 @@ try {
 		$fail( 'Public chat REST callback did not enforce the abuse limit before runtime work.' );
 	}
 
+	$malformed_response = rest_do_request(
+		$public_chat_request(
+			array(
+				'bot_id' => 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+			)
+		)
+	);
+	$malformed_data = $malformed_response->get_data();
+	if ( 200 !== $malformed_response->get_status() || 'invalid_request' !== ( $malformed_data['error']['code'] ?? null ) ) {
+		$fail( 'Public chat route did not reject malformed input before runtime work.' );
+	}
+
 	$override_response = rest_do_request(
 		$public_chat_request(
 			array(
@@ -131,6 +155,26 @@ try {
 		$fail( 'Public chat route accepted an arbitrary request-level runtime override.' );
 	}
 
+	global $wpdb;
+	$connection      = new WpdbConnection( $wpdb );
+	$bot_repository  = new WpdbBotRepository( $connection, new TableNames( $connection->prefix() ) );
+	$disabled_bot    = $bot_repository->create( 'M14 disabled smoke bot', false, 'openai', 'smoke-model' );
+	$disabled_bot_id = $disabled_bot->id->value;
+
+	$_SERVER['REMOTE_ADDR'] = '203.0.113.201';
+	$disabled_response = rest_do_request(
+		$public_chat_request(
+			array(
+				'bot_id'   => $disabled_bot_id,
+				'question' => 'Disabled bot must stay unavailable.',
+			)
+		)
+	);
+	$disabled_data = $disabled_response->get_data();
+	if ( 200 !== $disabled_response->get_status() || 'chat_unavailable' !== ( $disabled_data['error']['code'] ?? null ) ) {
+		$fail( 'Disabled public bot did not fail closed as unavailable.' );
+	}
+
 	$user_id = wp_create_user( 'm13_playground_smoke_admin', wp_generate_password( 32, true, true ), 'm13-playground-smoke@example.test' );
 	if ( is_wp_error( $user_id ) ) {
 		$fail( 'Could not create administrator M13 REST smoke user: ' . $user_id->get_error_message() );
@@ -143,7 +187,7 @@ try {
 	$user->set_role( 'administrator' );
 	wp_set_current_user( $user_id );
 
-	$knowledge = rest_do_request( $knowledge_request() );
+	$knowledge      = rest_do_request( $knowledge_request() );
 	$knowledge_data = $knowledge->get_data();
 	if ( 200 !== $knowledge->get_status() ) {
 		$fail( 'Administrator knowledge source request did not reach the bounded M13 resource.' );
@@ -158,7 +202,7 @@ try {
 		$fail( 'Administrator knowledge source response did not preserve the bounded page projection.' );
 	}
 
-	$invalid = rest_do_request( $playground_request( array( 'question' => 'Missing persisted selectors.' ) ) );
+	$invalid      = rest_do_request( $playground_request( array( 'question' => 'Missing persisted selectors.' ) ) );
 	$invalid_data = $invalid->get_data();
 	if ( 200 !== $invalid->get_status() || 'invalid_request' !== ( $invalid_data['error']['code'] ?? null ) ) {
 		$fail( 'Administrator invalid Playground request did not reach the bounded request parser.' );
