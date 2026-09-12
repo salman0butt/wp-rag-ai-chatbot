@@ -58,13 +58,8 @@ final class PublicChatRestBootstrap {
 	 * @return array<string,array<string,string>>
 	 */
 	public static function run_chat( WP_REST_Request $request ): array {
-		$payload = $request->get_json_params();
-		if ( ! is_array( $payload ) ) {
-			return self::error( 'invalid_request' );
-		}
-
 		try {
-			PublicChatWordPressRequestAdapter::request( $payload );
+			PublicChatWordPressRequestAdapter::request( $request->get_json_params() );
 		} catch ( InvalidArgumentException ) {
 			return self::error( 'invalid_request' );
 		}
