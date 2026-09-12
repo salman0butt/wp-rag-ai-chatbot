@@ -108,4 +108,25 @@ describe( 'public widget launcher and panel state', () => {
 		);
 		expect( close?.ownerDocument.activeElement ).toBe( close );
 	} );
+
+	it( 'closes the panel and restores focus to the launcher', () => {
+		loadWidget();
+
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const panel = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-panel]'
+		);
+
+		launcher?.click();
+		const close = panel?.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-close]'
+		);
+		close?.click();
+
+		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		expect( panel?.hidden ).toBe( true );
+		expect( launcher?.ownerDocument.activeElement ).toBe( launcher );
+	} );
 } );
