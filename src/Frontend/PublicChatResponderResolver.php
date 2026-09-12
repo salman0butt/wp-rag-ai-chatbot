@@ -31,8 +31,8 @@ final readonly class PublicChatResponderResolver {
 	 * @param PlaygroundSemanticRetrieverResolver     $semantic_retrievers Existing production semantic-retriever composer.
 	 * @param PlaygroundHybridRetrieverResolver       $hybrid_retrievers Existing production hybrid-retriever composer.
 	 * @param PlaygroundGenerationProviderResolver    $generation_providers Existing persisted generation-provider authority.
-	 * @param ProductionChatResponderFactory           $responders Shared M11 responder composition authority.
-	 * @param MessageRepository                        $messages Owner-scoped assistant-message persistence boundary.
+	 * @param ProductionChatResponderFactory          $responders Shared M11 responder composition authority.
+	 * @param MessageRepository                       $messages Owner-scoped assistant-message persistence boundary.
 	 */
 	public function __construct(
 		private PublicChatKnowledgeSourceResolver $knowledge_sources,
@@ -51,7 +51,7 @@ final readonly class PublicChatResponderResolver {
 	 * @param PublicChatRuntime $runtime Trusted persisted public runtime.
 	 */
 	public function resolve( PublicChatRuntime $runtime ): ChatResponder {
-		$retrieval = new PlaygroundRetrievalConfiguration(
+		$retrieval     = new PlaygroundRetrievalConfiguration(
 			$this->knowledge_sources->resolve( $runtime ),
 			$runtime->retrieval->collection_id
 		);
