@@ -4,6 +4,7 @@ import {
 	ProviderSettingsIssue,
 	ProviderSettingsScreen,
 } from './provider-settings';
+import { PlaygroundScreen } from './playground-screen';
 
 export const pluginIdentity = Object.freeze( {
 	slug: 'wp-rag-ai-chatbot',
@@ -1291,6 +1292,13 @@ export const AdminShell = ( {
 				issue: providerIssue,
 				onReplace: onReplaceProviderCredential,
 			} )
+		);
+	} else if ( screen === 'playground' ) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			PlaygroundScreen( {} )
 		);
 	}
 
