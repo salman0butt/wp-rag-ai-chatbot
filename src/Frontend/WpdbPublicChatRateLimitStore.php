@@ -48,7 +48,11 @@ final readonly class WpdbPublicChatRateLimitStore implements PublicChatRateLimit
 		$now        = time();
 		$expires_at = $now + $window_seconds;
 
-		/** @var literal-string $sql */
+		/**
+		 * Atomic options-table upsert.
+		 *
+		 * @var literal-string $sql
+		 */
 		$sql = "INSERT INTO {$table} (option_name, option_value, autoload)\n"
 			. "VALUES (%s, CONCAT(%d, ':1'), 'no')\n"
 			. 'ON DUPLICATE KEY UPDATE option_value = CASE '
