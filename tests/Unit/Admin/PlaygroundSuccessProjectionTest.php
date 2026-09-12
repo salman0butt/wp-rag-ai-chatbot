@@ -111,4 +111,41 @@ final class PlaygroundSuccessProjectionTest extends TestCase {
 		self::assertStringNotContainsString( 'conversation-secret', $serialized );
 		self::assertStringNotContainsString( 'message-secret', $serialized );
 	}
+
+	/** Citation display metadata must remain byte-bounded and valid UTF-8 at the REST boundary. */
+	public function test_run_bounds_citation_display_metadata(): void {
+		$citation = new Citation(
+			'C1',
+			'chunk-1',
+			'document-1',
+			8,
+			str_repeat( '界', 100 ),
+			'https://example.test/' . str_repeat( 'a', 3000 )
+		);
+		$chat     = new ChatResult( 'Bounded answer. [C1]', false, null, array( $citation ) );
+		$trace    = new DebugTrace( str_repeat( 'b', 64 ), 12, array(), array(), 'not_requested', array() );
+		$result   = new PlaygroundExecutionResult( $chat, $trace, 'model-test', 5 );
+		$executor = new class( $result ) implements PlaygroundExecutor {
+			/** @param PlaygroundExecutionResult $result Typed execution result. */
+			public function __construct( private readonly PlaygroundExecutionResult $result ) {
+			}
+
+			/** @param string $question Question input. */
+			public function execute( string $question ): PlaygroundExecutionResult {
+				unset( $question );
+				return $this->result;
+			}
+		};
+
+		$resource = new \WpRagAiChatbot\Admin\Rest\PlaygroundRestResource( $executor );
+		$response = $resource->run( 'Bound the citation metadata.' );
+		$title    = $response['citations'][0]['title'] ?? null;
+		$url      = $response['citations'][0]['canonical_url'] ?? null;
+
+		self::assertIsString( $title );
+		self::assertLessThanOrEqual( 256, strlen( $title ) );
+		self::assertSame( 1, preg_match( '//u', $title ) );
+		self::assertIsString( $url );
+		self::assertLessThanOrEqual( 2048, strlen( $url ) );
+	}
 }
