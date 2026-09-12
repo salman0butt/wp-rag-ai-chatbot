@@ -49,10 +49,13 @@ final class PublicChatResponderResolverTest extends TestCase {
 		);
 
 		$resolve = $class->getMethod( 'resolve' );
-		self::assertSame( array( PublicChatRuntime::class ), array_map(
-			static fn ( \ReflectionParameter $parameter ): string => (string) $parameter->getType(),
-			$resolve->getParameters()
-		) );
+		self::assertSame(
+			array( PublicChatRuntime::class ),
+			array_map(
+				static fn ( \ReflectionParameter $parameter ): string => (string) $parameter->getType(),
+				$resolve->getParameters()
+			)
+		);
 		self::assertSame( 'WpRagAiChatbot\\Chat\\ChatResponder', (string) $resolve->getReturnType() );
 	}
 }
