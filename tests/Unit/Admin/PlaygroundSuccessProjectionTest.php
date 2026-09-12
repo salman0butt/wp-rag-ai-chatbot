@@ -126,11 +126,19 @@ final class PlaygroundSuccessProjectionTest extends TestCase {
 		$trace    = new DebugTrace( str_repeat( 'b', 64 ), 12, array(), array(), 'not_requested', array() );
 		$result   = new PlaygroundExecutionResult( $chat, $trace, 'model-test', 5 );
 		$executor = new class( $result ) implements PlaygroundExecutor {
-			/** @param PlaygroundExecutionResult $result Typed execution result. */
+			/**
+			 * Store the typed result.
+			 *
+			 * @param PlaygroundExecutionResult $result Typed execution result.
+			 */
 			public function __construct( private readonly PlaygroundExecutionResult $result ) {
 			}
 
-			/** @param string $question Question input. */
+			/**
+			 * Return the typed execution result.
+			 *
+			 * @param string $question Question input.
+			 */
 			public function execute( string $question ): PlaygroundExecutionResult {
 				unset( $question );
 				return $this->result;
