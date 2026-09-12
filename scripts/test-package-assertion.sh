@@ -10,6 +10,8 @@ make_base_package() {
   mkdir -p \
     "$target/wp-rag-ai-chatbot/src/Core" \
     "$target/wp-rag-ai-chatbot/src/Database" \
+    "$target/wp-rag-ai-chatbot/build" \
+    "$target/wp-rag-ai-chatbot/assets" \
     "$target/wp-rag-ai-chatbot/vendor/smalot/pdfparser/src/Smalot/PdfParser" \
     "$target/wp-rag-ai-chatbot/vendor/phpoffice/phpword/src/PhpWord"
   touch \
@@ -17,6 +19,8 @@ make_base_package() {
     "$target/wp-rag-ai-chatbot/uninstall.php" \
     "$target/wp-rag-ai-chatbot/src/Core/Bootstrap.php" \
     "$target/wp-rag-ai-chatbot/src/Database/DatabaseUninstaller.php" \
+    "$target/wp-rag-ai-chatbot/build/widget.js" \
+    "$target/wp-rag-ai-chatbot/assets/widget.css" \
     "$target/wp-rag-ai-chatbot/vendor/autoload.php" \
     "$target/wp-rag-ai-chatbot/vendor/smalot/pdfparser/src/Smalot/PdfParser/Parser.php" \
     "$target/wp-rag-ai-chatbot/vendor/phpoffice/phpword/src/PhpWord/IOFactory.php"
@@ -54,6 +58,9 @@ mkdir -p "$missing_widget_bundle"
 make_base_package "$missing_widget_bundle"
 mkdir -p "$missing_widget_bundle/wp-rag-ai-chatbot/src"
 cp -R "$repo_root/src/Providers" "$missing_widget_bundle/wp-rag-ai-chatbot/src/Providers"
+rm \
+  "$missing_widget_bundle/wp-rag-ai-chatbot/build/widget.js" \
+  "$missing_widget_bundle/wp-rag-ai-chatbot/assets/widget.css"
 (
   cd "$missing_widget_bundle"
   zip -qr wp-rag-ai-chatbot.zip wp-rag-ai-chatbot

@@ -26,6 +26,7 @@
     "uninstall.php",
     "src/**",
     "build/**",
+    "assets/**",
     "vendor/**",
     "readme.txt",
     "LICENSE"
@@ -37,7 +38,7 @@
     "typescript": "^5.9.0"
   },
   "scripts": {
-    "build": "wp-scripts build --source-path=src-js",
+    "build": "wp-scripts build src-js/index.ts src-js/widget.ts --output-path=build",
     "check-engines": "wp-scripts check-engines",
     "env:start": "wp-env start --update",
     "env:stop": "wp-env stop",
