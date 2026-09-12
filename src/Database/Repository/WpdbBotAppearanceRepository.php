@@ -60,8 +60,8 @@ final class WpdbBotAppearanceRepository implements BotAppearanceRepository {
 
 		try {
 			$decoded = json_decode( $encoded, true, 512, JSON_THROW_ON_ERROR );
-		} catch ( JsonException $exception ) {
-			throw new RuntimeException( 'Persisted bot appearance is invalid.', 0, $exception );
+		} catch ( JsonException ) {
+			throw new RuntimeException( 'Persisted bot appearance is invalid.' );
 		}
 
 		if ( ! is_array( $decoded ) ) {
@@ -73,11 +73,15 @@ final class WpdbBotAppearanceRepository implements BotAppearanceRepository {
 			}
 		}
 
-		/** @var array<string,mixed> $decoded */
+		/**
+		 * Persisted appearance has string keys after explicit validation.
+		 *
+		 * @var array<string,mixed> $decoded
+		 */
 		try {
 			return AppearanceConfig::from_array( $decoded );
-		} catch ( InvalidArgumentException $exception ) {
-			throw new RuntimeException( 'Persisted bot appearance is invalid.', 0, $exception );
+		} catch ( InvalidArgumentException ) {
+			throw new RuntimeException( 'Persisted bot appearance is invalid.' );
 		}
 	}
 
