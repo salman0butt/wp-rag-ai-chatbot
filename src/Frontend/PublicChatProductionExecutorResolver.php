@@ -19,8 +19,9 @@ final readonly class PublicChatProductionExecutorResolver {
 	/**
 	 * Create one resolver.
 	 *
-	 * @param Closure(PublicChatRuntime):ChatResponder $responder_factory Existing production M11 responder composer.
-	 * @param PublicChatAccessContextResolver          $access_context Trusted bot-scoped retrieval/access resolver.
+	 * @param Closure                          $responder_factory Existing production M11 responder composer.
+	 * @param PublicChatAccessContextResolver $access_context Trusted bot-scoped retrieval/access resolver.
+	 * @phpstan-param Closure(PublicChatRuntime): ChatResponder $responder_factory
 	 */
 	public function __construct(
 		private Closure $responder_factory,
