@@ -20,14 +20,29 @@ use WpRagAiChatbot\Memory\ConversationHistory;
  * fails closed instead of returning misleading empty history.
  */
 final class StatelessPlaygroundConversationHistory implements ConversationHistory {
-	/** {@inheritDoc} */
+	/**
+	 * Reject accidental stateful message reads.
+	 *
+	 * @param string $conversation_id Stable conversation identifier.
+	 * @param string $owner_scope Trusted owner scope.
+	 * @param int    $limit Requested message limit.
+	 * @return list<\WpRagAiChatbot\Conversations\ConversationMessage>
+	 * @throws LogicException Always; Playground execution is stateless.
+	 */
 	public function recent_for_owner( string $conversation_id, string $owner_scope, int $limit ): array {
 		unset( $conversation_id, $owner_scope, $limit );
 
 		throw new LogicException( 'Playground conversation history is unavailable for stateless execution.' );
 	}
 
-	/** {@inheritDoc} */
+	/**
+	 * Reject accidental stateful summary reads.
+	 *
+	 * @param string $conversation_id Stable conversation identifier.
+	 * @param string $owner_scope Trusted owner scope.
+	 * @return array{version:int,text:string}|null
+	 * @throws LogicException Always; Playground execution is stateless.
+	 */
 	public function summary_for_owner( string $conversation_id, string $owner_scope ): ?array {
 		unset( $conversation_id, $owner_scope );
 
