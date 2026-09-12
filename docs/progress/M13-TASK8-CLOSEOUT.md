@@ -1,8 +1,8 @@
 # M13 Task 8 — Integration, smoke, review and closeout
 
-Status: **COMPLETE — MERGE GATE PENDING**
+Status: **COMPLETE**
 
-Task 8 reconciles Tasks 1-7, extends the existing real WordPress M13 smoke to cover both the administrator Playground route and representative Knowledge source route, performs final milestone review, and prepares PR #18 for exact-final-head verification and merge.
+Task 8 reconciles Tasks 1-7, extends the existing real WordPress M13 smoke to cover both the administrator Playground route and representative Knowledge source route, performs final milestone review, verifies exact-final-head CI, merges PR #18, and verifies fresh post-merge `main` CI.
 
 ## Integration / smoke evidence
 
@@ -10,6 +10,9 @@ Task 8 intentionally does not invent a behavior-change RED where the required be
 
 - Task 7 final hardening head: `5d5f734aa89a0a837c1db95a73dd34d74ad2f282` / CI `34682140441` — all permanent jobs GREEN.
 - Task 8 representative administrator REST smoke head: `02b237a404fa1b2d8a4b1a62cd9c1eb252aa9bc6` / CI `34682452466` — all permanent jobs GREEN.
+- Final PR #18 branch head: `fc86fc070e9044ce9084fe5a67d0808d1fd94519` / CI `34682971096` — `php-quality`, `js-quality`, `package`, and `wordpress-smoke` GREEN.
+- Merge SHA: `a514dd658f20e3103bbe676a0eef8b00a37a23ea`.
+- Fresh post-merge `main` CI: `34683129496` — `php-quality`, `js-quality`, `package`, and full `wordpress-smoke` GREEN.
 - `wordpress-smoke` executed activation, database, provider, knowledge, file-ingestion, WooCommerce-knowledge and M13 Playground/Knowledge REST smoke successfully.
 - The M13 smoke verifies route registration, anonymous denial, administrator access to bounded Knowledge projection, bounded Playground request parsing, and fail-closed rejection of request-level provider/runtime overrides without requiring live AI credentials.
 
@@ -33,7 +36,7 @@ Finding: **0 Critical / 0 Important unresolved**.
 - Playground input accepts only persisted `bot_id`, positive `source_id`, persisted `collection_id`, and one bounded UTF-8 question.
 - Unknown request keys, including credentials, provider/model overrides, embedding overrides, vector-store options and retrieval-limit overrides, fail closed.
 - No credential blobs, authorization headers, unrestricted config, arbitrary provider error bodies or raw exception messages are intentionally projected to the administrator UI.
-- The Task 8 WordPress smoke verifies anonymous requests cannot execute representative M13 Knowledge or Playground routes.
+- Task 8 WordPress smoke verifies anonymous requests cannot execute representative M13 Knowledge or Playground routes.
 
 Finding: **0 Critical / 0 Important unresolved**.
 
@@ -64,8 +67,6 @@ Finding: **0 Critical / 0 Important unresolved**.
 
 Independent reviewer/subagent transport was unavailable during final Task 8 closeout and is not falsely claimed. The repository-approved fallback review process was used.
 
-## Merge-gate state
+## Closeout
 
-At the start of closeout, exact head `02b237a404fa1b2d8a4b1a62cd9c1eb252aa9bc6` was GREEN for `php-quality`, `js-quality`, `package`, and `wordpress-smoke`; PR #18 was mergeable and had no unresolved inline review threads.
-
-This documentation commit must itself receive exact-final-head GREEN before PR #18 is merged. After merge, fresh `main` CI must pass before M13 is marked complete.
+PR #18 merged successfully after exact-final-head GREEN. Fresh post-merge `main` CI is GREEN. All M13 acceptance and merge gates are satisfied; M13 is complete and M14 is the next milestone.
