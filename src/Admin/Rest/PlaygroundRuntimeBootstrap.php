@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Admin\Rest;
 
 use WpRagAiChatbot\Chat\ChatRequestPolicy;
+use WpRagAiChatbot\Chat\ProductionChatResponderFactory;
 use WpRagAiChatbot\Citations\CitationValidator;
 use WpRagAiChatbot\Database\Connection;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
@@ -82,12 +83,15 @@ final class PlaygroundRuntimeBootstrap {
 			$retrieval
 		);
 
-		$chat_graph = new PlaygroundChatGraphResolver(
+		$responders = new ProductionChatResponderFactory(
 			new ChatRequestPolicy( new QueryPreprocessor( $retrieval ) ),
 			new MemoryAssembler( new StatelessPlaygroundConversationHistory() ),
 			new DeterministicGroundingPolicy(),
 			new PromptBuilder(),
-			new CitationValidator(),
+			new CitationValidator()
+		);
+		$chat_graph = new PlaygroundChatGraphResolver(
+			$responders,
 			new DebugTraceProjector()
 		);
 
