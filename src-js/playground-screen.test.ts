@@ -1,4 +1,7 @@
-import * as plugin from './index';
+import {
+	PlaygroundScreen,
+	type PlaygroundResult,
+} from './playground-screen';
 
 type TestElementProps = Record< string, unknown > | null;
 
@@ -61,49 +64,7 @@ const configureTestRuntime = (): void => {
 	} );
 };
 
-interface PlaygroundResultFixture {
-	ok: true;
-	answer: string;
-	no_answer: boolean;
-	citations: Array< {
-		id: string;
-		chunk_id: string;
-		document_id: string;
-		source_id: number;
-		title: string | null;
-		canonical_url: string | null;
-	} >;
-	model_id: string;
-	latency_ms: number;
-	usage: {
-		input_tokens: number | null;
-		output_tokens: number | null;
-		total_tokens: number | null;
-	};
-	debug_trace: {
-		query: { hash: string; bytes: number };
-		channels: {
-			counts: Record< string, number >;
-			failures: Record< string, string >;
-		};
-		rerank_status: string;
-		candidates: Array< {
-			chunk_id: string;
-			document_id: string;
-			content: string;
-			score: number;
-			channel: string;
-			selected: boolean;
-		} >;
-	};
-}
-
-type PlaygroundScreenComponent = ( props: {
-	result?: PlaygroundResultFixture;
-	errorCode?: string;
-} ) => Node;
-
-const fixture: PlaygroundResultFixture = {
+const fixture: PlaygroundResult = {
 	ok: true,
 	answer: 'The support policy allows returns within 30 days.',
 	no_answer: false,
@@ -138,10 +99,22 @@ const fixture: PlaygroundResultFixture = {
 			{
 				chunk_id: 'chunk-17',
 				document_id: 'document-4',
+				source_id: 9,
+				language: 'en',
+				visibility: 'public',
+				fused_score: 0.91,
+				rerank_score: null,
+				channel_evidence: [
+					{
+						channel: 'semantic',
+						native_score: 0.87,
+						rank: 1,
+						weight: 1,
+						rrf_contribution: 0.016,
+					},
+				],
 				content: 'Returns are accepted within 30 days.',
-				score: 0.91,
-				channel: 'semantic',
-				selected: true,
+				content_truncated: false,
 			},
 		],
 	},
@@ -150,17 +123,8 @@ const fixture: PlaygroundResultFixture = {
 describe( 'PlaygroundScreen', () => {
 	it( 'renders the bounded Task 6 result as structured diagnostics', () => {
 		configureTestRuntime();
-		const exports = plugin as unknown as Record< string, unknown >;
-		const PlaygroundScreen = exports.PlaygroundScreen;
-
-		expect( typeof PlaygroundScreen ).toBe( 'function' );
-
 		const root = document.createElement( 'div' );
-		root.append(
-			( PlaygroundScreen as PlaygroundScreenComponent )( {
-				result: fixture,
-			} )
-		);
+		root.append( PlaygroundScreen( { result: fixture } ) as Node );
 
 		expect( root.querySelector( 'h2' )?.textContent ).toBe( 'Playground' );
 		expect(
@@ -169,6 +133,9 @@ describe( 'PlaygroundScreen', () => {
 		expect(
 			root.querySelector( '[data-playground-candidates]' )?.textContent
 		).toContain( 'chunk-17' );
+		expect(
+			root.querySelector( '[data-playground-candidates]' )?.textContent
+		).toContain( 'semantic' );
 		expect(
 			root.querySelector( '[data-playground-citations]' )?.textContent
 		).toContain( 'Returns policy' );
@@ -190,17 +157,8 @@ describe( 'PlaygroundScreen', () => {
 		'maps %s to repository-owned safe copy',
 		( errorCode, expectedCopy ) => {
 			configureTestRuntime();
-			const exports = plugin as unknown as Record< string, unknown >;
-			const PlaygroundScreen = exports.PlaygroundScreen;
-
-			expect( typeof PlaygroundScreen ).toBe( 'function' );
-
 			const root = document.createElement( 'div' );
-			root.append(
-				( PlaygroundScreen as PlaygroundScreenComponent )( {
-					errorCode,
-				} )
-			);
+			root.append( PlaygroundScreen( { errorCode } ) as Node );
 
 			expect( root.querySelector( '[role="alert"]' )?.textContent ).toBe(
 				expectedCopy
@@ -210,14 +168,11 @@ describe( 'PlaygroundScreen', () => {
 
 	it( 'uses generic safe copy for unknown error codes', () => {
 		configureTestRuntime();
-		const exports = plugin as unknown as Record< string, unknown >;
-		const PlaygroundScreen = exports.PlaygroundScreen;
 		const root = document.createElement( 'div' );
-
 		root.append(
-			( PlaygroundScreen as PlaygroundScreenComponent )( {
+			PlaygroundScreen( {
 				errorCode: 'UPSTREAM_SECRET_SENTINEL',
-			} )
+			} ) as Node
 		);
 
 		expect( root.textContent ).not.toContain( 'UPSTREAM_SECRET_SENTINEL' );
