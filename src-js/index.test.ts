@@ -210,7 +210,9 @@ describe( 'AdminShell', () => {
 		expect( root.querySelector( 'main h1' )?.textContent ).toBe(
 			'Playground'
 		);
-		expect( root.querySelector( '[data-playground-form]' ) ).not.toBeNull();
+		expect(
+			root.querySelector( '[data-playground-form]' )
+		).not.toBeNull();
 	} );
 } );
 
