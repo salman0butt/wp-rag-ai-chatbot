@@ -163,12 +163,25 @@ export const mountWidgets = (
 			send.textContent = 'Send';
 			send.dataset.wpRagAiChatbotSend = '';
 			send.setAttribute( 'aria-label', 'Send message' );
-			form.append( question, send );
+
+			const status = documentRoot.createElement( 'p' );
+			status.dataset.wpRagAiChatbotStatus = '';
+			status.setAttribute( 'role', 'status' );
+			status.setAttribute( 'aria-live', 'polite' );
+			form.append( question, send, status );
+
+			let requestInFlight = false;
 
 			const closePanel = (): void => {
 				launcher.setAttribute( 'aria-expanded', 'false' );
 				panel.hidden = true;
 				launcher.focus();
+			};
+
+			const finishRequest = (): void => {
+				requestInFlight = false;
+				send.disabled = false;
+				status.textContent = '';
 			};
 
 			launcher.addEventListener( 'click', () => {
@@ -187,9 +200,13 @@ export const mountWidgets = (
 				event.preventDefault();
 				const value = question.value.trim();
 
-				if ( value === '' ) {
+				if ( value === '' || requestInFlight ) {
 					return;
 				}
+
+				requestInFlight = true;
+				send.disabled = true;
+				status.textContent = 'Sending…';
 
 				void fetch( chatUrl( config.restBase ), {
 					method: 'POST',
@@ -200,7 +217,7 @@ export const mountWidgets = (
 						bot_id: config.config.bot_id,
 						question: value,
 					} ),
-				} );
+				} ).then( finishRequest, finishRequest );
 			} );
 
 			panel.append( close, form );
