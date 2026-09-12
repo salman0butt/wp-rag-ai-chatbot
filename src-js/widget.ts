@@ -1,7 +1,4 @@
-import {
-	mountWidgets,
-	type WidgetBootstrapConfig,
-} from './widget-runtime';
+import { mountWidgets, type WidgetBootstrapConfig } from './widget-runtime';
 
 type WidgetConfigWindow = Window & {
 	wpRagAiChatbotWidgetConfigs?: WidgetBootstrapConfig[];
