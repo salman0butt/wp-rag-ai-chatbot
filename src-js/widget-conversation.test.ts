@@ -42,8 +42,9 @@ const submitQuestion = ( value: string ): void => {
 };
 
 const flushPromises = async (): Promise< void > => {
-	await Promise.resolve();
-	await Promise.resolve();
+	for ( let index = 0; index < 5; index += 1 ) {
+		await Promise.resolve();
+	}
 };
 
 describe( 'public widget conversation controls', () => {
