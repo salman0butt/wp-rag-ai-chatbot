@@ -19,14 +19,18 @@ use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Frontend\AppearanceConfig;
 use WpRagAiChatbot\Frontend\BotAppearanceRepository;
 
-/**
- * Proves appearance persistence is bot-scoped and normalized.
- */
+/** Proves appearance persistence is bot-scoped and normalized. */
 final class WpdbBotAppearanceRepositoryTest extends TestCase {
 	/** A legacy bot row with no stored appearance resolves bounded defaults. */
 	public function test_find_projects_defaults_for_legacy_null_appearance(): void {
-		self::assertTrue( interface_exists( BotAppearanceRepository::class ), 'M14 Task 2A requires BotAppearanceRepository.' );
-		self::assertTrue( class_exists( WpdbBotAppearanceRepository::class ), 'M14 Task 2A requires WpdbBotAppearanceRepository.' );
+		self::assertTrue(
+			interface_exists( BotAppearanceRepository::class ),
+			'M14 Task 2A requires BotAppearanceRepository.'
+		);
+		self::assertTrue(
+			class_exists( WpdbBotAppearanceRepository::class ),
+			'M14 Task 2A requires WpdbBotAppearanceRepository.'
+		);
 
 		$connection = $this->connection();
 		$connection->expects( self::once() )->method( 'prepare' )->willReturnCallback(
@@ -46,12 +50,17 @@ final class WpdbBotAppearanceRepositoryTest extends TestCase {
 
 	/** Persisted JSON must re-enter the bounded AppearanceConfig authority. */
 	public function test_find_rehydrates_only_normalized_appearance(): void {
-		self::assertTrue( class_exists( WpdbBotAppearanceRepository::class ), 'M14 Task 2A requires WpdbBotAppearanceRepository.' );
+		self::assertTrue(
+			class_exists( WpdbBotAppearanceRepository::class ),
+			'M14 Task 2A requires WpdbBotAppearanceRepository.'
+		);
 		$connection = $this->connection();
 		$connection->method( 'prepare' )->willReturn( 'appearance-row' );
 		$connection->method( 'get_row' )->willReturn(
 			array(
-				'appearance_json' => '{"primary_color":"#ABCDEF","color_mode":"dark","position":"bottom-left","launcher_style":"icon","panel_size":"large","radius_px":20,"font_family":"sans"}',
+				'appearance_json' => '{"primary_color":"#ABCDEF","color_mode":"dark",'
+					. '"position":"bottom-left","launcher_style":"icon","panel_size":"large",'
+					. '"radius_px":20,"font_family":"sans"}',
 			)
 		);
 
@@ -63,7 +72,10 @@ final class WpdbBotAppearanceRepositoryTest extends TestCase {
 
 	/** Corrupted persistence fails closed instead of leaking or accepting raw values. */
 	public function test_find_rejects_missing_or_malformed_persisted_state(): void {
-		self::assertTrue( class_exists( WpdbBotAppearanceRepository::class ), 'M14 Task 2A requires WpdbBotAppearanceRepository.' );
+		self::assertTrue(
+			class_exists( WpdbBotAppearanceRepository::class ),
+			'M14 Task 2A requires WpdbBotAppearanceRepository.'
+		);
 		$connection = $this->connection();
 		$connection->method( 'prepare' )->willReturn( 'appearance-row' );
 		$connection->method( 'get_row' )->willReturn( null );
@@ -74,7 +86,10 @@ final class WpdbBotAppearanceRepositoryTest extends TestCase {
 
 	/** Save writes only the normalized appearance projection for the exact bot. */
 	public function test_save_writes_only_normalized_appearance_for_exact_bot(): void {
-		self::assertTrue( class_exists( WpdbBotAppearanceRepository::class ), 'M14 Task 2A requires WpdbBotAppearanceRepository.' );
+		self::assertTrue(
+			class_exists( WpdbBotAppearanceRepository::class ),
+			'M14 Task 2A requires WpdbBotAppearanceRepository.'
+		);
 		$connection = $this->connection();
 		$connection->expects( self::once() )->method( 'update' )->willReturnCallback(
 			static function ( string $table, array $data, array $where, array $format, array $where_format ): int {
