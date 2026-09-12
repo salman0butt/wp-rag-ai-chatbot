@@ -61,8 +61,8 @@ final class PublicChatRuntimeBootstrap {
 			new LocalVectorStoreConfig( $retrieval->lexical_candidate_limit, $retrieval->semantic_top_k )
 		);
 
-		$providers = ProviderBootstrap::registry();
-		$semantic  = new PlaygroundSemanticRetrieverResolver(
+		$providers  = ProviderBootstrap::registry();
+		$semantic   = new PlaygroundSemanticRetrieverResolver(
 			new PlaygroundEmbeddingProviderResolver( $providers ),
 			new PlaygroundVectorCollectionResolver(),
 			new PlaygroundVectorStoreResolver( VectorStoreBootstrap::registry() ),
@@ -70,7 +70,7 @@ final class PublicChatRuntimeBootstrap {
 			new VectorFilterMapper(),
 			$retrieval
 		);
-		$hybrid    = new PlaygroundHybridRetrieverResolver(
+		$hybrid     = new PlaygroundHybridRetrieverResolver(
 			new LexicalRetriever( $chunks, new LexicalScorer(), $retrieval ),
 			new ReciprocalRankFusion( $retrieval ),
 			new ConfidenceEstimator(),
@@ -84,7 +84,7 @@ final class PublicChatRuntimeBootstrap {
 			new PromptBuilder(),
 			new CitationValidator()
 		);
-		$resolver = new PublicChatResponderResolver(
+		$resolver   = new PublicChatResponderResolver(
 			new PublicChatKnowledgeSourceResolver( new WpdbKnowledgeSourceRepository( $connection, $tables ) ),
 			new PlaygroundSemanticConfigurationResolver(),
 			$semantic,
