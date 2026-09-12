@@ -89,7 +89,7 @@ jobs:
 
           path.write_text(text)
           PY
-          npx prettier --write src-js/index.ts
+          npx eslint src-js/index.ts --fix
           git diff --check
       - name: Verify JavaScript behavior
         run: npm run verify:js
