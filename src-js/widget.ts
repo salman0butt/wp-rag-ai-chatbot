@@ -1,5 +1,10 @@
+import {
+	mountWidgets,
+	type WidgetBootstrapConfig,
+} from './widget-runtime';
+
 type WidgetConfigWindow = Window & {
-	wpRagAiChatbotWidgetConfigs?: unknown[];
+	wpRagAiChatbotWidgetConfigs?: WidgetBootstrapConfig[];
 };
 
 const widgetWindow = window as WidgetConfigWindow;
@@ -7,3 +12,5 @@ const widgetWindow = window as WidgetConfigWindow;
 if ( ! Array.isArray( widgetWindow.wpRagAiChatbotWidgetConfigs ) ) {
 	widgetWindow.wpRagAiChatbotWidgetConfigs = [];
 }
+
+mountWidgets( document, widgetWindow.wpRagAiChatbotWidgetConfigs );
