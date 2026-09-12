@@ -36,7 +36,9 @@ final class AdminRestBootstrap {
 	 */
 	public const REST_NAMESPACE = 'wp-rag-ai-chatbot/v1';
 
-	/** Register administration REST routes. */
+	/**
+	 * Register administration REST routes.
+	 */
 	public static function register_routes(): void {
 		register_rest_route(
 			self::REST_NAMESPACE,
@@ -224,7 +226,11 @@ final class AdminRestBootstrap {
 		);
 	}
 
-	/** @return array{plugin:string,api_version:string} */
+	/**
+	 * Return non-secret identifiers needed to bootstrap the admin application.
+	 *
+	 * @return array{plugin:string,api_version:string}
+	 */
 	public static function get_bootstrap(): array {
 		return array(
 			'plugin'      => 'wp-rag-ai-chatbot',
@@ -232,7 +238,12 @@ final class AdminRestBootstrap {
 		);
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Run one bounded administrator Playground request through production services.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function run_playground( WP_REST_Request $request ): array {
 		$playground_request = PlaygroundRequest::from_array( $request->get_json_params() );
 		if ( null === $playground_request ) {
@@ -246,239 +257,467 @@ final class AdminRestBootstrap {
 		return PlaygroundRuntimeBootstrap::handler( $connection, $tables )->handle( $playground_request );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Return one bounded deterministic bot page.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function list_bots( WP_REST_Request $request ): array {
 		$page     = self::request_positive_int( $request->get_param( 'page' ), 1 );
 		$per_page = self::request_positive_int( $request->get_param( 'per_page' ), 20 );
+
 		if ( null === $page || null === $per_page || $per_page > 100 ) {
 			return self::invalid_request();
 		}
+
 		return self::bots()->list( $page, $per_page );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Create one bot from a JSON settings payload.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function create_bot( WP_REST_Request $request ): array {
 		$payload = self::settings_payload( $request->get_json_params(), false );
 		if ( null === $payload ) {
 			return self::invalid_request();
 		}
+
 		return self::bots()->create( $payload );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Read exactly one bot.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function get_bot( WP_REST_Request $request ): array {
 		return self::bots()->read( (string) $request->get_param( 'id' ) );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Update exactly one bot using optimistic versioning.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function update_bot( WP_REST_Request $request ): array {
 		$payload = self::settings_payload( $request->get_json_params(), true );
 		if ( null === $payload || ! isset( $payload['version'] ) ) {
 			return self::invalid_request();
 		}
+
 		return self::bots()->update( (string) $request->get_param( 'id' ), $payload );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Delete exactly one bot.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function delete_bot( WP_REST_Request $request ): array {
 		return self::bots()->delete( (string) $request->get_param( 'id' ) );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Read normalized appearance for exactly one bot.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function get_bot_appearance( WP_REST_Request $request ): array {
 		return self::appearance()->read( (string) $request->get_param( 'id' ) );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Persist normalized appearance for exactly one bot.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function put_bot_appearance( WP_REST_Request $request ): array {
 		$payload = $request->get_json_params();
 		if ( null === $payload ) {
 			return self::invalid_request();
 		}
+
 		return self::appearance()->write( (string) $request->get_param( 'id' ), $payload );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Read safe credential configuration state for one direct provider.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function get_provider_credential( WP_REST_Request $request ): array {
 		return self::provider_credentials()->read( (string) $request->get_param( 'provider_id' ) );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Store or replace one direct-provider credential without echoing it.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function put_provider_credential( WP_REST_Request $request ): array {
-		return self::provider_credentials()->write( (string) $request->get_param( 'provider_id' ), $request->get_json_params() );
+		return self::provider_credentials()->write(
+			(string) $request->get_param( 'provider_id' ),
+			$request->get_json_params()
+		);
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Reset only the plugin-managed credential for one direct provider.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function delete_provider_credential( WP_REST_Request $request ): array {
 		return self::provider_credentials()->delete( (string) $request->get_param( 'provider_id' ) );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Return normalized models for one configured provider.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function list_models( WP_REST_Request $request ): array {
 		$provider_id = $request->get_param( 'provider_id' );
 		$purpose     = $request->get_param( 'purpose' );
 		$capability  = $request->get_param( 'capability' );
-		if ( ! is_string( $provider_id ) || '' === trim( $provider_id ) || ! is_string( $purpose ) || '' === trim( $purpose ) || ( null !== $capability && '' !== $capability && ! is_string( $capability ) ) ) {
+
+		if (
+			! is_string( $provider_id )
+			|| '' === trim( $provider_id )
+			|| ! is_string( $purpose )
+			|| '' === trim( $purpose )
+			|| ( null !== $capability && '' !== $capability && ! is_string( $capability ) )
+		) {
 			return self::invalid_request();
 		}
+
 		$normalized_capability = null;
 		if ( is_string( $capability ) && '' !== trim( $capability ) ) {
 			$normalized_capability = trim( $capability );
 		}
-		return self::model_readiness()->models( trim( $provider_id ), trim( $purpose ), $normalized_capability );
+
+		return self::model_readiness()->models(
+			trim( $provider_id ),
+			trim( $purpose ),
+			$normalized_capability
+		);
 	}
 
-	/** @return array{ready:bool,next_step:string} */
+	/**
+	 * Return onboarding progress derived from persisted provider/model/bot truth.
+	 *
+	 * @return array{ready:bool,next_step:string}
+	 */
 	public static function get_onboarding_readiness(): array {
 		return self::model_readiness()->readiness();
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Return one bounded page of safe persisted knowledge-source fields.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function list_knowledge_sources( WP_REST_Request $request ): array {
 		$page     = self::request_positive_int( $request->get_param( 'page' ), 1 );
 		$per_page = self::request_positive_int( $request->get_param( 'per_page' ), 20 );
+
 		if ( null === $page || null === $per_page || $per_page > 100 ) {
 			return self::invalid_request();
 		}
+
 		return self::knowledge_sources()->list( $page, $per_page );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Return one safe knowledge source detail.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function get_knowledge_source( WP_REST_Request $request ): array {
 		$source_id = self::request_positive_int( $request->get_param( 'id' ), 0 );
 		if ( null === $source_id ) {
 			return self::invalid_request();
 		}
+
 		return self::knowledge_detail()->source( $source_id );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Return one bounded document page for a knowledge source.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function list_knowledge_documents( WP_REST_Request $request ): array {
 		$source_id = self::request_positive_int( $request->get_param( 'id' ), 0 );
 		$page      = self::request_positive_int( $request->get_param( 'page' ), 1 );
 		$per_page  = self::request_positive_int( $request->get_param( 'per_page' ), 20 );
+
 		if ( null === $source_id || null === $page || null === $per_page || $per_page > 100 ) {
 			return self::invalid_request();
 		}
+
 		return self::knowledge_detail()->documents( $source_id, $page, $per_page );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Return one bounded chunk page for a knowledge document.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function list_knowledge_chunks( WP_REST_Request $request ): array {
 		$source_id    = self::request_positive_int( $request->get_param( 'id' ), 0 );
 		$document_key = $request->get_param( 'document_key' );
 		$page         = self::request_positive_int( $request->get_param( 'page' ), 1 );
 		$per_page     = self::request_positive_int( $request->get_param( 'per_page' ), 20 );
-		if ( null === $source_id || ! is_string( $document_key ) || '' === trim( $document_key ) || null === $page || null === $per_page || $per_page > 100 ) {
+
+		if (
+			null === $source_id
+			|| ! is_string( $document_key )
+			|| '' === trim( $document_key )
+			|| null === $page
+			|| null === $per_page
+			|| $per_page > 100
+		) {
 			return self::invalid_request();
 		}
+
 		return self::knowledge_detail()->chunks( $source_id, $document_key, $page, $per_page );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Return one bounded page of safe persisted job status fields.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function list_knowledge_jobs( WP_REST_Request $request ): array {
 		$page     = self::request_positive_int( $request->get_param( 'page' ), 1 );
 		$per_page = self::request_positive_int( $request->get_param( 'per_page' ), 20 );
+
 		if ( null === $page || null === $per_page || $per_page > 100 ) {
 			return self::invalid_request();
 		}
+
 		return self::knowledge_jobs()->list( $page, $per_page );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Enqueue one document indexing job through the established M09 queue seam.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function enqueue_knowledge_job( WP_REST_Request $request ): array {
 		return self::knowledge_jobs()->enqueue( $request->get_json_params() );
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Apply one supported job lifecycle mutation.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
 	public static function mutate_knowledge_job( WP_REST_Request $request ): array {
 		$job_key = $request->get_param( 'job_key' );
 		$action  = $request->get_param( 'action' );
+
 		if ( ! is_string( $job_key ) || '' === trim( $job_key ) || ! is_string( $action ) ) {
 			return self::invalid_request();
 		}
+
 		return match ( $action ) {
 			'cancel' => self::knowledge_jobs()->cancel( trim( $job_key ) ),
-			'retry' => self::knowledge_jobs()->retry( trim( $job_key ) ),
-			default => self::invalid_request(),
+			'retry'  => self::knowledge_jobs()->retry( trim( $job_key ) ),
+			default  => self::invalid_request(),
 		};
 	}
 
+	/**
+	 * Build the repository-backed bot resource from WordPress services.
+	 */
 	private static function bots(): BotRestResource {
 		global $wpdb;
+
 		$connection = new WpdbConnection( $wpdb );
-		return new BotRestResource( new WpdbBotRepository( $connection, new TableNames( $connection->prefix() ) ) );
+
+		return new BotRestResource(
+			new WpdbBotRepository(
+				$connection,
+				new TableNames( $connection->prefix() )
+			)
+		);
 	}
 
+	/**
+	 * Build the bot appearance resource from the established persistence seams.
+	 */
 	private static function appearance(): AppearanceRestResource {
 		global $wpdb;
+
 		$connection = new WpdbConnection( $wpdb );
-		return new AppearanceRestResource( new WpdbBotAppearanceRepository( $connection, new TableNames( $connection->prefix() ) ) );
+
+		return new AppearanceRestResource(
+			new WpdbBotAppearanceRepository(
+				$connection,
+				new TableNames( $connection->prefix() )
+			)
+		);
 	}
 
+	/**
+	 * Build the provider credential resource from the established M03 secure storage seams.
+	 */
 	private static function provider_credentials(): ProviderCredentialRestResource {
-		$store = new WordPressCredentialStore( new AuthenticatedCredentialCipher( new RuntimeCryptoCapabilities() ) );
+		$store = new WordPressCredentialStore(
+			new AuthenticatedCredentialCipher( new RuntimeCryptoCapabilities() )
+		);
+
 		return new ProviderCredentialRestResource( new RuntimeCredentialSourceReader(), $store );
 	}
 
+	/**
+	 * Build Task 5 from the existing provider registry/configuration and bot repository seams.
+	 */
 	private static function model_readiness(): ModelReadinessRestResource {
 		global $wpdb;
+
 		$connection = new WpdbConnection( $wpdb );
-		return new ModelReadinessRestResource( ProviderBootstrap::registry(), ProviderBootstrap::configuration(), new WpdbBotRepository( $connection, new TableNames( $connection->prefix() ) ) );
+
+		return new ModelReadinessRestResource(
+			ProviderBootstrap::registry(),
+			ProviderBootstrap::configuration(),
+			new WpdbBotRepository(
+				$connection,
+				new TableNames( $connection->prefix() )
+			)
+		);
 	}
 
+	/**
+	 * Build the M13 knowledge inventory from the established source repository.
+	 */
 	private static function knowledge_sources(): KnowledgeSourceRestResource {
 		global $wpdb;
+
 		$connection = new WpdbConnection( $wpdb );
-		return new KnowledgeSourceRestResource( new WpdbKnowledgeSourceRepository( $connection, new TableNames( $connection->prefix() ) ) );
+
+		return new KnowledgeSourceRestResource(
+			new WpdbKnowledgeSourceRepository(
+				$connection,
+				new TableNames( $connection->prefix() )
+			)
+		);
 	}
 
+	/**
+	 * Build the M13 bounded source/document/chunk inspection resource.
+	 */
 	private static function knowledge_detail(): KnowledgeDetailRestResource {
 		global $wpdb;
+
 		$connection = new WpdbConnection( $wpdb );
 		$tables     = new TableNames( $connection->prefix() );
-		return new KnowledgeDetailRestResource( new WpdbKnowledgeSourceRepository( $connection, $tables ), new WpdbDocumentRepository( $connection, $tables ), new WpdbChunkSearchStore( $connection, $tables ) );
+
+		return new KnowledgeDetailRestResource(
+			new WpdbKnowledgeSourceRepository( $connection, $tables ),
+			new WpdbDocumentRepository( $connection, $tables ),
+			new WpdbChunkSearchStore( $connection, $tables )
+		);
 	}
 
+	/**
+	 * Build the M13 job inspection/lifecycle resource over the existing M09 queue seams.
+	 */
 	private static function knowledge_jobs(): KnowledgeJobRestResource {
 		global $wpdb;
+
 		$connection = new WpdbConnection( $wpdb );
 		$tables     = new TableNames( $connection->prefix() );
-		return new KnowledgeJobRestResource( new WpdbJobReadRepository( $connection, $tables ), new WpdbJobRepository( $connection, $tables ), new SystemClock() );
+
+		return new KnowledgeJobRestResource(
+			new WpdbJobReadRepository( $connection, $tables ),
+			new WpdbJobRepository( $connection, $tables ),
+			new SystemClock()
+		);
 	}
 
+	/**
+	 * Normalize a positive integer REST parameter.
+	 *
+	 * @param mixed $value Raw request parameter.
+	 * @param int   $default_value Value used when the parameter is omitted.
+	 */
 	private static function request_positive_int( mixed $value, int $default_value ): ?int {
 		if ( null === $value || '' === $value ) {
 			return $default_value;
 		}
+
 		$validated = filter_var( $value, FILTER_VALIDATE_INT );
 		if ( false === $validated || $validated < 1 ) {
 			return null;
 		}
+
 		return $validated;
 	}
 
-	/** @return array{name:string,enabled:bool,provider_id:string,model_id:string}|array{version:int,name:string,enabled:bool,provider_id:string,model_id:string}|null */
+	/**
+	 * Normalize the bounded bot settings payload before entering the typed resource.
+	 *
+	 * @param array<string,mixed>|null $input Raw JSON payload.
+	 * @param bool                     $require_version Whether optimistic version is required.
+	 * @return array{name:string,enabled:bool,provider_id:string,model_id:string}|array{version:int,name:string,enabled:bool,provider_id:string,model_id:string}|null
+	 */
 	private static function settings_payload( ?array $input, bool $require_version ): ?array {
-		if ( null === $input || ! isset( $input['name'], $input['provider_id'], $input['model_id'] ) || ! is_string( $input['name'] ) || ! is_bool( $input['enabled'] ?? null ) || ! is_string( $input['provider_id'] ) || ! is_string( $input['model_id'] ) ) {
+		if (
+			null === $input
+			|| ! isset( $input['name'], $input['provider_id'], $input['model_id'] )
+			|| ! is_string( $input['name'] )
+			|| ! is_bool( $input['enabled'] ?? null )
+			|| ! is_string( $input['provider_id'] )
+			|| ! is_string( $input['model_id'] )
+		) {
 			return null;
 		}
+
 		$payload = array(
 			'name'        => $input['name'],
 			'enabled'     => $input['enabled'],
 			'provider_id' => $input['provider_id'],
 			'model_id'    => $input['model_id'],
 		);
+
 		if ( ! $require_version ) {
 			return $payload;
 		}
+
 		if ( ! isset( $input['version'] ) || ! is_int( $input['version'] ) || $input['version'] < 1 ) {
 			return null;
 		}
+
 		return array( 'version' => $input['version'] ) + $payload;
 	}
 
-	/** @return array{error:array{code:string,message:string}} */
+	/**
+	 * Return one stable malformed-request response.
+	 *
+	 * @return array{error:array{code:string,message:string}}
+	 */
 	private static function invalid_request(): array {
 		return array(
 			'error' => array(
