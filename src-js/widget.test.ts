@@ -1,5 +1,7 @@
 export {};
 
+declare const require: ( path: string ) => unknown;
+
 type WidgetBootstrapConfig = {
 	botId: string;
 	restBase: string;
