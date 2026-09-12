@@ -35,6 +35,13 @@ final class VectorStoreBootstrap {
 	 */
 	private static bool $local_registered = false;
 
+	/**
+	 * Per-site table authority currently bound to the local adapter.
+	 *
+	 * @var string|null
+	 */
+	private static ?string $local_scope = null;
+
 	/** Return the shared production registry without performing network I/O. */
 	public static function registry(): VectorStoreRegistry {
 		self::$registry ??= new VectorStoreRegistry();
@@ -43,7 +50,7 @@ final class VectorStoreBootstrap {
 	}
 
 	/**
-	 * Register the production local WordPress vector adapter exactly once.
+	 * Register the production local WordPress vector adapter exactly once per site authority.
 	 *
 	 * @param Connection             $connection Database connection.
 	 * @param TableNames             $tables Plugin table names.
@@ -54,11 +61,18 @@ final class VectorStoreBootstrap {
 		TableNames $tables,
 		LocalVectorStoreConfig $config
 	): void {
-		if ( self::$local_registered ) {
+		$scope = $tables->vector_collections() . "\0" . $tables->vectors();
+		if ( self::$local_registered && self::$local_scope === $scope ) {
 			return;
 		}
 
+		if ( self::$local_registered ) {
+			self::$registry         = new VectorStoreRegistry();
+			self::$local_registered = false;
+		}
+
 		self::registry()->register( new LocalVectorStore( $connection, $tables, $config ) );
+		self::$local_scope      = $scope;
 		self::$local_registered = true;
 	}
 }
