@@ -16,7 +16,6 @@ use WpRagAiChatbot\Frontend\BotRetrievalBinding;
 use WpRagAiChatbot\Frontend\PublicChatAccessContextResolver;
 use WpRagAiChatbot\Frontend\PublicChatRuntime;
 use WpRagAiChatbot\Retrieval\Lexical\ChunkLookupStore;
-use WpRagAiChatbot\Retrieval\Lexical\ChunkSearchRecord;
 
 /**
  * Specifies trusted persisted retrieval scope for public production chat.
@@ -53,7 +52,6 @@ final class PublicChatAccessContextResolverTest extends TestCase {
 			->with( 'support-en-v1', 'chunk-1' )
 			->willReturn( null );
 
-		$resolver = $context->semantic_context->chunk_resolver;
-		self::assertNull( $resolver( 'chunk-1' ) );
+		self::assertNull( $context->semantic_context->resolve_chunk( 'chunk-1' ) );
 	}
 }
