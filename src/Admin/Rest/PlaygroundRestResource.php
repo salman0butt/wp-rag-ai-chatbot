@@ -24,6 +24,9 @@ final class PlaygroundRestResource {
 	/** Maximum generated answer bytes exposed by the administrator REST DTO. */
 	private const MAX_ANSWER_BYTES = 65536;
 
+	/** Maximum citation lineage identifier bytes exposed by the administrator REST DTO. */
+	private const MAX_CITATION_LINEAGE_BYTES = 256;
+
 	/** Maximum citation title bytes exposed by the administrator REST DTO. */
 	private const MAX_CITATION_TITLE_BYTES = 256;
 
@@ -81,8 +84,8 @@ final class PlaygroundRestResource {
 
 			$citations[] = array(
 				'id'            => $citation->id,
-				'chunk_id'      => $citation->chunk_id,
-				'document_id'   => $citation->document_id,
+				'chunk_id'      => self::bound_utf8( $citation->chunk_id, self::MAX_CITATION_LINEAGE_BYTES ),
+				'document_id'   => self::bound_utf8( $citation->document_id, self::MAX_CITATION_LINEAGE_BYTES ),
 				'source_id'     => $citation->source_id,
 				'title'         => self::bound_nullable_utf8( $citation->title, self::MAX_CITATION_TITLE_BYTES ),
 				'canonical_url' => self::bound_nullable_utf8( $citation->canonical_url, self::MAX_CITATION_URL_BYTES ),
