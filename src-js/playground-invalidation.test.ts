@@ -45,9 +45,12 @@ describe( 'Playground request invalidation', () => {
 		const onChange = jest.fn();
 		const controller = createPlaygroundController( api, onChange );
 		const pending = controller.submit( draft );
+		const invalidate = (
+			controller as unknown as { invalidate?: () => void }
+		).invalidate;
 
-		expect( typeof controller.invalidate ).toBe( 'function' );
-		controller.invalidate();
+		expect( typeof invalidate ).toBe( 'function' );
+		invalidate?.();
 		resolveRun( result );
 		await pending;
 
