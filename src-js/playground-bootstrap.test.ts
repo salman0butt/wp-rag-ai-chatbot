@@ -135,17 +135,20 @@ describe( 'Playground admin bootstrap', () => {
 			'[data-playground-form]'
 		);
 		expect( form ).not.toBeNull();
-		( form?.elements.namedItem( 'bot_id' ) as HTMLInputElement ).value =
-			'support-bot';
-		(
-			form?.elements.namedItem( 'source_id' ) as HTMLInputElement
-		).value = '9';
-		(
-			form?.elements.namedItem( 'collection_id' ) as HTMLInputElement
-		).value = 'support-docs';
-		(
-			form?.elements.namedItem( 'question' ) as HTMLTextAreaElement
-		).value = 'What is the return window?';
+		const setValue = ( name: string, value: string ): void => {
+			const field = form?.elements.namedItem( name );
+
+			if (
+				field instanceof HTMLInputElement ||
+				field instanceof HTMLTextAreaElement
+			) {
+				field.value = value;
+			}
+		};
+		setValue( 'bot_id', 'support-bot' );
+		setValue( 'source_id', '9' );
+		setValue( 'collection_id', 'support-docs' );
+		setValue( 'question', 'What is the return window?' );
 		form?.dispatchEvent(
 			new Event( 'submit', { bubbles: true, cancelable: true } )
 		);
