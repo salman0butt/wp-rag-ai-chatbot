@@ -16,15 +16,20 @@ use Throwable;
  * Applies cheap public abuse controls before trusted runtime composition and chat execution.
  */
 final class PublicChatRestResource {
-	/** @var Closure(PublicChatRuntime):ProductionPublicChatExecutor */
+	/**
+	 * Request-local production executor factory.
+	 *
+	 * @var Closure(PublicChatRuntime):ProductionPublicChatExecutor
+	 */
 	private readonly Closure $executor_factory;
 
 	/**
 	 * Create one public chat REST resource.
 	 *
-	 * @param PublicChatAbuseGuard                         $abuse_guard Public request budget authority.
-	 * @param PublicChatRuntimeResolver                    $runtime_resolver Persisted server-owned runtime authority.
-	 * @param callable(PublicChatRuntime):ProductionPublicChatExecutor $executor_factory Request-local production executor factory.
+	 * @param PublicChatAbuseGuard      $abuse_guard Public request budget authority.
+	 * @param PublicChatRuntimeResolver $runtime_resolver Persisted server-owned runtime authority.
+	 * @param callable                  $executor_factory Request-local production executor factory.
+	 * @phpstan-param callable(PublicChatRuntime):ProductionPublicChatExecutor $executor_factory
 	 */
 	public function __construct(
 		private readonly PublicChatAbuseGuard $abuse_guard,
