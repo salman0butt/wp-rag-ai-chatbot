@@ -99,15 +99,11 @@ const playgroundForm = (
 ): unknown => {
 	const handleSubmit = ( event: Event ): void => {
 		event.preventDefault();
+		const form = event.currentTarget;
 
-		if (
-			onSubmit === undefined ||
-			!( event.currentTarget instanceof HTMLFormElement )
-		) {
+		if ( onSubmit === undefined || !( form instanceof HTMLFormElement ) ) {
 			return;
 		}
-
-		const form = event.currentTarget;
 
 		onSubmit( {
 			bot_id: formValue( form, 'bot_id' ),
