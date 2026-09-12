@@ -5,9 +5,9 @@
 - M12 PR: **#17 — MERGED** at merge SHA `206dbfcef42cfcee2a998d7f3c386abdb97425a0`.
 - Current milestone: **M13 — Knowledge Manager, Indexing UI, Playground & RAG Debugger**.
 - Active M13 integration PR: **#18 — OPEN, DRAFT**.
-- M13 status: **Tasks 1-5 COMPLETE; Task 6 IN PROGRESS; Tasks 7-8 PENDING**.
+- M13 status: **Tasks 1-6 COMPLETE; Task 7 IN PROGRESS; Task 8 PENDING**.
 
-This file is the concise recovery index. Detailed RED/GREEN, CI, review, security, accessibility, and implementation history remains in the per-task progress records and the M13 milestone ledger linked below.
+This file is the concise recovery index. Detailed RED/GREEN, CI, review, security, accessibility, and implementation history remains in the per-task progress records and M13 milestone ledger.
 
 ## M13 completed work
 
@@ -25,50 +25,43 @@ Protected bounded job inventory plus M09-backed enqueue/cancel/retry controls wi
 
 ### Task 4 — Knowledge manager admin UI: COMPLETE
 
-Bounded server-authoritative Knowledge UI over Tasks 1-3 with source/detail/document/chunk/job inspection, lifecycle actions, safe errors, loading/empty/error states, responsive/keyboard-accessible navigation, and latest-request-wins correlation for selected-resource and source-page requests. Fresh-session closeout review found one Important top-level source-page navigation race and resolved it under genuine RED → GREEN. Final Task 4 state: **0 Critical / 0 Important unresolved**. Evidence: the `docs/progress/M13-TASK4-*` records.
+Bounded server-authoritative Knowledge UI over Tasks 1-3 with source/detail/document/chunk/job inspection, lifecycle actions, safe errors, loading/empty/error states, responsive/keyboard-accessible navigation, and latest-request-wins correlation. Fresh-session closeout resolved the remaining Important page-navigation race under genuine RED → GREEN. Evidence: `docs/progress/M13-TASK4-*`.
 
 ### Task 5 — structured retrieval debug trace projection/redaction: COMPLETE
 
-Administrator-safe `DebugTrace` projection over existing M10 retrieval evidence with raw-query omission, explicit field/channel allow-lists, at most 20 candidates, at most 4 approved channel-evidence rows per candidate, 2,000-byte UTF-8-safe content bounds, and 256-byte UTF-8-safe candidate scalar bounds. Fresh-session closeout resolved the final Important boundedness defect under genuine RED → GREEN. Final Task 5 state: **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M13-TASK5-DEBUG-TRACE.md`.
+Administrator-safe `DebugTrace` projection over existing M10 retrieval evidence with raw-query omission, explicit field/channel allow-lists, at most 20 candidates, at most 4 approved channel-evidence rows per candidate, 2,000-byte UTF-8-safe content bounds, and 256-byte UTF-8-safe candidate scalar bounds. Fresh-session closeout resolved the final Important boundedness defect under genuine RED → GREEN. Evidence: `docs/progress/M13-TASK5-DEBUG-TRACE.md`.
+
+### Task 6 — Playground REST execution: COMPLETE
+
+Protected bounded `POST /admin/debug/playground` now executes the existing production M10/M11 path exactly once. It resolves persisted bot/source/collection/provider/embedding/vector-store authority, composes the existing semantic + lexical retrieval/chat graph, observes the exact retrieval result used for generation, projects through Task 5, and returns only allow-listed bounded success/error DTOs.
+
+The request contract accepts only `bot_id`, positive `source_id`, `collection_id`, and a bounded UTF-8 question. Unknown keys—including credentials, provider/model overrides, embedding overrides, vector-store options and retrieval-limit overrides—fail closed as `invalid_request`.
+
+Final Task 6 closeout evidence includes:
+
+- request-handler RED `3b4bdb1df6de76474e60693abbb97dd28a92672b` / CI `34659505729` → GREEN `1b85b0185689472bd38035f1757da29b7ef8058d` / CI `34659592284`;
+- citation-lineage RED `dee49f4b6bfd12a2d40ba724f9f42b838d2fab8d` / CI `34669687968` → GREEN `bbf0a03b95cf359a9a5c4ea643bf323ca24008de` / CI `34671321083`;
+- real WordPress route/smoke exact-head GREEN `0230ef184ef9a7558cb38e6541a5d8e207f21fb5` / CI `34671573305`, with all four permanent jobs GREEN and the new Playground route smoke passing;
+- fresh final fallback review: **0 Critical / 0 Important unresolved**. Independent reviewer/subagent transport was unavailable and is not falsely claimed.
+
+Durable evidence: `docs/progress/M13-TASK6-*`, especially `M13-TASK6-PLAYGROUND-CLOSEOUT.md`, `M13-TASK6-PLAYGROUND-WP-SMOKE.md`, and `M13-TASK6-PLAYGROUND-CITATION-BOUNDS.md`.
 
 ## Current work
 
-### Task 6 — Playground REST execution: IN PROGRESS
+### Task 7 — Playground UI: IN PROGRESS
 
-Completed and exact-head-verified Task 6 composition prerequisites now include:
+Consume only the Task 6 bounded trace DTO through the existing nonce-authenticated M12 admin client. Render the question form and structured diagnostic sections for candidates/scores/filter/rerank/context/answer/citations/model/latency/usage/errors with safe loading/empty/error handling, labelled controls, responsive long-content behavior, keyboard flow, and no arbitrary backend/provider-message rendering.
 
-- `ChatRetrievalObserver` plus request-local `PlaygroundRetrievalCapture`, preserving the exact M10 `RetrievalResult` already used by M11 without duplicate retrieval/scoring/reranking;
-- typed `PlaygroundExecutor` / `PlaygroundExecutionResult` contracts and `ProductionPlaygroundExecutor`;
-- bounded/sanitized `PlaygroundRestResource` behavior and allow-listed success projection;
-- explicit fail-closed persisted bot/provider/model selection through `PlaygroundBotConfigurationResolver`;
-- explicit fail-closed persisted knowledge-source/vector-collection selection through `PlaygroundRetrievalConfigurationResolver`;
-- closed `PlaygroundConfiguration` aggregate and `PlaygroundConfigurationResolver` over the persisted bot/retrieval selectors;
-- `PlaygroundGenerationProviderResolver`, resolving persisted `Bot::provider_id` through `ProviderRegistry::generation()` without fallback or generation work;
-- `PlaygroundSemanticConfiguration` plus `PlaygroundSemanticConfigurationResolver`, requiring explicit persisted embedding provider/model/dimensions/normalization, distance metric, and vector-store identity rather than inferring runtime defaults from `collection_id`;
-- `PlaygroundVectorCollectionResolver`, reconstructing the canonical production `VectorCollection` from the explicit persisted collection ID plus canonical `VectorIndexProfile`, while leaving persisted fingerprint/dimension compatibility enforcement to the existing production vector-store authority;
-- `PlaygroundVectorStoreResolver`, resolving persisted `vector_store_id` through `VectorStoreRegistry::search()` so unknown or non-search-capable stores fail closed through the existing production authority with no fallback/default;
-- `PlaygroundEmbeddingProviderResolver`, resolving the persisted `embedding_profile->provider_id` through `ProviderRegistry::embedding()` and failing closed for unknown providers or providers without embedding capability, with no fallback/default or embedding work;
-- `PlaygroundSemanticRetrieverResolver`, composing those persisted authorities into the existing production `EmbeddingService` and `SemanticRetriever` with explicit bounded batch/filter/retrieval configuration and no embedding/search execution during composition.
+### Exact next Task 7 work
 
-Latest semantic-retriever composition TDD evidence:
+1. Re-read the M13 design/plan plus current M12 admin router/client/screens/tests.
+2. Under a genuine Jest RED, specify one representative Task 6 trace fixture and stable safe error rendering.
+3. Implement only the smallest Playground UI/API-client seam required for GREEN; consume the server DTO without duplicating backend scoring/ranking logic.
+4. Continue with structured diagnostic sections, async/latest-request correctness, responsive/keyboard accessibility, and long content under additional strict RED → GREEN cycles.
+5. Perform correctness/security/performance/accessibility review and resolve all Critical/Important findings before Task 7 closeout.
+6. Require exact-head `php-quality`, `js-quality`, `package`, and `wordpress-smoke` GREEN before Task 7 completion.
 
-- Test-only checkpoint `35c4ad7b0eadf2a0b35d48e6cfe28218158737c0` is **NOT RED** because PHP verification stopped at test-file coding-standard issues before PHPUnit.
-- Genuine RED `7690eaef19980e676e978dc80019c3dd52fa2367` / CI `34599924148`: PHPStan clean; PHPUnit ran 725 tests / 3,055 assertions with exactly one intended missing-class error for `PlaygroundSemanticRetrieverResolver`; `js-quality` and `package` passed.
-- Initial implementation `4e9c2ef063824ced215c95a670699b7aef803942` is **NOT GREEN** because PHPCS stopped on three production docblock-alignment violations before PHP tests validated the implementation; its `js-quality`, `package`, and complete `wordpress-smoke` jobs passed.
-- Genuine GREEN `079fe4061f34aa4e0f36fbd542c47a5e4e4d9c86` / CI `34600110031`: `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed; PHPStan 309/309 clean, PHPUnit 725/725 tests / 3,056 assertions, Composer audit clean, and WordPress smoke passed activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and shutdown.
-- Scoped correctness/security/performance review: **0 Critical / 0 Important unresolved**. Separate independent reviewer/subagent transport was not exposed, so this is not the final independent Task 6 closeout review.
-
-Durable evidence: `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-RETRIEVER.md` plus the earlier Task 6 progress records.
-
-### Exact next Task 6 work
-
-1. Under a fresh genuine RED, compose the existing semantic + lexical retrieval, fusion/reranking, grounding, prompt, memory, citation, `PlaygroundRetrievalCapture`, `ChatOrchestrator`, and `ProductionPlaygroundExecutor` components, executing the existing M10/M11 path exactly once.
-2. Do not build a parallel Playground retrieval/provider stack and do not accept arbitrary request-level credentials, provider/model overrides, embedding overrides, vector-store options, or retrieval limits.
-3. Once production chat composition is exact-head GREEN, restore the protected `POST /admin/debug/playground` regression and register the route behind `AdminCapability::can_manage` under a new strict RED → GREEN cycle.
-4. Bound/validate question plus explicit persisted selector identifiers; return only the already-defined bounded/allow-listed success projection and stable safe errors.
-5. Add REST/integration/WordPress smoke coverage and perform the genuinely fresh independent Task 6 correctness/security/performance review before marking Task 6 COMPLETE.
-
-Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete. Do not merge PR #18 until all M13 tasks, final milestone review, exact-final-head CI, and post-merge `main` verification are complete.
+Task 8 remains pending. Do not merge PR #18 until Task 7, Task 8, final M13 review, exact-final-head CI, merge gates, and post-merge `main` verification are all complete.
 
 ## Durable recovery
 
@@ -80,14 +73,4 @@ Tasks 7-8 remain pending. Do not start Task 7 until Task 6 is genuinely complete
 - `docs/progress/M13-TASK3-JOB-LIFECYCLE.md` — Task 3 evidence.
 - `docs/progress/M13-TASK4-*` — Task 4 implementation and closeout evidence.
 - `docs/progress/M13-TASK5-DEBUG-TRACE.md` — Task 5 debug trace/redaction/boundedness evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-REST.md` — Task 6 resource/observer continuation evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-BOT-CONFIGURATION.md` — persisted bot selector evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-RETRIEVAL-CONFIGURATION.md` — persisted source/collection selector evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION.md` — closed configuration aggregate evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-CONFIGURATION-RESOLVER.md` — explicit selector composition evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-GENERATION-PROVIDER.md` — persisted generation-provider resolution evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-CONFIGURATION.md` — persisted embedding/vector-store semantic identity evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-COLLECTION.md` — canonical vector-collection reconstruction evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-VECTOR-STORE.md` — persisted vector-store resolution evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-EMBEDDING-PROVIDER.md` — persisted embedding-provider resolution evidence.
-- `docs/progress/M13-TASK6-PLAYGROUND-SEMANTIC-RETRIEVER.md` — production semantic-retriever composition evidence and current continuation point.
+- `docs/progress/M13-TASK6-*` — Task 6 composition, route, request, smoke and closeout evidence.
