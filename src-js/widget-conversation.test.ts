@@ -14,6 +14,10 @@ type WidgetConfigWindow = Window & {
 	} >;
 };
 
+const BOT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+const originalFetch = globalThis.fetch;
+let fetchMock: jest.Mock;
+
 const loadWidget = (): void => {
 	jest.resetModules();
 	jest.isolateModules( () => {
@@ -21,26 +25,60 @@ const loadWidget = (): void => {
 	} );
 };
 
+const submitQuestion = ( value: string ): void => {
+	const form = document.querySelector< HTMLFormElement >(
+		'[data-wp-rag-ai-chatbot-form]'
+	);
+	const question = document.querySelector< HTMLTextAreaElement >(
+		'[data-wp-rag-ai-chatbot-question]'
+	);
+
+	if ( question ) {
+		question.value = value;
+	}
+	form?.dispatchEvent(
+		new Event( 'submit', { bubbles: true, cancelable: true } )
+	);
+};
+
 describe( 'public widget conversation controls', () => {
 	beforeEach( () => {
 		document.body.innerHTML =
-			'<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"></div>';
+			`<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
 		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
 			{
-				botId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+				botId: BOT_ID,
 				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
 				config: {
-					bot_id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+					bot_id: BOT_ID,
 					name: 'Support bot',
 					appearance: {},
 				},
 			},
 		];
+		fetchMock = jest.fn().mockResolvedValue( {
+			ok: true,
+			json: async () => ( {
+				answer: 'Hello',
+				conversation_id: 'conversation-1',
+				citations: [],
+			} ),
+		} );
+		Object.defineProperty( globalThis, 'fetch', {
+			value: fetchMock,
+			writable: true,
+			configurable: true,
+		} );
 	} );
 
 	afterEach( () => {
 		document.body.innerHTML = '';
 		delete ( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs;
+		Object.defineProperty( globalThis, 'fetch', {
+			value: originalFetch,
+			writable: true,
+			configurable: true,
+		} );
 	} );
 
 	it( 'mounts native accessible question and send controls inside the panel', () => {
@@ -61,5 +99,32 @@ describe( 'public widget conversation controls', () => {
 		expect( send?.tagName ).toBe( 'BUTTON' );
 		expect( send?.type ).toBe( 'submit' );
 		expect( send?.textContent ).toBe( 'Send' );
+	} );
+
+	it( 'does not make a public chat request for whitespace-only input', () => {
+		loadWidget();
+		submitQuestion( '   ' );
+
+		expect( fetchMock ).not.toHaveBeenCalled();
+	} );
+
+	it( 'submits only the closed public chat request fields', () => {
+		loadWidget();
+		submitQuestion( '  How can you help?  ' );
+
+		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
+		expect( fetchMock ).toHaveBeenCalledWith(
+			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/chat',
+			{
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify( {
+					bot_id: BOT_ID,
+					question: 'How can you help?',
+				} ),
+			}
+		);
 	} );
 } );
