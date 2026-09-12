@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Database\Repository;
 
+use InvalidArgumentException;
 use JsonException;
 use RuntimeException;
 use WpRagAiChatbot\Bots\BotId;
@@ -66,10 +67,16 @@ final class WpdbBotAppearanceRepository implements BotAppearanceRepository {
 		if ( ! is_array( $decoded ) ) {
 			throw new RuntimeException( 'Persisted bot appearance is invalid.' );
 		}
+		foreach ( array_keys( $decoded ) as $key ) {
+			if ( ! is_string( $key ) ) {
+				throw new RuntimeException( 'Persisted bot appearance is invalid.' );
+			}
+		}
 
+		/** @var array<string,mixed> $decoded */
 		try {
 			return AppearanceConfig::from_array( $decoded );
-		} catch ( \InvalidArgumentException $exception ) {
+		} catch ( InvalidArgumentException $exception ) {
 			throw new RuntimeException( 'Persisted bot appearance is invalid.', 0, $exception );
 		}
 	}
@@ -82,7 +89,7 @@ final class WpdbBotAppearanceRepository implements BotAppearanceRepository {
 	 * @throws RuntimeException When the target bot does not exist or persistence fails.
 	 */
 	public function save( BotId $bot_id, AppearanceConfig $appearance ): void {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- JSON_THROW_ON_ERROR preserves fail-closed persistence semantics.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Preserve JSON_THROW_ON_ERROR fail-closed behavior.
 		$encoded = json_encode( $appearance->to_array(), JSON_THROW_ON_ERROR );
 		$result  = $this->connection->update(
 			$this->tables->bots(),
