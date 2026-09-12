@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Frontend;
 
+use InvalidArgumentException;
 use WP_REST_Request;
 
 /**
@@ -51,17 +52,36 @@ final class PublicChatRestBootstrap {
 	}
 
 	/**
-	 * Fail closed until the trusted WordPress runtime composition is bound.
+	 * Validate the closed public payload before trusted runtime composition is bound.
 	 *
 	 * @param WP_REST_Request $request REST request.
 	 * @return array<string,array<string,string>>
 	 */
 	public static function run_chat( WP_REST_Request $request ): array {
-		unset( $request );
+		$payload = $request->get_json_params();
+		if ( ! is_array( $payload ) ) {
+			return self::error( 'invalid_request' );
+		}
 
+		try {
+			PublicChatWordPressRequestAdapter::request( $payload );
+		} catch ( InvalidArgumentException ) {
+			return self::error( 'invalid_request' );
+		}
+
+		return self::error( 'chat_unavailable' );
+	}
+
+	/**
+	 * Create one stable non-sensitive public error payload.
+	 *
+	 * @param string $code Repository-owned public error code.
+	 * @return array<string,array<string,string>>
+	 */
+	private static function error( string $code ): array {
 		return array(
 			'error' => array(
-				'code' => 'chat_unavailable',
+				'code' => $code,
 			),
 		);
 	}
