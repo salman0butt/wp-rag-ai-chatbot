@@ -83,6 +83,25 @@ describe( 'public widget launcher and panel state', () => {
 		expect( panel?.hidden ).toBe( true );
 	} );
 
+	it( 'renders visible control labels and gives the panel a stable accessible name', () => {
+		loadWidget();
+
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const panel = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-panel]'
+		);
+		const close = panel?.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-close]'
+		);
+
+		expect( launcher?.textContent ).toBe( 'Chat' );
+		expect( close?.textContent ).toBe( 'Close' );
+		expect( panel?.getAttribute( 'role' ) ).toBe( 'dialog' );
+		expect( panel?.getAttribute( 'aria-label' ) ).toBe( 'Support bot chat' );
+	} );
+
 	it( 'projects normalized appearance into bounded widget presentation tokens', () => {
 		loadWidget();
 
