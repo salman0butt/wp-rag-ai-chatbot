@@ -47,13 +47,7 @@ final readonly class WpdbPublicChatRateLimitStore implements PublicChatRateLimit
 		$table      = $prefix . 'options';
 		$now        = time();
 		$expires_at = $now + $window_seconds;
-
-		/**
-		 * Atomic options-table upsert.
-		 *
-		 * @var literal-string $sql
-		 */
-		$sql = "INSERT INTO {$table} (option_name, option_value, autoload)\n"
+		$sql        = "INSERT INTO {$table} (option_name, option_value, autoload)\n"
 			. "VALUES (%s, CONCAT(%d, ':1'), 'no')\n"
 			. 'ON DUPLICATE KEY UPDATE option_value = CASE '
 			. "WHEN CAST(SUBSTRING_INDEX(option_value, ':', 1) AS UNSIGNED) <= %d THEN VALUES(option_value) "
@@ -61,6 +55,7 @@ final readonly class WpdbPublicChatRateLimitStore implements PublicChatRateLimit
 			. "CONCAT(SUBSTRING_INDEX(option_value, ':', 1), ':', CAST(SUBSTRING_INDEX(option_value, ':', -1) AS UNSIGNED) + 1) "
 			. 'ELSE option_value END';
 
+		// @phpstan-ignore-next-line argument.type (The table identifier is derived only after the strict prefix allow-list above.)
 		$prepared = $this->connection->prepare( $sql, $bucket, $expires_at, $now, $limit );
 		$affected = $this->connection->query( $prepared );
 
