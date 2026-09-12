@@ -22,7 +22,7 @@ use WpRagAiChatbot\Frontend\PublicChatRuntimeBootstrap;
 final class PublicChatRuntimeBootstrapTest extends TestCase {
 	/** The public bootstrap accepts only canonical database authorities and returns the existing executor resolver. */
 	public function test_executor_resolver_contract_uses_existing_runtime_authorities(): void {
-		$class = new ReflectionClass( PublicChatRuntimeBootstrap::class );
+		$class  = new ReflectionClass( PublicChatRuntimeBootstrap::class );
 		$method = $class->getMethod( 'executor_resolver' );
 
 		self::assertTrue( $method->isStatic() );
