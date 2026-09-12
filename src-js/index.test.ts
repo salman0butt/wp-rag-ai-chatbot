@@ -12,7 +12,12 @@ type AdminClientFactory = ( config: {
 };
 
 type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
-type AdminScreen = 'onboarding' | 'bots' | 'providers' | 'knowledge' | 'playground';
+type AdminScreen =
+	| 'onboarding'
+	| 'bots'
+	| 'providers'
+	| 'knowledge'
+	| 'playground';
 
 type AdminShellComponent = ( props: {
 	state: AdminShellState;
