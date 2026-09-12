@@ -125,6 +125,7 @@ export const mountWidgets = (
 
 			const launcher = documentRoot.createElement( 'button' );
 			launcher.type = 'button';
+			launcher.textContent = 'Chat';
 			launcher.dataset.wpRagAiChatbotLauncher = '';
 			launcher.setAttribute(
 				'aria-label',
@@ -135,9 +136,12 @@ export const mountWidgets = (
 			const panel = documentRoot.createElement( 'section' );
 			panel.dataset.wpRagAiChatbotPanel = '';
 			panel.hidden = true;
+			panel.setAttribute( 'role', 'dialog' );
+			panel.setAttribute( 'aria-label', `${ config.config.name } chat` );
 
 			const close = documentRoot.createElement( 'button' );
 			close.type = 'button';
+			close.textContent = 'Close';
 			close.dataset.wpRagAiChatbotClose = '';
 			close.setAttribute(
 				'aria-label',
