@@ -156,4 +156,39 @@ final class PlaygroundSuccessProjectionTest extends TestCase {
 		self::assertIsString( $url );
 		self::assertLessThanOrEqual( 2048, strlen( $url ) );
 	}
+
+	/** Provider output must remain bounded when projected into the administrator REST DTO. */
+	public function test_run_bounds_generated_answer_and_reports_truncation(): void {
+		$chat     = new ChatResult( str_repeat( '界', 24000 ) );
+		$trace    = new DebugTrace( str_repeat( 'c', 64 ), 12, array(), array(), 'not_requested', array() );
+		$result   = new PlaygroundExecutionResult( $chat, $trace, 'model-test', 5 );
+		$executor = new class( $result ) implements PlaygroundExecutor {
+			/**
+			 * Store the typed result.
+			 *
+			 * @param PlaygroundExecutionResult $result Typed execution result.
+			 */
+			public function __construct( private readonly PlaygroundExecutionResult $result ) {
+			}
+
+			/**
+			 * Return the typed execution result.
+			 *
+			 * @param string $question Question input.
+			 */
+			public function execute( string $question ): PlaygroundExecutionResult {
+				unset( $question );
+				return $this->result;
+			}
+		};
+
+		$resource = new \WpRagAiChatbot\Admin\Rest\PlaygroundRestResource( $executor );
+		$response = $resource->run( 'Bound the generated answer.' );
+		$answer   = $response['answer'] ?? null;
+
+		self::assertIsString( $answer );
+		self::assertLessThanOrEqual( 65536, strlen( $answer ) );
+		self::assertSame( 1, preg_match( '//u', $answer ) );
+		self::assertTrue( $response['answer_truncated'] ?? false );
+	}
 }
