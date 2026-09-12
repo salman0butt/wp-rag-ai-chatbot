@@ -29,7 +29,11 @@ final readonly class PublicChatCitation {
 	) {
 	}
 
-	/** Project one trusted M11 citation without internal lineage identifiers. */
+	/**
+	 * Project one trusted M11 citation without internal lineage identifiers.
+	 *
+	 * @param Citation $citation Trusted application citation.
+	 */
 	public static function from_citation( Citation $citation ): self {
 		return new self( $citation->id, $citation->title, $citation->canonical_url );
 	}
