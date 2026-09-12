@@ -110,4 +110,55 @@ describe( 'Playground responsive structure', () => {
 			root.querySelector( '[data-playground-screen="empty"]' )?.classList
 		).toContain( 'wp-rag-ai-chatbot-playground' );
 	} );
+
+	it( 'preserves long bounded diagnostics behind native disclosure controls', () => {
+		configureTestRuntime();
+		const longChunk = `chunk-${ 'x'.repeat( 256 ) }`;
+		const longDocument = `document-${ 'y'.repeat( 256 ) }`;
+		const longContent = `content-${ 'z'.repeat( 1200 ) }`;
+		const longUrl = `https://example.test/${ 'path'.repeat( 80 ) }`;
+		const result: PlaygroundResult = {
+			...fixture,
+			citations: [
+				{
+					id: 'C1',
+					chunk_id: longChunk,
+					document_id: longDocument,
+					source_id: 9,
+					title: 'Long diagnostic citation',
+					canonical_url: longUrl,
+				},
+			],
+			debug_trace: {
+				...fixture.debug_trace,
+				candidates: [
+					{
+						chunk_id: longChunk,
+						document_id: longDocument,
+						source_id: 9,
+						language: 'en',
+						visibility: 'public',
+						fused_score: 0.91,
+						rerank_score: null,
+						channel_evidence: [],
+						content: longContent,
+						content_truncated: false,
+					},
+				],
+			},
+		};
+		const root = document.createElement( 'div' );
+		root.append( PlaygroundScreen( { result } ) as Node );
+
+		const candidate = root.querySelector< HTMLDetailsElement >(
+			'[data-playground-candidate]'
+		);
+		const summary = candidate?.querySelector( 'summary' );
+
+		expect( root.textContent ).toContain( longContent );
+		expect( root.textContent ).toContain( longUrl );
+		expect( candidate?.tagName ).toBe( 'DETAILS' );
+		expect( summary?.tagName ).toBe( 'SUMMARY' );
+		expect( summary?.textContent ).toContain( longChunk );
+	} );
 } );
