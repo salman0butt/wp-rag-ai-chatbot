@@ -18,6 +18,7 @@ use WpRagAiChatbot\Core\Bootstrap;
 use WpRagAiChatbot\Core\Lifecycle;
 use WpRagAiChatbot\Database\DatabaseBootstrap;
 use WpRagAiChatbot\Frontend\PublicChatRestBootstrap;
+use WpRagAiChatbot\Frontend\PublicWidgetBootstrap;
 use WpRagAiChatbot\Jobs\JobWorkerBootstrap;
 use WpRagAiChatbot\Knowledge\KnowledgeBootstrap;
 use WpRagAiChatbot\Providers\ProviderBootstrap;
@@ -52,9 +53,9 @@ final class BootstrapTest extends TestCase {
 	}
 
 	/**
-	 * Bootstrap registers foundation, database, provider, knowledge, jobs, admin, and public chat hooks.
+	 * Bootstrap registers foundation, database, provider, knowledge, jobs, admin, and public hooks.
 	 */
-	public function test_register_wires_foundation_database_provider_knowledge_jobs_admin_and_public_chat_hooks(): void {
+	public function test_register_wires_foundation_database_provider_knowledge_jobs_admin_and_public_hooks(): void {
 		self::assertTrue( class_exists( Bootstrap::class ), 'Bootstrap class must exist before hook wiring can be verified.' );
 		self::assertTrue( class_exists( DatabaseBootstrap::class ), 'DatabaseBootstrap must exist before database hook wiring can pass.' );
 		self::assertTrue( class_exists( ProviderBootstrap::class ), 'ProviderBootstrap must exist before provider hook wiring can pass.' );
@@ -62,6 +63,8 @@ final class BootstrapTest extends TestCase {
 		self::assertTrue( class_exists( JobWorkerBootstrap::class ), 'JobWorkerBootstrap must exist before jobs hook wiring can pass.' );
 		self::assertTrue( class_exists( AdminBootstrap::class ), 'AdminBootstrap must exist before admin hook wiring can pass.' );
 		self::assertTrue( class_exists( PublicChatRestBootstrap::class ), 'PublicChatRestBootstrap must exist before public REST hook wiring can pass.' );
+		self::assertTrue( class_exists( PublicWidgetBootstrap::class ), 'PublicWidgetBootstrap must exist before public widget hook wiring can pass.' );
+		self::assertTrue( is_callable( array( PublicWidgetBootstrap::class, 'register_default' ) ), 'PublicWidgetBootstrap default composition callback must be callable.' );
 
 		$plugin_file = '/tmp/wp-rag-ai-chatbot/wp-rag-ai-chatbot.php';
 
@@ -73,6 +76,7 @@ final class BootstrapTest extends TestCase {
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( KnowledgeBootstrap::class, 'register' ), 10 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( JobWorkerBootstrap::class, 'register' ), 20 );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( AdminBootstrap::class, 'register' ), 20 );
+		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( PublicWidgetBootstrap::class, 'register_default' ), 20 );
 		Functions\expect( 'add_action' )->once()->with( 'rest_api_init', array( PublicChatRestBootstrap::class, 'register_routes' ) );
 		Functions\expect( 'add_action' )->once()->with( 'plugins_loaded', array( Bootstrap::class, 'load' ) );
 
