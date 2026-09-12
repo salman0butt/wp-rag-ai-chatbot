@@ -163,42 +163,50 @@ describe( 'PlaygroundScreen', () => {
 		);
 
 		expect( root.querySelector( 'h2' )?.textContent ).toBe( 'Playground' );
-		expect( root.querySelector( '[data-playground-answer]' )?.textContent ).toContain(
-			'30 days'
-		);
-		expect( root.querySelector( '[data-playground-candidates]' )?.textContent ).toContain(
-			'chunk-17'
-		);
-		expect( root.querySelector( '[data-playground-citations]' )?.textContent ).toContain(
-			'Returns policy'
-		);
-		expect( root.querySelector( '[data-playground-model]' )?.textContent ).toContain(
-			'gpt-test'
-		);
-		expect( root.querySelector( '[data-playground-usage]' )?.textContent ).toContain(
-			'144'
-		);
+		expect(
+			root.querySelector( '[data-playground-answer]' )?.textContent
+		).toContain( '30 days' );
+		expect(
+			root.querySelector( '[data-playground-candidates]' )?.textContent
+		).toContain( 'chunk-17' );
+		expect(
+			root.querySelector( '[data-playground-citations]' )?.textContent
+		).toContain( 'Returns policy' );
+		expect(
+			root.querySelector( '[data-playground-model]' )?.textContent
+		).toContain( 'gpt-test' );
+		expect(
+			root.querySelector( '[data-playground-usage]' )?.textContent
+		).toContain( '144' );
 	} );
 
 	it.each( [
 		[ 'retrieval_unavailable', 'Retrieval is temporarily unavailable.' ],
-		[ 'playground_failed', 'The Playground request could not be completed.' ],
-	] )( 'maps %s to repository-owned safe copy', ( errorCode, expectedCopy ) => {
-		configureTestRuntime();
-		const exports = plugin as unknown as Record< string, unknown >;
-		const PlaygroundScreen = exports.PlaygroundScreen;
+		[
+			'playground_failed',
+			'The Playground request could not be completed.',
+		],
+	] )(
+		'maps %s to repository-owned safe copy',
+		( errorCode, expectedCopy ) => {
+			configureTestRuntime();
+			const exports = plugin as unknown as Record< string, unknown >;
+			const PlaygroundScreen = exports.PlaygroundScreen;
 
-		expect( typeof PlaygroundScreen ).toBe( 'function' );
+			expect( typeof PlaygroundScreen ).toBe( 'function' );
 
-		const root = document.createElement( 'div' );
-		root.append(
-			( PlaygroundScreen as PlaygroundScreenComponent )( { errorCode } )
-		);
+			const root = document.createElement( 'div' );
+			root.append(
+				( PlaygroundScreen as PlaygroundScreenComponent )( {
+					errorCode,
+				} )
+			);
 
-		expect( root.querySelector( '[role="alert"]' )?.textContent ).toBe(
-			expectedCopy
-		);
-	} );
+			expect( root.querySelector( '[role="alert"]' )?.textContent ).toBe(
+				expectedCopy
+			);
+		}
+	);
 
 	it( 'uses generic safe copy for unknown error codes', () => {
 		configureTestRuntime();
