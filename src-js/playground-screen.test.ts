@@ -1,6 +1,15 @@
 import { PlaygroundScreen, type PlaygroundResult } from './playground-screen';
 
 type TestElementProps = Record< string, unknown > | null;
+type PlaygroundRequestDraft = {
+	bot_id: string;
+	source_id: number;
+	collection_id: string;
+	question: string;
+};
+type PlaygroundFormComponent = ( props: {
+	onSubmit: ( request: PlaygroundRequestDraft ) => void;
+} ) => unknown;
 
 const createTestElement = (
 	tagName: string,
@@ -148,10 +157,13 @@ describe( 'PlaygroundScreen', () => {
 		configureTestRuntime();
 		const onSubmit = jest.fn();
 		const root = document.createElement( 'div' );
-		root.append( PlaygroundScreen( { onSubmit } ) as Node );
+		const PlaygroundForm = PlaygroundScreen as unknown as PlaygroundFormComponent;
+		root.append( PlaygroundForm( { onSubmit } ) as Node );
 
 		const form = root.querySelector( 'form[data-playground-form]' );
-		const botId = root.querySelector< HTMLInputElement >( '#playground-bot-id' );
+		const botId = root.querySelector< HTMLInputElement >(
+			'#playground-bot-id'
+		);
 		const sourceId = root.querySelector< HTMLInputElement >(
 			'#playground-source-id'
 		);
@@ -163,14 +175,16 @@ describe( 'PlaygroundScreen', () => {
 		);
 
 		expect( form ).not.toBeNull();
-		expect( root.querySelector( 'label[for="playground-bot-id"]' )?.textContent ).toBe(
-			'Bot ID'
-		);
 		expect(
-			root.querySelector( 'label[for="playground-source-id"]' )?.textContent
+			root.querySelector( 'label[for="playground-bot-id"]' )?.textContent
+		).toBe( 'Bot ID' );
+		expect(
+			root.querySelector( 'label[for="playground-source-id"]' )
+				?.textContent
 		).toBe( 'Source ID' );
 		expect(
-			root.querySelector( 'label[for="playground-collection-id"]' )?.textContent
+			root.querySelector( 'label[for="playground-collection-id"]' )
+				?.textContent
 		).toBe( 'Collection ID' );
 		expect(
 			root.querySelector( 'label[for="playground-question"]' )?.textContent
@@ -182,7 +196,9 @@ describe( 'PlaygroundScreen', () => {
 		sourceId!.value = '9';
 		collectionId!.value = 'support-docs';
 		question!.value = 'What is the return window?';
-		form?.dispatchEvent( new Event( 'submit', { bubbles: true, cancelable: true } ) );
+		form?.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
 
 		expect( onSubmit ).toHaveBeenCalledTimes( 1 );
 		expect( onSubmit ).toHaveBeenCalledWith( {
