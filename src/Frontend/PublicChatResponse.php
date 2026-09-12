@@ -19,9 +19,9 @@ final readonly class PublicChatResponse {
 	/**
 	 * Create one public response projection.
 	 *
-	 * @param string                     $answer Generated or deterministic answer.
-	 * @param string|null                $conversation_id Persisted conversation identifier when available.
-	 * @param array<PublicChatCitation>  $citations Public-safe citation projections.
+	 * @param string                    $answer Generated or deterministic answer.
+	 * @param string|null               $conversation_id Persisted conversation identifier when available.
+	 * @param array<PublicChatCitation> $citations Public-safe citation projections.
 	 */
 	public function __construct(
 		public string $answer,
@@ -30,7 +30,11 @@ final readonly class PublicChatResponse {
 	) {
 	}
 
-	/** Project one trusted M11 result without provider usage or internal message/lineage identifiers. */
+	/**
+	 * Project one trusted M11 result without provider usage or internal message/lineage identifiers.
+	 *
+	 * @param ChatResult $result Trusted production chat result.
+	 */
 	public static function from_chat_result( ChatResult $result ): self {
 		$citations = array();
 		foreach ( $result->citations as $citation ) {
