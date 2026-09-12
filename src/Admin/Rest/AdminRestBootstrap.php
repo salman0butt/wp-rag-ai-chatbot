@@ -11,7 +11,6 @@ namespace WpRagAiChatbot\Admin\Rest;
 
 use WP_REST_Request;
 use WpRagAiChatbot\Admin\AdminCapability;
-use WpRagAiChatbot\Database\Repository\WpdbBotAppearanceRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
 use WpRagAiChatbot\Database\Repository\WpdbDocumentRepository;
 use WpRagAiChatbot\Database\Repository\WpdbJobReadRepository;
@@ -84,23 +83,6 @@ final class AdminRestBootstrap {
 				array(
 					'methods'             => 'DELETE',
 					'callback'            => array( self::class, 'delete_bot' ),
-					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
-				),
-			)
-		);
-
-		register_rest_route(
-			self::REST_NAMESPACE,
-			'/admin/bots/(?P<id>[^/]+)/appearance',
-			array(
-				array(
-					'methods'             => 'GET',
-					'callback'            => array( self::class, 'get_bot_appearance' ),
-					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
-				),
-				array(
-					'methods'             => 'PUT',
-					'callback'            => array( self::class, 'put_bot_appearance' ),
 					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 				),
 			)
@@ -325,31 +307,6 @@ final class AdminRestBootstrap {
 	}
 
 	/**
-	 * Read normalized appearance for exactly one bot.
-	 *
-	 * @param WP_REST_Request $request REST request.
-	 * @return array<string,mixed>
-	 */
-	public static function get_bot_appearance( WP_REST_Request $request ): array {
-		return self::appearance()->read( (string) $request->get_param( 'id' ) );
-	}
-
-	/**
-	 * Persist normalized appearance for exactly one bot.
-	 *
-	 * @param WP_REST_Request $request REST request.
-	 * @return array<string,mixed>
-	 */
-	public static function put_bot_appearance( WP_REST_Request $request ): array {
-		$payload = $request->get_json_params();
-		if ( null === $payload ) {
-			return self::invalid_request();
-		}
-
-		return self::appearance()->write( (string) $request->get_param( 'id' ), $payload );
-	}
-
-	/**
 	 * Read safe credential configuration state for one direct provider.
 	 *
 	 * @param WP_REST_Request $request REST request.
@@ -558,22 +515,6 @@ final class AdminRestBootstrap {
 
 		return new BotRestResource(
 			new WpdbBotRepository(
-				$connection,
-				new TableNames( $connection->prefix() )
-			)
-		);
-	}
-
-	/**
-	 * Build the bot appearance resource from the established persistence seams.
-	 */
-	private static function appearance(): AppearanceRestResource {
-		global $wpdb;
-
-		$connection = new WpdbConnection( $wpdb );
-
-		return new AppearanceRestResource(
-			new WpdbBotAppearanceRepository(
 				$connection,
 				new TableNames( $connection->prefix() )
 			)
