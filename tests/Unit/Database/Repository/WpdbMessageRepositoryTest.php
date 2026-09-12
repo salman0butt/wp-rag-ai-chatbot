@@ -45,8 +45,14 @@ final class WpdbMessageRepositoryTest extends TestCase {
 			->with( 'prepared' )
 			->willReturn(
 				array(
-					array( 'role' => 'assistant', 'content' => 'Second' ),
-					array( 'role' => 'user', 'content' => 'First' ),
+					array(
+						'role'    => 'assistant',
+						'content' => 'Second',
+					),
+					array(
+						'role'    => 'user',
+						'content' => 'First',
+					),
 				)
 			);
 
