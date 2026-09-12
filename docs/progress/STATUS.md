@@ -45,12 +45,15 @@ Bot-scoped normalized appearance is persisted through the existing bot database 
 ### Task 3 — protected admin appearance save/read contracts — COMPLETE
 Administrator-only bot-scoped appearance `GET`/`PUT` contracts reuse `BotAppearanceRepository`, `AppearanceConfig`, and `AdminCapability::can_manage`. Invalid identifiers, unknown/unsafe appearance input, and persistence failures fail closed with stable non-sensitive errors. Resource RED was `f2cd956482caa82cd5186ccbe6ad92c271475ec8` / CI `34687383105`, with GREEN `f67d97a1c433bf7c52e9c6d9aa99f902d5853e90` / CI `34687459910`. The route chronology preserves an initial NOT RED at `9215b4e7601a0057a42ef039f78181ef57e4ddec` / CI `34687646158`, a genuine repaired RED at `06895ac2505eaf846069f3a4f921de65f2e09b0e` / CI `34689869102`, two NOT GREEN implementation checkpoints, and final GREEN `078e74d8d373cd0ec0c1881dc6cb0b1122d87a1e` / CI `34690345814`. Evidence: `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md`.
 
-### Task 4 — public chat request/runtime composition and abuse controls — IN PROGRESS
-Add a narrowly-scoped public chat contract that bounds public question/conversation identifiers, resolves bot/provider/model/retrieval authority from persisted server-side configuration, applies explicit abuse controls, and delegates to existing M11 chat orchestration exactly once. Public requests must not select credentials, providers/models, embeddings, vector stores, or retrieval limits.
+### Task 4 — public chat request/runtime composition and abuse controls — COMPLETE
+The bounded public chat REST path now rejects request-level runtime overrides, applies abuse controls before expensive runtime work, resolves persisted production authorities server-side, reuses the existing M10/M11 retrieval/chat composition exactly once, and persists bounded owner-scoped conversation history. Final integration head `e850863d5487ee7603547413bdb9c667c8d04b8e` / CI `34717786952` is GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`. Scoped fallback correctness/security/performance/architecture review has **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK4E-PUBLIC-CHAT-REST.md`, `docs/progress/M14-TASK4E-SHARED-RESPONDER-EVIDENCE.md`, and `docs/progress/M14-TASK4-CLOSEOUT.md`.
+
+### Task 5 — conditional public asset/bootstrap/shortcode mount — IN PROGRESS
+Build the public mount seam and conditional asset loading without creating new runtime authority. Shortcode/block inputs may identify an allowed bot/mount surface but must not become provider/model/credential/embedding/vector/retrieval override channels.
 
 ## Current work
 
-Continue M14 Task 4 on existing PR #19. Recover the existing M11 chat request/access/orchestrator/runtime composition authorities and public WordPress REST conventions. Create/update a bounded Task 4 implementation plan, then execute strict RED -> GREEN beginning with the smallest public request/runtime authority and abuse-control seam. Verify exact-head CI, perform scoped review, persist evidence, and continue automatically through remaining Task 4 subunits.
+Continue M14 Task 5 on existing PR #19. Recover the existing plugin bootstrap, asset build/enqueue conventions, public-safe widget configuration projection, and shortcode/block conventions. Persist a bounded implementation plan, then execute strict RED -> GREEN beginning with the smallest public mount/conditional-enqueue seam. After each verified unit, review, document, re-check GitHub state, and continue automatically.
 
 ## Durable recovery
 
@@ -58,6 +61,6 @@ Continue M14 Task 4 on existing PR #19. Recover the existing M11 chat request/ac
 - `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` — Task 1 evidence.
 - `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection evidence and scoped review.
 - `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md` — Task 3 protected REST RED/NOT RED/NOT GREEN/GREEN evidence and review.
+- `docs/progress/M14-TASK4-CLOSEOUT.md` — Task 4 final production composition, integration, CI, and review evidence.
 - PR #19 — active M14 implementation branch and execution source of truth.
-- `docs/milestones/M13-knowledge-manager-playground-debugger.md` — completed M13 milestone ledger.
-- `docs/progress/M13-TASK8-CLOSEOUT.md` — M13 final merge/post-merge evidence.
+- `docs/milestones/M14-frontend-chatbot-customizer.md` — current M14 milestone ledger.
