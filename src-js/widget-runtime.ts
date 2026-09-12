@@ -101,6 +101,9 @@ const findConfig = (
 		( config ) => config.botId === botId && config.config.bot_id === botId
 	);
 
+const chatUrl = ( restBase: string ): string =>
+	`${ restBase.replace( /\/+$/, '' ) }/chat`;
+
 export const mountWidgets = (
 	documentRoot: Document,
 	configs: readonly WidgetBootstrapConfig[]
@@ -179,6 +182,25 @@ export const mountWidgets = (
 				if ( event.key === 'Escape' && ! panel.hidden ) {
 					closePanel();
 				}
+			} );
+			form.addEventListener( 'submit', ( event ) => {
+				event.preventDefault();
+				const value = question.value.trim();
+
+				if ( value === '' ) {
+					return;
+				}
+
+				void fetch( chatUrl( config.restBase ), {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify( {
+						bot_id: config.config.bot_id,
+						question: value,
+					} ),
+				} );
 			} );
 
 			panel.append( close, form );
