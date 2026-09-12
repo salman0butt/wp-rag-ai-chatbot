@@ -12,13 +12,9 @@ namespace WpRagAiChatbot\Tests\Unit\Admin;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use WpRagAiChatbot\Chat\ChatAccessContext;
-use WpRagAiChatbot\Chat\ChatRequestPolicy;
-use WpRagAiChatbot\Citations\CitationValidator;
+use WpRagAiChatbot\Chat\ProductionChatResponderFactory;
 use WpRagAiChatbot\Debug\DebugTraceProjector;
-use WpRagAiChatbot\Memory\MemoryAssembler;
 use WpRagAiChatbot\Providers\GenerationProvider;
-use WpRagAiChatbot\RAG\GroundingPolicy;
-use WpRagAiChatbot\RAG\PromptBuilder;
 use WpRagAiChatbot\Retrieval\HybridRetriever;
 
 /**
@@ -36,20 +32,16 @@ final class PlaygroundChatGraphResolverTest extends TestCase {
 	}
 
 	/**
-	 * Composition must accept only existing production seams and return the typed production executor.
+	 * Composition must reuse the shared production M11 responder factory rather than rebuilding the graph.
 	 */
-	public function test_resolver_exposes_existing_production_graph_dependencies(): void {
+	public function test_resolver_reuses_shared_production_responder_factory(): void {
 		$class       = new ReflectionClass( 'WpRagAiChatbot\\Admin\\Rest\\PlaygroundChatGraphResolver' );
 		$constructor = $class->getConstructor();
 		self::assertNotNull( $constructor );
 
 		self::assertSame(
 			array(
-				ChatRequestPolicy::class,
-				MemoryAssembler::class,
-				GroundingPolicy::class,
-				PromptBuilder::class,
-				CitationValidator::class,
+				ProductionChatResponderFactory::class,
 				DebugTraceProjector::class,
 			),
 			array_map(
