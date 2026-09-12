@@ -141,4 +141,24 @@ describe( 'public widget launcher and panel state', () => {
 		expect( panel?.hidden ).toBe( true );
 		expect( launcher?.ownerDocument.activeElement ).toBe( launcher );
 	} );
+
+	it( 'closes an open panel on Escape and restores launcher focus', () => {
+		loadWidget();
+
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const panel = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-panel]'
+		);
+
+		launcher?.click();
+		panel?.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } )
+		);
+
+		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
+		expect( panel?.hidden ).toBe( true );
+		expect( launcher?.ownerDocument.activeElement ).toBe( launcher );
+	} );
 } );
