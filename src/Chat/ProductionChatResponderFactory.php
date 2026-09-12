@@ -24,11 +24,11 @@ final readonly class ProductionChatResponderFactory {
 	/**
 	 * Create the shared graph composer.
 	 *
-	 * @param ChatRequestPolicy  $request_policy Existing M11 request policy.
-	 * @param MemoryAssembler    $memory Existing M11 memory assembler.
-	 * @param GroundingPolicy    $grounding Existing M11 grounding policy.
-	 * @param PromptBuilder      $prompt Existing M11 prompt builder.
-	 * @param CitationValidator  $citations Existing M11 citation validator.
+	 * @param ChatRequestPolicy $request_policy Existing M11 request policy.
+	 * @param MemoryAssembler   $memory Existing M11 memory assembler.
+	 * @param GroundingPolicy   $grounding Existing M11 grounding policy.
+	 * @param PromptBuilder     $prompt Existing M11 prompt builder.
+	 * @param CitationValidator $citations Existing M11 citation validator.
 	 */
 	public function __construct(
 		private ChatRequestPolicy $request_policy,
