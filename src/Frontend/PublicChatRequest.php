@@ -16,7 +16,7 @@ use WpRagAiChatbot\Bots\BotId;
  * Carries only public interaction input; runtime authority remains server-side.
  */
 final readonly class PublicChatRequest {
-	private const MAX_QUESTION_BYTES = 16384;
+	private const MAX_QUESTION_BYTES        = 16384;
 	private const MAX_CONVERSATION_ID_BYTES = 255;
 
 	/**
@@ -53,8 +53,8 @@ final readonly class PublicChatRequest {
 			throw new InvalidArgumentException( 'Public chat request is invalid.' );
 		}
 
-		$bot_id   = trim( $input['bot_id'] );
-		$question = trim( $input['question'] );
+		$bot_id          = trim( $input['bot_id'] );
+		$question        = trim( $input['question'] );
 		$conversation_id = $input['conversation_id'] ?? null;
 
 		if ( null !== $conversation_id && ! is_string( $conversation_id ) ) {
