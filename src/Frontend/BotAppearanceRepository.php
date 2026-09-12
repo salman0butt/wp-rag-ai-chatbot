@@ -23,7 +23,7 @@ interface BotAppearanceRepository {
 	/**
 	 * Persist normalized appearance for one bot.
 	 *
-	 * @param BotId           $bot_id Stable bot identifier.
+	 * @param BotId            $bot_id Stable bot identifier.
 	 * @param AppearanceConfig $appearance Normalized appearance.
 	 */
 	public function save( BotId $bot_id, AppearanceConfig $appearance ): void;
