@@ -83,6 +83,26 @@ describe( 'public widget launcher and panel state', () => {
 		expect( panel?.hidden ).toBe( true );
 	} );
 
+	it( 'projects normalized appearance into bounded widget presentation tokens', () => {
+		loadWidget();
+
+		const mount = document.querySelector< HTMLElement >(
+			'.wp-rag-ai-chatbot-widget'
+		);
+
+		expect( mount?.dataset.wpRagAiChatbotPosition ).toBe( 'bottom-right' );
+		expect( mount?.dataset.wpRagAiChatbotColorMode ).toBe( 'light' );
+		expect( mount?.dataset.wpRagAiChatbotLauncherStyle ).toBe( 'bubble' );
+		expect( mount?.dataset.wpRagAiChatbotPanelSize ).toBe( 'medium' );
+		expect( mount?.dataset.wpRagAiChatbotFontFamily ).toBe( 'system' );
+		expect(
+			mount?.style.getPropertyValue( '--wp-rag-ai-chatbot-primary-color' )
+		).toBe( '#1d4ed8' );
+		expect(
+			mount?.style.getPropertyValue( '--wp-rag-ai-chatbot-radius' )
+		).toBe( '16px' );
+	} );
+
 	it( 'does not duplicate controls when the widget entry executes twice', () => {
 		loadWidget();
 		loadWidget();
