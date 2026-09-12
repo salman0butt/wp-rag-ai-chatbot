@@ -134,6 +134,59 @@
   min-height: 40px;
 }
 
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground > *,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground section,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground form,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground details,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground ol,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground ul,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground li {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground [data-playground-form] {
+  display: grid;
+  grid-template-columns: minmax(120px, 180px) minmax(0, 1fr);
+  gap: 10px 12px;
+  align-items: start;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground [data-playground-form] input,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground [data-playground-form] textarea {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground [data-playground-form] textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground [data-playground-form] button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 40px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground p,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground code,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground summary,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground strong,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground li {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground details > summary {
+  cursor: pointer;
+  min-height: 40px;
+  padding: 8px 0;
+}
+
 @media screen and (max-width: 782px) {
   #wp-rag-ai-chatbot-admin {
     width: auto;
@@ -184,6 +237,22 @@
   #wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue="true"] button,
   #wp-rag-ai-chatbot-admin [data-knowledge-job-action],
   #wp-rag-ai-chatbot-admin [aria-label="Knowledge source pagination"] a {
+    min-height: 44px;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground [data-playground-form] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wp-rag-ai-chatbot-admin
+    .wp-rag-ai-chatbot-playground
+    [data-playground-form]
+    > * {
+    grid-column: 1;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground [data-playground-form] button,
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground details > summary {
     min-height: 44px;
   }
 }
