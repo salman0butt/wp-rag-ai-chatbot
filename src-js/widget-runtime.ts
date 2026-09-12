@@ -8,6 +8,11 @@ export type WidgetBootstrapConfig = {
 	};
 };
 
+type PublicChatSuccess = {
+	answer: string;
+	conversation_id: string;
+};
+
 const MOUNT_SELECTOR = '.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]';
 const MOUNTED_DATA_KEY = 'wpRagAiChatbotMounted';
 
@@ -104,6 +109,22 @@ const findConfig = (
 const chatUrl = ( restBase: string ): string =>
 	`${ restBase.replace( /\/+$/, '' ) }/chat`;
 
+const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
+	if ( typeof value !== 'object' || value === null ) {
+		return null;
+	}
+
+	const candidate = value as Record< string, unknown >;
+
+	return typeof candidate.answer === 'string' &&
+		typeof candidate.conversation_id === 'string'
+		? {
+				answer: candidate.answer,
+				conversation_id: candidate.conversation_id,
+			}
+		: null;
+};
+
 export const mountWidgets = (
 	documentRoot: Document,
 	configs: readonly WidgetBootstrapConfig[]
@@ -151,6 +172,10 @@ export const mountWidgets = (
 				`Close ${ config.config.name } chat`
 			);
 
+			const messages = documentRoot.createElement( 'div' );
+			messages.dataset.wpRagAiChatbotMessages = '';
+			messages.setAttribute( 'aria-live', 'polite' );
+
 			const form = documentRoot.createElement( 'form' );
 			form.dataset.wpRagAiChatbotForm = '';
 
@@ -171,6 +196,17 @@ export const mountWidgets = (
 			form.append( question, send, status );
 
 			let requestInFlight = false;
+			let conversationId: string | null = null;
+
+			const appendMessage = (
+				role: 'user' | 'assistant',
+				text: string
+			): void => {
+				const message = documentRoot.createElement( 'p' );
+				message.dataset.wpRagAiChatbotMessage = role;
+				message.textContent = text;
+				messages.append( message );
+			};
 
 			const closePanel = (): void => {
 				launcher.setAttribute( 'aria-expanded', 'false' );
@@ -207,20 +243,39 @@ export const mountWidgets = (
 				requestInFlight = true;
 				send.disabled = true;
 				status.textContent = 'Sending…';
+				appendMessage( 'user', value );
+
+				const requestBody: Record< string, string > = {
+					bot_id: config.config.bot_id,
+					question: value,
+				};
+
+				if ( conversationId !== null ) {
+					requestBody.conversation_id = conversationId;
+				}
 
 				void fetch( chatUrl( config.restBase ), {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify( {
-						bot_id: config.config.bot_id,
-						question: value,
-					} ),
-				} ).then( finishRequest, finishRequest );
+					body: JSON.stringify( requestBody ),
+				} )
+					.then( ( response ) => response.json() )
+					.then(
+						( payload: unknown ) => {
+							const success = readSuccess( payload );
+							if ( success !== null ) {
+								conversationId = success.conversation_id;
+								appendMessage( 'assistant', success.answer );
+							}
+							finishRequest();
+						},
+						finishRequest
+					);
 			} );
 
-			panel.append( close, form );
+			panel.append( close, messages, form );
 			mount.append( launcher, panel );
 			mount.dataset[ MOUNTED_DATA_KEY ] = 'true';
 			mounted += 1;
