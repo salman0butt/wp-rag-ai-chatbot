@@ -60,7 +60,8 @@ export interface PlaygroundScreenProps {
 }
 
 const PLAYGROUND_ERROR_MESSAGES: Record< string, string > = {
-	invalid_request: 'Check the persisted selectors and question, then try again.',
+	invalid_request:
+		'Check the persisted selectors and question, then try again.',
 	retrieval_unavailable: 'Retrieval is temporarily unavailable.',
 	playground_failed: 'The Playground request could not be completed.',
 };
@@ -104,11 +105,7 @@ export const PlaygroundScreen = ( {
 		createElement(
 			'li',
 			{ key: citation.id },
-			createElement(
-				'strong',
-				null,
-				citation.title ?? citation.id
-			),
+			createElement( 'strong', null, citation.title ?? citation.id ),
 			createElement(
 				'p',
 				null,
@@ -167,9 +164,9 @@ export const PlaygroundScreen = ( {
 			createElement( 'ul', null, ...evidence )
 		);
 	} );
-	const channelCounts = Object.entries( result.debug_trace.channels.counts ).map(
-		( [ channel, count ] ) => `${ channel }: ${ count }`
-	);
+	const channelCounts = Object.entries(
+		result.debug_trace.channels.counts
+	).map( ( [ channel, count ] ) => `${ channel }: ${ count }` );
 	const channelFailures = Object.entries(
 		result.debug_trace.channels.failures
 	).map( ( [ channel, code ] ) => `${ channel }: ${ code }` );
@@ -185,7 +182,11 @@ export const PlaygroundScreen = ( {
 			createElement( 'h3', null, 'Answer' ),
 			createElement( 'p', null, result.answer ),
 			result.no_answer
-				? createElement( 'p', null, 'The production graph returned no answer.' )
+				? createElement(
+						'p',
+						null,
+						'The production graph returned no answer.'
+				  )
 				: undefined
 		),
 		createElement(
@@ -210,7 +211,9 @@ export const PlaygroundScreen = ( {
 			createElement(
 				'p',
 				null,
-				`Input ${ tokenValue( result.usage.input_tokens ) }; output ${ tokenValue(
+				`Input ${ tokenValue(
+					result.usage.input_tokens
+				) }; output ${ tokenValue(
 					result.usage.output_tokens
 				) }; total ${ tokenValue( result.usage.total_tokens ) }`
 			)

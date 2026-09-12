@@ -1,7 +1,4 @@
-import {
-	PlaygroundScreen,
-	type PlaygroundResult,
-} from './playground-screen';
+import { PlaygroundScreen, type PlaygroundResult } from './playground-screen';
 
 type TestElementProps = Record< string, unknown > | null;
 
