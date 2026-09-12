@@ -12,6 +12,7 @@ export type PlaygroundControllerState =
 
 export interface PlaygroundController {
 	submit: ( request: PlaygroundRequestDraft ) => Promise< void >;
+	invalidate: () => void;
 }
 
 const errorCodeFrom = ( error: unknown ): string => {
@@ -56,6 +57,9 @@ export const createPlaygroundController = (
 					errorCode: errorCodeFrom( error ),
 				} );
 			}
+		},
+		invalidate(): void {
+			latestSubmission += 1;
 		},
 	};
 };
