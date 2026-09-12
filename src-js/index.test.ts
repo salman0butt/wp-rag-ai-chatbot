@@ -12,7 +12,12 @@ type AdminClientFactory = ( config: {
 };
 
 type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
-type AdminScreen = 'onboarding' | 'bots' | 'providers';
+type AdminScreen =
+	| 'onboarding'
+	| 'bots'
+	| 'providers'
+	| 'knowledge'
+	| 'playground';
 
 type AdminShellComponent = ( props: {
 	state: AdminShellState;
@@ -181,12 +186,31 @@ describe( 'AdminShell', () => {
 		const links = Array.from( nav?.querySelectorAll( 'a' ) ?? [] );
 
 		expect( links.map( ( link ) => link.getAttribute( 'href' ) ) ).toEqual(
-			[ '#/onboarding', '#/bots', '#/providers' ]
+			[
+				'#/onboarding',
+				'#/bots',
+				'#/providers',
+				'#/knowledge',
+				'#/playground',
+			]
 		);
 		expect(
 			nav?.querySelector( 'a[aria-current="page"]' )?.textContent
 		).toBe( 'Bots' );
 		expect( root.querySelector( 'main h1' )?.textContent ).toBe( 'Bots' );
+	} );
+
+	it( 'renders Playground as a first-class selected admin screen', () => {
+		const root = renderAdminShell( 'ready', 'playground' );
+		const nav = root.querySelector( 'nav[aria-label="Administration"]' );
+
+		expect(
+			nav?.querySelector( 'a[aria-current="page"]' )?.textContent
+		).toBe( 'Playground' );
+		expect( root.querySelector( 'main h1' )?.textContent ).toBe(
+			'Playground'
+		);
+		expect( root.querySelector( '[data-playground-form]' ) ).not.toBeNull();
 	} );
 } );
 
@@ -200,6 +224,7 @@ describe( 'resolveAdminScreen', () => {
 		expect( typeof resolveAdminScreen ).toBe( 'function' );
 		expect( resolveAdminScreen?.( '#/bots' ) ).toBe( 'bots' );
 		expect( resolveAdminScreen?.( '#/providers' ) ).toBe( 'providers' );
+		expect( resolveAdminScreen?.( '#/playground' ) ).toBe( 'playground' );
 		expect( resolveAdminScreen?.( '#/unknown' ) ).toBe( 'onboarding' );
 		expect( resolveAdminScreen?.( '' ) ).toBe( 'onboarding' );
 	} );

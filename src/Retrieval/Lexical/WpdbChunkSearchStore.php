@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Retrieval\Lexical;
 
 use InvalidArgumentException;
 use JsonException;
+use WpRagAiChatbot\Core\PagedResult;
 use WpRagAiChatbot\Database\Connection;
 use WpRagAiChatbot\Database\DatabaseException;
 use WpRagAiChatbot\Database\TableNames;
@@ -18,7 +19,7 @@ use WpRagAiChatbot\Database\TableNames;
 /**
  * Stores bounded lexical rows and applies trusted filters in SQL.
  */
-final class WpdbChunkSearchStore implements ChunkSearchStore {
+final class WpdbChunkSearchStore implements ChunkSearchStore, ChunkInspectionStore, ChunkLookupStore {
 	/**
 	 * Create the WordPress database projection adapter.
 	 *
@@ -99,6 +100,70 @@ final class WpdbChunkSearchStore implements ChunkSearchStore {
 		if ( false === $deleted ) {
 			throw new DatabaseException( 'Could not delete chunk-search projection.' );
 		}
+	}
+
+	/**
+	 * Resolve one canonical persisted chunk without invoking lexical ranking.
+	 *
+	 * @param string $collection_id Explicit persisted collection scope.
+	 * @param string $chunk_key Stable lowercase SHA-256 chunk key.
+	 * @throws InvalidArgumentException When the collection or chunk key is invalid.
+	 */
+	public function find_chunk( string $collection_id, string $chunk_key ): ?ChunkSearchRecord {
+		new LexicalFilter( $collection_id );
+		if ( 1 !== preg_match( '/^[a-f0-9]{64}$/', $chunk_key ) ) {
+			throw new InvalidArgumentException( 'Chunk lookup key must be a lowercase SHA-256 value.' );
+		}
+
+		$sql = $this->connection->prepare(
+			'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, content_hash, language, visibility, sequence, metadata_json FROM %i WHERE collection_id = %s AND chunk_key = %s LIMIT 1',
+			$this->tables->chunk_search(),
+			$collection_id,
+			$chunk_key
+		);
+		$row = $this->connection->get_row( $sql );
+
+		return null === $row ? null : $this->record_from_row( $row );
+	}
+
+	/**
+	 * Return a bounded deterministic persisted chunk page for one document.
+	 *
+	 * @param string $document_key Owning document key.
+	 * @param int    $page One-based page.
+	 * @param int    $per_page Requested page size.
+	 * @throws InvalidArgumentException When the document key is empty.
+	 */
+	public function paginate_document_chunks( string $document_key, int $page = 1, int $per_page = 20 ): PagedResult {
+		if ( '' === $document_key ) {
+			throw new InvalidArgumentException( 'Document key must not be empty.' );
+		}
+
+		$page     = max( 1, $page );
+		$per_page = min( 100, max( 1, $per_page ) );
+		$offset   = ( $page - 1 ) * $per_page;
+		$count    = (int) $this->connection->get_var(
+			$this->connection->prepare(
+				'SELECT COUNT(*) FROM %i WHERE document_key = %s',
+				$this->tables->chunk_search(),
+				$document_key
+			)
+		);
+		$sql      = $this->connection->prepare(
+			'SELECT chunk_key, document_key, source_id, document_type, title, canonical_url, content, '
+				. 'content_hash, language, visibility, sequence, metadata_json FROM %i WHERE document_key = %s '
+				. 'ORDER BY sequence ASC, chunk_key ASC LIMIT %d OFFSET %d',
+			$this->tables->chunk_search(),
+			$document_key,
+			$per_page,
+			$offset
+		);
+		$items    = array_map(
+			fn ( array $row ): ChunkSearchRecord => $this->record_from_row( $row ),
+			$this->connection->get_results( $sql )
+		);
+
+		return new PagedResult( $items, $count, $page, $per_page );
 	}
 
 	/**
