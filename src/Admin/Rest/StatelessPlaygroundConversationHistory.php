@@ -32,7 +32,7 @@ final class StatelessPlaygroundConversationHistory implements ConversationHistor
 	public function recent_for_owner( string $conversation_id, string $owner_scope, int $limit ): array {
 		unset( $conversation_id, $owner_scope, $limit );
 
-		throw new LogicException( 'Playground conversation history is unavailable for stateless execution.' );
+		return self::unavailable( 'Playground conversation history is unavailable for stateless execution.' );
 	}
 
 	/**
@@ -46,6 +46,16 @@ final class StatelessPlaygroundConversationHistory implements ConversationHistor
 	public function summary_for_owner( string $conversation_id, string $owner_scope ): ?array {
 		unset( $conversation_id, $owner_scope );
 
-		throw new LogicException( 'Playground conversation summaries are unavailable for stateless execution.' );
+		return self::unavailable( 'Playground conversation summaries are unavailable for stateless execution.' );
+	}
+
+	/**
+	 * Throw the fail-closed stateful-access error.
+	 *
+	 * @param string $message Internal invariant failure message.
+	 * @throws LogicException Always.
+	 */
+	private static function unavailable( string $message ): never {
+		throw new LogicException( $message );
 	}
 }
