@@ -2,6 +2,10 @@ export {};
 
 declare const require: ( path: string ) => unknown;
 
+type WidgetConfigWindow = Window & {
+	wpRagAiChatbotWidgetConfigs?: unknown[];
+};
+
 const BOT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const originalFetch = globalThis.fetch;
 let fetchMock: jest.Mock;
@@ -38,7 +42,7 @@ const submitQuestion = ( value: string ): void => {
 describe( 'public widget conversation errors', () => {
 	beforeEach( () => {
 		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
-		( window as Window & { wpRagAiChatbotWidgetConfigs?: unknown[] } ).wpRagAiChatbotWidgetConfigs = [
+		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
 			{
 				botId: BOT_ID,
 				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
@@ -61,7 +65,7 @@ describe( 'public widget conversation errors', () => {
 
 	afterEach( () => {
 		document.body.innerHTML = '';
-		delete ( window as Window & { wpRagAiChatbotWidgetConfigs?: unknown[] } ).wpRagAiChatbotWidgetConfigs;
+		delete ( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs;
 		Object.defineProperty( globalThis, 'fetch', {
 			value: originalFetch,
 			writable: true,
@@ -84,7 +88,9 @@ describe( 'public widget conversation errors', () => {
 		expect( status?.textContent ).toBe(
 			'Too many requests. Please try again shortly.'
 		);
-		expect( document.body.textContent ).not.toContain( 'provider secret detail' );
+		expect( document.body.textContent ).not.toContain(
+			'provider secret detail'
+		);
 		expect( retry?.type ).toBe( 'button' );
 		expect( retry?.textContent ).toBe( 'Retry' );
 
