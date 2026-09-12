@@ -184,7 +184,10 @@ export const PlaygroundScreen = ( {
 	if ( result === undefined ) {
 		return createElement(
 			'section',
-			{ 'data-playground-screen': 'empty' },
+			{
+				className: 'wp-rag-ai-chatbot-playground',
+				'data-playground-screen': 'empty',
+			},
 			createElement( 'h2', null, 'Playground' ),
 			form,
 			error,
@@ -268,7 +271,10 @@ export const PlaygroundScreen = ( {
 
 	return createElement(
 		'section',
-		{ 'data-playground-screen': 'result' },
+		{
+			className: 'wp-rag-ai-chatbot-playground',
+			'data-playground-screen': 'result',
+		},
 		createElement( 'h2', null, 'Playground' ),
 		form,
 		error,
