@@ -52,19 +52,23 @@ The bounded public chat REST path now rejects request-level runtime overrides, a
 The public shortcode/mount seam now resolves only the existing public-safe widget projection, fails closed for invalid/disabled bots, loads the dedicated widget assets only after a valid mount, and exposes no provider/model/credential/embedding/vector/retrieval authority to the browser. Production implementation head `9619f53cc7130dacbb835f54652ff46f412442f4` / CI `34721951718` is GREEN. Additional real WordPress mount/bootstrap verification is GREEN at `18436c394f826e83885cbb43bff30b509a00a205` / CI `34722486144`; the preceding `a1e0ad17905aba666444ce45c8f4db57db834272` / CI `34722293078` is explicitly **NOT RED** because only the smoke assertion's escaped-JSON representation was wrong. Scoped fallback review has **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md`.
 
 ### Task 6 — floating launcher/panel UI — IN PROGRESS
-Build the interactive browser widget on the dedicated `src-js/widget.ts` entry and Task 5 bootstrap contract. Use strict JavaScript TDD for deterministic mount discovery, launcher/panel open-close behavior, bounded appearance application, and keyboard/accessibility semantics. Do not create a second chat/retrieval/runtime authority.
+Task 6A floating-shell work is **COMPLETE**. The public widget now mounts idempotently, opens/closes with focus restoration and Escape handling, projects only bounded normalized appearance values, uses viewport-safe responsive CSS, and exposes visible/native accessible controls plus a named dialog. Final Task 6A implementation head `772a125fd4cf7beb8705a3eecc2c136d4c9c71a6` / CI `34725063417` is GREEN across all permanent jobs. Fallback review resolved one Important accessibility/UX finding and has **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK6A-WIDGET-SHELL.md`.
+
+Task 6 remains open for the authoritative plan's Task 6B/6C conversation interaction and safe presentation slices.
 
 ## Current work
 
-Continue M14 Task 6 on existing PR #19. Recover the M14 design, Task 5 browser bootstrap contract, existing JS/Jest conventions, and dedicated widget build entry. Persist the bounded Task 6 plan, then execute strict RED -> GREEN beginning with the smallest deterministic launcher/panel behavior. After each verified unit, review, document, re-check GitHub state, and continue automatically.
+Continue M14 Task 6 on existing PR #19 at **Task 6B — non-streaming public conversation submit/loading/error/retry behavior**. Reuse the existing Task 4 `POST /wp-rag-ai-chatbot/v1/chat` authority. The browser may send only `bot_id`, `question`, and optional `conversation_id`; do not introduce provider/model/embedding/vector/retrieval overrides or a second chat/retrieval runtime.
 
 ## Durable recovery
 
 - `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md` — M14 auto-approved design and task order.
+- `docs/superpowers/plans/2026-09-13-m14-task6-launcher-panel-ui.md` — authoritative Task 6A-6C execution plan.
 - `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` — Task 1 evidence.
 - `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection evidence and scoped review.
-- `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md` — Task 3 protected REST RED/NOT RED/NOT GREEN/GREEN evidence and review.
-- `docs/progress/M14-TASK4-CLOSEOUT.md` — Task 4 final production composition, integration, CI, and review evidence.
+- `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md` — Task 3 protected REST evidence and review.
+- `docs/progress/M14-TASK4-CLOSEOUT.md` — Task 4 production composition, integration, CI, and review evidence.
 - `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md` — Task 5 mount/build/smoke evidence and scoped review.
+- `docs/progress/M14-TASK6A-WIDGET-SHELL.md` — Task 6A shell TDD, CI, accessibility remediation, and review evidence.
 - PR #19 — active M14 implementation branch and execution source of truth.
 - `docs/milestones/M14-frontend-chatbot-customizer.md` — current M14 milestone ledger.
