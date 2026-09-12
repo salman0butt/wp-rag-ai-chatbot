@@ -41,6 +41,11 @@ const submitQuestion = ( value: string ): void => {
 	);
 };
 
+const flushPromises = async (): Promise< void > => {
+	await Promise.resolve();
+	await Promise.resolve();
+};
+
 describe( 'public widget conversation controls', () => {
 	beforeEach( () => {
 		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
@@ -146,5 +151,36 @@ describe( 'public widget conversation controls', () => {
 		expect( status?.getAttribute( 'role' ) ).toBe( 'status' );
 		expect( status?.getAttribute( 'aria-live' ) ).toBe( 'polite' );
 		expect( status?.textContent ).toBe( 'Sending…' );
+	} );
+
+	it( 'renders successful text safely and reuses the returned conversation id', async () => {
+		loadWidget();
+		submitQuestion( '<strong>Hello?</strong>' );
+		await flushPromises();
+
+		const messages = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-messages]'
+		);
+		const userMessage = messages?.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-message="user"]'
+		);
+		const assistantMessage = messages?.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-message="assistant"]'
+		);
+
+		expect( userMessage?.textContent ).toBe( '<strong>Hello?</strong>' );
+		expect( userMessage?.querySelector( 'strong' ) ).toBeNull();
+		expect( assistantMessage?.textContent ).toBe( 'Hello' );
+
+		submitQuestion( 'Follow up' );
+
+		expect( fetchMock ).toHaveBeenCalledTimes( 2 );
+		expect( fetchMock.mock.calls[ 1 ][ 1 ].body ).toBe(
+			JSON.stringify( {
+				bot_id: BOT_ID,
+				question: 'Follow up',
+				conversation_id: 'conversation-1',
+			} )
+		);
 	} );
 } );
