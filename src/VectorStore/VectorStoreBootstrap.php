@@ -28,7 +28,11 @@ final class VectorStoreBootstrap {
 	 */
 	private static ?VectorStoreRegistry $registry = null;
 
-	/** Whether the local WordPress adapter has been registered. */
+	/**
+	 * Whether the local WordPress adapter has been registered.
+	 *
+	 * @var bool
+	 */
 	private static bool $local_registered = false;
 
 	/** Return the shared production registry without performing network I/O. */
