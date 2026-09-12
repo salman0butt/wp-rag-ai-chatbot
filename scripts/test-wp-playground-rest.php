@@ -213,9 +213,10 @@ try {
 		$fail( 'Enabled public bot shortcode did not conditionally enqueue widget assets.' );
 	}
 
-	$inline_before = wp_scripts()->get_data( $widget_asset_handle, 'before' );
-	$inline_script = is_array( $inline_before ) ? implode( "\n", $inline_before ) : (string) $inline_before;
-	if ( ! str_contains( $inline_script, $widget_bot_id ) || ! str_contains( $inline_script, 'wp-rag-ai-chatbot/v1' ) ) {
+	$inline_before   = wp_scripts()->get_data( $widget_asset_handle, 'before' );
+	$inline_script   = is_array( $inline_before ) ? implode( "\n", $inline_before ) : (string) $inline_before;
+	$has_rest_base   = str_contains( $inline_script, 'wp-rag-ai-chatbot/v1' ) || str_contains( $inline_script, 'wp-rag-ai-chatbot\\/v1' );
+	if ( ! str_contains( $inline_script, $widget_bot_id ) || ! $has_rest_base ) {
 		$fail( 'Public widget bootstrap data is missing the public bot identity or REST base.' );
 	}
 	foreach ( array( 'smoke-secret-provider', 'smoke-secret-model', 'retrieval_limit', 'vector_store', 'credential' ) as $forbidden ) {
