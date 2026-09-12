@@ -38,7 +38,7 @@
     "typescript": "^5.9.0"
   },
   "scripts": {
-    "build": "wp-scripts build src-js/index.ts src-js/widget.ts --output-path=build",
+    "build": "wp-scripts build src-js/index src-js/widget --output-path=build",
     "check-engines": "wp-scripts check-engines",
     "env:start": "wp-env start --update",
     "env:stop": "wp-env stop",
