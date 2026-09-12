@@ -157,13 +157,12 @@ describe( 'PlaygroundScreen', () => {
 		configureTestRuntime();
 		const onSubmit = jest.fn();
 		const root = document.createElement( 'div' );
-		const PlaygroundForm = PlaygroundScreen as unknown as PlaygroundFormComponent;
+		const PlaygroundForm =
+			PlaygroundScreen as unknown as PlaygroundFormComponent;
 		root.append( PlaygroundForm( { onSubmit } ) as Node );
 
 		const form = root.querySelector( 'form[data-playground-form]' );
-		const botId = root.querySelector< HTMLInputElement >(
-			'#playground-bot-id'
-		);
+		const botId = root.querySelector< HTMLInputElement >( '#playground-bot-id' );
 		const sourceId = root.querySelector< HTMLInputElement >(
 			'#playground-source-id'
 		);
@@ -187,7 +186,8 @@ describe( 'PlaygroundScreen', () => {
 				?.textContent
 		).toBe( 'Collection ID' );
 		expect(
-			root.querySelector( 'label[for="playground-question"]' )?.textContent
+			root.querySelector( 'label[for="playground-question"]' )
+				?.textContent
 		).toBe( 'Question' );
 		expect( sourceId?.getAttribute( 'min' ) ).toBe( '1' );
 		expect( question?.getAttribute( 'maxlength' ) ).toBe( '16384' );
