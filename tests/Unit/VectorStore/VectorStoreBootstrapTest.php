@@ -21,11 +21,13 @@ use WpRagAiChatbot\VectorStore\VectorStoreRegistry;
  * Keeps Playground and production indexing on one vector-store registry authority.
  */
 final class VectorStoreBootstrapTest extends TestCase {
+	/** Reset process-local vector bootstrap state before each test. */
 	protected function setUp(): void {
 		parent::setUp();
 		$this->reset_bootstrap();
 	}
 
+	/** Reset process-local vector bootstrap state after each test. */
 	protected function tearDown(): void {
 		$this->reset_bootstrap();
 		parent::tearDown();
