@@ -110,6 +110,7 @@ jobs:
       - run: npm run test:wp:knowledge
       - run: npm run test:wp:file-ingestion
       - run: npm run test:wp:woocommerce-knowledge
+      - run: npm run test:wp:playground-rest
       - if: always()
         run: npm run env:stop
 
@@ -122,10 +123,6 @@ jobs:
           php-version: '8.2'
           coverage: none
           tools: composer:v2
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-          cache: npm
       - run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
       - run: npm ci
       - run: npm run build
