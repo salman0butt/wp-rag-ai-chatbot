@@ -602,7 +602,6 @@ export const BotEditorScreen = ( {
 						if ( field.value.trim() === '' ) {
 							field.setAttribute( 'aria-invalid', 'true' );
 						}
-					}
 					validation?.removeAttribute( 'hidden' );
 					firstInvalid.focus();
 					return;
@@ -708,7 +707,7 @@ export const BotManagementScreen = ( {
 				'data-bot-id': item.id,
 			},
 			createElement( 'a', linkProps, item.name )
-		);
+			);
 	} );
 	const editor = BotEditorScreen( {
 		mode: 'edit',
@@ -1446,8 +1445,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	) => Promise< void > = async () => undefined;
 	let currentPlaygroundResult: PlaygroundResult | undefined;
 	let currentPlaygroundErrorCode: string | undefined;
-	let submitPlayground: ( request: PlaygroundRequestDraft ) => Promise< void > =
-		async () => undefined;
+	let submitPlayground: (
+		request: PlaygroundRequestDraft
+	) => Promise< void > = async () => undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -1546,7 +1546,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		} catch ( error ) {
 			currentPlaygroundResult = undefined;
 			currentPlaygroundErrorCode =
-				error instanceof AdminApiError ? error.code : 'playground_failed';
+				error instanceof AdminApiError
+					? error.code
+					: 'playground_failed';
 		}
 
 		renderState( stateFromReadiness() );
