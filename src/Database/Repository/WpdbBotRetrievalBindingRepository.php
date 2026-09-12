@@ -37,6 +37,7 @@ final class WpdbBotRetrievalBindingRepository implements BotRetrievalBindingRepo
 	 * Load one persisted binding.
 	 *
 	 * @param BotId $bot_id Stable bot identifier.
+	 * @throws RuntimeException When persisted retrieval authority is malformed.
 	 */
 	public function find( BotId $bot_id ): ?BotRetrievalBinding {
 		$sql = $this->connection->prepare(
