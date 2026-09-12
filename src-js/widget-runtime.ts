@@ -116,13 +116,17 @@ const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
 
 	const candidate = value as Record< string, unknown >;
 
-	return typeof candidate.answer === 'string' &&
-		typeof candidate.conversation_id === 'string'
-		? {
-				answer: candidate.answer,
-				conversation_id: candidate.conversation_id,
-			}
-		: null;
+	if (
+		typeof candidate.answer !== 'string' ||
+		typeof candidate.conversation_id !== 'string'
+	) {
+		return null;
+	}
+
+	return {
+		answer: candidate.answer,
+		conversation_id: candidate.conversation_id,
+	};
 };
 
 export const mountWidgets = (
@@ -262,17 +266,14 @@ export const mountWidgets = (
 					body: JSON.stringify( requestBody ),
 				} )
 					.then( ( response ) => response.json() )
-					.then(
-						( payload: unknown ) => {
-							const success = readSuccess( payload );
-							if ( success !== null ) {
-								conversationId = success.conversation_id;
-								appendMessage( 'assistant', success.answer );
-							}
-							finishRequest();
-						},
-						finishRequest
-					);
+					.then( ( payload: unknown ) => {
+						const success = readSuccess( payload );
+						if ( success !== null ) {
+							conversationId = success.conversation_id;
+							appendMessage( 'assistant', success.answer );
+						}
+					} )
+					.then( finishRequest, finishRequest );
 			} );
 
 			panel.append( close, messages, form );
