@@ -1,6 +1,6 @@
 <?php
 /**
- * Real WordPress administrator M13 and public-chat REST smoke assertions.
+ * Real WordPress administrator M13 and M14 public REST/widget smoke assertions.
  *
  * WP-CLI eval-file evaluates this file inside generated PHP, so strict_types
  * cannot be declared here because it would no longer be the first statement.
@@ -19,20 +19,29 @@ use WpRagAiChatbot\Frontend\PublicChatRestBootstrap;
 
 $user_id              = 0;
 $disabled_bot_id       = null;
+$widget_bot_id         = null;
 $original_remote_addr = $_SERVER['REMOTE_ADDR'] ?? null;
+$widget_asset_handle  = 'wp-rag-ai-chatbot-widget';
+$widget_shortcode     = 'wp_rag_ai_chatbot';
 
-$cleanup = static function () use ( &$user_id, &$disabled_bot_id, $original_remote_addr ): void {
+$cleanup = static function () use ( &$user_id, &$disabled_bot_id, &$widget_bot_id, $original_remote_addr ): void {
 	wp_set_current_user( 0 );
 	if ( $user_id > 0 ) {
 		wp_delete_user( $user_id );
 		$user_id = 0;
 	}
-	if ( null !== $disabled_bot_id ) {
+	if ( null !== $disabled_bot_id || null !== $widget_bot_id ) {
 		global $wpdb;
 		$connection = new WpdbConnection( $wpdb );
 		$repository = new WpdbBotRepository( $connection, new TableNames( $connection->prefix() ) );
-		$repository->delete( new BotId( $disabled_bot_id ) );
-		$disabled_bot_id = null;
+		if ( null !== $disabled_bot_id ) {
+			$repository->delete( new BotId( $disabled_bot_id ) );
+			$disabled_bot_id = null;
+		}
+		if ( null !== $widget_bot_id ) {
+			$repository->delete( new BotId( $widget_bot_id ) );
+			$widget_bot_id = null;
+		}
 	}
 	if ( null === $original_remote_addr ) {
 		unset( $_SERVER['REMOTE_ADDR'] );
@@ -88,6 +97,18 @@ try {
 	}
 	if ( ! isset( $routes[ $public_chat_route ] ) ) {
 		$fail( 'Public chat REST route is not registered.' );
+	}
+	if ( ! shortcode_exists( $widget_shortcode ) ) {
+		$fail( 'Public widget shortcode is not registered after plugin activation.' );
+	}
+	if ( wp_script_is( $widget_asset_handle, 'enqueued' ) || wp_style_is( $widget_asset_handle, 'enqueued' ) ) {
+		$fail( 'Public widget assets were enqueued before a valid widget mount was rendered.' );
+	}
+	if ( '' !== do_shortcode( '[wp_rag_ai_chatbot]' ) ) {
+		$fail( 'Public widget shortcode without a bot identifier did not fail closed.' );
+	}
+	if ( wp_script_is( $widget_asset_handle, 'enqueued' ) || wp_style_is( $widget_asset_handle, 'enqueued' ) ) {
+		$fail( 'Invalid public widget mount enqueued public assets.' );
 	}
 
 	wp_set_current_user( 0 );
@@ -174,6 +195,34 @@ try {
 	if ( 200 !== $disabled_response->get_status() || 'chat_unavailable' !== ( $disabled_data['error']['code'] ?? null ) ) {
 		$fail( 'Disabled public bot did not fail closed as unavailable.' );
 	}
+	$disabled_widget = do_shortcode( '[wp_rag_ai_chatbot bot="' . esc_attr( $disabled_bot_id ) . '"]' );
+	if ( '' !== $disabled_widget ) {
+		$fail( 'Disabled bot shortcode did not fail closed.' );
+	}
+	if ( wp_script_is( $widget_asset_handle, 'enqueued' ) || wp_style_is( $widget_asset_handle, 'enqueued' ) ) {
+		$fail( 'Disabled bot shortcode enqueued public widget assets.' );
+	}
+
+	$widget_bot    = $bot_repository->create( 'M14 widget smoke bot', true, 'smoke-secret-provider', 'smoke-secret-model' );
+	$widget_bot_id = $widget_bot->id->value;
+	$widget_html   = do_shortcode( '[wp_rag_ai_chatbot bot="' . esc_attr( $widget_bot_id ) . '"]' );
+	if ( ! str_contains( $widget_html, 'class="wp-rag-ai-chatbot-widget"' ) || ! str_contains( $widget_html, $widget_bot_id ) ) {
+		$fail( 'Enabled public bot shortcode did not render the deterministic widget mount.' );
+	}
+	if ( ! wp_script_is( $widget_asset_handle, 'enqueued' ) || ! wp_style_is( $widget_asset_handle, 'enqueued' ) ) {
+		$fail( 'Enabled public bot shortcode did not conditionally enqueue widget assets.' );
+	}
+
+	$inline_before = wp_scripts()->get_data( $widget_asset_handle, 'before' );
+	$inline_script = is_array( $inline_before ) ? implode( "\n", $inline_before ) : (string) $inline_before;
+	if ( ! str_contains( $inline_script, $widget_bot_id ) || ! str_contains( $inline_script, 'wp-rag-ai-chatbot/v1' ) ) {
+		$fail( 'Public widget bootstrap data is missing the public bot identity or REST base.' );
+	}
+	foreach ( array( 'smoke-secret-provider', 'smoke-secret-model', 'retrieval_limit', 'vector_store', 'credential' ) as $forbidden ) {
+		if ( str_contains( $inline_script, $forbidden ) ) {
+			$fail( 'Public widget bootstrap leaked forbidden runtime authority: ' . $forbidden );
+		}
+	}
 
 	$user_id = wp_create_user( 'm13_playground_smoke_admin', wp_generate_password( 32, true, true ), 'm13-playground-smoke@example.test' );
 	if ( is_wp_error( $user_id ) ) {
@@ -225,7 +274,7 @@ try {
 	}
 
 	$cleanup();
-	fwrite( STDOUT, "WordPress M13 administrator and M14 public REST smoke passed.\n" );
+	fwrite( STDOUT, "WordPress M13 administrator and M14 public REST/widget smoke passed.\n" );
 } catch ( Throwable $exception ) {
-	$fail( 'WordPress REST smoke threw: ' . $exception->getMessage() );
+	$fail( 'WordPress REST/widget smoke threw: ' . $exception->getMessage() );
 }
