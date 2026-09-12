@@ -83,6 +83,18 @@ describe( 'public widget launcher and panel state', () => {
 		expect( panel?.hidden ).toBe( true );
 	} );
 
+	it( 'does not duplicate controls when the widget entry executes twice', () => {
+		loadWidget();
+		loadWidget();
+
+		expect(
+			document.querySelectorAll( '[data-wp-rag-ai-chatbot-launcher]' )
+		).toHaveLength( 1 );
+		expect(
+			document.querySelectorAll( '[data-wp-rag-ai-chatbot-panel]' )
+		).toHaveLength( 1 );
+	} );
+
 	it( 'opens the panel with an accessible close control and moves focus into it', () => {
 		loadWidget();
 
