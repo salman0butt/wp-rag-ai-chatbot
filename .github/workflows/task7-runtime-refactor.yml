@@ -28,6 +28,8 @@ jobs:
           set -euo pipefail
           git fetch origin feat/m13-knowledge-manager-debugger
           test "$(git rev-parse origin/feat/m13-knowledge-manager-debugger)" = "$GITHUB_SHA"
+      - name: Install project dependencies
+        run: npm ci
       - name: Apply bounded runtime refactor
         shell: bash
         run: |
@@ -87,12 +89,10 @@ jobs:
 
           path.write_text(text)
           PY
-          npx prettier --write src-js/index.ts
+          npx wp-scripts format-js src-js/index.ts
           git diff --check
       - name: Verify JavaScript behavior
-        run: |
-          npm ci
-          npm run verify:js
+        run: npm run verify:js
       - name: Commit verified implementation and remove temporary runner
         shell: bash
         run: |
