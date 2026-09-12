@@ -83,12 +83,19 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		$appearances->expects( self::once() )->method( 'find' )->willReturn( AppearanceConfig::defaults() );
 
 		Functions\when( 'plugins_url' )->alias(
-			static fn ( string $path, string $plugin_file ): string => 'https://example.test/plugins/wp-rag-ai-chatbot/' . $path
+			static fn ( string $path, string $plugin_file ): string => str_ends_with( $plugin_file, 'wp-rag-ai-chatbot.php' )
+				? 'https://example.test/plugins/wp-rag-ai-chatbot/' . $path
+				: ''
 		);
 		Functions\when( 'rest_url' )->justReturn( 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/' );
 		Functions\when( 'untrailingslashit' )->alias( static fn ( string $value ): string => rtrim( $value, '/' ) );
 		Functions\when( 'wp_json_encode' )->alias(
-			static fn ( array $value ): string => (string) json_encode( $value, JSON_THROW_ON_ERROR )
+			static fn ( array $value ): string => sprintf(
+				'{"bot_id":"%s","name":"%s","restBase":"%s"}',
+				$value['bot_id'],
+				$value['name'],
+				$value['restBase']
+			)
 		);
 		Functions\when( 'esc_attr' )->alias(
 			static fn ( string $value ): string => htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' )
