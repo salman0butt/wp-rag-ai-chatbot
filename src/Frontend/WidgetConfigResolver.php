@@ -17,7 +17,7 @@ final readonly class WidgetConfigResolver {
 	/**
 	 * Create the resolver.
 	 *
-	 * @param BotRepository            $bots Persisted bot authority.
+	 * @param BotRepository           $bots Persisted bot authority.
 	 * @param BotAppearanceRepository $appearances Persisted appearance authority.
 	 */
 	public function __construct(
