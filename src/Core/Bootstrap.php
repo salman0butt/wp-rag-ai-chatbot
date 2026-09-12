@@ -12,6 +12,7 @@ namespace WpRagAiChatbot\Core;
 use WpRagAiChatbot\Admin\AdminBootstrap;
 use WpRagAiChatbot\Database\DatabaseBootstrap;
 use WpRagAiChatbot\Frontend\PublicChatRestBootstrap;
+use WpRagAiChatbot\Frontend\PublicWidgetBootstrap;
 use WpRagAiChatbot\Jobs\JobWorkerBootstrap;
 use WpRagAiChatbot\Knowledge\KnowledgeBootstrap;
 use WpRagAiChatbot\Providers\ProviderBootstrap;
@@ -34,6 +35,7 @@ final class Bootstrap {
 		add_action( 'plugins_loaded', array( KnowledgeBootstrap::class, 'register' ), 10 );
 		add_action( 'plugins_loaded', array( JobWorkerBootstrap::class, 'register' ), 20 );
 		add_action( 'plugins_loaded', array( AdminBootstrap::class, 'register' ), 20 );
+		add_action( 'plugins_loaded', array( PublicWidgetBootstrap::class, 'register_default' ), 20 );
 		add_action( 'rest_api_init', array( PublicChatRestBootstrap::class, 'register_routes' ) );
 		add_action( 'plugins_loaded', array( self::class, 'load' ) );
 	}

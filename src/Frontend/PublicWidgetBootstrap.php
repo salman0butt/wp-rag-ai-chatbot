@@ -9,6 +9,11 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Frontend;
 
+use WpRagAiChatbot\Database\Repository\WpdbBotAppearanceRepository;
+use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
+use WpRagAiChatbot\Database\TableNames;
+use WpRagAiChatbot\Database\WpdbConnection;
+
 /**
  * Registers the public shortcode and conditionally enqueues widget assets.
  */
@@ -26,6 +31,27 @@ final readonly class PublicWidgetBootstrap {
 		private PublicWidgetMount $mount,
 		private string $plugin_file
 	) {
+	}
+
+	/**
+	 * Compose persisted production repositories and register the public shortcode.
+	 */
+	public static function register_default(): void {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+		$bootstrap  = new self(
+			new PublicWidgetMount(
+				new WidgetConfigResolver(
+					new WpdbBotRepository( $connection, $tables ),
+					new WpdbBotAppearanceRepository( $connection, $tables )
+				)
+			),
+			dirname( __DIR__, 2 ) . '/wp-rag-ai-chatbot.php'
+		);
+
+		$bootstrap->register();
 	}
 
 	/** Register the stable public shortcode. */
