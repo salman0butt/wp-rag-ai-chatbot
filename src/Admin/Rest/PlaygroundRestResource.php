@@ -21,6 +21,12 @@ final class PlaygroundRestResource {
 	/** Maximum accepted question size, matching the production ChatRequest boundary. */
 	private const MAX_QUESTION_BYTES = 16384;
 
+	/** Maximum citation title bytes exposed by the administrator REST DTO. */
+	private const MAX_CITATION_TITLE_BYTES = 256;
+
+	/** Maximum citation canonical URL bytes exposed by the administrator REST DTO. */
+	private const MAX_CITATION_URL_BYTES = 2048;
+
 	/**
 	 * Create the Playground resource.
 	 *
@@ -75,8 +81,8 @@ final class PlaygroundRestResource {
 				'chunk_id'      => $citation->chunk_id,
 				'document_id'   => $citation->document_id,
 				'source_id'     => $citation->source_id,
-				'title'         => $citation->title,
-				'canonical_url' => $citation->canonical_url,
+				'title'         => self::bound_nullable_utf8( $citation->title, self::MAX_CITATION_TITLE_BYTES ),
+				'canonical_url' => self::bound_nullable_utf8( $citation->canonical_url, self::MAX_CITATION_URL_BYTES ),
 			);
 		}
 
@@ -104,6 +110,25 @@ final class PlaygroundRestResource {
 			'output_tokens' => $usage?->output_tokens,
 			'total_tokens'  => $usage?->total_tokens,
 		);
+	}
+
+	/**
+	 * Bound nullable display metadata without leaving an invalid trailing UTF-8 sequence.
+	 *
+	 * @param string|null $value Display metadata value.
+	 * @param int         $max_bytes Maximum byte length.
+	 */
+	private static function bound_nullable_utf8( ?string $value, int $max_bytes ): ?string {
+		if ( null === $value || strlen( $value ) <= $max_bytes ) {
+			return $value;
+		}
+
+		$bounded = substr( $value, 0, $max_bytes );
+		while ( '' !== $bounded && 1 !== preg_match( '//u', $bounded ) ) {
+			$bounded = substr( $bounded, 0, -1 );
+		}
+
+		return $bounded;
 	}
 
 	/**
