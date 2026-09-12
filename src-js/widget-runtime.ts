@@ -47,6 +47,21 @@ export const mountWidgets = (
 			panel.dataset.wpRagAiChatbotPanel = '';
 			panel.hidden = true;
 
+			const close = documentRoot.createElement( 'button' );
+			close.type = 'button';
+			close.dataset.wpRagAiChatbotClose = '';
+			close.setAttribute(
+				'aria-label',
+				`Close ${ config.config.name } chat`
+			);
+
+			launcher.addEventListener( 'click', () => {
+				launcher.setAttribute( 'aria-expanded', 'true' );
+				panel.hidden = false;
+				close.focus();
+			} );
+
+			panel.append( close );
 			mount.append( launcher, panel );
 			mounted += 1;
 		} );
