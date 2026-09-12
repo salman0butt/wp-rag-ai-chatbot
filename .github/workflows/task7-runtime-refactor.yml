@@ -89,7 +89,7 @@ jobs:
 
           path.write_text(text)
           PY
-          npx wp-scripts format-js src-js/index.ts
+          npx prettier --write src-js/index.ts
           git diff --check
       - name: Verify JavaScript behavior
         run: npm run verify:js
