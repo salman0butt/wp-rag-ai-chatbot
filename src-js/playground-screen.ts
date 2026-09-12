@@ -100,7 +100,10 @@ const playgroundForm = (
 	const handleSubmit = ( event: Event ): void => {
 		event.preventDefault();
 
-		if ( onSubmit === undefined || !( event.currentTarget instanceof HTMLFormElement ) ) {
+		if (
+			onSubmit === undefined ||
+			!( event.currentTarget instanceof HTMLFormElement )
+		) {
 			return;
 		}
 
