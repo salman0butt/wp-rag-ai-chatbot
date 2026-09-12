@@ -27,9 +27,15 @@ The trusted WordPress request adapter is verified:
 - spoofable `HTTP_X_FORWARDED_FOR` input is not consulted by this adapter;
 - caller-provided runtime override keys remain rejected by `PublicChatRequest`.
 
-The public callback now also parses the incoming JSON payload through that canonical adapter before any trusted runtime composition exists. Unknown caller-controlled runtime fields fail closed with the stable `invalid_request` code. A valid bounded request still intentionally returns `chat_unavailable` until concrete WordPress persistence/runtime composition and delegation through `PublicChatRestResource` are bound.
+The WordPress callback now composes the server-owned abuse-control and persisted-runtime boundary:
 
-This boundary is intentionally not a second RAG implementation. Production retrieval, grounding, prompt construction, memory, generation, citation validation, and persistence remain owned by the existing M11 graph reached through `ProductionPublicChatExecutor`.
+- the client scope is derived from `REMOTE_ADDR` plus `wp_salt( 'auth' )`;
+- `WpdbPublicChatRateLimitStore` / `PublicChatAbuseGuard` execute before runtime/provider/retrieval work;
+- persisted bot and retrieval binding authority is resolved through `WpdbBotRepository` and `WpdbBotRetrievalBindingRepository`;
+- the real WordPress REST smoke proves the first 20 bounded anonymous requests reach the fail-closed unavailable path while request 21 is rejected as `rate_limited` before runtime/provider work;
+- unknown caller-controlled runtime fields fail closed with `invalid_request`.
+
+The final production executor factory is still deliberately fail-closed. A valid persisted bot must not be considered executable until the callback delegates to the existing M10/M11 production chat composition exactly once. No parallel RAG implementation has been introduced.
 
 ## Strict TDD chronology
 
@@ -140,6 +146,28 @@ This is a genuine behavioral RED.
 - `package`: PASS.
 - `wordpress-smoke`: PASS, including activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and Playground REST smoke.
 
+### WordPress abuse-order integration — genuine RED
+
+- SHA: `cf50839dc05cdb76c21edde84b6e126b8e3b954a`
+- CI: `34710407146`
+- Test-only change: `scripts/test-wp-playground-rest.php`.
+- `php-quality`: PASS.
+- `js-quality`: PASS.
+- `package`: PASS.
+- WordPress activation, database, providers, knowledge, file-ingestion, and WooCommerce smoke steps all passed.
+- The real WordPress REST smoke then failed exactly at the intended assertion: `Public chat REST callback did not enforce the abuse limit before runtime work.`
+- This is a genuine behavior-level RED; the failure was not caused by PHPCS, PHPStan, PHPUnit infrastructure, packaging, or an unrelated WordPress smoke regression.
+
+### WordPress abuse-order integration — genuine GREEN
+
+- SHA: `35cbc43338726f4062554439564c3ef636228cca`
+- CI: `34710569241`
+- The callback now derives its trusted client scope with `wp_salt( 'auth' )`, composes `WpdbPublicChatRateLimitStore` / `PublicChatAbuseGuard`, and resolves persisted bot/retrieval binding authority through the existing repositories before any executor work.
+- `php-quality`: PASS, including Composer validation, PHPCS, PHPStan, PHPUnit, and Composer audit.
+- `js-quality`: PASS, including live-provider/vector gating and package assertion tests.
+- `package`: PASS.
+- `wordpress-smoke`: PASS, including the new real REST assertion that requests 1–20 reach the fail-closed unavailable path and request 21 is stopped as `rate_limited`.
+
 ## Scoped review
 
 Fallback scoped review is used where independent reviewer transport is unavailable.
@@ -147,14 +175,15 @@ Fallback scoped review is used where independent reviewer transport is unavailab
 ### Correctness
 
 - route registration occurs through the normal plugin bootstrap;
-- abuse control remains inside `PublicChatRestResource`, ahead of persisted runtime/provider/retrieval work;
+- abuse control now executes in the real WordPress callback ahead of persisted runtime/provider/retrieval work;
 - the WordPress request adapter reuses the canonical `PublicChatRequest` parser rather than adding another payload contract;
 - client-scope derivation uses the existing `PublicChatClientScope` authority;
-- `run_chat()` now rejects malformed/override-bearing payloads through the canonical request contract before composition;
-- valid requests still fail closed with `chat_unavailable` rather than pretending production composition is already available.
+- malformed/override-bearing payloads are rejected through the canonical request contract before composition;
+- persisted bot and retrieval-binding authority is reused rather than supplied by the caller;
+- valid requests still fail closed until the established M10/M11 production executor composition is connected.
 
 Unresolved Critical findings: 0.
-Unresolved Important findings: 0.
+Unresolved Important findings: 0 for the completed abuse-order subunit.
 
 ### Security/privacy
 
@@ -162,34 +191,40 @@ Unresolved Important findings: 0.
 - trusted client identity is derived from server-side `REMOTE_ADDR` and does not trust caller-spoofable forwarded-address headers;
 - raw IP, user-agent, prompt text, credentials, and provider secrets are not persisted by the request adapter;
 - caller-provided runtime override keys are rejected by the closed request contract and callback;
-- current fail-closed valid-request path leaks no sensitive runtime detail.
+- abuse control is proven to run before expensive downstream work;
+- current fail-closed executor seam leaks no sensitive runtime detail.
 
 Unresolved Critical findings: 0.
-Unresolved Important findings: 0.
+Unresolved Important findings: 0 for the completed abuse-order subunit.
 
 ### Performance
 
-- route registration, request adaptation, and malformed-payload rejection add no expensive retrieval/provider work;
-- the intended callback composition must preserve the existing cheap abuse guard before runtime/database/provider work.
+- cheap request validation and abuse control precede persisted runtime/provider/retrieval work;
+- the rate-limit store remains bounded WordPress database work;
+- no generation/retrieval call is made for denied requests.
 
-Unresolved Important findings: 0.
+Unresolved Important findings: 0 for the completed abuse-order subunit.
 
 ### Architecture / duplication
 
 - request adaptation delegates to existing request/client-scope authorities rather than duplicating validation or identity logic;
+- persisted bot and retrieval binding resolution reuse existing repositories;
 - no semantic/lexical retrieval, fusion, reranking, grounding, prompt, memory, provider, embedding, vector-store, or citation pipeline is duplicated;
-- `ProductionPublicChatExecutor` remains the bridge into the established M11 graph.
+- `ProductionPublicChatExecutor` remains the intended bridge into the established M11 graph;
+- the callback's current executor factory intentionally throws fail-closed until that existing production composition is wired; this is tracked unfinished work, not represented as a completed executor path.
 
-Unresolved Important findings: 0.
+Unresolved Important findings: 0 for the completed abuse-order subunit.
+
+Independent reviewer/subagent transport is not available in this execution environment, so no independent-review claim is made for this checkpoint.
 
 ## Exact remaining Task 4E work
 
-Continue under strict TDD with the thinnest WordPress callback/composition seam that:
+Continue under strict TDD with the thinnest production executor composition seam that:
 
-1. derives the client scope through `PublicChatWordPressRequestAdapter` from trusted server metadata plus a server-owned WordPress secret;
-2. uses `WpdbPublicChatRateLimitStore` / `PublicChatAbuseGuard` before expensive runtime/provider/retrieval work;
-3. resolves persisted bot/retrieval authority and delegates once through `PublicChatRestResource` / `ProductionPublicChatExecutor`;
-4. returns stable non-sensitive unavailable/rate-limited responses;
-5. never accepts caller-controlled credentials, provider/model, embedding, vector-store, grounding, output-token, source/collection, or retrieval-limit authority.
+1. consumes the already-persisted `PublicChatRuntime` rather than caller-selected runtime settings;
+2. reuses the established M10/M11 semantic + lexical retrieval, fusion/rerank, grounding, prompt, memory, generation, and citation authorities exactly once;
+3. supplies the persisted generation model and bot-scoped access context to `ProductionPublicChatExecutor` without accepting request-level overrides;
+4. preserves stable non-sensitive `chat_unavailable` behavior on configuration/provider/retrieval failure;
+5. introduces no second public RAG graph or duplicated scoring/retrieval/provider-selection logic.
 
-After the callback is exact-head GREEN, continue directly into Task 4F real WordPress integration/smoke coverage and final correctness/security/performance/architecture/privacy review before Task 5 starts.
+After that executor delegation seam is exact-head GREEN, continue directly into Task 4F real WordPress integration/smoke coverage and final correctness/security/performance/architecture/privacy review before Task 5 starts.
