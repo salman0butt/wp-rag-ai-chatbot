@@ -9,6 +9,7 @@ export type WidgetBootstrapConfig = {
 };
 
 const MOUNT_SELECTOR = '.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]';
+const MOUNTED_DATA_KEY = 'wpRagAiChatbotMounted';
 
 const findConfig = (
 	botId: string,
@@ -27,6 +28,10 @@ export const mountWidgets = (
 	documentRoot
 		.querySelectorAll< HTMLElement >( MOUNT_SELECTOR )
 		.forEach( ( mount ) => {
+			if ( mount.dataset[ MOUNTED_DATA_KEY ] === 'true' ) {
+				return;
+			}
+
 			const botId = mount.dataset.wpRagAiChatbotBot ?? '';
 			const config = findConfig( botId, configs );
 
@@ -69,6 +74,7 @@ export const mountWidgets = (
 
 			panel.append( close );
 			mount.append( launcher, panel );
+			mount.dataset[ MOUNTED_DATA_KEY ] = 'true';
 			mounted += 1;
 		} );
 
