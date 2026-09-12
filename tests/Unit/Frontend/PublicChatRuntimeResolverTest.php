@@ -28,8 +28,8 @@ final class PublicChatRuntimeResolverTest extends TestCase {
 		self::assertTrue( class_exists( PublicChatRuntimeResolver::class ), 'PublicChatRuntimeResolver is missing.' );
 		self::assertTrue( class_exists( PublicChatRuntime::class ), 'PublicChatRuntime is missing.' );
 
-		$bot_id = new BotId( '0123456789abcdef0123456789abcdef' );
-		$bot    = new Bot(
+		$bot_id  = new BotId( '0123456789abcdef0123456789abcdef' );
+		$bot     = new Bot(
 			$bot_id,
 			'Support bot',
 			true,
