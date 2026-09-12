@@ -25,10 +25,10 @@ final class WidgetConfigResolverTest extends TestCase {
 		self::assertTrue( class_exists( WidgetConfig::class ), 'M14 Task 2B requires WidgetConfig.' );
 		self::assertTrue( class_exists( WidgetConfigResolver::class ), 'M14 Task 2B requires WidgetConfigResolver.' );
 
-		$bot_id     = new BotId( '0123456789abcdef0123456789abcdef' );
-		$bot        = $this->bot( $bot_id, true );
-		$appearance = AppearanceConfig::from_array( array( 'primary_color' => '#ABCDEF' ) );
-		$bots       = $this->createMock( BotRepository::class );
+		$bot_id      = new BotId( '0123456789abcdef0123456789abcdef' );
+		$bot         = $this->bot( $bot_id, true );
+		$appearance  = AppearanceConfig::from_array( array( 'primary_color' => '#ABCDEF' ) );
+		$bots        = $this->createMock( BotRepository::class );
 		$appearances = $this->createMock( BotAppearanceRepository::class );
 
 		$bots->expects( self::once() )->method( 'find' )->with( $bot_id )->willReturn( $bot );
@@ -74,7 +74,12 @@ final class WidgetConfigResolverTest extends TestCase {
 		self::assertNull( ( new WidgetConfigResolver( $bots, $appearances ) )->resolve( $bot_id ) );
 	}
 
-	/** Create a persisted bot aggregate for projection tests. */
+	/**
+	 * Create a persisted bot aggregate for projection tests.
+	 *
+	 * @param BotId $id Stable bot identifier.
+	 * @param bool  $enabled Whether the bot is enabled.
+	 */
 	private function bot( BotId $id, bool $enabled ): Bot {
 		return new Bot(
 			$id,
