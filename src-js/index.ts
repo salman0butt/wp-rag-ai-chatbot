@@ -4,7 +4,11 @@ import {
 	ProviderSettingsIssue,
 	ProviderSettingsScreen,
 } from './provider-settings';
-import { PlaygroundScreen } from './playground-screen';
+import {
+	PlaygroundRequestDraft,
+	PlaygroundResult,
+	PlaygroundScreen,
+} from './playground-screen';
 
 export const pluginIdentity = Object.freeze( {
 	slug: 'wp-rag-ai-chatbot',
@@ -146,6 +150,9 @@ export interface AdminShellProps {
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >;
 	onReplaceProviderCredential?: ( credential: string ) => Promise< void >;
+	playgroundResult?: PlaygroundResult;
+	playgroundErrorCode?: string;
+	onSubmitPlayground?: ( request: PlaygroundRequestDraft ) => void;
 }
 
 export interface OnboardingFlowProps {
@@ -1170,6 +1177,9 @@ export const AdminShell = ( {
 	onUpdateBot,
 	onDeleteBot,
 	onReplaceProviderCredential,
+	playgroundResult,
+	playgroundErrorCode,
+	onSubmitPlayground,
 }: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 
@@ -1298,7 +1308,11 @@ export const AdminShell = ( {
 			'div',
 			null,
 			createElement( 'h1', null, selectedLabel ),
-			PlaygroundScreen( {} )
+			PlaygroundScreen( {
+				result: playgroundResult,
+				errorCode: playgroundErrorCode,
+				onSubmit: onSubmitPlayground,
+			} )
 		);
 	}
 
@@ -1342,7 +1356,10 @@ const renderAdminShell = (
 	onCreateBot?: ( draft: BotDraft ) => Promise< void >,
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >,
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >,
-	onReplaceProviderCredential?: ( credential: string ) => Promise< void >
+	onReplaceProviderCredential?: ( credential: string ) => Promise< void >,
+	playgroundResult?: PlaygroundResult,
+	playgroundErrorCode?: string,
+	onSubmitPlayground?: ( request: PlaygroundRequestDraft ) => void
 ): void => {
 	window.wp.element.render(
 		AdminShell( {
@@ -1371,6 +1388,9 @@ const renderAdminShell = (
 			onUpdateBot,
 			onDeleteBot,
 			onReplaceProviderCredential,
+			playgroundResult,
+			playgroundErrorCode,
+			onSubmitPlayground,
 		} ),
 		root
 	);
@@ -1424,6 +1444,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let replaceProviderCredential: (
 		credential: string
 	) => Promise< void > = async () => undefined;
+	let currentPlaygroundResult: PlaygroundResult | undefined;
+	let currentPlaygroundErrorCode: string | undefined;
+	let submitPlayground: ( request: PlaygroundRequestDraft ) => Promise< void > =
+		async () => undefined;
 	const currentHash = (): string => window.location.hash || hash;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
@@ -1475,7 +1499,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			createBot,
 			updateBot,
 			deleteBot,
-			replaceProviderCredential
+			replaceProviderCredential,
+			currentPlaygroundResult,
+			currentPlaygroundErrorCode,
+			( request ) => {
+				void submitPlayground( request );
+			}
 		);
 	};
 
@@ -1499,6 +1528,29 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		nonce: config.nonce,
 		fetcher: fetcher.bind( window ),
 	} );
+	submitPlayground = async (
+		request: PlaygroundRequestDraft
+	): Promise< void > => {
+		currentPlaygroundResult = undefined;
+		currentPlaygroundErrorCode = undefined;
+		renderState( stateFromReadiness() );
+
+		try {
+			currentPlaygroundResult = await client.request< PlaygroundResult >(
+				'/admin/debug/playground',
+				{
+					method: 'POST',
+					body: request,
+				}
+			);
+		} catch ( error ) {
+			currentPlaygroundResult = undefined;
+			currentPlaygroundErrorCode =
+				error instanceof AdminApiError ? error.code : 'playground_failed';
+		}
+
+		renderState( stateFromReadiness() );
+	};
 	const refreshBotPage = async (
 		page = resolveBotPage( currentHash() )
 	): Promise< void > => {
@@ -1718,6 +1770,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentKnowledgeJobMutationError = undefined;
 			loadedKnowledgeSourceId = undefined;
 			loadedKnowledgeDocumentKey = undefined;
+		}
+
+		if ( screen !== 'playground' ) {
+			currentPlaygroundResult = undefined;
+			currentPlaygroundErrorCode = undefined;
 		}
 
 		const targetPage = resolveBotPage( currentHash() );
