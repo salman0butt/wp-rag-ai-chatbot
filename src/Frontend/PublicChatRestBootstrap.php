@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Frontend;
 
 use InvalidArgumentException;
 use WP_REST_Request;
+use WpRagAiChatbot\Database\Connection;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotRetrievalBindingRepository;
 use WpRagAiChatbot\Database\TableNames;
@@ -56,6 +57,16 @@ final class PublicChatRestBootstrap {
 	}
 
 	/**
+	 * Build the canonical production public-chat executor resolver.
+	 *
+	 * @param Connection $connection Existing WordPress database connection.
+	 * @param TableNames $tables Existing per-site table-name authority.
+	 */
+	public static function executor_resolver( Connection $connection, TableNames $tables ): PublicChatProductionExecutorResolver {
+		return PublicChatRuntimeBootstrap::executor_resolver( $connection, $tables );
+	}
+
+	/**
 	 * Validate public input and apply the persisted abuse/runtime boundary.
 	 *
 	 * @param WP_REST_Request $request REST request.
@@ -70,18 +81,16 @@ final class PublicChatRestBootstrap {
 		}
 
 		global $wpdb;
-		$connection = new WpdbConnection( $wpdb );
-		$tables     = new TableNames( $connection->prefix() );
-		$resource   = new PublicChatRestResource(
+		$connection        = new WpdbConnection( $wpdb );
+		$tables            = new TableNames( $connection->prefix() );
+		$executor_resolver = self::executor_resolver( $connection, $tables );
+		$resource          = new PublicChatRestResource(
 			new PublicChatAbuseGuard( new WpdbPublicChatRateLimitStore( $connection ) ),
 			new PublicChatRuntimeResolver(
 				new WpdbBotRepository( $connection, $tables ),
 				new WpdbBotRetrievalBindingRepository( $connection, $tables )
 			),
-			static function ( PublicChatRuntime $runtime ): ProductionPublicChatExecutor {
-				unset( $runtime );
-				throw new \RuntimeException( 'Public chat production executor composition is not available yet.' );
-			}
+			static fn ( PublicChatRuntime $runtime ): ProductionPublicChatExecutor => $executor_resolver->resolve( $runtime )
 		);
 
 		return $resource->run( $public_request, $client_scope );
