@@ -82,4 +82,30 @@ describe( 'public widget launcher and panel state', () => {
 		expect( panel ).not.toBeNull();
 		expect( panel?.hidden ).toBe( true );
 	} );
+
+	it( 'opens the panel with an accessible close control and moves focus into it', () => {
+		loadWidget();
+
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const panel = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-panel]'
+		);
+
+		launcher?.click();
+
+		const close = panel?.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-close]'
+		);
+
+		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+		expect( panel?.hidden ).toBe( false );
+		expect( close ).not.toBeNull();
+		expect( close?.tagName ).toBe( 'BUTTON' );
+		expect( close?.getAttribute( 'aria-label' ) ).toBe(
+			'Close Support bot chat'
+		);
+		expect( document.activeElement ).toBe( close );
+	} );
 } );
