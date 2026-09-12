@@ -47,7 +47,7 @@ final class ProductionPublicChatExecutorTest extends TestCase {
 			'public:0123456789abcdef0123456789abcdef',
 			new SemanticRetrievalContext(
 				new RetrievalFilter( null, null, array( 42 ) ),
-				static fn ( string $_chunk_id ): ?ChunkSearchRecord => null
+				static fn ( string $chunk_id ): ?ChunkSearchRecord => '' === $chunk_id ? null : null
 			),
 			new LexicalFilter( 'support-en-v1', null, 42 ),
 			false
