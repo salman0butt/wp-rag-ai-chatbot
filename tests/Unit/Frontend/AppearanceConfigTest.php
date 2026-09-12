@@ -13,9 +13,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Frontend\AppearanceConfig;
 
-/**
- * Defines the shared bounded appearance schema used by runtime and preview.
- */
+/** Defines the shared bounded appearance schema used by runtime and preview. */
 final class AppearanceConfigTest extends TestCase {
 	/** Defaults must be deterministic so runtime and customizer preview match. */
 	public function test_defaults_define_safe_runtime_appearance(): void {
@@ -38,13 +36,13 @@ final class AppearanceConfigTest extends TestCase {
 
 		$config = AppearanceConfig::from_array(
 			array(
-				'primary_color' => ' #0EA5E9 ',
-				'color_mode' => 'dark',
-				'position' => 'bottom-left',
+				'primary_color'  => ' #0EA5E9 ',
+				'color_mode'     => 'dark',
+				'position'       => 'bottom-left',
 				'launcher_style' => 'icon',
-				'panel_size' => 'large',
-				'radius_px' => 24,
-				'font_family' => 'system',
+				'panel_size'     => 'large',
+				'radius_px'      => 24,
+				'font_family'    => 'system',
 			)
 		);
 
@@ -57,13 +55,13 @@ final class AppearanceConfigTest extends TestCase {
 		self::assertSame( 'system', $config->font_family );
 		self::assertSame(
 			array(
-				'primary_color' => '#0ea5e9',
-				'color_mode' => 'dark',
-				'position' => 'bottom-left',
+				'primary_color'  => '#0ea5e9',
+				'color_mode'     => 'dark',
+				'position'       => 'bottom-left',
 				'launcher_style' => 'icon',
-				'panel_size' => 'large',
-				'radius_px' => 24,
-				'font_family' => 'system',
+				'panel_size'     => 'large',
+				'radius_px'      => 24,
+				'font_family'    => 'system',
 			),
 			$config->to_array()
 		);
@@ -77,7 +75,7 @@ final class AppearanceConfigTest extends TestCase {
 		AppearanceConfig::from_array(
 			array(
 				'primary_color' => '#2563eb',
-				'custom_css' => 'body{display:none}',
+				'custom_css'    => 'body{display:none}',
 			)
 		);
 	}
