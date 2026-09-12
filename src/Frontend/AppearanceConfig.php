@@ -64,7 +64,9 @@ final readonly class AppearanceConfig {
 	) {
 	}
 
-	/** Return deterministic runtime/customizer defaults. */
+	/**
+	 * Return deterministic runtime/customizer defaults.
+	 */
 	public static function defaults(): self {
 		return new self(
 			self::DEFAULT_PRIMARY_COLOR,
@@ -93,19 +95,47 @@ final readonly class AppearanceConfig {
 
 		return new self(
 			self::normalize_color( $input['primary_color'] ?? $defaults->primary_color ),
-			self::normalize_choice( $input['color_mode'] ?? $defaults->color_mode, self::COLOR_MODES, 'color mode' ),
-			self::normalize_choice( $input['position'] ?? $defaults->position, self::POSITIONS, 'position' ),
-			self::normalize_choice( $input['launcher_style'] ?? $defaults->launcher_style, self::LAUNCHER_STYLES, 'launcher style' ),
-			self::normalize_choice( $input['panel_size'] ?? $defaults->panel_size, self::PANEL_SIZES, 'panel size' ),
+			self::normalize_choice(
+				$input['color_mode'] ?? $defaults->color_mode,
+				self::COLOR_MODES,
+				'color mode'
+			),
+			self::normalize_choice(
+				$input['position'] ?? $defaults->position,
+				self::POSITIONS,
+				'position'
+			),
+			self::normalize_choice(
+				$input['launcher_style'] ?? $defaults->launcher_style,
+				self::LAUNCHER_STYLES,
+				'launcher style'
+			),
+			self::normalize_choice(
+				$input['panel_size'] ?? $defaults->panel_size,
+				self::PANEL_SIZES,
+				'panel size'
+			),
 			self::normalize_radius( $input['radius_px'] ?? $defaults->radius_px ),
-			self::normalize_choice( $input['font_family'] ?? $defaults->font_family, self::FONT_FAMILIES, 'font family' )
+			self::normalize_choice(
+				$input['font_family'] ?? $defaults->font_family,
+				self::FONT_FAMILIES,
+				'font family'
+			)
 		);
 	}
 
 	/**
 	 * Project the same explicit schema consumed by browser runtime and preview.
 	 *
-	 * @return array{primary_color:string,color_mode:string,position:string,launcher_style:string,panel_size:string,radius_px:int,font_family:string}
+	 * @return array{
+	 *     primary_color:string,
+	 *     color_mode:string,
+	 *     position:string,
+	 *     launcher_style:string,
+	 *     panel_size:string,
+	 *     radius_px:int,
+	 *     font_family:string
+	 * }
 	 */
 	public function to_array(): array {
 		return array(
@@ -119,7 +149,9 @@ final readonly class AppearanceConfig {
 		);
 	}
 
-	/** Normalize a six-digit hexadecimal color. */
+	/**
+	 * Normalize a six-digit hexadecimal color.
+	 */
 	private static function normalize_color( mixed $value ): string {
 		if ( ! is_string( $value ) ) {
 			throw new InvalidArgumentException( 'Primary color must be a string.' );
@@ -136,8 +168,9 @@ final readonly class AppearanceConfig {
 	/**
 	 * Normalize one enum-like string value.
 	 *
-	 * @param mixed        $value Candidate value.
+	 * @param mixed        $value   Candidate value.
 	 * @param list<string> $allowed Explicit allowed values.
+	 * @param string       $label   Human-readable field label.
 	 */
 	private static function normalize_choice( mixed $value, array $allowed, string $label ): string {
 		if ( ! is_string( $value ) ) {
@@ -152,7 +185,9 @@ final readonly class AppearanceConfig {
 		return $value;
 	}
 
-	/** Normalize the bounded corner radius. */
+	/**
+	 * Normalize the bounded corner radius.
+	 */
 	private static function normalize_radius( mixed $value ): int {
 		if ( ! is_int( $value ) || $value < 0 || $value > self::MAX_RADIUS_PX ) {
 			throw new InvalidArgumentException( 'Radius must be an integer between 0 and 32.' );
