@@ -148,6 +148,20 @@ export const mountWidgets = (
 				`Close ${ config.config.name } chat`
 			);
 
+			const form = documentRoot.createElement( 'form' );
+			form.dataset.wpRagAiChatbotForm = '';
+
+			const question = documentRoot.createElement( 'textarea' );
+			question.dataset.wpRagAiChatbotQuestion = '';
+			question.setAttribute( 'aria-label', 'Message' );
+
+			const send = documentRoot.createElement( 'button' );
+			send.type = 'submit';
+			send.textContent = 'Send';
+			send.dataset.wpRagAiChatbotSend = '';
+			send.setAttribute( 'aria-label', 'Send message' );
+			form.append( question, send );
+
 			const closePanel = (): void => {
 				launcher.setAttribute( 'aria-expanded', 'false' );
 				panel.hidden = true;
@@ -167,7 +181,7 @@ export const mountWidgets = (
 				}
 			} );
 
-			panel.append( close );
+			panel.append( close, form );
 			mount.append( launcher, panel );
 			mount.dataset[ MOUNTED_DATA_KEY ] = 'true';
 			mounted += 1;
