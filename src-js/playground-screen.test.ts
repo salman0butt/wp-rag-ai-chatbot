@@ -162,7 +162,8 @@ describe( 'PlaygroundScreen', () => {
 		root.append( PlaygroundForm( { onSubmit } ) as Node );
 
 		const form = root.querySelector( 'form[data-playground-form]' );
-		const botId = root.querySelector< HTMLInputElement >( '#playground-bot-id' );
+		const botId =
+			root.querySelector< HTMLInputElement >( '#playground-bot-id' );
 		const sourceId = root.querySelector< HTMLInputElement >(
 			'#playground-source-id'
 		);
