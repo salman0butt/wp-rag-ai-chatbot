@@ -1,9 +1,34 @@
-import type { PlaygroundApi } from './playground-api';
-import { createPlaygroundController } from './playground-controller';
 import type {
 	PlaygroundRequestDraft,
 	PlaygroundResult,
 } from './playground-screen';
+
+type PlaygroundControllerState =
+	| { status: 'idle' }
+	| { status: 'loading' }
+	| { status: 'success'; result: PlaygroundResult }
+	| { status: 'error'; errorCode: string };
+
+type PlaygroundControllerFactory = (
+	api: {
+		run: ( request: PlaygroundRequestDraft ) => Promise< PlaygroundResult >;
+	},
+	onChange: ( state: PlaygroundControllerState ) => void
+) => {
+	submit: ( request: PlaygroundRequestDraft ) => Promise< void >;
+	invalidate?: () => void;
+};
+
+const loadFactory = (): unknown => {
+	try {
+		const module = jest.requireActual(
+			'./playground-controller'
+		) as Record< string, unknown >;
+		return module.createPlaygroundController;
+	} catch {
+		return undefined;
+	}
+};
 
 const draft: PlaygroundRequestDraft = {
 	bot_id: 'support-bot',
@@ -34,23 +59,24 @@ const result = {
 
 describe( 'Playground request invalidation', () => {
 	it( 'suppresses an in-flight completion after the controller is invalidated', async () => {
-		let resolveRun: ( value: PlaygroundResult ) => void = () => undefined;
-		const api: PlaygroundApi = {
-			run: jest.fn().mockReturnValue(
-				new Promise< PlaygroundResult >( ( resolve ) => {
-					resolveRun = resolve;
-				} )
-			),
-		};
-		const onChange = jest.fn();
-		const controller = createPlaygroundController( api, onChange );
-		const pending = controller.submit( draft );
-		const invalidate = Reflect.get( controller, 'invalidate' ) as unknown;
+		const factory = loadFactory();
+		expect( typeof factory ).toBe( 'function' );
 
-		expect( typeof invalidate ).toBe( 'function' );
-		if ( typeof invalidate === 'function' ) {
-			invalidate();
-		}
+		let resolveRun: ( value: PlaygroundResult ) => void = () => undefined;
+		const run = jest.fn().mockReturnValue(
+			new Promise< PlaygroundResult >( ( resolve ) => {
+				resolveRun = resolve;
+			} )
+		);
+		const onChange = jest.fn();
+		const controller = ( factory as PlaygroundControllerFactory )(
+			{ run },
+			onChange
+		);
+		const pending = controller.submit( draft );
+
+		expect( typeof controller.invalidate ).toBe( 'function' );
+		controller.invalidate?.();
 		resolveRun( result );
 		await pending;
 
