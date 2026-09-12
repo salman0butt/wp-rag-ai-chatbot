@@ -4,11 +4,10 @@ import {
 	ProviderSettingsIssue,
 	ProviderSettingsScreen,
 } from './provider-settings';
-import {
-	PlaygroundRequestDraft,
-	PlaygroundResult,
-	PlaygroundScreen,
-} from './playground-screen';
+import type { PlaygroundControllerState } from './playground-controller';
+import { PlaygroundPanel } from './playground-panel';
+import { createPlaygroundRuntime } from './playground-runtime';
+import type { PlaygroundRequestDraft } from './playground-screen';
 
 export const pluginIdentity = Object.freeze( {
 	slug: 'wp-rag-ai-chatbot',
@@ -150,8 +149,7 @@ export interface AdminShellProps {
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >;
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >;
 	onReplaceProviderCredential?: ( credential: string ) => Promise< void >;
-	playgroundResult?: PlaygroundResult;
-	playgroundErrorCode?: string;
+	playgroundState?: PlaygroundControllerState;
 	onSubmitPlayground?: ( request: PlaygroundRequestDraft ) => void;
 }
 
@@ -1177,8 +1175,7 @@ export const AdminShell = ( {
 	onUpdateBot,
 	onDeleteBot,
 	onReplaceProviderCredential,
-	playgroundResult,
-	playgroundErrorCode,
+	playgroundState,
 	onSubmitPlayground,
 }: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
@@ -1308,9 +1305,8 @@ export const AdminShell = ( {
 			'div',
 			null,
 			createElement( 'h1', null, selectedLabel ),
-			PlaygroundScreen( {
-				result: playgroundResult,
-				errorCode: playgroundErrorCode,
+			PlaygroundPanel( {
+				state: playgroundState ?? { status: 'idle' },
 				onSubmit: onSubmitPlayground,
 			} )
 		);
@@ -1357,8 +1353,7 @@ const renderAdminShell = (
 	onUpdateBot?: ( bot: BotListItem, draft: BotDraft ) => Promise< void >,
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >,
 	onReplaceProviderCredential?: ( credential: string ) => Promise< void >,
-	playgroundResult?: PlaygroundResult,
-	playgroundErrorCode?: string,
+	playgroundState?: PlaygroundControllerState,
 	onSubmitPlayground?: ( request: PlaygroundRequestDraft ) => void
 ): void => {
 	window.wp.element.render(
@@ -1388,8 +1383,7 @@ const renderAdminShell = (
 			onUpdateBot,
 			onDeleteBot,
 			onReplaceProviderCredential,
-			playgroundResult,
-			playgroundErrorCode,
+			playgroundState,
 			onSubmitPlayground,
 		} ),
 		root
@@ -1444,8 +1438,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let replaceProviderCredential: (
 		credential: string
 	) => Promise< void > = async () => undefined;
-	let currentPlaygroundResult: PlaygroundResult | undefined;
-	let currentPlaygroundErrorCode: string | undefined;
+	let currentPlaygroundState: PlaygroundControllerState = { status: 'idle' };
 	let submitPlayground: (
 		request: PlaygroundRequestDraft
 	) => Promise< void > = async () => undefined;
@@ -1501,8 +1494,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			updateBot,
 			deleteBot,
 			replaceProviderCredential,
-			currentPlaygroundResult,
-			currentPlaygroundErrorCode,
+			currentPlaygroundState,
 			( request ) => {
 				void submitPlayground( request );
 			}
@@ -1529,31 +1521,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		nonce: config.nonce,
 		fetcher: fetcher.bind( window ),
 	} );
-	submitPlayground = async (
-		request: PlaygroundRequestDraft
-	): Promise< void > => {
-		currentPlaygroundResult = undefined;
-		currentPlaygroundErrorCode = undefined;
+	const playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {
+		currentPlaygroundState = state;
 		renderState( stateFromReadiness() );
-
-		try {
-			currentPlaygroundResult = await client.request< PlaygroundResult >(
-				'/admin/debug/playground',
-				{
-					method: 'POST',
-					body: request,
-				}
-			);
-		} catch ( error ) {
-			currentPlaygroundResult = undefined;
-			currentPlaygroundErrorCode =
-				error instanceof AdminApiError
-					? error.code
-					: 'playground_failed';
-		}
-
-		renderState( stateFromReadiness() );
-	};
+	} );
+	submitPlayground = ( request: PlaygroundRequestDraft ): Promise< void > =>
+		playgroundRuntime.submit( request );
 	const refreshBotPage = async (
 		page = resolveBotPage( currentHash() )
 	): Promise< void > => {
@@ -1776,8 +1749,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		}
 
 		if ( screen !== 'playground' ) {
-			currentPlaygroundResult = undefined;
-			currentPlaygroundErrorCode = undefined;
+			currentPlaygroundState = { status: 'idle' };
 		}
 
 		const targetPage = resolveBotPage( currentHash() );
