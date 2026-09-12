@@ -30,18 +30,32 @@ const errorCodeFrom = ( error: unknown ): string => {
 export const createPlaygroundController = (
 	api: PlaygroundApi,
 	onChange: ( state: PlaygroundControllerState ) => void
-): PlaygroundController => ( {
-	async submit( request: PlaygroundRequestDraft ): Promise< void > {
-		onChange( { status: 'loading' } );
+): PlaygroundController => {
+	let latestSubmission = 0;
 
-		try {
-			const result = await api.run( request );
-			onChange( { status: 'success', result } );
-		} catch ( error ) {
-			onChange( {
-				status: 'error',
-				errorCode: errorCodeFrom( error ),
-			} );
-		}
-	},
-} );
+	return {
+		async submit( request: PlaygroundRequestDraft ): Promise< void > {
+			const submission = ++latestSubmission;
+			onChange( { status: 'loading' } );
+
+			try {
+				const result = await api.run( request );
+
+				if ( submission !== latestSubmission ) {
+					return;
+				}
+
+				onChange( { status: 'success', result } );
+			} catch ( error ) {
+				if ( submission !== latestSubmission ) {
+					return;
+				}
+
+				onChange( {
+					status: 'error',
+					errorCode: errorCodeFrom( error ),
+				} );
+			}
+		},
+	};
+};
