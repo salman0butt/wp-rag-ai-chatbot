@@ -47,7 +47,9 @@ describe( 'public widget launcher and panel state', () => {
 	beforeEach( () => {
 		document.body.innerHTML =
 			'<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"></div>';
-		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [ config ];
+		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
+			config,
+		];
 	} );
 
 	afterEach( () => {
@@ -67,7 +69,9 @@ describe( 'public widget launcher and panel state', () => {
 
 		expect( launcher ).not.toBeNull();
 		expect( launcher?.tagName ).toBe( 'BUTTON' );
-		expect( launcher?.getAttribute( 'aria-label' ) ).toBe( 'Open Support bot chat' );
+		expect( launcher?.getAttribute( 'aria-label' ) ).toBe(
+			'Open Support bot chat'
+		);
 		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
 		expect( panel ).not.toBeNull();
 		expect( panel?.hidden ).toBe( true );
