@@ -25,7 +25,10 @@ export const createPlaygroundRuntime = (
 	}
 
 	activeNavigationInvalidationHandler = () => controller.invalidate();
-	window.addEventListener( 'hashchange', activeNavigationInvalidationHandler );
+	window.addEventListener(
+		'hashchange',
+		activeNavigationInvalidationHandler
+	);
 
 	return controller;
 };
