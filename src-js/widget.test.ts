@@ -106,6 +106,6 @@ describe( 'public widget launcher and panel state', () => {
 		expect( close?.getAttribute( 'aria-label' ) ).toBe(
 			'Close Support bot chat'
 		);
-		expect( document.activeElement ).toBe( close );
+		expect( close?.ownerDocument.activeElement ).toBe( close );
 	} );
 } );
