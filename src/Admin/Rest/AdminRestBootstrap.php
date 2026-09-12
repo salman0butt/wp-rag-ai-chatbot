@@ -341,12 +341,10 @@ final class AdminRestBootstrap {
 	 * @return array<string,mixed>
 	 */
 	public static function put_bot_appearance( WP_REST_Request $request ): array {
-		$payload = $request->get_json_params();
-		if ( null === $payload ) {
-			return self::invalid_request();
-		}
-
-		return self::appearance()->write( (string) $request->get_param( 'id' ), $payload );
+		return self::appearance()->write(
+			(string) $request->get_param( 'id' ),
+			$request->get_json_params()
+		);
 	}
 
 	/**
