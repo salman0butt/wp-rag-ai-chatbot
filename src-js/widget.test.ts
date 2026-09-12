@@ -99,7 +99,9 @@ describe( 'public widget launcher and panel state', () => {
 		expect( launcher?.textContent ).toBe( 'Chat' );
 		expect( close?.textContent ).toBe( 'Close' );
 		expect( panel?.getAttribute( 'role' ) ).toBe( 'dialog' );
-		expect( panel?.getAttribute( 'aria-label' ) ).toBe( 'Support bot chat' );
+		expect( panel?.getAttribute( 'aria-label' ) ).toBe(
+			'Support bot chat'
+		);
 	} );
 
 	it( 'projects normalized appearance into bounded widget presentation tokens', () => {
