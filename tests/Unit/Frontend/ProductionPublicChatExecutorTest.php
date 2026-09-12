@@ -36,18 +36,18 @@ final class ProductionPublicChatExecutorTest extends TestCase {
 		self::assertTrue( class_exists( PublicChatResponse::class ), 'PublicChatResponse is missing.' );
 		self::assertTrue( class_exists( PublicChatCitation::class ), 'PublicChatCitation is missing.' );
 
-		$request = PublicChatRequest::from_array(
+		$request  = PublicChatRequest::from_array(
 			array(
 				'bot_id'          => '0123456789abcdef0123456789abcdef',
 				'question'        => 'How do I reset my password?',
 				'conversation_id' => 'conversation-1',
 			)
 		);
-		$access  = new ChatAccessContext(
+		$access   = new ChatAccessContext(
 			'public:0123456789abcdef0123456789abcdef',
 			new SemanticRetrievalContext(
 				new RetrievalFilter( null, null, array( 42 ) ),
-				static fn ( string $chunk_id ): ?ChunkSearchRecord => null
+				static fn ( string $_chunk_id ): ?ChunkSearchRecord => null
 			),
 			new LexicalFilter( 'support-en-v1', null, 42 ),
 			false
