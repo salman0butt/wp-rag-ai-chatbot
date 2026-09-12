@@ -29,8 +29,12 @@ const createTestElement = (
 			continue;
 		}
 
-		const attribute =
-			key === 'htmlFor' ? 'for' : key === 'className' ? 'class' : key;
+		let attribute = key;
+		if ( key === 'htmlFor' ) {
+			attribute = 'for';
+		} else if ( key === 'className' ) {
+			attribute = 'class';
+		}
 		element.setAttribute( attribute, String( value ) );
 	}
 
@@ -106,7 +110,10 @@ describe( 'Playground admin bootstrap', () => {
 				return {
 					ok: true,
 					status: 200,
-					json: async () => ( { ready: true, next_step: 'complete' } ),
+					json: async () => ( {
+						ready: true,
+						next_step: 'complete',
+					} ),
 				};
 			}
 
@@ -130,12 +137,18 @@ describe( 'Playground admin bootstrap', () => {
 		expect( form ).not.toBeNull();
 		( form?.elements.namedItem( 'bot_id' ) as HTMLInputElement ).value =
 			'support-bot';
-		( form?.elements.namedItem( 'source_id' ) as HTMLInputElement ).value = '9';
-		( form?.elements.namedItem( 'collection_id' ) as HTMLInputElement ).value =
-			'support-docs';
-		( form?.elements.namedItem( 'question' ) as HTMLTextAreaElement ).value =
-			'What is the return window?';
-		form?.dispatchEvent( new Event( 'submit', { bubbles: true, cancelable: true } ) );
+		(
+			form?.elements.namedItem( 'source_id' ) as HTMLInputElement
+		).value = '9';
+		(
+			form?.elements.namedItem( 'collection_id' ) as HTMLInputElement
+		).value = 'support-docs';
+		(
+			form?.elements.namedItem( 'question' ) as HTMLTextAreaElement
+		).value = 'What is the return window?';
+		form?.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
 		await settle();
 
 		expect( fetcher ).toHaveBeenCalledWith(
