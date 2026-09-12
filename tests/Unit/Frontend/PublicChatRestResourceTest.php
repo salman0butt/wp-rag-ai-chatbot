@@ -52,7 +52,7 @@ final class PublicChatRestResourceTest extends TestCase {
 
 		$request = PublicChatRequest::from_array(
 			array(
-				'bot_id'   => 'public-bot',
+				'bot_id'   => '0123456789abcdef0123456789abcdef',
 				'question' => 'What is this?',
 			)
 		);
