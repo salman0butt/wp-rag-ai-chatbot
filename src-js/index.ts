@@ -602,6 +602,7 @@ export const BotEditorScreen = ( {
 						if ( field.value.trim() === '' ) {
 							field.setAttribute( 'aria-invalid', 'true' );
 						}
+					}
 					validation?.removeAttribute( 'hidden' );
 					firstInvalid.focus();
 					return;
@@ -707,7 +708,7 @@ export const BotManagementScreen = ( {
 				'data-bot-id': item.id,
 			},
 			createElement( 'a', linkProps, item.name )
-			);
+		);
 	} );
 	const editor = BotEditorScreen( {
 		mode: 'edit',
