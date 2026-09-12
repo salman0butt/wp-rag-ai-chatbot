@@ -10,7 +10,9 @@ type PlaygroundControllerState =
 	| { status: 'error'; errorCode: string };
 
 type PlaygroundControllerFactory = (
-	api: { run: ( request: PlaygroundRequestDraft ) => Promise< PlaygroundResult > },
+	api: {
+		run: ( request: PlaygroundRequestDraft ) => Promise< PlaygroundResult >;
+	},
 	onChange: ( state: PlaygroundControllerState ) => void
 ) => {
 	submit: ( request: PlaygroundRequestDraft ) => Promise< void >;
@@ -18,10 +20,9 @@ type PlaygroundControllerFactory = (
 
 const loadFactory = (): unknown => {
 	try {
-		const module = jest.requireActual( './playground-controller' ) as Record<
-			string,
-			unknown
-		>;
+		const module = jest.requireActual(
+			'./playground-controller'
+		) as Record< string, unknown >;
 		return module.createPlaygroundController;
 	} catch {
 		return undefined;
