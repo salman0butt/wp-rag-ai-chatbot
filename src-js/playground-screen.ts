@@ -54,9 +54,17 @@ export interface PlaygroundResult {
 	};
 }
 
+export interface PlaygroundRequestDraft {
+	bot_id: string;
+	source_id: number;
+	collection_id: string;
+	question: string;
+}
+
 export interface PlaygroundScreenProps {
 	result?: PlaygroundResult;
 	errorCode?: string;
+	onSubmit?: ( request: PlaygroundRequestDraft ) => void;
 }
 
 const PLAYGROUND_ERROR_MESSAGES: Record< string, string > = {
@@ -72,9 +80,95 @@ const GENERIC_PLAYGROUND_ERROR =
 const tokenValue = ( value: number | null ): string =>
 	value === null ? 'Not reported' : String( value );
 
+const formValue = ( form: HTMLFormElement, name: string ): string => {
+	const control = form.elements.namedItem( name );
+
+	if (
+		control instanceof HTMLInputElement ||
+		control instanceof HTMLTextAreaElement
+	) {
+		return control.value;
+	}
+
+	return '';
+};
+
+const playgroundForm = (
+	createElement: typeof window.wp.element.createElement,
+	onSubmit?: ( request: PlaygroundRequestDraft ) => void
+): unknown => {
+	const handleSubmit = ( event: Event ): void => {
+		event.preventDefault();
+
+		if ( onSubmit === undefined || !( event.currentTarget instanceof HTMLFormElement ) ) {
+			return;
+		}
+
+		const form = event.currentTarget;
+
+		onSubmit( {
+			bot_id: formValue( form, 'bot_id' ),
+			source_id: Number( formValue( form, 'source_id' ) ),
+			collection_id: formValue( form, 'collection_id' ),
+			question: formValue( form, 'question' ),
+		} );
+	};
+
+	return createElement(
+		'form',
+		{ 'data-playground-form': true, onSubmit: handleSubmit },
+		createElement( 'label', { htmlFor: 'playground-bot-id' }, 'Bot ID' ),
+		createElement( 'input', {
+			id: 'playground-bot-id',
+			name: 'bot_id',
+			type: 'text',
+			required: true,
+			maxLength: 256,
+		} ),
+		createElement(
+			'label',
+			{ htmlFor: 'playground-source-id' },
+			'Source ID'
+		),
+		createElement( 'input', {
+			id: 'playground-source-id',
+			name: 'source_id',
+			type: 'number',
+			min: 1,
+			step: 1,
+			required: true,
+		} ),
+		createElement(
+			'label',
+			{ htmlFor: 'playground-collection-id' },
+			'Collection ID'
+		),
+		createElement( 'input', {
+			id: 'playground-collection-id',
+			name: 'collection_id',
+			type: 'text',
+			required: true,
+			maxLength: 256,
+		} ),
+		createElement(
+			'label',
+			{ htmlFor: 'playground-question' },
+			'Question'
+		),
+		createElement( 'textarea', {
+			id: 'playground-question',
+			name: 'question',
+			required: true,
+			maxLength: 16384,
+		} ),
+		createElement( 'button', { type: 'submit' }, 'Run Playground' )
+	);
+};
+
 export const PlaygroundScreen = ( {
 	result,
 	errorCode,
+	onSubmit,
 }: PlaygroundScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 	const error =
@@ -86,12 +180,14 @@ export const PlaygroundScreen = ( {
 					PLAYGROUND_ERROR_MESSAGES[ errorCode ] ??
 						GENERIC_PLAYGROUND_ERROR
 			  );
+	const form = playgroundForm( createElement, onSubmit );
 
 	if ( result === undefined ) {
 		return createElement(
 			'section',
 			{ 'data-playground-screen': 'empty' },
 			createElement( 'h2', null, 'Playground' ),
+			form,
 			error,
 			createElement(
 				'p',
@@ -175,6 +271,7 @@ export const PlaygroundScreen = ( {
 		'section',
 		{ 'data-playground-screen': 'result' },
 		createElement( 'h2', null, 'Playground' ),
+		form,
 		error,
 		createElement(
 			'section',
