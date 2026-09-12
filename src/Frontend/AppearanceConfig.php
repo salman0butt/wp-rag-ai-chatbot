@@ -24,7 +24,11 @@ final readonly class AppearanceConfig {
 	private const DEFAULT_FONT_FAMILY   = 'system';
 	private const MAX_RADIUS_PX         = 32;
 
-	/** @var list<string> */
+	/**
+	 * Allowed persisted appearance keys.
+	 *
+	 * @var list<string>
+	 */
 	private const ALLOWED_KEYS = array(
 		'primary_color',
 		'color_mode',
@@ -35,23 +39,51 @@ final readonly class AppearanceConfig {
 		'font_family',
 	);
 
-	/** @var list<string> */
+	/**
+	 * Supported color modes.
+	 *
+	 * @var list<string>
+	 */
 	private const COLOR_MODES = array( 'light', 'dark', 'system' );
 
-	/** @var list<string> */
+	/**
+	 * Supported launcher positions.
+	 *
+	 * @var list<string>
+	 */
 	private const POSITIONS = array( 'bottom-left', 'bottom-right' );
 
-	/** @var list<string> */
+	/**
+	 * Supported launcher styles.
+	 *
+	 * @var list<string>
+	 */
 	private const LAUNCHER_STYLES = array( 'bubble', 'icon', 'text' );
 
-	/** @var list<string> */
+	/**
+	 * Supported panel sizes.
+	 *
+	 * @var list<string>
+	 */
 	private const PANEL_SIZES = array( 'small', 'medium', 'large' );
 
-	/** @var list<string> */
+	/**
+	 * Supported browser-safe font families.
+	 *
+	 * @var list<string>
+	 */
 	private const FONT_FAMILIES = array( 'system', 'sans', 'serif', 'mono' );
 
 	/**
 	 * Create one normalized appearance value.
+	 *
+	 * @param string $primary_color  Six-digit hexadecimal primary color.
+	 * @param string $color_mode     Supported color mode.
+	 * @param string $position       Supported launcher position.
+	 * @param string $launcher_style Supported launcher style.
+	 * @param string $panel_size     Supported panel size.
+	 * @param int    $radius_px      Bounded panel radius in pixels.
+	 * @param string $font_family    Supported browser-safe font family.
 	 */
 	private function __construct(
 		public string $primary_color,
@@ -97,29 +129,24 @@ final readonly class AppearanceConfig {
 			self::normalize_color( $input['primary_color'] ?? $defaults->primary_color ),
 			self::normalize_choice(
 				$input['color_mode'] ?? $defaults->color_mode,
-				self::COLOR_MODES,
-				'color mode'
+				self::COLOR_MODES
 			),
 			self::normalize_choice(
 				$input['position'] ?? $defaults->position,
-				self::POSITIONS,
-				'position'
+				self::POSITIONS
 			),
 			self::normalize_choice(
 				$input['launcher_style'] ?? $defaults->launcher_style,
-				self::LAUNCHER_STYLES,
-				'launcher style'
+				self::LAUNCHER_STYLES
 			),
 			self::normalize_choice(
 				$input['panel_size'] ?? $defaults->panel_size,
-				self::PANEL_SIZES,
-				'panel size'
+				self::PANEL_SIZES
 			),
 			self::normalize_radius( $input['radius_px'] ?? $defaults->radius_px ),
 			self::normalize_choice(
 				$input['font_family'] ?? $defaults->font_family,
-				self::FONT_FAMILIES,
-				'font family'
+				self::FONT_FAMILIES
 			)
 		);
 	}
@@ -151,6 +178,9 @@ final readonly class AppearanceConfig {
 
 	/**
 	 * Normalize a six-digit hexadecimal color.
+	 *
+	 * @param mixed $value Candidate color value.
+	 * @throws InvalidArgumentException When the value is not a safe six-digit color.
 	 */
 	private static function normalize_color( mixed $value ): string {
 		if ( ! is_string( $value ) ) {
@@ -168,18 +198,19 @@ final readonly class AppearanceConfig {
 	/**
 	 * Normalize one enum-like string value.
 	 *
-	 * @param mixed        $value   Candidate value.
-	 * @param list<string> $allowed Explicit allowed values.
-	 * @param string       $label   Human-readable field label.
+	 * @param mixed $value   Candidate value.
+	 * @param array $allowed Explicit allowed values.
+	 * @phpstan-param list<string> $allowed
+	 * @throws InvalidArgumentException When the candidate is not an allowed string.
 	 */
-	private static function normalize_choice( mixed $value, array $allowed, string $label ): string {
+	private static function normalize_choice( mixed $value, array $allowed ): string {
 		if ( ! is_string( $value ) ) {
-			throw new InvalidArgumentException( ucfirst( $label ) . ' must be a string.' );
+			throw new InvalidArgumentException( 'Appearance option must be a string.' );
 		}
 
 		$value = strtolower( trim( $value ) );
 		if ( ! in_array( $value, $allowed, true ) ) {
-			throw new InvalidArgumentException( ucfirst( $label ) . ' is not supported.' );
+			throw new InvalidArgumentException( 'Appearance option is not supported.' );
 		}
 
 		return $value;
@@ -187,6 +218,9 @@ final readonly class AppearanceConfig {
 
 	/**
 	 * Normalize the bounded corner radius.
+	 *
+	 * @param mixed $value Candidate radius value.
+	 * @throws InvalidArgumentException When the radius is outside the supported range.
 	 */
 	private static function normalize_radius( mixed $value ): int {
 		if ( ! is_int( $value ) || $value < 0 || $value > self::MAX_RADIUS_PX ) {
