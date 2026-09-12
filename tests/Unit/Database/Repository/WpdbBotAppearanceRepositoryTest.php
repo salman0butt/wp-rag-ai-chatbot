@@ -48,6 +48,18 @@ final class WpdbBotAppearanceRepositoryTest extends TestCase {
 		self::assertSame( AppearanceConfig::defaults()->to_array(), $appearance->to_array() );
 	}
 
+	/** A legacy blank appearance value also resolves bounded defaults. */
+	public function test_find_projects_defaults_for_legacy_blank_appearance(): void {
+		$connection = $this->connection();
+		$connection->method( 'prepare' )->willReturn( 'appearance-row' );
+		$connection->method( 'get_row' )->willReturn(
+			array( 'appearance_json' => '   ' )
+		);
+
+		$appearance = $this->repository( $connection )->find( new BotId( '0123456789abcdef0123456789abcdef' ) );
+		self::assertSame( AppearanceConfig::defaults()->to_array(), $appearance->to_array() );
+	}
+
 	/** Persisted JSON must re-enter the bounded AppearanceConfig authority. */
 	public function test_find_rehydrates_only_normalized_appearance(): void {
 		self::assertTrue(
