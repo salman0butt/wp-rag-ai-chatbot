@@ -97,7 +97,12 @@ export const createAdminApiClient = (
 };
 
 export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
-export type AdminScreen = 'onboarding' | 'bots' | 'providers' | 'knowledge';
+export type AdminScreen =
+	| 'onboarding'
+	| 'bots'
+	| 'providers'
+	| 'knowledge'
+	| 'playground';
 type KnowledgeJobMutationError = 'invalid_transition' | 'admin_request_failed';
 export type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
 export type OnboardingIssue =
@@ -343,6 +348,7 @@ const ADMIN_SCREENS: ReadonlyArray< {
 	{ screen: 'bots', label: 'Bots' },
 	{ screen: 'providers', label: 'Providers' },
 	{ screen: 'knowledge', label: 'Knowledge' },
+	{ screen: 'playground', label: 'Playground' },
 ];
 
 const ONBOARDING_HEADINGS: Readonly< Record< OnboardingStep, string > > = {
