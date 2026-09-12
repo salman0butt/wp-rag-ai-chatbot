@@ -51,10 +51,10 @@ final class WpdbBotAppearanceRepository implements BotAppearanceRepository {
 		}
 
 		$encoded = $row['appearance_json'] ?? null;
-		if ( null === $encoded ) {
+		if ( null === $encoded || ( is_string( $encoded ) && '' === trim( $encoded ) ) ) {
 			return AppearanceConfig::defaults();
 		}
-		if ( ! is_string( $encoded ) || '' === trim( $encoded ) ) {
+		if ( ! is_string( $encoded ) ) {
 			throw new RuntimeException( 'Persisted bot appearance is invalid.' );
 		}
 
