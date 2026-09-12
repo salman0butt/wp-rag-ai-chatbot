@@ -21,6 +21,9 @@ final class PlaygroundRestResource {
 	/** Maximum accepted question size, matching the production ChatRequest boundary. */
 	private const MAX_QUESTION_BYTES = 16384;
 
+	/** Maximum generated answer bytes exposed by the administrator REST DTO. */
+	private const MAX_ANSWER_BYTES = 65536;
+
 	/** Maximum citation title bytes exposed by the administrator REST DTO. */
 	private const MAX_CITATION_TITLE_BYTES = 256;
 
@@ -86,9 +89,10 @@ final class PlaygroundRestResource {
 			);
 		}
 
-		return array(
+		$answer_truncated = strlen( $result->chat->answer ) > self::MAX_ANSWER_BYTES;
+		$response         = array(
 			'ok'          => true,
-			'answer'      => $result->chat->answer,
+			'answer'      => self::bound_utf8( $result->chat->answer, self::MAX_ANSWER_BYTES ),
 			'no_answer'   => $result->chat->no_answer,
 			'citations'   => $citations,
 			'model_id'    => $result->model_id,
@@ -96,6 +100,12 @@ final class PlaygroundRestResource {
 			'usage'       => $this->project_usage( $result->chat->usage ),
 			'debug_trace' => $result->debug->to_array(),
 		);
+
+		if ( $answer_truncated ) {
+			$response['answer_truncated'] = true;
+		}
+
+		return $response;
 	}
 
 	/**
@@ -119,7 +129,21 @@ final class PlaygroundRestResource {
 	 * @param int         $max_bytes Maximum byte length.
 	 */
 	private static function bound_nullable_utf8( ?string $value, int $max_bytes ): ?string {
-		if ( null === $value || strlen( $value ) <= $max_bytes ) {
+		if ( null === $value ) {
+			return null;
+		}
+
+		return self::bound_utf8( $value, $max_bytes );
+	}
+
+	/**
+	 * Bound text by bytes without leaving an invalid trailing UTF-8 sequence.
+	 *
+	 * @param string $value Text value.
+	 * @param int    $max_bytes Maximum byte length.
+	 */
+	private static function bound_utf8( string $value, int $max_bytes ): string {
+		if ( strlen( $value ) <= $max_bytes ) {
 			return $value;
 		}
 
