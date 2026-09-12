@@ -61,10 +61,22 @@ final class PlaygroundRetrievalTest extends TestCase {
 			1.0
 		);
 		$semantic       = new class( $candidate, $semantic_calls ) implements SemanticRetrievalChannel {
+			/**
+			 * Create the deterministic semantic channel fixture.
+			 *
+			 * @param RankedCandidate $candidate Fixture candidate.
+			 * @param int             $calls Shared call counter.
+			 */
 			public function __construct( private RankedCandidate $candidate, private int &$calls ) {
 			}
 
-			/** @return list<RankedCandidate> */
+			/**
+			 * Return the deterministic semantic candidate.
+			 *
+			 * @param RetrievalQuery           $query Normalized retrieval query.
+			 * @param SemanticRetrievalContext $context Trusted semantic retrieval scope.
+			 * @return list<RankedCandidate>
+			 */
 			public function retrieve( RetrievalQuery $query, SemanticRetrievalContext $context ): array {
 				unset( $query, $context );
 				++$this->calls;
@@ -72,10 +84,22 @@ final class PlaygroundRetrievalTest extends TestCase {
 			}
 		};
 		$lexical        = new class( $candidate, $lexical_calls ) implements LexicalRetrievalChannel {
+			/**
+			 * Create the deterministic lexical channel fixture.
+			 *
+			 * @param RankedCandidate $candidate Fixture candidate.
+			 * @param int             $calls Shared call counter.
+			 */
 			public function __construct( private RankedCandidate $candidate, private int &$calls ) {
 			}
 
-			/** @return list<RankedCandidate> */
+			/**
+			 * Return the deterministic lexical candidate.
+			 *
+			 * @param RetrievalQuery $query Normalized retrieval query.
+			 * @param LexicalFilter  $filter Trusted lexical retrieval scope.
+			 * @return list<RankedCandidate>
+			 */
 			public function retrieve( RetrievalQuery $query, LexicalFilter $filter ): array {
 				unset( $query, $filter );
 				++$this->calls;
@@ -131,14 +155,21 @@ final class PlaygroundRetrievalTest extends TestCase {
 	/** Build a deterministic generation provider around the real M11 orchestration path. */
 	private function provider(): GenerationProvider {
 		return new class() implements GenerationProvider {
+			/** Return the stable fixture provider identifier. */
 			public function provider_id(): string {
 				return 'playground-integration';
 			}
 
+			/** Report that the deterministic fixture provider is available. */
 			public function available(): bool {
 				return true;
 			}
 
+			/**
+			 * Return one deterministic cited generation result.
+			 *
+			 * @param GenerationRequest $request Normalized production generation request.
+			 */
 			public function generate( GenerationRequest $request ): GenerationResult {
 				return new GenerationResult(
 					$this->provider_id(),
