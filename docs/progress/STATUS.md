@@ -39,17 +39,21 @@ Representative real WordPress smoke covers administrator Knowledge and Playgroun
 ### Task 1 — shared normalized appearance configuration — COMPLETE
 `AppearanceConfig` provides deterministic browser-safe defaults, explicit allow-listed normalization, rejection of unknown keys, safe six-digit colors, bounded corner radius, and finite appearance enums. Genuine RED was `709c64f2c4817fd85408753644c58db4dbf7f551` / CI `34683797716`; after two explicitly preserved NOT GREEN implementation checkpoints, genuine GREEN is `e9dac2b506747085def72c560088c0d87b1afeb3` / CI `34684305472`, with all permanent gates green. Evidence: `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md`.
 
-### Task 2 — bot-scoped appearance persistence and public-safe widget configuration — IN PROGRESS
-Recover and reuse existing M12 bot persistence rather than exposing unrestricted bot records. Persist only the normalized appearance authority required by M14 and project only public-safe widget fields. Public configuration must not expose credentials, provider/model authority, embedding/vector-store settings, retrieval limits, or arbitrary CSS/HTML.
+### Task 2 — bot-scoped appearance persistence and public-safe widget configuration — COMPLETE
+Bot-scoped normalized appearance is persisted through the existing bot database authority, including safe defaults for legacy blank values. The browser-facing projection is an explicit allow-list of public bot identity/name plus normalized appearance and fails closed for missing/disabled bots. Task 2B genuine RED is `c70c02a7c6222a36c4b144c782b9c6d4a8562cb2` / CI `34686937908`; genuine GREEN is `d29d2b947a4c6c6ba3dfff67cc4ec4d203cb1bfa` / CI `34687055933`. Evidence: `docs/progress/M14-TASK2-WIDGET-CONFIG.md`.
+
+### Task 3 — protected admin appearance save/read contracts — IN PROGRESS
+Add administrator-only bounded read/save contracts over the existing `BotAppearanceRepository` and `AppearanceConfig` authority. Do not expose unrestricted bot/provider/runtime configuration. Validation remains server-authoritative and malformed/unknown appearance input fails closed.
 
 ## Current work
 
-Continue M14 Task 2 under strict RED -> GREEN chronology on existing PR #19. Start with the smallest repository-consistent persistence/projection contract, verify exact-head CI, review, persist evidence, then continue automatically to the next Task 2 subunit.
+Continue M14 Task 3 on existing PR #19. Recover existing administrator REST conventions, create the smallest durable implementation plan if needed, then execute strict RED -> GREEN with exact-head CI and scoped review before continuing automatically to Task 4.
 
 ## Durable recovery
 
 - `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md` — M14 auto-approved design and task order.
-- `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` — Task 1 RED/NOT GREEN/GREEN evidence and scoped review.
+- `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` — Task 1 evidence.
+- `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection RED/NOT RED/NOT GREEN/GREEN evidence and scoped review.
 - PR #19 — active M14 implementation branch and execution source of truth.
 - `docs/milestones/M13-knowledge-manager-playground-debugger.md` — completed M13 milestone ledger.
 - `docs/progress/M13-TASK8-CLOSEOUT.md` — M13 final merge/post-merge evidence.
