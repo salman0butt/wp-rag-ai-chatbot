@@ -24,7 +24,7 @@ final class PlaygroundChatGraphResolver {
 	 * Create the composition boundary from the shared production graph factory.
 	 *
 	 * @param ProductionChatResponderFactory $responders Shared M11 responder composition authority.
-	 * @param DebugTraceProjector             $projector Existing M13 safe debug projector.
+	 * @param DebugTraceProjector            $projector Existing M13 safe debug projector.
 	 */
 	public function __construct(
 		private readonly ProductionChatResponderFactory $responders,
