@@ -20,7 +20,14 @@ The WordPress REST route registration is also now wired into the plugin bootstra
 - route metadata exposes no caller-controlled runtime `args` surface;
 - `src/Core/Bootstrap.php` registers `PublicChatRestBootstrap::register_routes()` on the established REST bootstrap path.
 
-`PublicChatRestBootstrap::run_chat()` intentionally still fails closed with `chat_unavailable`. Trusted request parsing, client-scope derivation, concrete WordPress persistence/runtime composition, and delegation through `PublicChatRestResource` remain unfinished. Therefore Task 4E is not complete.
+The trusted WordPress request adapter is now verified:
+
+- `PublicChatWordPressRequestAdapter::request()` delegates payload validation to the closed `PublicChatRequest` contract;
+- `PublicChatWordPressRequestAdapter::client_scope()` derives the anonymous scope only from trusted server-side `REMOTE_ADDR` and the server-owned secret supplied by composition;
+- spoofable `HTTP_X_FORWARDED_FOR` input is not consulted by this adapter;
+- caller-provided runtime override keys remain rejected by `PublicChatRequest`.
+
+`PublicChatRestBootstrap::run_chat()` intentionally still fails closed with `chat_unavailable`. Concrete WordPress persistence/runtime composition and delegation through `PublicChatRestResource` remain unfinished. Therefore Task 4E is not complete.
 
 This boundary is intentionally not a second RAG implementation. Production retrieval, grounding, prompt construction, memory, generation, citation validation, and persistence remain owned by the existing M11 graph reached through `ProductionPublicChatExecutor`.
 
@@ -77,15 +84,39 @@ This is a genuine behavioral RED rather than an infrastructure or standards fail
 - `package`: PASS
 - `wordpress-smoke`: PASS
 
+### Trusted WordPress request adapter — genuine RED
+
+- SHA: `dd31962618d36e96a9f9db88d38076941ffad9b8`
+- CI: `34700588353`
+- Test-only change: `tests/Unit/Frontend/PublicChatWordPressRequestAdapterTest.php`
+- Composer validation: PASS
+- PHPCS: PASS
+- PHPStan: PASS
+- PHPUnit: FAIL at the intended missing `PublicChatWordPressRequestAdapter` behavior.
+- `js-quality`, `package`, and `wordpress-smoke`: PASS.
+
+This is a genuine behavioral RED.
+
+### Trusted WordPress request adapter — genuine GREEN
+
+- SHA: `77dacd3cb6cd9a3585ecb86d8b55abb07075375c`
+- CI: `34700668201`
+- `php-quality`: PASS, including Composer validation, PHPCS, PHPStan, PHPUnit, and Composer audit.
+- `js-quality`: PASS.
+- `package`: PASS.
+- `wordpress-smoke`: PASS, including activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, and Playground REST smoke.
+
 ## Scoped review
 
 Fallback scoped review is used where independent reviewer transport is unavailable.
 
 ### Correctness
 
-- route registration now occurs through the normal plugin bootstrap;
-- abuse control still remains inside `PublicChatRestResource`, ahead of persisted runtime/provider/retrieval work;
-- current `run_chat()` fails closed rather than pretending the production composition is already available.
+- route registration occurs through the normal plugin bootstrap;
+- abuse control remains inside `PublicChatRestResource`, ahead of persisted runtime/provider/retrieval work;
+- the WordPress request adapter reuses the canonical `PublicChatRequest` parser rather than adding another payload contract;
+- client-scope derivation uses the existing `PublicChatClientScope` authority;
+- current `run_chat()` fails closed rather than pretending production composition is already available.
 
 Unresolved Critical findings: 0.
 Unresolved Important findings: 0.
@@ -93,8 +124,9 @@ Unresolved Important findings: 0.
 ### Security/privacy
 
 - anonymous routing does not introduce provider/model/credential/retrieval override arguments;
-- client identity must still be derived exclusively from trusted server metadata in the unfinished callback;
-- raw IP, user-agent, prompt text, credentials, and provider secrets must not be persisted by this boundary;
+- trusted client identity is derived from server-side `REMOTE_ADDR` and does not trust caller-spoofable forwarded-address headers;
+- raw IP, user-agent, prompt text, credentials, and provider secrets are not persisted by the request adapter;
+- caller-provided runtime override keys remain rejected by the closed request contract;
 - current fail-closed callback leaks no sensitive runtime detail.
 
 Unresolved Critical findings: 0.
@@ -102,13 +134,14 @@ Unresolved Important findings: 0.
 
 ### Performance
 
-- route registration adds no expensive work by itself;
+- route registration and the request adapter add no expensive retrieval/provider work;
 - the intended callback composition must preserve the existing cheap abuse guard before runtime/database/provider work.
 
 Unresolved Important findings: 0.
 
 ### Architecture / duplication
 
+- request adaptation delegates to existing request/client-scope authorities rather than duplicating validation or identity logic;
 - no semantic/lexical retrieval, fusion, reranking, grounding, prompt, memory, provider, embedding, vector-store, or citation pipeline is duplicated;
 - `ProductionPublicChatExecutor` remains the bridge into the established M11 graph.
 
@@ -118,8 +151,8 @@ Unresolved Important findings: 0.
 
 Continue under strict TDD with the thinnest WordPress callback/composition seam that:
 
-1. parses `WP_REST_Request` JSON only through the closed `PublicChatRequest` contract;
-2. derives the client scope only from trusted server metadata through `PublicChatClientScope` and a server-owned WordPress secret;
+1. obtains the `WP_REST_Request` JSON payload and parses it only through `PublicChatWordPressRequestAdapter` / the closed `PublicChatRequest` contract;
+2. derives the client scope through `PublicChatWordPressRequestAdapter` from trusted server metadata plus a server-owned WordPress secret;
 3. uses `WpdbPublicChatRateLimitStore` / `PublicChatAbuseGuard` before expensive runtime/provider/retrieval work;
 4. resolves persisted bot/retrieval authority and delegates once through `PublicChatRestResource` / `ProductionPublicChatExecutor`;
 5. returns stable non-sensitive malformed/unavailable/rate-limited responses;
