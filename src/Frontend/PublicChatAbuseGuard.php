@@ -20,6 +20,8 @@ final readonly class PublicChatAbuseGuard {
 	private const BUCKET_PREFIX  = 'wp_rag_public_chat_';
 
 	/**
+	 * Create one abuse-control guard.
+	 *
 	 * @param PublicChatRateLimitStore $store Rate-limit persistence authority.
 	 */
 	public function __construct( private PublicChatRateLimitStore $store ) {
