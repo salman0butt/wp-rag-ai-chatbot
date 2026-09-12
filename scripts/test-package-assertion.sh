@@ -49,6 +49,20 @@ rm "$missing_parser/wp-rag-ai-chatbot/vendor/smalot/pdfparser/src/Smalot/PdfPars
   fi
 )
 
+missing_widget_bundle="$workdir/missing-widget-bundle"
+mkdir -p "$missing_widget_bundle"
+make_base_package "$missing_widget_bundle"
+mkdir -p "$missing_widget_bundle/wp-rag-ai-chatbot/src"
+cp -R "$repo_root/src/Providers" "$missing_widget_bundle/wp-rag-ai-chatbot/src/Providers"
+(
+  cd "$missing_widget_bundle"
+  zip -qr wp-rag-ai-chatbot.zip wp-rag-ai-chatbot
+  if bash "$repo_root/scripts/assert-package.sh" >/dev/null 2>&1; then
+    echo "Package assertion accepted an archive missing the public widget bundle." >&2
+    exit 1
+  fi
+)
+
 script_leak="$workdir/script-leak"
 mkdir -p "$script_leak"
 make_base_package "$script_leak"
@@ -65,4 +79,4 @@ touch "$script_leak/wp-rag-ai-chatbot/scripts/test-wp-providers.php"
   fi
 )
 
-echo "Package assertion rejects missing provider/parser runtime and development scripts."
+echo "Package assertion rejects missing provider/parser/widget runtime and development scripts."
