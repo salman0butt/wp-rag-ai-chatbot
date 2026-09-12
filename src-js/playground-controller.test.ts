@@ -111,4 +111,57 @@ describe( 'createPlaygroundController', () => {
 			'UPSTREAM_SECRET_SENTINEL'
 		);
 	} );
+
+	it( 'publishes only the latest submission when requests complete out of order', async () => {
+		const factory = loadFactory();
+		expect( typeof factory ).toBe( 'function' );
+
+		let resolveFirst: ( value: PlaygroundResult ) => void = () => undefined;
+		const firstResult = {
+			...result,
+			answer: 'Stale first answer.',
+		} satisfies PlaygroundResult;
+		const latestResult = {
+			...result,
+			answer: 'Latest second answer.',
+		} satisfies PlaygroundResult;
+		const run = jest
+			.fn()
+			.mockReturnValueOnce(
+				new Promise< PlaygroundResult >( ( resolve ) => {
+					resolveFirst = resolve;
+				} )
+			)
+			.mockResolvedValueOnce( latestResult );
+		const onChange = jest.fn();
+		const controller = ( factory as PlaygroundControllerFactory )(
+			{ run },
+			onChange
+		);
+		const firstPending = controller.submit( {
+			...draft,
+			question: 'First question',
+		} );
+
+		await controller.submit( {
+			...draft,
+			question: 'Second question',
+		} );
+		expect( onChange ).toHaveBeenLastCalledWith( {
+			status: 'success',
+			result: latestResult,
+		} );
+
+		resolveFirst( firstResult );
+		await firstPending;
+
+		expect( onChange ).toHaveBeenLastCalledWith( {
+			status: 'success',
+			result: latestResult,
+		} );
+		expect( onChange ).not.toHaveBeenCalledWith( {
+			status: 'success',
+			result: firstResult,
+		} );
+	} );
 } );
