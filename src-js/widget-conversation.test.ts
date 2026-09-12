@@ -43,8 +43,7 @@ const submitQuestion = ( value: string ): void => {
 
 describe( 'public widget conversation controls', () => {
 	beforeEach( () => {
-		document.body.innerHTML =
-			`<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
+		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
 		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
 			{
 				botId: BOT_ID,
