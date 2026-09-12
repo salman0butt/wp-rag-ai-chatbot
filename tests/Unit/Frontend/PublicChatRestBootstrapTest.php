@@ -12,7 +12,11 @@ namespace WpRagAiChatbot\Tests\Unit\Frontend;
 require_once dirname( __DIR__, 2 ) . '/Fixtures/WP_REST_Request.php';
 
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use WP_REST_Request;
+use WpRagAiChatbot\Database\Connection;
+use WpRagAiChatbot\Database\TableNames;
+use WpRagAiChatbot\Frontend\PublicChatProductionExecutorResolver;
 use WpRagAiChatbot\Frontend\PublicChatRestBootstrap;
 
 /**
@@ -32,6 +36,22 @@ final class PublicChatRestBootstrapTest extends TestCase {
 		self::assertSame( array( PublicChatRestBootstrap::class, 'allow_public' ), $definition['permission_callback'] ?? null );
 		self::assertTrue( PublicChatRestBootstrap::allow_public() );
 		self::assertArrayNotHasKey( 'args', $definition );
+	}
+
+	/** The REST bootstrap exposes only the canonical production executor-composition seam. */
+	public function test_executor_resolver_contract_uses_existing_runtime_authorities(): void {
+		$class  = new ReflectionClass( PublicChatRestBootstrap::class );
+		$method = $class->getMethod( 'executor_resolver' );
+
+		self::assertTrue( $method->isStatic() );
+		self::assertSame(
+			array( Connection::class, TableNames::class ),
+			array_map(
+				static fn ( \ReflectionParameter $parameter ): string => (string) $parameter->getType(),
+				$method->getParameters()
+			)
+		);
+		self::assertSame( PublicChatProductionExecutorResolver::class, (string) $method->getReturnType() );
 	}
 
 	/** Malformed caller-controlled runtime fields fail closed before runtime composition. */
