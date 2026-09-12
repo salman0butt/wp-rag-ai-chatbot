@@ -126,4 +126,25 @@ describe( 'public widget conversation controls', () => {
 			}
 		);
 	} );
+
+	it( 'allows only one in-flight request and exposes a live loading state', () => {
+		fetchMock.mockReturnValue( new Promise( () => undefined ) );
+		loadWidget();
+
+		submitQuestion( 'First question' );
+		submitQuestion( 'Second question' );
+
+		const send = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-send]'
+		);
+		const status = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-status]'
+		);
+
+		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
+		expect( send?.disabled ).toBe( true );
+		expect( status?.getAttribute( 'role' ) ).toBe( 'status' );
+		expect( status?.getAttribute( 'aria-live' ) ).toBe( 'polite' );
+		expect( status?.textContent ).toBe( 'Sending…' );
+	} );
 } );
