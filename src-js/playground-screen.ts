@@ -101,7 +101,7 @@ const playgroundForm = (
 		event.preventDefault();
 		const form = event.currentTarget;
 
-		if ( onSubmit === undefined || !( form instanceof HTMLFormElement ) ) {
+		if ( onSubmit === undefined || ! ( form instanceof HTMLFormElement ) ) {
 			return;
 		}
 
