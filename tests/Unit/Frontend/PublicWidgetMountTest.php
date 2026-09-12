@@ -18,16 +18,18 @@ use WpRagAiChatbot\Frontend\BotAppearanceRepository;
 use WpRagAiChatbot\Frontend\PublicWidgetMount;
 use WpRagAiChatbot\Frontend\WidgetConfigResolver;
 
-/** Verifies the closed public shortcode/mount attribute boundary. */
+/**
+ * Verifies the closed public shortcode/mount attribute boundary.
+ */
 final class PublicWidgetMountTest extends TestCase {
 	private const BOT_ID = '0123456789abcdef0123456789abcdef';
 
 	/** Enabled bot identifiers resolve through the existing public-safe widget projection. */
 	public function test_valid_bot_attribute_resolves_existing_public_widget_projection(): void {
-		$bot_id = new BotId( self::BOT_ID );
-		$bots = $this->createMock( BotRepository::class );
+		$bot_id      = new BotId( self::BOT_ID );
+		$bots        = $this->createMock( BotRepository::class );
 		$appearances = $this->createMock( BotAppearanceRepository::class );
-		$bot = new Bot(
+		$bot         = new Bot(
 			$bot_id,
 			'Support',
 			true,
@@ -38,10 +40,16 @@ final class PublicWidgetMountTest extends TestCase {
 			'2026-09-12 00:00:00'
 		);
 
-		$bots->expects( self::once() )->method( 'find' )->with( self::callback( static fn ( BotId $id ): bool => self::BOT_ID === $id->value ) )->willReturn( $bot );
-		$appearances->expects( self::once() )->method( 'find' )->with( self::callback( static fn ( BotId $id ): bool => self::BOT_ID === $id->value ) )->willReturn( AppearanceConfig::defaults() );
+		$bots->expects( self::once() )
+			->method( 'find' )
+			->with( self::callback( static fn ( BotId $id ): bool => self::BOT_ID === $id->value ) )
+			->willReturn( $bot );
+		$appearances->expects( self::once() )
+			->method( 'find' )
+			->with( self::callback( static fn ( BotId $id ): bool => self::BOT_ID === $id->value ) )
+			->willReturn( AppearanceConfig::defaults() );
 
-		$mount = new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) );
+		$mount  = new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) );
 		$config = $mount->resolve( array( 'bot' => self::BOT_ID ) );
 
 		self::assertNotNull( $config );
@@ -52,7 +60,7 @@ final class PublicWidgetMountTest extends TestCase {
 
 	/** Invalid or missing bot identifiers fail closed before repository access. */
 	public function test_missing_or_invalid_bot_attribute_fails_closed(): void {
-		$bots = $this->createMock( BotRepository::class );
+		$bots        = $this->createMock( BotRepository::class );
 		$appearances = $this->createMock( BotAppearanceRepository::class );
 		$bots->expects( self::never() )->method( 'find' );
 		$appearances->expects( self::never() )->method( 'find' );
@@ -64,7 +72,7 @@ final class PublicWidgetMountTest extends TestCase {
 
 	/** Runtime/provider override-like shortcode attributes are rejected rather than becoming browser authority. */
 	public function test_unknown_runtime_override_attributes_fail_closed(): void {
-		$bots = $this->createMock( BotRepository::class );
+		$bots        = $this->createMock( BotRepository::class );
 		$appearances = $this->createMock( BotAppearanceRepository::class );
 		$bots->expects( self::never() )->method( 'find' );
 		$appearances->expects( self::never() )->method( 'find' );
@@ -73,9 +81,9 @@ final class PublicWidgetMountTest extends TestCase {
 		self::assertNull(
 			$mount->resolve(
 				array(
-					'bot'            => self::BOT_ID,
-					'provider'       => 'attacker-provider',
-					'model'          => 'attacker-model',
+					'bot'             => self::BOT_ID,
+					'provider'        => 'attacker-provider',
+					'model'           => 'attacker-model',
 					'retrieval_limit' => 999,
 				)
 			)
