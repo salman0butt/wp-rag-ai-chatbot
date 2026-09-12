@@ -48,12 +48,15 @@ Administrator-only bot-scoped appearance `GET`/`PUT` contracts reuse `BotAppeara
 ### Task 4 — public chat request/runtime composition and abuse controls — COMPLETE
 The bounded public chat REST path now rejects request-level runtime overrides, applies abuse controls before expensive runtime work, resolves persisted production authorities server-side, reuses the existing M10/M11 retrieval/chat composition exactly once, and persists bounded owner-scoped conversation history. Final integration head `e850863d5487ee7603547413bdb9c667c8d04b8e` / CI `34717786952` is GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`. Scoped fallback correctness/security/performance/architecture review has **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK4E-PUBLIC-CHAT-REST.md`, `docs/progress/M14-TASK4E-SHARED-RESPONDER-EVIDENCE.md`, and `docs/progress/M14-TASK4-CLOSEOUT.md`.
 
-### Task 5 — conditional public asset/bootstrap/shortcode mount — IN PROGRESS
-Build the public mount seam and conditional asset loading without creating new runtime authority. Shortcode/block inputs may identify an allowed bot/mount surface but must not become provider/model/credential/embedding/vector/retrieval override channels.
+### Task 5 — conditional public asset/bootstrap/shortcode mount — COMPLETE
+The public shortcode/mount seam now resolves only the existing public-safe widget projection, fails closed for invalid/disabled bots, loads the dedicated widget assets only after a valid mount, and exposes no provider/model/credential/embedding/vector/retrieval authority to the browser. Production implementation head `9619f53cc7130dacbb835f54652ff46f412442f4` / CI `34721951718` is GREEN. Additional real WordPress mount/bootstrap verification is GREEN at `18436c394f826e83885cbb43bff30b509a00a205` / CI `34722486144`; the preceding `a1e0ad17905aba666444ce45c8f4db57db834272` / CI `34722293078` is explicitly **NOT RED** because only the smoke assertion's escaped-JSON representation was wrong. Scoped fallback review has **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md`.
+
+### Task 6 — floating launcher/panel UI — IN PROGRESS
+Build the interactive browser widget on the dedicated `src-js/widget.ts` entry and Task 5 bootstrap contract. Use strict JavaScript TDD for deterministic mount discovery, launcher/panel open-close behavior, bounded appearance application, and keyboard/accessibility semantics. Do not create a second chat/retrieval/runtime authority.
 
 ## Current work
 
-Continue M14 Task 5 on existing PR #19. Recover the existing plugin bootstrap, asset build/enqueue conventions, public-safe widget configuration projection, and shortcode/block conventions. Persist a bounded implementation plan, then execute strict RED -> GREEN beginning with the smallest public mount/conditional-enqueue seam. After each verified unit, review, document, re-check GitHub state, and continue automatically.
+Continue M14 Task 6 on existing PR #19. Recover the M14 design, Task 5 browser bootstrap contract, existing JS/Jest conventions, and dedicated widget build entry. Persist the bounded Task 6 plan, then execute strict RED -> GREEN beginning with the smallest deterministic launcher/panel behavior. After each verified unit, review, document, re-check GitHub state, and continue automatically.
 
 ## Durable recovery
 
@@ -62,5 +65,6 @@ Continue M14 Task 5 on existing PR #19. Recover the existing plugin bootstrap, a
 - `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection evidence and scoped review.
 - `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md` — Task 3 protected REST RED/NOT RED/NOT GREEN/GREEN evidence and review.
 - `docs/progress/M14-TASK4-CLOSEOUT.md` — Task 4 final production composition, integration, CI, and review evidence.
+- `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md` — Task 5 mount/build/smoke evidence and scoped review.
 - PR #19 — active M14 implementation branch and execution source of truth.
 - `docs/milestones/M14-frontend-chatbot-customizer.md` — current M14 milestone ledger.
