@@ -109,7 +109,9 @@ describe( 'PlaygroundPanel', () => {
 			} )
 		);
 
-		const status = root.querySelector( '[data-playground-status="loading"]' );
+		const status = root.querySelector(
+			'[data-playground-status="loading"]'
+		);
 		expect( status?.getAttribute( 'role' ) ).toBe( 'status' );
 		expect( status?.getAttribute( 'aria-live' ) ).toBe( 'polite' );
 		expect( status?.textContent ).toBe(
