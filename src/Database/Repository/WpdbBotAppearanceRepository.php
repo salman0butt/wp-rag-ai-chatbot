@@ -77,11 +77,12 @@ final class WpdbBotAppearanceRepository implements BotAppearanceRepository {
 	/**
 	 * Persist normalized appearance for one bot.
 	 *
-	 * @param BotId           $bot_id Stable bot identifier.
+	 * @param BotId            $bot_id Stable bot identifier.
 	 * @param AppearanceConfig $appearance Normalized appearance.
 	 * @throws RuntimeException When the target bot does not exist or persistence fails.
 	 */
 	public function save( BotId $bot_id, AppearanceConfig $appearance ): void {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- JSON_THROW_ON_ERROR preserves fail-closed persistence semantics.
 		$encoded = json_encode( $appearance->to_array(), JSON_THROW_ON_ERROR );
 		$result  = $this->connection->update(
 			$this->tables->bots(),
