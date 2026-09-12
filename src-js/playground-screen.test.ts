@@ -144,6 +144,61 @@ describe( 'PlaygroundScreen', () => {
 		).toContain( '144' );
 	} );
 
+	it( 'renders a labelled request form and submits only the persisted selectors plus question', () => {
+		configureTestRuntime();
+		const onSubmit = jest.fn();
+		const root = document.createElement( 'div' );
+		root.append( PlaygroundScreen( { onSubmit } ) as Node );
+
+		const form = root.querySelector( 'form[data-playground-form]' );
+		const botId = root.querySelector< HTMLInputElement >( '#playground-bot-id' );
+		const sourceId = root.querySelector< HTMLInputElement >(
+			'#playground-source-id'
+		);
+		const collectionId = root.querySelector< HTMLInputElement >(
+			'#playground-collection-id'
+		);
+		const question = root.querySelector< HTMLTextAreaElement >(
+			'#playground-question'
+		);
+
+		expect( form ).not.toBeNull();
+		expect( root.querySelector( 'label[for="playground-bot-id"]' )?.textContent ).toBe(
+			'Bot ID'
+		);
+		expect(
+			root.querySelector( 'label[for="playground-source-id"]' )?.textContent
+		).toBe( 'Source ID' );
+		expect(
+			root.querySelector( 'label[for="playground-collection-id"]' )?.textContent
+		).toBe( 'Collection ID' );
+		expect(
+			root.querySelector( 'label[for="playground-question"]' )?.textContent
+		).toBe( 'Question' );
+		expect( sourceId?.getAttribute( 'min' ) ).toBe( '1' );
+		expect( question?.getAttribute( 'maxlength' ) ).toBe( '16384' );
+
+		botId!.value = 'support-bot';
+		sourceId!.value = '9';
+		collectionId!.value = 'support-docs';
+		question!.value = 'What is the return window?';
+		form?.dispatchEvent( new Event( 'submit', { bubbles: true, cancelable: true } ) );
+
+		expect( onSubmit ).toHaveBeenCalledTimes( 1 );
+		expect( onSubmit ).toHaveBeenCalledWith( {
+			bot_id: 'support-bot',
+			source_id: 9,
+			collection_id: 'support-docs',
+			question: 'What is the return window?',
+		} );
+		expect( Object.keys( onSubmit.mock.calls[ 0 ][ 0 ] ) ).toEqual( [
+			'bot_id',
+			'source_id',
+			'collection_id',
+			'question',
+		] );
+	} );
+
 	it.each( [
 		[ 'retrieval_unavailable', 'Retrieval is temporarily unavailable.' ],
 		[
