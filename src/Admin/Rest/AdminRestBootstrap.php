@@ -221,15 +221,22 @@ final class AdminRestBootstrap {
 	}
 
 	/**
-	 * Fail closed until the production Playground resource is bound to request-local services.
+	 * Run one bounded administrator Playground request through production services.
 	 *
 	 * @param WP_REST_Request $request REST request.
 	 * @return array<string,mixed>
 	 */
 	public static function run_playground( WP_REST_Request $request ): array {
-		unset( $request );
+		$playground_request = PlaygroundRequest::from_array( $request->get_json_params() );
+		if ( null === $playground_request ) {
+			return self::invalid_request();
+		}
 
-		return self::invalid_request();
+		global $wpdb;
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+
+		return PlaygroundRuntimeBootstrap::handler( $connection, $tables )->handle( $playground_request );
 	}
 
 	/**
