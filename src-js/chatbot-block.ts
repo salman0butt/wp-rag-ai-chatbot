@@ -1,3 +1,5 @@
+export {};
+
 type BlockEditorEvent = {
 	target: { value: string };
 };
