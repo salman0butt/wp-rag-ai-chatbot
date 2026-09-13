@@ -20,11 +20,13 @@ export interface DisplayRulesEditorProps {
 	onSave: ( next: DisplayRulesConfig ) => void;
 }
 
-const fieldId = ( name: string ): string =>
-	`wp-rag-ai-chatbot-rules-${ name }`;
+const fieldId = ( name: string ): string => `wp-rag-ai-chatbot-rules-${ name }`;
 
 const readValue = ( event: Event ): string => {
-	const target = event.currentTarget as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+	const target = event.currentTarget as
+		| HTMLInputElement
+		| HTMLSelectElement
+		| HTMLTextAreaElement;
 	return target.value;
 };
 
