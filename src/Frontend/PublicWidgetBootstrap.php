@@ -15,7 +15,7 @@ use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
 
 /**
- * Registers the public shortcode and conditionally enqueues widget assets.
+ * Registers public widget surfaces and conditionally enqueues widget assets.
  */
 final readonly class PublicWidgetBootstrap {
 	private const ASSET_HANDLE = 'wp-rag-ai-chatbot-widget';
@@ -34,7 +34,7 @@ final readonly class PublicWidgetBootstrap {
 	}
 
 	/**
-	 * Compose persisted production repositories and register the public shortcode.
+	 * Compose persisted production repositories and register the public shortcodes.
 	 */
 	public static function register_default(): void {
 		global $wpdb;
@@ -54,17 +54,51 @@ final readonly class PublicWidgetBootstrap {
 		$bootstrap->register();
 	}
 
-	/** Register the stable public shortcode. */
+	/** Register the stable public widget shortcodes. */
 	public function register(): void {
 		add_shortcode( 'wp_rag_ai_chatbot', array( $this, 'render_shortcode' ) );
+		add_shortcode( 'wp_rag_ai_chatbot_embed', array( $this, 'render_embed_shortcode' ) );
+		add_shortcode( 'wp_rag_ai_chatbot_fullscreen', array( $this, 'render_fullscreen_shortcode' ) );
 	}
 
 	/**
-	 * Resolve and render one public widget mount.
+	 * Resolve and render one floating public widget mount.
 	 *
 	 * @param array<string,mixed> $attributes Shortcode attributes.
 	 */
 	public function render_shortcode( array $attributes = array() ): string {
+		return $this->render_surface( $attributes, 'floating' );
+	}
+
+	/**
+	 * Resolve and render one embedded public widget mount.
+	 *
+	 * @param array<string,mixed> $attributes Shortcode attributes.
+	 */
+	public function render_embed_shortcode( array $attributes = array() ): string {
+		return $this->render_surface( $attributes, 'embedded' );
+	}
+
+	/**
+	 * Resolve and render one fullscreen public widget mount.
+	 *
+	 * @param array<string,mixed> $attributes Shortcode attributes.
+	 */
+	public function render_fullscreen_shortcode( array $attributes = array() ): string {
+		return $this->render_surface( $attributes, 'fullscreen' );
+	}
+
+	/**
+	 * Resolve and render one public widget surface through the shared mount authority.
+	 *
+	 * @param array<string,mixed> $attributes Shortcode attributes.
+	 * @param string              $surface Finite browser presentation surface.
+	 */
+	private function render_surface( array $attributes, string $surface ): string {
+		if ( ! in_array( $surface, array( 'floating', 'embedded', 'fullscreen' ), true ) ) {
+			return '';
+		}
+
 		$config = $this->mount->resolve( $attributes );
 		if ( null === $config ) {
 			return '';
@@ -73,7 +107,7 @@ final readonly class PublicWidgetBootstrap {
 		$browser_config = array(
 			'botId'    => $config->bot_id,
 			'restBase' => untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) ),
-			'surface'  => 'floating',
+			'surface'  => $surface,
 			'config'   => $config->to_array(),
 		);
 		$encoded_config = wp_json_encode( $browser_config );
@@ -100,6 +134,6 @@ final readonly class PublicWidgetBootstrap {
 			'before'
 		);
 
-		return '<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="' . esc_attr( $config->bot_id ) . '" data-wp-rag-ai-chatbot-surface="floating"></div>';
+		return '<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="' . esc_attr( $config->bot_id ) . '" data-wp-rag-ai-chatbot-surface="' . esc_attr( $surface ) . '"></div>';
 	}
 }
