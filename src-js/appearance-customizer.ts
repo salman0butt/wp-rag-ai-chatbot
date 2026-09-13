@@ -29,6 +29,12 @@ const selectOptions = (
 		createElement( 'option', { value }, label )
 	);
 
+const readInputValue = ( event: Event ): string =>
+	( event.currentTarget as HTMLInputElement ).value;
+
+const readSelectValue = ( event: Event ): string =>
+	( event.currentTarget as HTMLSelectElement ).value;
+
 export const AppearanceCustomizer = (
 	props: AppearanceCustomizerProps
 ): unknown => {
@@ -71,10 +77,7 @@ export const AppearanceCustomizer = (
 					name,
 					value: draft[ name ],
 					onChange: ( event: Event ) => {
-						updateDraft( {
-							[ name ]: ( event.currentTarget as HTMLSelectElement )
-								.value,
-						} );
+						updateDraft( { [ name ]: readSelectValue( event ) } );
 					},
 				},
 				...selectOptions( createElement, options )
@@ -108,11 +111,7 @@ export const AppearanceCustomizer = (
 					type: 'color',
 					value: draft.primary_color,
 					onChange: ( event: Event ) => {
-						updateDraft( {
-							primary_color: (
-								event.currentTarget as HTMLInputElement
-							).value,
-						} );
+						updateDraft( { primary_color: readInputValue( event ) } );
 					},
 				} )
 			),
@@ -153,9 +152,7 @@ export const AppearanceCustomizer = (
 					value: draft.radius_px,
 					onChange: ( event: Event ) => {
 						updateDraft( {
-							radius_px: Number(
-								( event.currentTarget as HTMLInputElement ).value
-							),
+							radius_px: Number( readInputValue( event ) ),
 						} );
 					},
 				} )
