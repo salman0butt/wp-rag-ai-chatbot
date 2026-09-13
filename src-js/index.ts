@@ -1935,7 +1935,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentActiveBotId !== loadedBotAppearanceId
 		) {
 			currentBotAppearance = undefined;
+			currentBotAppearanceSaving = false;
 			currentBotAppearanceError = undefined;
+			renderState( currentState );
 			void refreshBotAppearance( currentActiveBotId ).then(
 				( current ) => {
 					if ( current ) {
