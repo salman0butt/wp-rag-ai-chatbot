@@ -36,6 +36,16 @@ describe( 'display rule site-time schedule gates', () => {
 		} );
 	} );
 
+	test( 'treats an explicitly empty schedule as no restriction', () => {
+		const rules = normalizeDisplayRules( {
+			visibility: { schedule: {} },
+		} );
+
+		expect( evaluateDisplayRules( rules ) ).toEqual(
+			expect.objectContaining( { visible: true } )
+		);
+	} );
+
 	test( 'uses inclusive same-day boundaries and rejects outside minutes or days', () => {
 		const rules = normalizeDisplayRules( {
 			visibility: {
