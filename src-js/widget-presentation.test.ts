@@ -105,10 +105,11 @@ describe( 'public widget message presentation', () => {
 		const assistant = document.querySelector< HTMLElement >(
 			'[data-wp-rag-ai-chatbot-message="assistant"]'
 		);
-		const copy = assistant?.querySelector< HTMLButtonElement >(
+		const wrapper = assistant?.parentElement;
+		const copy = wrapper?.querySelector< HTMLButtonElement >(
 			'[data-wp-rag-ai-chatbot-copy]'
 		);
-		const sources = assistant?.querySelector< HTMLDetailsElement >(
+		const sources = wrapper?.querySelector< HTMLDetailsElement >(
 			'[data-wp-rag-ai-chatbot-sources]'
 		);
 		const links = sources?.querySelectorAll< HTMLAnchorElement >( 'a' );
