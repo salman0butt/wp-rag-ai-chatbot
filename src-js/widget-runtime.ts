@@ -1,4 +1,8 @@
-import { evaluateDisplayRules, normalizeDisplayRules } from './display-rules';
+import {
+	evaluateDisplayRules,
+	normalizeDisplayRules,
+	type DisplayRuleFacts,
+} from './display-rules';
 
 export type WidgetSurface = 'floating' | 'embedded' | 'fullscreen';
 
@@ -6,6 +10,7 @@ export type WidgetBootstrapConfig = {
 	botId: string;
 	restBase: string;
 	surface?: WidgetSurface;
+	facts?: DisplayRuleFacts;
 	config: {
 		bot_id: string;
 		name: string;
@@ -252,7 +257,8 @@ export const mountWidgets = (
 			}
 
 			const displayDecision = evaluateDisplayRules(
-				normalizeDisplayRules( config.config.display_rules )
+				normalizeDisplayRules( config.config.display_rules ),
+				config.facts
 			);
 			if ( ! displayDecision.visible ) {
 				return;
