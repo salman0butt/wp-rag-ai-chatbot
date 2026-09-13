@@ -46,7 +46,9 @@ const readRadius = ( appearance: Record< string, unknown > ): number => {
 		: 16;
 };
 
-export const normalizeWidgetAppearance = ( value: unknown ): WidgetAppearance => {
+export const normalizeWidgetAppearance = (
+	value: unknown
+): WidgetAppearance => {
 	const appearance =
 		typeof value === 'object' && value !== null
 			? ( value as Record< string, unknown > )
@@ -54,15 +56,30 @@ export const normalizeWidgetAppearance = ( value: unknown ): WidgetAppearance =>
 
 	return {
 		primary_color: readPrimaryColor( appearance ),
-		color_mode: readChoice( appearance, 'color_mode', COLOR_MODES, 'system' ),
-		position: readChoice( appearance, 'position', POSITIONS, 'bottom-right' ),
+		color_mode: readChoice(
+			appearance,
+			'color_mode',
+			COLOR_MODES,
+			'system'
+		),
+		position: readChoice(
+			appearance,
+			'position',
+			POSITIONS,
+			'bottom-right'
+		),
 		launcher_style: readChoice(
 			appearance,
 			'launcher_style',
 			LAUNCHER_STYLES,
 			'bubble'
 		),
-		panel_size: readChoice( appearance, 'panel_size', PANEL_SIZES, 'medium' ),
+		panel_size: readChoice(
+			appearance,
+			'panel_size',
+			PANEL_SIZES,
+			'medium'
+		),
 		radius_px: readRadius( appearance ),
 		font_family: readChoice(
 			appearance,
