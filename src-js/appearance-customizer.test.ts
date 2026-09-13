@@ -38,6 +38,11 @@ const createTestElement = (
 			continue;
 		}
 
+		if ( key === 'ref' && typeof value === 'function' ) {
+			( value as ( node: HTMLElement ) => void )( element );
+			continue;
+		}
+
 		if ( value === undefined ) {
 			continue;
 		}
