@@ -441,7 +441,10 @@ export const mountWidgets = (
 					message.textContent = text.slice( 0, revealedLength );
 
 					if ( revealedLength < text.length ) {
-						timer = setTimeout( revealNextChunk, TYPING_INTERVAL_MS );
+						timer = setTimeout(
+							revealNextChunk,
+							TYPING_INTERVAL_MS
+						);
 						return;
 					}
 
