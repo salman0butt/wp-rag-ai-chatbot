@@ -387,10 +387,24 @@ export const mountWidgets = (
 				let revealedLength = 0;
 
 				const revealNextChunk = (): void => {
-					const nextLength = Math.min(
+					let nextLength = Math.min(
 						text.length,
 						revealedLength + chunkSize
 					);
+
+					if ( nextLength < text.length ) {
+						const previousCodeUnit = text.charCodeAt( nextLength - 1 );
+						const nextCodeUnit = text.charCodeAt( nextLength );
+						const splitsSurrogatePair =
+							previousCodeUnit >= 0xd800 &&
+							previousCodeUnit <= 0xdbff &&
+							nextCodeUnit >= 0xdc00 &&
+							nextCodeUnit <= 0xdfff;
+
+						if ( splitsSurrogatePair ) {
+							nextLength += 1;
+						}
+					}
 
 					if ( nextLength === text.length ) {
 						message.setAttribute( 'aria-live', 'polite' );
