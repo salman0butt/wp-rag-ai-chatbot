@@ -73,7 +73,11 @@ final class WpdbBotDisplayRulesRepository implements BotDisplayRulesRepository {
 			}
 		}
 
-		/** @var array<string,mixed> $decoded */
+		/**
+		 * Persisted display rules have string keys after explicit validation.
+		 *
+		 * @var array<string,mixed> $decoded
+		 */
 		try {
 			return DisplayRulesConfig::from_array( $decoded );
 		} catch ( InvalidArgumentException ) {
