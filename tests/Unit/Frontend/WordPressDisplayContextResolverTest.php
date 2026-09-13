@@ -38,6 +38,7 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 		);
 		Functions\when( 'get_locale' )->justReturn( 'en_US' );
 		Functions\when( 'is_rtl' )->justReturn( false );
+		Functions\when( 'did_action' )->justReturn( 0 );
 		Functions\when( 'current_datetime' )->justReturn(
 			new DateTimeImmutable( '2026-09-13 12:00:00', new DateTimeZone( 'UTC' ) )
 		);
@@ -105,6 +106,18 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 		self::assertNull( $facts['wooArea'] );
 	}
 
+	/** A product-named post type is not treated as WooCommerce when Woo has not initialized. */
+	public function test_product_post_type_without_woocommerce_context_remains_unclassified(): void {
+		$_SERVER['REQUEST_URI'] = '/product/lamp/';
+
+		Functions\when( 'is_user_logged_in' )->justReturn( false );
+		Functions\when( 'get_post_type' )->justReturn( 'product' );
+
+		$facts = ( new WordPressDisplayContextResolver() )->resolve();
+
+		self::assertNull( $facts['wooArea'] );
+	}
+
 	/** Site and Woo presentation facts use bounded deterministic tokens and site-local time. */
 	public function test_resolve_projects_site_locale_direction_time_and_product_area(): void {
 		$_SERVER['REQUEST_URI'] = '/product/lamp/';
@@ -113,6 +126,7 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 		Functions\when( 'get_post_type' )->justReturn( 'product' );
 		Functions\when( 'get_locale' )->justReturn( 'ur_PK' );
 		Functions\when( 'is_rtl' )->justReturn( true );
+		Functions\when( 'did_action' )->justReturn( 1 );
 		Functions\when( 'current_datetime' )->justReturn(
 			new DateTimeImmutable( '2026-09-13 23:45:00', new DateTimeZone( 'Asia/Karachi' ) )
 		);
