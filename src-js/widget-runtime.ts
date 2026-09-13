@@ -393,7 +393,9 @@ export const mountWidgets = (
 					);
 
 					if ( nextLength < text.length ) {
-						const previousCodeUnit = text.charCodeAt( nextLength - 1 );
+						const previousCodeUnit = text.charCodeAt(
+							nextLength - 1
+						);
 						const nextCodeUnit = text.charCodeAt( nextLength );
 						const splitsSurrogatePair =
 							previousCodeUnit >= 0xd800 &&
