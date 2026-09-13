@@ -103,7 +103,10 @@ const pathMatchesPattern = ( path: string, pattern: string ): boolean => {
 			continue;
 		}
 
-		if ( patternIndex < pattern.length && pattern[ patternIndex ] === '*' ) {
+		if (
+			patternIndex < pattern.length &&
+			pattern[ patternIndex ] === '*'
+		) {
 			starIndex = patternIndex;
 			starPathIndex = pathIndex;
 			patternIndex += 1;
