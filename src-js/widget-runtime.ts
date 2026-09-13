@@ -28,6 +28,8 @@ const MOUNT_SELECTOR = '.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]';
 const MOUNTED_DATA_KEY = 'wpRagAiChatbotMounted';
 const MAX_CITATIONS = 8;
 const MAX_RENDERED_MESSAGES = 40;
+const TYPING_INTERVAL_MS = 24;
+const MAX_TYPING_TICKS = 48;
 
 const COLOR_MODES = [ 'light', 'dark', 'system' ] as const;
 const POSITIONS = [ 'bottom-left', 'bottom-right' ] as const;
@@ -323,54 +325,80 @@ export const mountWidgets = (
 
 				const message = documentRoot.createElement( 'p' );
 				message.dataset.wpRagAiChatbotMessage = 'assistant';
-				message.textContent = text;
 				wrapper.append( message );
-
-				const copy = documentRoot.createElement( 'button' );
-				copy.type = 'button';
-				copy.textContent = 'Copy';
-				copy.dataset.wpRagAiChatbotCopy = '';
-				copy.setAttribute( 'aria-label', 'Copy assistant message' );
-				copy.addEventListener( 'click', () => {
-					const clipboard =
-						documentRoot.defaultView?.navigator.clipboard;
-					if ( clipboard ) {
-						void clipboard
-							.writeText( text )
-							.catch( () => undefined );
-					}
-				} );
-				wrapper.append( copy );
-
-				if ( citations.length > 0 ) {
-					const details = documentRoot.createElement( 'details' );
-					details.dataset.wpRagAiChatbotSources = '';
-					const summary = documentRoot.createElement( 'summary' );
-					summary.textContent = 'Sources';
-					const list = documentRoot.createElement( 'ul' );
-					details.append( summary, list );
-
-					for ( const citation of citations ) {
-						const item = documentRoot.createElement( 'li' );
-						const safeUrl = safeHttpUrl( citation.url );
-						if ( safeUrl === null ) {
-							item.textContent = citation.title;
-						} else {
-							const link = documentRoot.createElement( 'a' );
-							link.href = safeUrl;
-							link.target = '_blank';
-							link.rel = 'noopener noreferrer';
-							link.textContent = citation.title;
-							item.append( link );
-						}
-						list.append( item );
-					}
-
-					wrapper.append( details );
-				}
-
 				messages.append( wrapper );
 				trimMessageHistory();
+
+				const appendCompletionControls = (): void => {
+					const copy = documentRoot.createElement( 'button' );
+					copy.type = 'button';
+					copy.textContent = 'Copy';
+					copy.dataset.wpRagAiChatbotCopy = '';
+					copy.setAttribute( 'aria-label', 'Copy assistant message' );
+					copy.addEventListener( 'click', () => {
+						const clipboard =
+							documentRoot.defaultView?.navigator.clipboard;
+						if ( clipboard ) {
+							void clipboard
+								.writeText( text )
+								.catch( () => undefined );
+						}
+					} );
+					wrapper.append( copy );
+
+					if ( citations.length > 0 ) {
+						const details = documentRoot.createElement( 'details' );
+						details.dataset.wpRagAiChatbotSources = '';
+						const summary = documentRoot.createElement( 'summary' );
+						summary.textContent = 'Sources';
+						const list = documentRoot.createElement( 'ul' );
+						details.append( summary, list );
+
+						for ( const citation of citations ) {
+							const item = documentRoot.createElement( 'li' );
+							const safeUrl = safeHttpUrl( citation.url );
+							if ( safeUrl === null ) {
+								item.textContent = citation.title;
+							} else {
+								const link = documentRoot.createElement( 'a' );
+								link.href = safeUrl;
+								link.target = '_blank';
+								link.rel = 'noopener noreferrer';
+								link.textContent = citation.title;
+								item.append( link );
+							}
+							list.append( item );
+						}
+
+						wrapper.append( details );
+					}
+				};
+
+				const chunkSize = Math.max(
+					1,
+					Math.ceil( text.length / MAX_TYPING_TICKS )
+				);
+				let revealedLength = 0;
+
+				const revealNextChunk = (): void => {
+					revealedLength = Math.min(
+						text.length,
+						revealedLength + chunkSize
+					);
+					message.textContent = text.slice( 0, revealedLength );
+
+					if ( revealedLength < text.length ) {
+						setTimeout( revealNextChunk, TYPING_INTERVAL_MS );
+						return;
+					}
+
+					appendCompletionControls();
+					finishRequest();
+					status.textContent = '';
+				};
+
+				status.textContent = 'Assistant is typing…';
+				revealNextChunk();
 			};
 
 			const closePanel = (): void => {
@@ -450,8 +478,6 @@ export const mountWidgets = (
 								success.answer,
 								success.citations
 							);
-							finishRequest();
-							status.textContent = '';
 						},
 						() => showError( null, value )
 					);
