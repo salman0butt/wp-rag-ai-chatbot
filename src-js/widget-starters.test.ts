@@ -45,7 +45,9 @@ describe( 'M15 widget starter suggestions', () => {
 	beforeEach( () => {
 		document.body.innerHTML =
 			'<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"></div>';
-		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [ config ];
+		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
+			config,
+		];
 	} );
 
 	afterEach( () => {
