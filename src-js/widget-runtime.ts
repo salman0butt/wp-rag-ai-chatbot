@@ -138,7 +138,12 @@ const readError = ( value: unknown ): PublicChatError | null => {
 		return null;
 	}
 
-	const code = ( value as Record< string, unknown > ).code;
+	const error = ( value as Record< string, unknown > ).error;
+	if ( typeof error !== 'object' || error === null ) {
+		return null;
+	}
+
+	const code = ( error as Record< string, unknown > ).code;
 
 	return typeof code === 'string' ? { code } : null;
 };
