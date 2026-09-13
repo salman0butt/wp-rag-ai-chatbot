@@ -1,6 +1,6 @@
 # M14 — Frontend Floating/Embedded Chatbot & Complete Visual Customizer
 
-Status: COMPLETE pending merge and post-merge `main` verification.
+Status: COMPLETE.
 
 ## Goal
 Deliver the production public chatbot surfaces and shared live appearance customizer.
@@ -53,6 +53,9 @@ Key final implementation evidence:
 - Task 8 customizer/live preview: `362d47c65d4cafd43086e2862d606595341baa99` / CI `34741614657` GREEN.
 - Task 9 package/build GREEN: `02962ed49882089548dffb813a75ade048bb9abb` / CI `34747631044`; real WordPress widget-surface smoke GREEN at `2faf9677da3e8759021e22324b3d1f005f5a33de` / CI `34747870930`; repaired regression-test head `a4150af0c29d46a23f24bbb9452079ca970c4224` / CI `34748133442` GREEN.
 - Integrated pre-closeout branch head: `d170d56f725b6dabad704b9cad0fdbcba68f93a7` / CI `34748315547` GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
+- Exact final PR head: `2e8c15ba8a09ecc6a6355b8057a61e28741ed7e8` / CI `34748534203` GREEN.
+- Merge commit: `937ee81d55b0007147a6c764ce29d5d5fba9459b`.
+- Fresh post-merge `main` CI: `34750216460` GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
 
 Task 10 introduces no production behavior change, so no new behavioral RED/GREEN cycle is appropriate. It is a verification/review/documentation unit. Evidence: `docs/progress/M14-TASK10-CLOSEOUT.md`.
 
@@ -72,7 +75,7 @@ Final scoped performance review has **0 Critical / 0 Important unresolved**. Ass
 Per-task fallback reviews resolved all recorded Important findings. At Task 10 recovery PR #19 had no unresolved inline review threads. Independent-review transport remained unavailable during connector-only runs, so the repository-approved scoped fallback review was used and this limitation is recorded in the task evidence.
 
 ## Fresh Verification
-Pre-closeout exact head `d170d56f725b6dabad704b9cad0fdbcba68f93a7` passed CI `34748315547` across all permanent jobs. The documentation-only Task 10 closeout commits require a new exact-final-head GREEN run before merge.
+Exact-final PR head `2e8c15ba8a09ecc6a6355b8057a61e28741ed7e8` passed CI `34748534203`. PR #19 merged at `937ee81d55b0007147a6c764ce29d5d5fba9459b`. Fresh post-merge `main` CI `34750216460` completed successfully across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`, including activation, database, provider, knowledge, file-ingestion, WooCommerce knowledge, Playground REST, and widget-surface smoke verification.
 
 ## Durable Evidence
 - `docs/progress/STATUS.md`
@@ -81,16 +84,10 @@ Pre-closeout exact head `d170d56f725b6dabad704b9cad0fdbcba68f93a7` passed CI `34
 - `docs/superpowers/plans/2026-09-13-m14-task7-streaming-simulated-typing.md`
 - `docs/superpowers/plans/2026-09-13-m14-task8-admin-customizer-live-preview.md`
 - `docs/superpowers/plans/2026-09-13-m14-task9-embed-surfaces.md`
-- PR #19 — active milestone branch and merge gate.
+- PR #19 — merged milestone PR.
 
 ## Completion Gate
-Task implementation/review is complete. Remaining integration steps are mechanical evidence gates:
-1. exact-final-documentation-head CI GREEN;
-2. PR remains mergeable with no unresolved Critical/Important findings or review threads;
-3. merge PR #19 with expected-head protection;
-4. recover the new default-branch SHA;
-5. verify fresh post-merge `main` CI;
-6. update durable global status to M14 COMPLETE and proceed to M15 only after post-merge verification is green.
+Complete. All implementation/review/documentation gates passed; PR #19 merged with exact-head protection; fresh post-merge `main` CI is GREEN.
 
 ## Next Milestone
 M15 — Display Rules/RTL/Accessibility.
