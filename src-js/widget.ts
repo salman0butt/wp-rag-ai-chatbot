@@ -10,4 +10,7 @@ if ( ! Array.isArray( widgetWindow.wpRagAiChatbotWidgetConfigs ) ) {
 	widgetWindow.wpRagAiChatbotWidgetConfigs = [];
 }
 
-mountWidgets( document, widgetWindow.wpRagAiChatbotWidgetConfigs );
+mountWidgets(
+	document,
+	widgetWindow.wpRagAiChatbotWidgetConfigs
+);
