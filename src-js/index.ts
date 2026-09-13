@@ -942,8 +942,8 @@ export const KnowledgeManagementScreen = ( {
 			id: 'knowledge-job-source-id',
 			min: 1,
 			name: 'source_id',
-				required: true,
-				type: 'number',
+			required: true,
+			type: 'number',
 		} ),
 		createElement(
 			'label',
