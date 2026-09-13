@@ -90,12 +90,7 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		Functions\when( 'rest_url' )->justReturn( 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/' );
 		Functions\when( 'untrailingslashit' )->alias( static fn ( string $value ): string => rtrim( $value, '/' ) );
 		Functions\when( 'wp_json_encode' )->alias(
-			static fn ( array $value ): string => sprintf(
-				'{"bot_id":"%s","name":"%s","restBase":"%s"}',
-				$value['bot_id'],
-				$value['name'],
-				$value['restBase']
-			)
+			static fn ( array $value ): string => json_encode( $value, JSON_THROW_ON_ERROR )
 		);
 		Functions\when( 'esc_attr' )->alias(
 			static fn ( string $value ): string => htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' )
@@ -124,9 +119,9 @@ final class PublicWidgetBootstrapTest extends TestCase {
 				'wp-rag-ai-chatbot-widget',
 				self::callback(
 					static function ( string $script ): bool {
-						return str_contains( $script, self::BOT_ID )
-							&& str_contains( $script, 'https://example.test/wp-json/wp-rag-ai-chatbot/v1' )
-							&& str_contains( $script, 'Support' )
+						return str_contains( $script, '"botId":"' . self::BOT_ID . '"' )
+							&& str_contains( $script, '"restBase":"https://example.test/wp-json/wp-rag-ai-chatbot/v1"' )
+							&& str_contains( $script, '"config":{"bot_id":"' . self::BOT_ID . '","name":"Support"' )
 							&& ! str_contains( $script, 'openai' )
 							&& ! str_contains( $script, 'gpt-5' )
 							&& ! str_contains( $script, 'retrieval_limit' );
