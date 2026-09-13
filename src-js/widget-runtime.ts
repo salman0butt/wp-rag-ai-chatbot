@@ -3,6 +3,10 @@ import {
 	normalizeDisplayRules,
 	type DisplayRuleFacts,
 } from './display-rules';
+import {
+	createProactiveDelayCoordinator,
+	readProactiveDelayConfig,
+} from './widget-proactive';
 
 export type WidgetSurface = 'floating' | 'embedded' | 'fullscreen';
 
@@ -495,6 +499,19 @@ export const mountWidgets = (
 				launcher.focus();
 			};
 
+			const openPanel = ( moveFocus: boolean ): void => {
+				launcher.setAttribute( 'aria-expanded', 'true' );
+				panel.hidden = false;
+				if ( moveFocus ) {
+					close.focus();
+				}
+			};
+
+			const proactiveDelay = createProactiveDelayCoordinator(
+				readProactiveDelayConfig( config.config.display_rules ),
+				() => openPanel( false )
+			);
+
 			const showError = ( code: string | null, value: string ): void => {
 				finishRequest();
 				retryQuestion = value;
@@ -568,9 +585,8 @@ export const mountWidgets = (
 
 			if ( isFloating ) {
 				launcher.addEventListener( 'click', () => {
-					launcher.setAttribute( 'aria-expanded', 'true' );
-					panel.hidden = false;
-					close.focus();
+					proactiveDelay.cancel();
+					openPanel( true );
 				} );
 
 				close.addEventListener( 'click', closePanel );
@@ -599,6 +615,7 @@ export const mountWidgets = (
 			if ( isFloating ) {
 				panel.append( close, messages, form );
 				mount.append( launcher, panel );
+				proactiveDelay.start();
 			} else {
 				panel.append( messages, form );
 				mount.append( panel );
