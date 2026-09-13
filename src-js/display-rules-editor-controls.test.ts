@@ -120,10 +120,14 @@ describe( 'DisplayRulesEditor', () => {
 		expect( locale?.maxLength ).toBe( 35 );
 		expect( direction ).not.toBeNull();
 		expect(
-			root.querySelector( 'label[for="wp-rag-ai-chatbot-rules-url-include"]' )
+			root.querySelector(
+				'label[for="wp-rag-ai-chatbot-rules-url-include"]'
+			)
 		)?.not.toBeNull();
 		expect(
-			root.querySelector( 'label[for="wp-rag-ai-chatbot-rules-audience"]' )
+			root.querySelector(
+				'label[for="wp-rag-ai-chatbot-rules-audience"]'
+			)
 		)?.not.toBeNull();
 
 		if (
