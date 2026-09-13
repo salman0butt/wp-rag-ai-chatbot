@@ -101,7 +101,9 @@ describe( 'M15 proactive widget exit-intent trigger', () => {
 		);
 
 		coordinator.start();
-		window.dispatchEvent( new KeyboardEvent( 'keydown', { key: 'Escape' } ) );
+		window.dispatchEvent(
+			new KeyboardEvent( 'keydown', { key: 'Escape' } )
+		);
 		window.dispatchEvent(
 			new MouseEvent( 'mouseout', { clientY: 0, relatedTarget: null } )
 		);
