@@ -51,24 +51,28 @@ The bounded public chat REST path now rejects request-level runtime overrides, a
 ### Task 5 — conditional public asset/bootstrap/shortcode mount — COMPLETE
 The public shortcode/mount seam now resolves only the existing public-safe widget projection, fails closed for invalid/disabled bots, loads the dedicated widget assets only after a valid mount, and exposes no provider/model/credential/embedding/vector/retrieval authority to the browser. Production implementation head `9619f53cc7130dacbb835f54652ff46f412442f4` / CI `34721951718` is GREEN. Additional real WordPress mount/bootstrap verification is GREEN at `18436c394f826e83885cbb43bff30b509a00a205` / CI `34722486144`; the preceding `a1e0ad17905aba666444ce45c8f4db57db834272` / CI `34722293078` is explicitly **NOT RED** because only the smoke assertion's escaped-JSON representation was wrong. Scoped fallback review has **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md`.
 
-### Task 6 — floating launcher/panel UI — IN PROGRESS
-Task 6A floating-shell work is **COMPLETE**. The public widget now mounts idempotently, opens/closes with focus restoration and Escape handling, projects only bounded normalized appearance values, uses viewport-safe responsive CSS, and exposes visible/native accessible controls plus a named dialog. Final Task 6A implementation head `772a125fd4cf7beb8705a3eecc2c136d4c9c71a6` / CI `34725063417` is GREEN across all permanent jobs. Fallback review resolved one Important accessibility/UX finding and has **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK6A-WIDGET-SHELL.md`.
+### Task 6 — floating launcher/panel UI — COMPLETE
+Task 6A provides the idempotent accessible responsive launcher/panel shell with bounded normalized appearance projection, native visible controls, named dialog semantics, Escape dismissal, and focus restoration. Evidence: `docs/progress/M14-TASK6A-WIDGET-SHELL.md`.
 
-Task 6 remains open for the authoritative plan's Task 6B/6C conversation interaction and safe presentation slices.
+Task 6B provides the non-streaming public conversation transport over the existing Task 4 REST authority: accessible textarea/send controls, closed request DTO, one-in-flight bound, polite loading status, safe text rendering, server-issued conversation continuity, stable public error mapping, and bounded retry. Final Task 6B GREEN is `77b15a55b4ac6383eb0f7dd2faefb8a69d67ad54` / CI `34727350832`. Evidence: `docs/progress/M14-TASK6B-NONSTREAMING-CONVERSATION.md`.
+
+Task 6C adds safe copy/citation/link presentation and finite transcript rendering. Fallback review found and resolved two Important issues: unbounded transcript DOM and rejection of the server-authorized nullable `conversation_id`. History RED `947fa6beed97bb363cbb3163d88e65b37f5ca5e9` / CI `34728917027` became GREEN `f985e4f9cd117c7e931d3a31c85b58e88016d874` / CI `34729000652`; nullable-contract RED `de6dc1860fe0225699d50441e39622ae801037bd` / CI `34729171223` became GREEN `ddd4de2e1cd1af2ada84a0f703226377c958e030` / CI `34729280110`. Final Task 6 review state is **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK6C-WIDGET-PRESENTATION.md`.
 
 ## Current work
 
-Continue M14 Task 6 on existing PR #19 at **Task 6B — non-streaming public conversation submit/loading/error/retry behavior**. Reuse the existing Task 4 `POST /wp-rag-ai-chatbot/v1/chat` authority. The browser may send only `bot_id`, `question`, and optional `conversation_id`; do not introduce provider/model/embedding/vector/retrieval overrides or a second chat/retrieval runtime.
+Continue M14 on existing PR #19 at **Task 7 — streaming/simulated typing integration**. Reuse the existing production streaming authority where capability permits it; otherwise use a bounded simulated-typing presentation over the established non-streaming result. Preserve the Task 6 renderer and Task 4 server-owned runtime/provider/retrieval authority rather than creating parallel implementations.
 
 ## Durable recovery
 
 - `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md` — M14 auto-approved design and task order.
-- `docs/superpowers/plans/2026-09-13-m14-task6-launcher-panel-ui.md` — authoritative Task 6A-6C execution plan.
+- `docs/superpowers/plans/2026-09-13-m14-task6-launcher-panel-ui.md` — authoritative Task 6A-6C execution plan and closeout requirements.
 - `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` — Task 1 evidence.
 - `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection evidence and scoped review.
 - `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md` — Task 3 protected REST evidence and review.
 - `docs/progress/M14-TASK4-CLOSEOUT.md` — Task 4 production composition, integration, CI, and review evidence.
 - `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md` — Task 5 mount/build/smoke evidence and scoped review.
 - `docs/progress/M14-TASK6A-WIDGET-SHELL.md` — Task 6A shell TDD, CI, accessibility remediation, and review evidence.
+- `docs/progress/M14-TASK6B-NONSTREAMING-CONVERSATION.md` — Task 6B conversation/error/retry TDD and integration review evidence.
+- `docs/progress/M14-TASK6C-WIDGET-PRESENTATION.md` — Task 6C safe presentation/history/null-contract evidence and Task 6 closeout review.
 - PR #19 — active M14 implementation branch and execution source of truth.
 - `docs/milestones/M14-frontend-chatbot-customizer.md` — current M14 milestone ledger.
