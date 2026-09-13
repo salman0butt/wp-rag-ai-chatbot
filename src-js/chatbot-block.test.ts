@@ -22,27 +22,23 @@ type BlockSettings = {
 	save: () => null;
 };
 
-type WordPressWindow = Window &
-	typeof globalThis & {
-		wp?: {
-			blocks: { registerBlockType: typeof mockRegisterBlockType };
-			element: { createElement: typeof mockCreateElement };
-		};
-	};
-
 describe( 'chatbot Gutenberg block editor adapter', () => {
 	beforeEach( () => {
 		jest.resetModules();
 		mockRegisterBlockType.mockClear();
 		mockCreateElement.mockClear();
-		( window as WordPressWindow ).wp = {
-			blocks: { registerBlockType: mockRegisterBlockType },
-			element: { createElement: mockCreateElement },
-		};
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			writable: true,
+			value: {
+				blocks: { registerBlockType: mockRegisterBlockType },
+				element: { createElement: mockCreateElement },
+			},
+		} );
 	} );
 
 	afterEach( () => {
-		delete ( window as WordPressWindow ).wp;
+		Reflect.deleteProperty( window, 'wp' );
 	} );
 
 	it( 'registers one bounded bot-id editor and stays dynamic on save', () => {
