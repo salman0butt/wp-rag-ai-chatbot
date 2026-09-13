@@ -70,6 +70,9 @@ final readonly class DisplayRulesConfig {
 	);
 
 	private const MAX_TIMER_MS = 600000;
+	private const MAX_URL_PATTERNS = 32;
+	private const MAX_URL_PATTERN_LENGTH = 256;
+	private const MAX_URL_WILDCARDS = 4;
 
 	/**
 	 * Create one normalized display-rules value.
@@ -103,6 +106,18 @@ final readonly class DisplayRulesConfig {
 		if ( array_key_exists( 'visibility', $input ) ) {
 			$visibility = self::normalize_array( $input['visibility'] );
 			self::assert_allowed_keys( $visibility, self::VISIBILITY_KEYS );
+
+			$url_include = array_key_exists( 'url_include', $visibility )
+				? self::normalize_path_patterns( $visibility['url_include'] )
+				: array();
+			$url_exclude = array_key_exists( 'url_exclude', $visibility )
+				? self::normalize_path_patterns( $visibility['url_exclude'] )
+				: array();
+			if ( count( $url_include ) + count( $url_exclude ) > self::MAX_URL_PATTERNS ) {
+				throw new InvalidArgumentException( 'Too many URL display-rule patterns.' );
+			}
+			$data['visibility']['url_include'] = $url_include;
+			$data['visibility']['url_exclude'] = $url_exclude;
 
 			if ( array_key_exists( 'post_types', $visibility ) ) {
 				$data['visibility']['post_types'] = self::normalize_slug_list(
@@ -297,6 +312,45 @@ final readonly class DisplayRulesConfig {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Normalize a bounded list of deterministic URL/path patterns.
+	 *
+	 * @param mixed $value Candidate value.
+	 * @return list<string>
+	 * @throws InvalidArgumentException When a path pattern is invalid.
+	 */
+	private static function normalize_path_patterns( mixed $value ): array {
+		if ( ! is_array( $value ) ) {
+			throw new InvalidArgumentException( 'URL patterns must be a list.' );
+		}
+
+		$patterns = array();
+		foreach ( $value as $candidate ) {
+			if ( ! is_string( $candidate ) ) {
+				throw new InvalidArgumentException( 'URL pattern must be a string.' );
+			}
+
+			$pattern = trim( $candidate );
+			if (
+				'' === $pattern ||
+				strlen( $pattern ) > self::MAX_URL_PATTERN_LENGTH ||
+				substr_count( $pattern, '*' ) > self::MAX_URL_WILDCARDS
+			) {
+				throw new InvalidArgumentException( 'URL pattern is outside the supported bounds.' );
+			}
+
+			if ( '/' !== $pattern[0] && '*' !== $pattern[0] ) {
+				$pattern = '/' . $pattern;
+			}
+
+			if ( ! in_array( $pattern, $patterns, true ) ) {
+				$patterns[] = $pattern;
+			}
+		}
+
+		return $patterns;
 	}
 
 	/**
