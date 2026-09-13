@@ -1,6 +1,12 @@
 import { mountWidgets, type WidgetBootstrapConfig } from './widget-runtime';
 
+declare const require: ( path: string ) => unknown;
+
 const BOT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+
+type WidgetConfigWindow = Window & {
+	wpRagAiChatbotWidgetConfigs?: WidgetBootstrapConfig[];
+};
 
 const configWith = (
 	displayRules: Record< string, unknown >,
@@ -18,6 +24,41 @@ const configWith = (
 		...( facts ? { facts } : {} ),
 	} ) as unknown as WidgetBootstrapConfig;
 
+const eligibleConfig = (): WidgetBootstrapConfig =>
+	configWith(
+		{
+			enabled: true,
+			visibility: {
+				include_paths: [ '/docs/*' ],
+				authentication: 'authenticated',
+				roles: [ 'editor' ],
+				post_types: [ 'page' ],
+				woo_areas: [ 'shop' ],
+				schedule: {
+					days: [ 1 ],
+					start: '09:00',
+					end: '17:00',
+				},
+			},
+		},
+		{
+			path: '/docs/getting-started',
+			isAuthenticated: true,
+			roleMatches: [ 'editor' ],
+			postType: 'page',
+			wooArea: 'shop',
+			siteWeekday: 1,
+			siteMinuteOfDay: 10 * 60,
+		}
+	);
+
+const loadWidget = (): void => {
+	jest.resetModules();
+	jest.isolateModules( () => {
+		require( './widget' );
+	} );
+};
+
 describe( 'public widget display rules', () => {
 	beforeEach( () => {
 		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
@@ -25,6 +66,7 @@ describe( 'public widget display rules', () => {
 
 	afterEach( () => {
 		document.body.innerHTML = '';
+		delete ( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs;
 	} );
 
 	it( 'does not mount a widget when normalized display rules are disabled', () => {
@@ -37,36 +79,19 @@ describe( 'public widget display rules', () => {
 	} );
 
 	it( 'mounts an eligible widget using the trusted server presentation facts', () => {
-		const configs = [
-			configWith(
-				{
-					enabled: true,
-					visibility: {
-						include_paths: [ '/docs/*' ],
-						authentication: 'authenticated',
-						roles: [ 'editor' ],
-						post_types: [ 'page' ],
-						woo_areas: [ 'shop' ],
-						schedule: {
-							days: [ 1 ],
-							start: '09:00',
-							end: '17:00',
-						},
-					},
-				},
-				{
-					path: '/docs/getting-started',
-					isAuthenticated: true,
-					roleMatches: [ 'editor' ],
-					postType: 'page',
-					wooArea: 'shop',
-					siteWeekday: 1,
-					siteMinuteOfDay: 10 * 60,
-				}
-			),
+		expect( mountWidgets( document, [ eligibleConfig() ] ) ).toBe( 1 );
+		expect(
+			document.querySelector( '[data-wp-rag-ai-chatbot-launcher]' )
+		).not.toBeNull();
+	} );
+
+	it( 'uses the shared runtime as the single visibility authority', () => {
+		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
+			eligibleConfig(),
 		];
 
-		expect( mountWidgets( document, configs ) ).toBe( 1 );
+		loadWidget();
+
 		expect(
 			document.querySelector( '[data-wp-rag-ai-chatbot-launcher]' )
 		).not.toBeNull();
