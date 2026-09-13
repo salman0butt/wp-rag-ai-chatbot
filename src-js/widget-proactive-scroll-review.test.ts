@@ -23,6 +23,10 @@ const setScrollState = (
 };
 
 describe( 'M15 proactive scroll lifecycle hardening', () => {
+	afterEach( () => {
+		jest.restoreAllMocks();
+	} );
+
 	it( 'rejects scroll thresholds below the persisted one-percent minimum', () => {
 		expect(
 			readProactiveDelayConfig( {
@@ -38,15 +42,15 @@ describe( 'M15 proactive scroll lifecycle hardening', () => {
 
 	it( 'coalesces burst scroll events through one animation-frame evaluation', () => {
 		const callbacks: FrameRequestCallback[] = [];
-		const requestAnimationFrame = jest
-			.spyOn( window, 'requestAnimationFrame' )
-			.mockImplementation( ( callback: FrameRequestCallback ) => {
+		jest.spyOn( window, 'requestAnimationFrame' ).mockImplementation(
+			( callback: FrameRequestCallback ) => {
 				callbacks.push( callback );
 				return callbacks.length;
-			} );
-		const cancelAnimationFrame = jest
-			.spyOn( window, 'cancelAnimationFrame' )
-			.mockImplementation( () => undefined );
+			}
+		);
+		jest.spyOn( window, 'cancelAnimationFrame' ).mockImplementation(
+			() => undefined
+		);
 		const onOpen = jest.fn();
 		const coordinator = createProactiveDelayCoordinator(
 			readProactiveDelayConfig( {
@@ -68,11 +72,19 @@ describe( 'M15 proactive scroll lifecycle hardening', () => {
 		expect( onOpen ).toHaveBeenCalledTimes( 1 );
 
 		coordinator.cancel();
-		requestAnimationFrame.mockRestore();
-		cancelAnimationFrame.mockRestore();
 	} );
 
 	it( 'does not treat a non-scrollable page as one hundred percent scrolled', () => {
+		const callbacks: FrameRequestCallback[] = [];
+		jest.spyOn( window, 'requestAnimationFrame' ).mockImplementation(
+			( callback: FrameRequestCallback ) => {
+				callbacks.push( callback );
+				return callbacks.length;
+			}
+		);
+		jest.spyOn( window, 'cancelAnimationFrame' ).mockImplementation(
+			() => undefined
+		);
 		const onOpen = jest.fn();
 		const coordinator = createProactiveDelayCoordinator(
 			readProactiveDelayConfig( {
@@ -84,6 +96,8 @@ describe( 'M15 proactive scroll lifecycle hardening', () => {
 		setScrollState( 0, 500, 500 );
 		coordinator.start();
 
+		expect( callbacks ).toHaveLength( 1 );
+		callbacks[ 0 ]( 0 );
 		expect( onOpen ).not.toHaveBeenCalled();
 		coordinator.cancel();
 	} );
