@@ -60,6 +60,26 @@ final readonly class DisplayRulesConfig {
 	);
 
 	/**
+	 * Allowed starter configuration keys.
+	 *
+	 * @var list<string>
+	 */
+	private const STARTER_KEYS = array(
+		'default',
+		'by_page',
+	);
+
+	/**
+	 * Allowed page-specific starter-rule keys.
+	 *
+	 * @var list<string>
+	 */
+	private const STARTER_RULE_KEYS = array(
+		'pattern',
+		'prompts',
+	);
+
+	/**
 	 * Allowed localization configuration keys.
 	 *
 	 * @var list<string>
@@ -83,8 +103,11 @@ final readonly class DisplayRulesConfig {
 
 	private const MAX_CLICK_SELECTOR_LENGTH = 160;
 	private const MAX_LOCALE_LENGTH         = 35;
+	private const MAX_PROMPT_CODEPOINTS     = 160;
 	private const MAX_SLUG_LENGTH           = 64;
 	private const MAX_SLUG_VALUES           = 16;
+	private const MAX_STARTER_MAPPINGS      = 8;
+	private const MAX_STARTER_PROMPTS       = 4;
 	private const MAX_TIMER_MS              = 600000;
 	private const MAX_URL_PATTERNS          = 32;
 	private const MAX_URL_PATTERN_LENGTH    = 256;
@@ -202,6 +225,22 @@ final readonly class DisplayRulesConfig {
 			if ( array_key_exists( 'click_selector', $proactive ) ) {
 				$data['proactive']['click_selector'] = self::normalize_click_selector(
 					$proactive['click_selector']
+				);
+			}
+		}
+
+		if ( array_key_exists( 'starters', $input ) ) {
+			$starters = self::normalize_array( $input['starters'] );
+			self::assert_allowed_keys( $starters, self::STARTER_KEYS );
+			if ( array_key_exists( 'default', $starters ) ) {
+				$data['starters']['default'] = self::normalize_prompt_list(
+					$starters['default'],
+					false
+				);
+			}
+			if ( array_key_exists( 'by_page', $starters ) ) {
+				$data['starters']['by_page'] = self::normalize_starter_mappings(
+					$starters['by_page']
 				);
 			}
 		}
@@ -551,6 +590,81 @@ final readonly class DisplayRulesConfig {
 		}
 
 		return $selector;
+	}
+
+	/**
+	 * Normalize one starter prompt list.
+	 *
+	 * @param mixed $value Candidate prompt list.
+	 * @param bool  $require_nonempty Whether at least one prompt is required.
+	 * @return list<string>
+	 * @throws InvalidArgumentException When prompts are invalid or outside bounds.
+	 */
+	private static function normalize_prompt_list( mixed $value, bool $require_nonempty ): array {
+		if ( ! is_array( $value ) || count( $value ) > self::MAX_STARTER_PROMPTS ) {
+			throw new InvalidArgumentException( 'Starter prompt list is outside the supported bounds.' );
+		}
+
+		$prompts = array();
+		foreach ( $value as $candidate ) {
+			if ( ! is_string( $candidate ) ) {
+				throw new InvalidArgumentException( 'Starter prompt must be a string.' );
+			}
+			$prompt = trim( $candidate );
+			if ( '' === $prompt || self::unicode_codepoint_length( $prompt ) > self::MAX_PROMPT_CODEPOINTS ) {
+				throw new InvalidArgumentException( 'Starter prompt is outside the supported bounds.' );
+			}
+			$prompts[] = $prompt;
+		}
+		if ( $require_nonempty && array() === $prompts ) {
+			throw new InvalidArgumentException( 'Page-specific starter prompts cannot be empty.' );
+		}
+
+		return $prompts;
+	}
+
+	/**
+	 * Normalize page-specific starter mappings.
+	 *
+	 * @param mixed $value Candidate mappings.
+	 * @return list<array{pattern:string,prompts:list<string>}>
+	 * @throws InvalidArgumentException When a mapping is invalid or outside bounds.
+	 */
+	private static function normalize_starter_mappings( mixed $value ): array {
+		if ( ! is_array( $value ) || count( $value ) > self::MAX_STARTER_MAPPINGS ) {
+			throw new InvalidArgumentException( 'Starter mappings are outside the supported bounds.' );
+		}
+
+		$mappings = array();
+		foreach ( $value as $candidate ) {
+			$mapping = self::normalize_array( $candidate );
+			self::assert_allowed_keys( $mapping, self::STARTER_RULE_KEYS );
+			if ( ! array_key_exists( 'pattern', $mapping ) || ! array_key_exists( 'prompts', $mapping ) ) {
+				throw new InvalidArgumentException( 'Starter mapping is incomplete.' );
+			}
+			$patterns = self::normalize_path_patterns( array( $mapping['pattern'] ) );
+			$mappings[] = array(
+				'pattern' => $patterns[0],
+				'prompts' => self::normalize_prompt_list( $mapping['prompts'], true ),
+			);
+		}
+
+		return $mappings;
+	}
+
+	/**
+	 * Count Unicode codepoints in one validated UTF-8 string.
+	 *
+	 * @param string $value Candidate UTF-8 text.
+	 * @throws InvalidArgumentException When the text is not valid UTF-8.
+	 */
+	private static function unicode_codepoint_length( string $value ): int {
+		$count = preg_match_all( '/./us', $value );
+		if ( false === $count ) {
+			throw new InvalidArgumentException( 'Starter prompt must be valid UTF-8.' );
+		}
+
+		return $count;
 	}
 
 	/**
