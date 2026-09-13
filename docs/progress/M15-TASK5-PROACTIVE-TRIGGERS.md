@@ -122,6 +122,55 @@ Final review of `233887a78d7cb695ab7040138df7df6d44b7db42`:
 
 Task 5B final implementation: `233887a78d7cb695ab7040138df7df6d44b7db42`, CI `34782396162` — GREEN across `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite.
 
+## Task 5C — bounded inactivity trigger
+
+Status: COMPLETE.
+
+### Scope
+
+Extend the same proactive coordinator with a bounded inactivity timer that resets only on a small visitor-activity event set and races through the existing one-shot completion path.
+
+Required behavior:
+
+- persisted/browser inactivity duration semantics stay aligned at 0..600000 ms;
+- one inactivity timer is active at most;
+- `pointerdown` and `keydown` reset that timer;
+- the first eligible proactive trigger wins once;
+- completion or cancellation clears the inactivity timer and listeners;
+- automatic open keeps using the existing no-chat/no-focus-steal runtime path.
+
+### TDD evidence
+
+- `791dd8425a29543c8c048e1485cdece0b3a5f019` — **NOT RED**, CI `34782751155`. The intended test-only fixture existed, but `js-quality` stopped at Prettier before Jest, so no behavioral RED claim is made.
+- `8ee7928e23870e37ebd594f4cb641b2d8ccb739a` — **NOT RED**, CI `34782828483`. A first formatting repair still stopped in Prettier before Jest.
+- `8c10401602e16463109d4020201c6c66714287f5` — **RED**, CI `34782939387`. Package/lint/typecheck reached Jest; 54 existing suites passed and only `widget-proactive-inactivity.test.ts` failed with the three intended missing behaviors: inactivity normalization was absent, activity did not reset/open the timer, and cancellation had no inactivity listeners to remove.
+- `83124518b4bc05d95d58d1d98dd9f30ef92ba7eb` — **GREEN**, CI `34783022482`. Exact-head `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed.
+
+### Implementation
+
+`src-js/widget-proactive.ts` remains the only proactive coordinator and now:
+
+- reads `proactive.inactivity_ms` using the same bounded integer normalizer as the persisted PHP authority;
+- keeps one inactivity timer and one stable reset callback;
+- listens only to the bounded `pointerdown` and `keydown` activity set;
+- resets the inactivity timer on those events;
+- removes both listeners and clears the timer on completion/cancellation;
+- shares the existing `complete()` path with delay and scroll so only one proactive opening can win.
+
+### Review
+
+Independent reviewer/subagent transport is unavailable in this execution runtime, so the repository-approved scoped fallback review was used and the limitation is recorded honestly.
+
+- Correctness: 0 unresolved Critical/Important findings. Browser bounds match persisted 0..600000 semantics, resets are deterministic, and delay/scroll/inactivity converge on the same one-shot completion state.
+- Security/privacy: 0 unresolved Critical/Important findings. The coordinator observes only public presentation config plus coarse local activity events; it records/transmits no input contents, user identifiers, credentials, provider/model configuration, retrieval configuration, or other private data.
+- Performance: 0 unresolved Critical/Important findings. The slice adds one timer and two stable listeners at most, with deterministic cleanup and no polling/network activity.
+- Accessibility: 0 unresolved Critical/Important findings. Keyboard activity only resets the inactivity deadline; it does not itself open or steal focus. Proactive opening still delegates to the established no-focus-steal presentation path.
+- Architecture/duplication: 0 unresolved Critical/Important findings. The existing coordinator is extended in place; there is no second trigger runtime and no chat/RAG duplication.
+
+### Verification
+
+Task 5C final implementation: `83124518b4bc05d95d58d1d98dd9f30ef92ba7eb`, CI `34783022482` — GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
+
 ## Next unfinished unit
 
-Task 5C — inactivity trigger. Establish test-only RED for one bounded inactivity timer, reset-on-activity behavior, one-shot opening, manual/open/dispose cleanup, no chat request, and interaction with the existing delay/scroll one-shot coordinator. Extend the same coordinator/runtime seam; do not create a parallel trigger or chat path.
+Task 5D — exit-intent trigger. Establish test-only RED for pointer-capable desktop gating, top-boundary intent, once-only opening, keyboard/mobile false-positive prevention, and cancellation cleanup. Extend the same coordinator/runtime seam; do not create a parallel trigger or chat path.
