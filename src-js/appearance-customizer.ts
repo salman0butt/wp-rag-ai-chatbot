@@ -111,7 +111,9 @@ export const AppearanceCustomizer = (
 					type: 'color',
 					value: draft.primary_color,
 					onChange: ( event: Event ) => {
-						updateDraft( { primary_color: readInputValue( event ) } );
+						updateDraft( {
+							primary_color: readInputValue( event ),
+						} );
 					},
 				} )
 			),
