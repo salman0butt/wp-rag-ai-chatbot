@@ -134,7 +134,10 @@ describe( 'display rules editor persistence integration', () => {
 					return {
 						ok: true,
 						status: 200,
-						json: async () => ( { ready: true, next_step: 'complete' } ),
+						json: async () => ( {
+							ready: true,
+							next_step: 'complete',
+						} ),
 					};
 				}
 				if ( url.includes( '/admin/bots?' ) ) {
@@ -156,13 +159,17 @@ describe( 'display rules editor persistence integration', () => {
 						json: async () => ( { appearance } ),
 					};
 				}
-				if ( url.endsWith( '/admin/bots/bot-existing/display-rules' ) ) {
+				if (
+					url.endsWith( '/admin/bots/bot-existing/display-rules' )
+				) {
 					if ( init?.method === 'PUT' ) {
 						return {
 							ok: true,
 							status: 200,
 							json: async () => ( {
-								display_rules: JSON.parse( String( init.body ) ),
+								display_rules: JSON.parse(
+									String( init.body )
+								),
 							} ),
 						};
 					}
@@ -214,11 +221,13 @@ describe( 'display rules editor persistence integration', () => {
 		include.dispatchEvent( new Event( 'change', { bubbles: true } ) );
 		audience.value = 'anonymous';
 		audience.dispatchEvent( new Event( 'change', { bubbles: true } ) );
-		root.querySelector< HTMLFormElement >(
-			'form[data-display-rules-editor]'
-		)?.dispatchEvent(
-			new Event( 'submit', { bubbles: true, cancelable: true } )
-		);
+		root
+			.querySelector< HTMLFormElement >(
+				'form[data-display-rules-editor]'
+			)
+			?.dispatchEvent(
+				new Event( 'submit', { bubbles: true, cancelable: true } )
+			);
 		await tick();
 		await tick();
 
