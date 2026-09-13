@@ -164,4 +164,45 @@ final class DisplayRulesConfigTest extends TestCase {
 			)
 		);
 	}
+
+	/** Role and post-type collections must remain bounded. */
+	public function test_from_array_rejects_too_many_slug_values(): void {
+		$roles = array();
+		for ( $index = 1; $index <= 17; $index++ ) {
+			$roles[] = 'role_' . $index;
+		}
+
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'roles' => $roles,
+				),
+			)
+		);
+	}
+
+	/** Persisted slugs must use the bounded identifier grammar. */
+	public function test_from_array_rejects_malformed_slug(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'post_types' => array( 'landing page' ),
+				),
+			)
+		);
+	}
+
+	/** Explicit locale identifiers must use the normalized supported grammar. */
+	public function test_from_array_rejects_invalid_locale(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'localization' => array(
+					'locale' => 'not a locale!',
+				),
+			)
+		);
+	}
 }
