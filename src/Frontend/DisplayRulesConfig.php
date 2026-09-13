@@ -28,7 +28,11 @@ final readonly class DisplayRulesConfig {
 		'localization',
 	);
 
-	/** @var list<string> */
+	/**
+	 * Allowed visibility configuration keys.
+	 *
+	 * @var list<string>
+	 */
 	private const VISIBILITY_KEYS = array(
 		'url_include',
 		'url_exclude',
@@ -40,7 +44,11 @@ final readonly class DisplayRulesConfig {
 		'schedule',
 	);
 
-	/** @var list<string> */
+	/**
+	 * Allowed proactive configuration keys.
+	 *
+	 * @var list<string>
+	 */
 	private const PROACTIVE_KEYS = array(
 		'enabled',
 		'first_visit_only',
@@ -51,7 +59,11 @@ final readonly class DisplayRulesConfig {
 		'click_selector',
 	);
 
-	/** @var list<string> */
+	/**
+	 * Allowed localization configuration keys.
+	 *
+	 * @var list<string>
+	 */
 	private const LOCALIZATION_KEYS = array(
 		'locale',
 		'direction',
@@ -224,7 +236,8 @@ final readonly class DisplayRulesConfig {
 	 * Reject unknown keys in one configuration scope.
 	 *
 	 * @param array<string,mixed> $input Candidate configuration scope.
-	 * @param list<string>        $allowed Allowed keys.
+	 * @param array               $allowed Allowed keys.
+	 * @phpstan-param list<string> $allowed
 	 * @throws InvalidArgumentException When an unknown key is supplied.
 	 */
 	private static function assert_allowed_keys( array $input, array $allowed ): void {
