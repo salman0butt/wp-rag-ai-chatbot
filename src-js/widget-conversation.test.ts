@@ -49,6 +49,7 @@ const flushPromises = async (): Promise< void > => {
 
 describe( 'public widget conversation controls', () => {
 	beforeEach( () => {
+		jest.useFakeTimers();
 		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
 		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
 			{
@@ -77,6 +78,7 @@ describe( 'public widget conversation controls', () => {
 	} );
 
 	afterEach( () => {
+		jest.useRealTimers();
 		document.body.innerHTML = '';
 		delete ( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs;
 		Object.defineProperty( globalThis, 'fetch', {
@@ -158,6 +160,7 @@ describe( 'public widget conversation controls', () => {
 		loadWidget();
 		submitQuestion( '<strong>Hello?</strong>' );
 		await flushPromises();
+		jest.runAllTimers();
 
 		const messages = document.querySelector< HTMLElement >(
 			'[data-wp-rag-ai-chatbot-messages]'
@@ -197,6 +200,7 @@ describe( 'public widget conversation controls', () => {
 		loadWidget();
 		submitQuestion( 'One-off question' );
 		await flushPromises();
+		jest.runAllTimers();
 
 		const assistantMessage = document.querySelector< HTMLElement >(
 			'[data-wp-rag-ai-chatbot-message="assistant"]'
