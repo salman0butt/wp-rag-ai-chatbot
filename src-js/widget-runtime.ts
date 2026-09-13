@@ -263,7 +263,10 @@ export const mountWidgets = (
 				retry.hidden = false;
 			};
 
-			const sendQuestion = ( value: string, appendUser: boolean ): void => {
+			const sendQuestion = (
+				value: string,
+				appendUser: boolean
+			): void => {
 				if ( requestInFlight ) {
 					return;
 				}
@@ -300,7 +303,10 @@ export const mountWidgets = (
 					.then(
 						( result ) => {
 							if ( ! result.ok ) {
-								showError( readError( result.payload )?.code ?? null, value );
+								showError(
+									readError( result.payload )?.code ?? null,
+									value
+								);
 								return;
 							}
 
