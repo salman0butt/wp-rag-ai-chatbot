@@ -28,6 +28,37 @@ final readonly class DisplayRulesConfig {
 		'localization',
 	);
 
+	/** @var list<string> */
+	private const VISIBILITY_KEYS = array(
+		'url_include',
+		'url_exclude',
+		'post_types',
+		'audience',
+		'roles',
+		'woo_areas',
+		'devices',
+		'schedule',
+	);
+
+	/** @var list<string> */
+	private const PROACTIVE_KEYS = array(
+		'enabled',
+		'first_visit_only',
+		'delay_ms',
+		'scroll_percent',
+		'exit_intent',
+		'inactivity_ms',
+		'click_selector',
+	);
+
+	/** @var list<string> */
+	private const LOCALIZATION_KEYS = array(
+		'locale',
+		'direction',
+	);
+
+	private const MAX_TIMER_MS = 600000;
+
 	/**
 	 * Create one normalized display-rules value.
 	 *
@@ -50,12 +81,7 @@ final readonly class DisplayRulesConfig {
 	 * @throws InvalidArgumentException When an unknown or invalid value is supplied.
 	 */
 	public static function from_array( array $input ): self {
-		$unknown_keys = array_diff( array_keys( $input ), self::ALLOWED_KEYS );
-		if ( array() !== $unknown_keys ) {
-			throw new InvalidArgumentException(
-				'Display-rules configuration contains unknown keys.'
-			);
-		}
+		self::assert_allowed_keys( $input, self::ALLOWED_KEYS );
 
 		$data = self::default_data();
 		if ( array_key_exists( 'enabled', $input ) ) {
@@ -64,6 +90,7 @@ final readonly class DisplayRulesConfig {
 
 		if ( array_key_exists( 'visibility', $input ) ) {
 			$visibility = self::normalize_array( $input['visibility'] );
+			self::assert_allowed_keys( $visibility, self::VISIBILITY_KEYS );
 
 			if ( array_key_exists( 'post_types', $visibility ) ) {
 				$data['visibility']['post_types'] = self::normalize_slug_list(
@@ -97,6 +124,8 @@ final readonly class DisplayRulesConfig {
 
 		if ( array_key_exists( 'proactive', $input ) ) {
 			$proactive = self::normalize_array( $input['proactive'] );
+			self::assert_allowed_keys( $proactive, self::PROACTIVE_KEYS );
+
 			foreach ( array( 'enabled', 'first_visit_only', 'exit_intent' ) as $key ) {
 				if ( array_key_exists( $key, $proactive ) ) {
 					$data['proactive'][ $key ] = self::normalize_bool(
@@ -105,17 +134,29 @@ final readonly class DisplayRulesConfig {
 				}
 			}
 
-			foreach ( array( 'delay_ms', 'scroll_percent', 'inactivity_ms' ) as $key ) {
+			foreach ( array( 'delay_ms', 'inactivity_ms' ) as $key ) {
 				if ( array_key_exists( $key, $proactive ) ) {
-					$data['proactive'][ $key ] = self::normalize_nullable_int(
-						$proactive[ $key ]
+					$data['proactive'][ $key ] = self::normalize_nullable_int_range(
+						$proactive[ $key ],
+						0,
+						self::MAX_TIMER_MS
 					);
 				}
+			}
+
+			if ( array_key_exists( 'scroll_percent', $proactive ) ) {
+				$data['proactive']['scroll_percent'] = self::normalize_nullable_int_range(
+					$proactive['scroll_percent'],
+					1,
+					100
+				);
 			}
 		}
 
 		if ( array_key_exists( 'localization', $input ) ) {
 			$localization = self::normalize_array( $input['localization'] );
+			self::assert_allowed_keys( $localization, self::LOCALIZATION_KEYS );
+
 			if ( array_key_exists( 'locale', $localization ) ) {
 				$data['localization']['locale'] = self::normalize_locale(
 					$localization['locale']
@@ -177,6 +218,22 @@ final readonly class DisplayRulesConfig {
 				'direction' => 'auto',
 			),
 		);
+	}
+
+	/**
+	 * Reject unknown keys in one configuration scope.
+	 *
+	 * @param array<string,mixed> $input Candidate configuration scope.
+	 * @param list<string>        $allowed Allowed keys.
+	 * @throws InvalidArgumentException When an unknown key is supplied.
+	 */
+	private static function assert_allowed_keys( array $input, array $allowed ): void {
+		$unknown_keys = array_diff( array_keys( $input ), $allowed );
+		if ( array() !== $unknown_keys ) {
+			throw new InvalidArgumentException(
+				'Display-rules configuration contains unknown keys.'
+			);
+		}
 	}
 
 	/**
@@ -282,17 +339,23 @@ final readonly class DisplayRulesConfig {
 	}
 
 	/**
-	 * Normalize one nullable integer.
+	 * Normalize one nullable bounded integer.
 	 *
 	 * @param mixed $value Candidate value.
-	 * @throws InvalidArgumentException When the value is not an integer or null.
+	 * @param int   $minimum Inclusive minimum.
+	 * @param int   $maximum Inclusive maximum.
+	 * @throws InvalidArgumentException When the value is not null or a bounded integer.
 	 */
-	private static function normalize_nullable_int( mixed $value ): ?int {
+	private static function normalize_nullable_int_range(
+		mixed $value,
+		int $minimum,
+		int $maximum
+	): ?int {
 		if ( null === $value ) {
 			return null;
 		}
-		if ( ! is_int( $value ) ) {
-			throw new InvalidArgumentException( 'Configuration value must be an integer.' );
+		if ( ! is_int( $value ) || $value < $minimum || $value > $maximum ) {
+			throw new InvalidArgumentException( 'Configuration integer is outside the supported range.' );
 		}
 
 		return $value;
