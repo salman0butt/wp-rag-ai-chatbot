@@ -80,7 +80,11 @@ final class WordPressDisplayContextResolver {
 		return str_starts_with( $path, '/' ) ? $path : '/' . $path;
 	}
 
-	/** Resolve a finite WooCommerce presentation-area token without requiring WooCommerce. */
+	/**
+	 * Resolve a finite WooCommerce presentation-area token without requiring WooCommerce.
+	 *
+	 * @param string|null $post_type Normalized current post type.
+	 */
 	private function resolve_woo_area( ?string $post_type ): ?string {
 		if ( 'product' === $post_type ) {
 			return 'product';
@@ -102,7 +106,11 @@ final class WordPressDisplayContextResolver {
 		return null;
 	}
 
-	/** Normalize WordPress locale syntax to the browser-safe M15 locale token. */
+	/**
+	 * Normalize WordPress locale syntax to the browser-safe M15 locale token.
+	 *
+	 * @param string $locale WordPress site locale.
+	 */
 	private function normalize_locale( string $locale ): string {
 		$locale = strtolower( str_replace( '_', '-', trim( $locale ) ) );
 		if ( 1 === preg_match( '/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/', $locale ) && strlen( $locale ) <= 35 ) {
