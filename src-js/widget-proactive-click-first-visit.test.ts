@@ -87,40 +87,44 @@ describe( 'M15 proactive click and first-visit triggers', () => {
 		expect( onOpen ).toHaveBeenCalledTimes( 1 );
 	} );
 
-	it( 'stores a bot-scoped first-visit marker and suppresses later coordinators for that bot', () => {
-		document.body.innerHTML = '<button class="welcome-cta">Welcome</button>';
-		const config = readExtendedConfig( {
-			proactive: {
-				enabled: true,
-				first_visit_only: true,
-				click_selector: '.welcome-cta',
-			},
-		} );
-		const firstOpen = jest.fn();
-		const secondOpen = jest.fn();
-		const first = createCoordinator( config, firstOpen, {
-			botId: 'bot-first-visit-storage',
-			documentRoot: document,
-		} );
+	it(
+		'stores a bot-scoped first-visit marker and suppresses later coordinators for that bot',
+		() => {
+			document.body.innerHTML =
+				'<button class="welcome-cta">Welcome</button>';
+			const config = readExtendedConfig( {
+				proactive: {
+					enabled: true,
+					first_visit_only: true,
+					click_selector: '.welcome-cta',
+				},
+			} );
+			const firstOpen = jest.fn();
+			const secondOpen = jest.fn();
+			const first = createCoordinator( config, firstOpen, {
+				botId: 'bot-first-visit-storage',
+				documentRoot: document,
+			} );
 
-		first.start();
-		expect(
-			window.localStorage.getItem(
-				'wp-rag-ai-chatbot:proactive-seen:bot-first-visit-storage'
-			)
-		).toBe( '1' );
-		const target = document.querySelector( '.welcome-cta' ) as Element;
-		click( target );
-		expect( firstOpen ).toHaveBeenCalledTimes( 1 );
+			first.start();
+			expect(
+				window.localStorage.getItem(
+					'wp-rag-ai-chatbot:proactive-seen:bot-first-visit-storage'
+				)
+			).toBe( '1' );
+			const target = document.querySelector( '.welcome-cta' ) as Element;
+			click( target );
+			expect( firstOpen ).toHaveBeenCalledTimes( 1 );
 
-		const second = createCoordinator( config, secondOpen, {
-			botId: 'bot-first-visit-storage',
-			documentRoot: document,
-		} );
-		second.start();
-		click( target );
-		expect( secondOpen ).not.toHaveBeenCalled();
-	} );
+			const second = createCoordinator( config, secondOpen, {
+				botId: 'bot-first-visit-storage',
+				documentRoot: document,
+			} );
+			second.start();
+			click( target );
+			expect( secondOpen ).not.toHaveBeenCalled();
+		}
+	);
 
 	it( 'falls back to session-local bot scoping when storage throws without cross-bot bleed', () => {
 		document.body.innerHTML = '<button id="fallback-cta">Open</button>';
