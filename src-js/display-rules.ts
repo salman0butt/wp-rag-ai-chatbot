@@ -308,11 +308,14 @@ const normalizeLocaleToken = ( value: unknown ): string | null => {
 	}
 
 	const normalized = value.trim().replaceAll( '_', '-' ).toLowerCase();
-	return
-		normalized.length <= MAX_LOCALE_LENGTH &&
-		LOCALE_PATTERN.test( normalized )
-			? normalized
-			: null;
+	if (
+		normalized.length > MAX_LOCALE_LENGTH ||
+		! LOCALE_PATTERN.test( normalized )
+	) {
+		return null;
+	}
+
+	return normalized;
 };
 
 const normalizeLocaleSetting = ( value: unknown ): string => {
