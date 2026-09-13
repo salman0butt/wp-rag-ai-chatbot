@@ -69,13 +69,26 @@ final readonly class DisplayRulesConfig {
 		'direction',
 	);
 
-	private const MAX_LOCALE_LENGTH      = 35;
-	private const MAX_SLUG_LENGTH        = 64;
-	private const MAX_SLUG_VALUES        = 16;
-	private const MAX_TIMER_MS           = 600000;
-	private const MAX_URL_PATTERNS       = 32;
-	private const MAX_URL_PATTERN_LENGTH = 256;
-	private const MAX_URL_WILDCARDS      = 4;
+	/**
+	 * Allowed schedule configuration keys.
+	 *
+	 * @var list<string>
+	 */
+	private const SCHEDULE_KEYS = array(
+		'timezone',
+		'days',
+		'start',
+		'end',
+	);
+
+	private const MAX_CLICK_SELECTOR_LENGTH = 160;
+	private const MAX_LOCALE_LENGTH         = 35;
+	private const MAX_SLUG_LENGTH           = 64;
+	private const MAX_SLUG_VALUES           = 16;
+	private const MAX_TIMER_MS              = 600000;
+	private const MAX_URL_PATTERNS          = 32;
+	private const MAX_URL_PATTERN_LENGTH    = 256;
+	private const MAX_URL_WILDCARDS         = 4;
 
 	/**
 	 * Create one normalized display-rules value.
@@ -150,6 +163,11 @@ final readonly class DisplayRulesConfig {
 					array( 'desktop', 'tablet', 'mobile' )
 				);
 			}
+			if ( array_key_exists( 'schedule', $visibility ) ) {
+				$data['visibility']['schedule'] = self::normalize_schedule(
+					$visibility['schedule']
+				);
+			}
 		}
 
 		if ( array_key_exists( 'proactive', $input ) ) {
@@ -179,6 +197,11 @@ final readonly class DisplayRulesConfig {
 					$proactive['scroll_percent'],
 					1,
 					100
+				);
+			}
+			if ( array_key_exists( 'click_selector', $proactive ) ) {
+				$data['proactive']['click_selector'] = self::normalize_click_selector(
+					$proactive['click_selector']
 				);
 			}
 		}
@@ -439,6 +462,95 @@ final readonly class DisplayRulesConfig {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Normalize one optional site-time schedule.
+	 *
+	 * @param mixed $value Candidate schedule.
+	 * @return array{timezone:string,days:list<int>,start:?string,end:?string}|null
+	 * @throws InvalidArgumentException When the schedule is invalid.
+	 */
+	private static function normalize_schedule( mixed $value ): ?array {
+		if ( null === $value ) {
+			return null;
+		}
+
+		$schedule = self::normalize_array( $value );
+		self::assert_allowed_keys( $schedule, self::SCHEDULE_KEYS );
+		$timezone = array_key_exists( 'timezone', $schedule )
+			? self::normalize_choice( $schedule['timezone'], array( 'site' ) )
+			: 'site';
+		$days = array();
+		if ( array_key_exists( 'days', $schedule ) ) {
+			if ( ! is_array( $schedule['days'] ) ) {
+				throw new InvalidArgumentException( 'Schedule days must be a list.' );
+			}
+			foreach ( $schedule['days'] as $day ) {
+				if ( ! is_int( $day ) || $day < 0 || $day > 6 ) {
+					throw new InvalidArgumentException( 'Schedule day is outside the supported range.' );
+				}
+				if ( ! in_array( $day, $days, true ) ) {
+					$days[] = $day;
+				}
+			}
+		}
+
+		return array(
+			'timezone' => $timezone,
+			'days'     => $days,
+			'start'    => self::normalize_schedule_time( $schedule['start'] ?? null ),
+			'end'      => self::normalize_schedule_time( $schedule['end'] ?? null ),
+		);
+	}
+
+	/**
+	 * Normalize one optional HH:MM schedule time.
+	 *
+	 * @param mixed $value Candidate time.
+	 * @throws InvalidArgumentException When the time is invalid.
+	 */
+	private static function normalize_schedule_time( mixed $value ): ?string {
+		if ( null === $value ) {
+			return null;
+		}
+		if (
+			! is_string( $value ) ||
+			1 !== preg_match( '/^(?:[01]\d|2[0-3]):[0-5]\d$/', $value )
+		) {
+			throw new InvalidArgumentException( 'Schedule time is invalid.' );
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Normalize one optional simple CSS click selector.
+	 *
+	 * @param mixed $value Candidate selector.
+	 * @throws InvalidArgumentException When the selector is invalid.
+	 */
+	private static function normalize_click_selector( mixed $value ): ?string {
+		if ( null === $value ) {
+			return null;
+		}
+		if ( ! is_string( $value ) ) {
+			throw new InvalidArgumentException( 'Click selector must be a string.' );
+		}
+
+		$selector = trim( $value );
+		if (
+			'' === $selector ||
+			strlen( $selector ) > self::MAX_CLICK_SELECTOR_LENGTH ||
+			1 !== preg_match(
+				'/^(?:[a-zA-Z][a-zA-Z0-9_-]*)?(?:[.#][a-zA-Z_][a-zA-Z0-9_-]*|\[[a-zA-Z_][a-zA-Z0-9_-]*(?:=(?:"[^"]*"|\x27[^\x27]*\x27|[a-zA-Z0-9_-]+))?\])*$/',
+				$selector
+			)
+		) {
+			throw new InvalidArgumentException( 'Click selector is outside the supported grammar.' );
+		}
+
+		return $selector;
 	}
 
 	/**
