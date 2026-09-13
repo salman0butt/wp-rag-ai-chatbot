@@ -56,6 +56,50 @@ final class DisplayRulesConfigTest extends TestCase {
 		);
 	}
 
+	/** Supported scalar and finite-enum values are normalized deterministically. */
+	public function test_from_array_normalizes_supported_values(): void {
+		$config = DisplayRulesConfig::from_array(
+			array(
+				'enabled'      => false,
+				'visibility'   => array(
+					'post_types' => array( ' PAGE ', 'product' ),
+					'audience'   => 'selected_roles',
+					'roles'      => array( ' Editor ', 'shop_manager' ),
+					'woo_areas'  => array( 'product', 'cart' ),
+					'devices'    => array( 'desktop', 'mobile' ),
+				),
+				'proactive'    => array(
+					'enabled'          => true,
+					'first_visit_only' => true,
+					'delay_ms'         => 1500,
+					'scroll_percent'   => 60,
+					'exit_intent'      => true,
+					'inactivity_ms'    => 30000,
+				),
+				'localization' => array(
+					'locale'    => ' UR_PK ',
+					'direction' => 'rtl',
+				),
+			)
+		);
+
+		$normalized = $config->to_array();
+		self::assertFalse( $normalized['enabled'] );
+		self::assertSame( array( 'page', 'product' ), $normalized['visibility']['post_types'] );
+		self::assertSame( 'selected_roles', $normalized['visibility']['audience'] );
+		self::assertSame( array( 'editor', 'shop_manager' ), $normalized['visibility']['roles'] );
+		self::assertSame( array( 'product', 'cart' ), $normalized['visibility']['woo_areas'] );
+		self::assertSame( array( 'desktop', 'mobile' ), $normalized['visibility']['devices'] );
+		self::assertTrue( $normalized['proactive']['enabled'] );
+		self::assertTrue( $normalized['proactive']['first_visit_only'] );
+		self::assertSame( 1500, $normalized['proactive']['delay_ms'] );
+		self::assertSame( 60, $normalized['proactive']['scroll_percent'] );
+		self::assertTrue( $normalized['proactive']['exit_intent'] );
+		self::assertSame( 30000, $normalized['proactive']['inactivity_ms'] );
+		self::assertSame( 'ur-pk', $normalized['localization']['locale'] );
+		self::assertSame( 'rtl', $normalized['localization']['direction'] );
+	}
+
 	/** Unknown schema keys must fail closed at the persistence boundary. */
 	public function test_from_array_rejects_unknown_keys(): void {
 		self::assertTrue( class_exists( DisplayRulesConfig::class ), 'M15 Task 2A requires DisplayRulesConfig.' );
