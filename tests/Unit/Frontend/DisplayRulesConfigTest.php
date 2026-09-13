@@ -107,4 +107,28 @@ final class DisplayRulesConfigTest extends TestCase {
 		$this->expectException( InvalidArgumentException::class );
 		DisplayRulesConfig::from_array( array( 'provider_override' => 'openai' ) );
 	}
+
+	/** Nested configuration sections must also reject unknown keys. */
+	public function test_from_array_rejects_unknown_nested_keys(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'provider_override' => 'openai',
+				),
+			)
+		);
+	}
+
+	/** Proactive timers must stay within the ten-minute design bound. */
+	public function test_from_array_rejects_out_of_range_timer(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'proactive' => array(
+					'delay_ms' => 600001,
+				),
+			)
+		);
+	}
 }
