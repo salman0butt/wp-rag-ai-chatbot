@@ -52,7 +52,9 @@ const createTestElement = (
 
 	for ( const child of children ) {
 		if ( child !== undefined ) {
-			element.append( String( child ) === '[object Node]' ? child : String( child ) );
+			element.append(
+				child instanceof Node ? child : String( child )
+			);
 		}
 	}
 
@@ -109,7 +111,9 @@ describe( 'AppearanceCustomizer', () => {
 			'font_family',
 		];
 		for ( const fieldName of fieldNames ) {
-			expect( root.querySelector( `[name="${ fieldName }"]` ) ).not.toBeNull();
+			expect(
+				root.querySelector( `[name="${ fieldName }"]` )
+			).not.toBeNull();
 		}
 
 		const preview = root.querySelector< HTMLElement >(
@@ -129,14 +133,21 @@ describe( 'AppearanceCustomizer', () => {
 		);
 
 		expect( preview?.getAttribute( 'role' ) ).toBe( 'region' );
-		expect( preview?.getAttribute( 'aria-label' ) ).toBe( 'Chat widget preview' );
+		expect( preview?.getAttribute( 'aria-label' ) ).toBe(
+			'Chat widget preview'
+		);
 		expect( preview?.dataset.wpRagAiChatbotPosition ).toBe( 'bottom-left' );
 		expect( color?.value ).toBe( '#1d4ed8' );
 		expect( radius?.value ).toBe( '24' );
 		expect( radius?.min ).toBe( '0' );
 		expect( radius?.max ).toBe( '32' );
 
-		if ( color === null || radius === null || position === null || form === null ) {
+		if (
+			color === null ||
+			radius === null ||
+			position === null ||
+			form === null
+		) {
 			return;
 		}
 
@@ -147,7 +158,9 @@ describe( 'AppearanceCustomizer', () => {
 			primary_color: '#dc2626',
 		} );
 		expect(
-			preview?.style.getPropertyValue( '--wp-rag-ai-chatbot-primary-color' )
+			preview?.style.getPropertyValue(
+				'--wp-rag-ai-chatbot-primary-color'
+			)
 		).toBe( '#dc2626' );
 
 		radius.value = '12';
@@ -162,7 +175,9 @@ describe( 'AppearanceCustomizer', () => {
 
 		position.value = 'bottom-right';
 		position.dispatchEvent( new Event( 'change', { bubbles: true } ) );
-		expect( preview?.dataset.wpRagAiChatbotPosition ).toBe( 'bottom-right' );
+		expect( preview?.dataset.wpRagAiChatbotPosition ).toBe(
+			'bottom-right'
+		);
 
 		form.dispatchEvent(
 			new Event( 'submit', { bubbles: true, cancelable: true } )
