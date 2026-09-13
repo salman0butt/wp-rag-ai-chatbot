@@ -131,4 +131,37 @@ final class DisplayRulesConfigTest extends TestCase {
 			)
 		);
 	}
+
+	/** URL rules normalize to bounded deterministic path patterns. */
+	public function test_from_array_normalizes_url_patterns(): void {
+		$config = DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'url_include' => array( ' pricing ', '/docs/*', '/pricing' ),
+					'url_exclude' => array( '*/checkout' ),
+				),
+			)
+		);
+
+		$normalized = $config->to_array();
+		self::assertSame( array( '/pricing', '/docs/*' ), $normalized['visibility']['url_include'] );
+		self::assertSame( array( '*/checkout' ), $normalized['visibility']['url_exclude'] );
+	}
+
+	/** Include/exclude path rules share the documented 32-pattern bound. */
+	public function test_from_array_rejects_too_many_url_patterns(): void {
+		$patterns = array();
+		for ( $index = 1; $index <= 33; $index++ ) {
+			$patterns[] = '/path-' . $index;
+		}
+
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'url_include' => $patterns,
+				),
+			)
+		);
+	}
 }
