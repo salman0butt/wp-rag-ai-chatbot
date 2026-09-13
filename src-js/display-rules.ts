@@ -194,7 +194,11 @@ const normalizeAudience = ( value: unknown ): DisplayAudience =>
 		: 'all';
 
 const normalizeSchedule = ( value: unknown ): DisplaySchedule | undefined => {
-	if ( typeof value !== 'object' || value === null || Array.isArray( value ) ) {
+	if (
+		typeof value !== 'object' ||
+		value === null ||
+		Array.isArray( value )
+	) {
 		return undefined;
 	}
 
@@ -215,7 +219,8 @@ const normalizeSchedule = ( value: unknown ): DisplaySchedule | undefined => {
 	}
 
 	const start =
-		typeof candidate.start === 'string' && TIME_PATTERN.test( candidate.start )
+		typeof candidate.start === 'string' &&
+		TIME_PATTERN.test( candidate.start )
 			? candidate.start
 			: null;
 	const end =
@@ -318,7 +323,8 @@ const scheduleMatches = (
 
 	const dayMatches = ( day: number ): boolean =>
 		schedule.days.length === 0 || schedule.days.includes( day );
-	const start = schedule.start === null ? null : timeToMinute( schedule.start );
+	const start =
+		schedule.start === null ? null : timeToMinute( schedule.start );
 	const end = schedule.end === null ? null : timeToMinute( schedule.end );
 
 	if ( start === null && end === null ) {
