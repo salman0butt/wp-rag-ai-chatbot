@@ -135,7 +135,9 @@ describe( 'appearance customizer stale save protection', () => {
 		const staleSave = createDeferred< {
 			ok: boolean;
 			status: number;
-			json: () => Promise< { appearance: ReturnType< typeof appearance > } >;
+			json: () => Promise< {
+				appearance: ReturnType< typeof appearance >;
+			} >;
 		} >();
 		const fetcher = jest
 			.fn()
@@ -187,9 +189,10 @@ describe( 'appearance customizer stale save protection', () => {
 		expect( alphaColor?.value ).toBe( '#2563eb' );
 		alphaColor!.value = '#dc2626';
 		alphaColor!.dispatchEvent( new Event( 'change', { bubbles: true } ) );
-		root.querySelector< HTMLFormElement >(
+		const form = root.querySelector< HTMLFormElement >(
 			'form[data-appearance-customizer]'
-		)?.dispatchEvent(
+		);
+		form?.dispatchEvent(
 			new Event( 'submit', { bubbles: true, cancelable: true } )
 		);
 		await tick();
