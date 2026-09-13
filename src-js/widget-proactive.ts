@@ -4,6 +4,8 @@ type ProactiveDelayConfig = {
 	scrollPercent: number | null;
 	inactivityMs: number | null;
 	exitIntent: boolean;
+	firstVisitOnly: boolean;
+	clickSelector: string | null;
 };
 
 export type ProactiveDelayCoordinator = {
@@ -11,10 +13,19 @@ export type ProactiveDelayCoordinator = {
 	cancel: () => void;
 };
 
+type ProactiveCoordinatorContext = {
+	botId: string;
+	documentRoot: Document;
+};
+
 const MAX_TIMER_MS = 600000;
 const MAX_SCROLL_PERCENT = 100;
+const MAX_CLICK_SELECTOR_BYTES = 160;
 const INACTIVITY_EVENTS = [ 'pointerdown', 'keydown' ] as const;
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+const SAFE_CLICK_SELECTOR = /^(?:[a-zA-Z][a-zA-Z0-9_-]*)?(?:[.#][a-zA-Z_][a-zA-Z0-9_-]*|\[[a-zA-Z_][a-zA-Z0-9_-]*(?:=(?:"[^"]*"|'[^']*'|[a-zA-Z0-9_-]+))?\])*$/;
+const FIRST_VISIT_KEY_PREFIX = 'wp-rag-ai-chatbot:proactive-seen:';
+const sessionSeenBots = new Set< string >();
 
 const asRecord = ( value: unknown ): Record< string, unknown > =>
 	typeof value === 'object' && value !== null
@@ -37,6 +48,23 @@ const normalizeScrollPercent = ( value: unknown ): number | null =>
 		? value
 		: null;
 
+const normalizeClickSelector = ( value: unknown ): string | null => {
+	if ( typeof value !== 'string' ) {
+		return null;
+	}
+
+	const selector = value.trim();
+	if ( selector === '' || ! SAFE_CLICK_SELECTOR.test( selector ) ) {
+		return null;
+	}
+
+	if ( new TextEncoder().encode( selector ).length > MAX_CLICK_SELECTOR_BYTES ) {
+		return null;
+	}
+
+	return selector;
+};
+
 export const readProactiveDelayConfig = (
 	displayRules: unknown
 ): ProactiveDelayConfig => {
@@ -49,12 +77,15 @@ export const readProactiveDelayConfig = (
 		scrollPercent: normalizeScrollPercent( proactive.scroll_percent ),
 		inactivityMs: normalizeDelay( proactive.inactivity_ms ),
 		exitIntent: proactive.exit_intent === true,
+		firstVisitOnly: proactive.first_visit_only === true,
+		clickSelector: normalizeClickSelector( proactive.click_selector ),
 	};
 };
 
 export const createProactiveDelayCoordinator = (
 	config: ProactiveDelayConfig,
-	onOpen: () => void
+	onOpen: () => void,
+	context?: ProactiveCoordinatorContext
 ): ProactiveDelayCoordinator => {
 	let timer: ReturnType< typeof setTimeout > | null = null;
 	let inactivityTimer: ReturnType< typeof setTimeout > | null = null;
@@ -62,7 +93,10 @@ export const createProactiveDelayCoordinator = (
 	let listeningForScroll = false;
 	let listeningForActivity = false;
 	let listeningForExitIntent = false;
+	let listeningForClick = false;
 	let completed = false;
+
+	const documentRoot = context?.documentRoot ?? document;
 
 	const stopScrollListener = (): void => {
 		if ( scrollFrame !== null ) {
@@ -95,6 +129,13 @@ export const createProactiveDelayCoordinator = (
 		}
 	};
 
+	const stopClickListener = (): void => {
+		if ( listeningForClick ) {
+			documentRoot.removeEventListener( 'click', handleClick );
+			listeningForClick = false;
+		}
+	};
+
 	const complete = (): void => {
 		if ( completed ) {
 			return;
@@ -108,6 +149,7 @@ export const createProactiveDelayCoordinator = (
 		stopScrollListener();
 		stopInactivityListener();
 		stopExitIntentListener();
+		stopClickListener();
 		onOpen();
 	};
 
@@ -116,7 +158,7 @@ export const createProactiveDelayCoordinator = (
 			return;
 		}
 
-		const root = document.documentElement;
+		const root = documentRoot.documentElement;
 		const scrollableDistance = Math.max(
 			0,
 			root.scrollHeight - root.clientHeight
@@ -125,8 +167,9 @@ export const createProactiveDelayCoordinator = (
 			return;
 		}
 
+		const view = documentRoot.defaultView ?? window;
 		const percent =
-			( window.scrollY / scrollableDistance ) * MAX_SCROLL_PERCENT;
+			( view.scrollY / scrollableDistance ) * MAX_SCROLL_PERCENT;
 
 		if ( percent >= config.scrollPercent ) {
 			complete();
@@ -175,6 +218,21 @@ export const createProactiveDelayCoordinator = (
 		complete();
 	}
 
+	function handleClick( event: Event ): void {
+		if ( completed || config.clickSelector === null ) {
+			return;
+		}
+
+		const target = event.target;
+		if ( ! ( target instanceof Element ) ) {
+			return;
+		}
+
+		if ( target.closest( config.clickSelector ) !== null ) {
+			complete();
+		}
+	}
+
 	const cancel = (): void => {
 		completed = true;
 		if ( timer !== null ) {
@@ -184,10 +242,49 @@ export const createProactiveDelayCoordinator = (
 		stopScrollListener();
 		stopInactivityListener();
 		stopExitIntentListener();
+		stopClickListener();
+	};
+
+	const applyFirstVisitGate = (): boolean => {
+		if ( ! config.firstVisitOnly ) {
+			return true;
+		}
+
+		if ( context === undefined || context.botId === '' ) {
+			return false;
+		}
+
+		if ( sessionSeenBots.has( context.botId ) ) {
+			return false;
+		}
+
+		const key = `${ FIRST_VISIT_KEY_PREFIX }${ context.botId }`;
+		try {
+			if ( context.documentRoot.defaultView?.localStorage.getItem( key ) === '1' ) {
+				sessionSeenBots.add( context.botId );
+				return false;
+			}
+		} catch {
+			// Storage is optional; the session-local marker below is the fallback.
+		}
+
+		sessionSeenBots.add( context.botId );
+		try {
+			context.documentRoot.defaultView?.localStorage.setItem( key, '1' );
+		} catch {
+			// Storage is optional; session-local scoping already preserves semantics.
+		}
+
+		return true;
 	};
 
 	const start = (): void => {
 		if ( completed || ! config.enabled ) {
+			return;
+		}
+
+		if ( ! applyFirstVisitGate() ) {
+			completed = true;
 			return;
 		}
 
@@ -222,6 +319,11 @@ export const createProactiveDelayCoordinator = (
 		) {
 			listeningForExitIntent = true;
 			window.addEventListener( 'mouseout', handleExitIntent );
+		}
+
+		if ( ! listeningForClick && config.clickSelector !== null ) {
+			listeningForClick = true;
+			documentRoot.addEventListener( 'click', handleClick );
 		}
 	};
 
