@@ -8,9 +8,16 @@ export type WidgetBootstrapConfig = {
 	};
 };
 
+type PublicCitation = {
+	id: string;
+	title: string;
+	url: string | null;
+};
+
 type PublicChatSuccess = {
 	answer: string;
 	conversation_id: string;
+	citations: PublicCitation[];
 };
 
 type PublicChatError = {
@@ -19,6 +26,7 @@ type PublicChatError = {
 
 const MOUNT_SELECTOR = '.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]';
 const MOUNTED_DATA_KEY = 'wpRagAiChatbotMounted';
+const MAX_CITATIONS = 8;
 
 const COLOR_MODES = [ 'light', 'dark', 'system' ] as const;
 const POSITIONS = [ 'bottom-left', 'bottom-right' ] as const;
@@ -113,6 +121,26 @@ const findConfig = (
 const chatUrl = ( restBase: string ): string =>
 	`${ restBase.replace( /\/+$/, '' ) }/chat`;
 
+const readCitation = ( value: unknown ): PublicCitation | null => {
+	if ( typeof value !== 'object' || value === null ) {
+		return null;
+	}
+
+	const candidate = value as Record< string, unknown >;
+	if (
+		typeof candidate.id !== 'string' ||
+		typeof candidate.title !== 'string'
+	) {
+		return null;
+	}
+
+	return {
+		id: candidate.id,
+		title: candidate.title,
+		url: typeof candidate.url === 'string' ? candidate.url : null,
+	};
+};
+
 const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
 	if ( typeof value !== 'object' || value === null ) {
 		return null;
@@ -127,9 +155,17 @@ const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
 		return null;
 	}
 
+	const citations = Array.isArray( candidate.citations )
+		? candidate.citations
+				.slice( 0, MAX_CITATIONS )
+				.map( readCitation )
+				.filter( ( citation ): citation is PublicCitation => citation !== null )
+		: [];
+
 	return {
 		answer: candidate.answer,
 		conversation_id: candidate.conversation_id,
+		citations,
 	};
 };
 
@@ -158,6 +194,21 @@ const publicErrorMessage = ( code: string | null ): string => {
 	}
 
 	return "We couldn't send your message. Please try again.";
+};
+
+const safeHttpUrl = ( value: string | null ): string | null => {
+	if ( value === null ) {
+		return null;
+	}
+
+	try {
+		const url = new URL( value );
+		return url.protocol === 'http:' || url.protocol === 'https:'
+			? url.href
+			: null;
+	} catch {
+		return null;
+	}
 };
 
 export const mountWidgets = (
@@ -243,11 +294,67 @@ export const mountWidgets = (
 			const appendMessage = (
 				role: 'user' | 'assistant',
 				text: string
-			): void => {
+			): HTMLElement => {
 				const message = documentRoot.createElement( 'p' );
 				message.dataset.wpRagAiChatbotMessage = role;
 				message.textContent = text;
 				messages.append( message );
+				return message;
+			};
+
+			const appendAssistantMessage = (
+				text: string,
+				citations: readonly PublicCitation[]
+			): void => {
+				const wrapper = documentRoot.createElement( 'article' );
+				wrapper.dataset.wpRagAiChatbotMessageContainer = 'assistant';
+
+				const message = documentRoot.createElement( 'p' );
+				message.dataset.wpRagAiChatbotMessage = 'assistant';
+				message.textContent = text;
+				wrapper.append( message );
+
+				const copy = documentRoot.createElement( 'button' );
+				copy.type = 'button';
+				copy.textContent = 'Copy';
+				copy.dataset.wpRagAiChatbotCopy = '';
+				copy.setAttribute( 'aria-label', 'Copy assistant message' );
+				copy.addEventListener( 'click', () => {
+					const clipboard = documentRoot.defaultView?.navigator.clipboard;
+					if ( clipboard ) {
+						void clipboard.writeText( text ).catch( () => undefined );
+					}
+				} );
+				wrapper.append( copy );
+
+				if ( citations.length > 0 ) {
+					const details = documentRoot.createElement( 'details' );
+					details.dataset.wpRagAiChatbotSources = '';
+					const summary = documentRoot.createElement( 'summary' );
+					summary.textContent = 'Sources';
+					const list = documentRoot.createElement( 'ul' );
+					details.append( summary, list );
+
+					for ( const citation of citations ) {
+						const item = documentRoot.createElement( 'li' );
+						const safeUrl = safeHttpUrl( citation.url );
+						if ( safeUrl === null ) {
+							item.textContent = citation.title;
+						} else {
+							const link = documentRoot.createElement( 'a' );
+							link.href = safeUrl;
+							link.target = '_blank';
+							link.rel = 'noopener noreferrer';
+							link.textContent = citation.title;
+							item.append( link );
+						}
+						list.append( item );
+					}
+
+					wrapper.append( details );
+				}
+
+				messages.append( wrapper );
 			};
 
 			const closePanel = (): void => {
@@ -323,7 +430,10 @@ export const mountWidgets = (
 
 							conversationId = success.conversation_id;
 							retryQuestion = null;
-							appendMessage( 'assistant', success.answer );
+							appendAssistantMessage(
+								success.answer,
+								success.citations
+							);
 							finishRequest();
 							status.textContent = '';
 						},
