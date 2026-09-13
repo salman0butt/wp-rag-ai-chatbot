@@ -69,10 +69,10 @@ final readonly class DisplayRulesConfig {
 		'direction',
 	);
 
-	private const MAX_TIMER_MS = 600000;
-	private const MAX_URL_PATTERNS = 32;
+	private const MAX_TIMER_MS           = 600000;
+	private const MAX_URL_PATTERNS       = 32;
 	private const MAX_URL_PATTERN_LENGTH = 256;
-	private const MAX_URL_WILDCARDS = 4;
+	private const MAX_URL_WILDCARDS      = 4;
 
 	/**
 	 * Create one normalized display-rules value.
