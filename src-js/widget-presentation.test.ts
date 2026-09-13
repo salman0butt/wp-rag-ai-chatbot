@@ -124,7 +124,9 @@ describe( 'public widget message presentation', () => {
 		expect( writeText ).toHaveBeenCalledWith(
 			'<strong>Read the sources</strong>'
 		);
-		expect( sources?.querySelector( 'summary' )?.textContent ).toBe( 'Sources' );
+		expect( sources?.querySelector( 'summary' )?.textContent ).toBe(
+			'Sources'
+		);
 		expect( links ).toHaveLength( 1 );
 		expect( links?.[ 0 ].href ).toBe( 'https://example.test/docs' );
 		expect( links?.[ 0 ].target ).toBe( '_blank' );
