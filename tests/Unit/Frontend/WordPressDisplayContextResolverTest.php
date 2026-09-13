@@ -16,11 +16,13 @@ use WpRagAiChatbot\Frontend\WordPressDisplayContextResolver;
 
 /** Verifies that only bounded presentation facts are projected to the browser. */
 final class WordPressDisplayContextResolverTest extends TestCase {
+	/** Start Brain Monkey for each test. */
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
 	}
 
+	/** Restore global state after each test. */
 	protected function tearDown(): void {
 		unset( $_SERVER['REQUEST_URI'] );
 		Monkey\tearDown();
@@ -35,14 +37,18 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 		Functions\when( 'get_post_type' )->justReturn( 'Page' );
 		Functions\when( 'wp_get_current_user' )->justReturn(
 			(object) array(
-				'ID'           => 42,
-				'user_email'   => 'private@example.test',
-				'roles'        => array( 'Administrator', 'Customer', 'invalid role' ),
-				'allcaps'      => array( 'manage_options' => true ),
+				'ID'         => 42,
+				'user_email' => 'private@example.test',
+				'roles'      => array( 'Administrator', 'Customer', 'invalid role' ),
+				'allcaps'    => array( 'manage_options' => true ),
 			)
 		);
 
-		$facts = ( new WordPressDisplayContextResolver() )->resolve();
+		$facts   = ( new WordPressDisplayContextResolver() )->resolve();
+		$encoded = wp_json_encode( $facts );
+		if ( false === $encoded ) {
+			$encoded = '';
+		}
 
 		self::assertSame( '/support/faq/', $facts['path'] );
 		self::assertTrue( $facts['isAuthenticated'] );
@@ -52,8 +58,8 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 		self::assertArrayNotHasKey( 'userId', $facts );
 		self::assertArrayNotHasKey( 'email', $facts );
 		self::assertArrayNotHasKey( 'capabilities', $facts );
-		self::assertStringNotContainsString( 'ticket', wp_json_encode( $facts ) ?: '' );
-		self::assertStringNotContainsString( 'private@example.test', wp_json_encode( $facts ) ?: '' );
+		self::assertStringNotContainsString( 'ticket', $encoded );
+		self::assertStringNotContainsString( 'private@example.test', $encoded );
 	}
 
 	/** Anonymous requests remain minimal and tolerate missing post context. */
