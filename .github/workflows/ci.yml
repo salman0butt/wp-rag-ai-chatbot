@@ -116,6 +116,7 @@ jobs:
       - run: npm run test:wp:file-ingestion
       - run: npm run test:wp:woocommerce-knowledge
       - run: npm run test:wp:playground-rest
+      - run: npm run test:wp:widget-surfaces
       - if: always()
         run: npm run env:stop
 
