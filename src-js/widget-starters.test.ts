@@ -53,8 +53,7 @@ const flushPromises = async (): Promise< void > => {
 
 describe( 'M15 widget starter suggestions', () => {
 	beforeEach( () => {
-		document.body.innerHTML =
-			`<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
+		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
 		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
 			config,
 		];
