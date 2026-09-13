@@ -122,4 +122,31 @@ describe( 'public widget simulated typing fallback', () => {
 			document.querySelector( '[data-wp-rag-ai-chatbot-sources]' )
 		).not.toBeNull();
 	} );
+
+	it( 'never exposes a partial UTF-16 surrogate pair while revealing text', async () => {
+		const unicodeAnswer = `A😀${ 'x'.repeat( 47 ) }`;
+		fetchMock.mockResolvedValue( {
+			ok: true,
+			json: async () => ( {
+				ok: true,
+				answer: unicodeAnswer,
+				conversation_id: 'conversation-1',
+				citations: [],
+			} ),
+		} );
+
+		loadWidget();
+		submitQuestion( 'Show unicode' );
+		await flushPromises();
+
+		const assistant = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-message="assistant"]'
+		);
+		const partial = assistant?.textContent ?? '';
+
+		expect( /[\uD800-\uDBFF]$/.test( partial ) ).toBe( false );
+
+		jest.runAllTimers();
+		expect( assistant?.textContent ).toBe( unicodeAnswer );
+	} );
 } );
