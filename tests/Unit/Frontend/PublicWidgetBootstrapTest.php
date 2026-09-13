@@ -90,7 +90,10 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		Functions\when( 'rest_url' )->justReturn( 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/' );
 		Functions\when( 'untrailingslashit' )->alias( static fn ( string $value ): string => rtrim( $value, '/' ) );
 		Functions\when( 'wp_json_encode' )->alias(
-			static fn ( array $value ): string => json_encode( $value, JSON_THROW_ON_ERROR )
+			static function ( array $value ): string {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test double must serialize the received value without recursively calling the mocked WordPress function.
+				return json_encode( $value, JSON_THROW_ON_ERROR );
+			}
 		);
 		Functions\when( 'esc_attr' )->alias(
 			static fn ( string $value ): string => htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' )
