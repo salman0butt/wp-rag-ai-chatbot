@@ -1,6 +1,9 @@
+export type WidgetSurface = 'floating' | 'embedded' | 'fullscreen';
+
 export type WidgetBootstrapConfig = {
 	botId: string;
 	restBase: string;
+	surface?: WidgetSurface;
 	config: {
 		bot_id: string;
 		name: string;
@@ -36,6 +39,7 @@ const POSITIONS = [ 'bottom-left', 'bottom-right' ] as const;
 const LAUNCHER_STYLES = [ 'bubble', 'icon', 'text' ] as const;
 const PANEL_SIZES = [ 'small', 'medium', 'large' ] as const;
 const FONT_FAMILIES = [ 'system', 'sans', 'serif', 'mono' ] as const;
+const WIDGET_SURFACES = [ 'floating', 'embedded', 'fullscreen' ] as const;
 
 const readChoice = < T extends string >(
 	appearance: Record< string, unknown >,
@@ -49,6 +53,12 @@ const readChoice = < T extends string >(
 		? ( value as T )
 		: fallback;
 };
+
+const readSurface = ( value: unknown ): WidgetSurface =>
+	typeof value === 'string' &&
+	WIDGET_SURFACES.includes( value as WidgetSurface )
+		? ( value as WidgetSurface )
+		: 'floating';
 
 const readPrimaryColor = ( appearance: Record< string, unknown > ): string => {
 	const value = appearance.primary_color;
@@ -238,6 +248,9 @@ export const mountWidgets = (
 				return;
 			}
 
+			const surface = readSurface( config.surface );
+			const isFloating = surface === 'floating';
+			mount.dataset.wpRagAiChatbotSurface = surface;
 			applyAppearance( mount, config.config.appearance );
 
 			const launcher = documentRoot.createElement( 'button' );
@@ -252,7 +265,7 @@ export const mountWidgets = (
 
 			const panel = documentRoot.createElement( 'section' );
 			panel.dataset.wpRagAiChatbotPanel = '';
-			panel.hidden = true;
+			panel.hidden = isFloating;
 			panel.setAttribute( 'role', 'dialog' );
 			panel.setAttribute( 'aria-label', `${ config.config.name } chat` );
 
@@ -537,18 +550,20 @@ export const mountWidgets = (
 					);
 			};
 
-			launcher.addEventListener( 'click', () => {
-				launcher.setAttribute( 'aria-expanded', 'true' );
-				panel.hidden = false;
-				close.focus();
-			} );
+			if ( isFloating ) {
+				launcher.addEventListener( 'click', () => {
+					launcher.setAttribute( 'aria-expanded', 'true' );
+					panel.hidden = false;
+					close.focus();
+				} );
 
-			close.addEventListener( 'click', closePanel );
-			panel.addEventListener( 'keydown', ( event ) => {
-				if ( event.key === 'Escape' && ! panel.hidden ) {
-					closePanel();
-				}
-			} );
+				close.addEventListener( 'click', closePanel );
+				panel.addEventListener( 'keydown', ( event ) => {
+					if ( event.key === 'Escape' && ! panel.hidden ) {
+						closePanel();
+					}
+				} );
+			}
 			form.addEventListener( 'submit', ( event ) => {
 				event.preventDefault();
 				const value = question.value.trim();
@@ -565,8 +580,13 @@ export const mountWidgets = (
 				}
 			} );
 
-			panel.append( close, messages, form );
-			mount.append( launcher, panel );
+			if ( isFloating ) {
+				panel.append( close, messages, form );
+				mount.append( launcher, panel );
+			} else {
+				panel.append( messages, form );
+				mount.append( panel );
+			}
 			mount.dataset[ MOUNTED_DATA_KEY ] = 'true';
 			mounted += 1;
 		} );
