@@ -1,6 +1,6 @@
 # M15 Task 5 — Proactive trigger coordinator
 
-Status: IN PROGRESS.
+Status: COMPLETE.
 
 ## Task 5A — delay and once-only lifecycle
 
@@ -171,6 +171,92 @@ Independent reviewer/subagent transport is unavailable in this execution runtime
 
 Task 5C final implementation: `83124518b4bc05d95d58d1d98dd9f30ef92ba7eb`, CI `34783022482` — GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
 
+## Task 5D — exit-intent trigger
+
+Status: COMPLETE.
+
+### Scope
+
+Extend the same proactive coordinator with a desktop/fine-pointer exit-intent signal that opens only at the document top boundary, stays once-only, and cleans up deterministically.
+
+### TDD evidence
+
+- `1bcf5853791c604c9d9f3008a964944c40328421` — **NOT RED**, CI `34785172977`. The test fixture existed, but `js-quality` stopped at Prettier before typecheck/Jest, so this checkpoint is not behavioral RED.
+- `48e7e230c155fddd7dfef904760a62a050afbbc2` — **RED**, CI `34785276007`. JavaScript lint and typecheck passed and Jest ran. All 55 existing suites passed; only the three new exit-intent assertions failed because `exit_intent` normalization, fine-pointer top-boundary opening, and cancellation cleanup did not yet exist.
+- `82e78bcfc25496b087961f5523d1a5251d5d9a1f` — **GREEN**, CI `34785336442`. Exact-head CI passed all permanent jobs.
+
+### Implementation
+
+The single coordinator now:
+
+- normalizes `proactive.exit_intent` as a strict boolean;
+- enables exit intent only when `matchMedia('(hover: hover) and (pointer: fine)')` matches;
+- treats only top-boundary `mouseout` with no related target as exit intent;
+- routes exit intent through the same one-shot `complete()` path as delay/scroll/inactivity;
+- removes the `mouseout` listener on completion/cancellation.
+
+### Review
+
+Independent reviewer/subagent transport is unavailable in this execution runtime, so the repository-approved scoped fallback review was used.
+
+- Correctness: 0 unresolved Critical/Important findings. The trigger is pointer-capability gated, top-boundary constrained, once-only, and cancellable.
+- Security/privacy: 0 unresolved Critical/Important findings. Only coarse pointer-exit presentation facts are observed and nothing is persisted or transmitted.
+- Performance: 0 unresolved Critical/Important findings. At most one stable `mouseout` listener is installed and removed deterministically.
+- Accessibility: 0 unresolved Critical/Important findings. Keyboard/touch visitors are not treated as exit-intent signals and proactive opening does not steal focus.
+- Architecture/duplication: 0 unresolved Critical/Important findings. Exit intent extends the same coordinator and presentation path; it does not create chat/RAG authority.
+
+### Verification
+
+Task 5D final implementation: `82e78bcfc25496b087961f5523d1a5251d5d9a1f`, CI `34785336442` — GREEN across all permanent CI jobs.
+
+## Task 5E — bounded click selector and first-visit gate
+
+Status: COMPLETE.
+
+### Scope
+
+Finish the proactive-trigger matrix with delegated click matching plus a bot-scoped first-visit gate, while keeping selector input deliberately constrained and storage optional.
+
+### TDD evidence
+
+- `298ff06bb24bdbb9b18a0a3ac21c425b8ee81362` — **NOT RED**, CI `34785601845`. The first test-only fixture stopped at Prettier before Jest, so no behavioral RED claim is made.
+- `4ae5bccb5f3aebd6d3a86a6c4db1bc07a21f95ea` — intermediate fixture-format checkpoint; its failed CI is intentionally not used as RED evidence.
+- `e0c00d1813c5a73c1f3c9485f50e957523dafda5` — **RED**, CI `34785787332`. Lint and typecheck passed and Jest ran. All 56 existing suites/148 existing tests passed; only the four intended new assertions failed: first-visit normalization was absent, delegated descendant clicks did not open, no bot-scoped localStorage marker was written, and the storage-failure fallback did not preserve bot-local behavior.
+- `b65f5b2ecf38a2fd4283fd414e4ef97148130771` — introduced click and first-visit behavior after the genuine RED.
+- `0011f7d3897e6681ade3b62eecf1287fd1494127` — implementation formatting checkpoint.
+- `c2d5b04df5dbef00ec5bf6d90ad6305dfdcbaad3` — **NOT GREEN**, CI `34786083233`. PHP/package were healthy, but `js-quality` stopped at `no-nested-ternary`/Prettier findings in the UTF-8 selector byte-length helper.
+- `c60b63313556a6fc2ea5c1f6329e7802a6964c24` — **GREEN**, CI `34787752550`. Exact-head `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed.
+
+### Implementation
+
+`src-js/widget-proactive.ts` remains the sole proactive coordinator and now:
+
+- normalizes `first_visit_only` as a strict boolean;
+- accepts only the existing bounded safe selector grammar and enforces the 160-byte UTF-8 ceiling without relying on `TextEncoder`;
+- uses delegated `documentRoot` click handling and `Element.closest()` so descendant clicks can satisfy a configured selector;
+- stores a bot-scoped first-visit marker under `wp-rag-ai-chatbot:proactive-seen:<botId>` when storage is available;
+- falls back to session-local bot scoping when storage access throws;
+- prevents same-bot reactivation without leaking state between different bots;
+- routes click completion through the same one-shot cleanup path and removes delegated listeners on completion/cancel.
+
+### Review
+
+Independent reviewer/subagent transport is unavailable in this execution runtime, so the repository-approved scoped fallback review was used and the limitation is recorded honestly.
+
+- Correctness: 0 unresolved Critical/Important findings. Selector normalization, delegated matching, bot-scoped first-visit suppression, storage fallback, once-only completion, and cleanup are covered by focused tests.
+- Security/privacy: 0 unresolved Critical/Important findings. Arbitrary CSS is not accepted; selectors are grammar- and byte-bounded. The first-visit marker contains only a fixed bot-scoped presence value, with no user identifiers, credentials, provider/model, retrieval, or conversation data.
+- Performance: 0 unresolved Critical/Important findings. One delegated click listener at most is used and removed deterministically; no polling/network work is added. UTF-8 byte counting is linear over an already bounded selector.
+- Accessibility: 0 unresolved Critical/Important findings. The click trigger observes existing user interaction and proactive opening retains the established no-focus-steal path; manual controls remain unchanged.
+- Architecture/duplication: 0 unresolved Critical/Important findings. All proactive signals share one coordinator and one existing widget presentation path; no alternate chat/RAG request pipeline was created.
+
+### Verification
+
+Task 5E final implementation: `c60b63313556a6fc2ea5c1f6329e7802a6964c24`, CI `34787752550` — GREEN across `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite.
+
+## Task 5 final status
+
+Task 5 is COMPLETE. Delay, scroll, inactivity, exit-intent, click-selector, and first-visit signals are bounded, cancellable, once-only, and converge on the existing floating-widget presentation authority. No proactive signal sends a chat request merely by opening the UI.
+
 ## Next unfinished unit
 
-Task 5D — exit-intent trigger. Establish test-only RED for pointer-capable desktop gating, top-boundary intent, once-only opening, keyboard/mobile false-positive prevention, and cancellation cleanup. Extend the same coordinator/runtime seam; do not create a parallel trigger or chat path.
+Task 6 — page-specific starter suggestions. Establish test-only RED proving that selected suggestions render as bounded native buttons/plain text, never raw HTML, and that selecting a starter uses the existing input/submission path exactly once rather than creating a parallel chat request path.
