@@ -124,6 +124,7 @@ final class PublicWidgetBootstrapTest extends TestCase {
 					static function ( string $script ): bool {
 						return str_contains( $script, '"botId":"' . self::BOT_ID . '"' )
 							&& str_contains( $script, '"restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1"' )
+							&& str_contains( $script, '"surface":"floating"' )
 							&& str_contains( $script, '"config":{"bot_id":"' . self::BOT_ID . '","name":"Support"' )
 							&& ! str_contains( $script, 'openai' )
 							&& ! str_contains( $script, 'gpt-5' )
@@ -139,7 +140,7 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		);
 
 		self::assertSame(
-			'<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="' . self::BOT_ID . '"></div>',
+			'<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="' . self::BOT_ID . '" data-wp-rag-ai-chatbot-surface="floating"></div>',
 			$bootstrap->render_shortcode( array( 'bot' => self::BOT_ID ) )
 		);
 	}
