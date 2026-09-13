@@ -1,6 +1,6 @@
 # M14 — Frontend Floating/Embedded Chatbot & Complete Visual Customizer
 
-Status: IN PROGRESS
+Status: COMPLETE pending merge and post-merge `main` verification.
 
 ## Goal
 Deliver the production public chatbot surfaces and shared live appearance customizer.
@@ -9,19 +9,25 @@ Deliver the production public chatbot surfaces and shared live appearance custom
 M11 backend chat, M12 admin shell.
 
 ## In Scope
-Floating launcher; embedded/fullscreen/mobile; shortcode; Gutenberg block; streaming messages; markdown/links/citations; quick replies; product-card rendering foundation; loading/errors/retry/session/history where enabled; full appearance schema; live preview; custom CSS; theme support.
+Floating launcher; embedded/fullscreen/mobile; shortcode; Gutenberg block; bounded progressive message presentation; safe links/citations; loading/errors/retry/session/history; normalized appearance schema; live preview; bounded theme support.
 
-## Out of Scope
-Advanced proactive rules M15; commerce actions M18.
+## Security-driven scope clarification
+Arbitrary custom CSS/raw HTML is intentionally excluded from M14 despite earlier aspirational wording because the reviewed public/browser boundary is allow-listed and must not become an unrestricted injection channel. Advanced proactive rules remain M15; commerce actions remain M18.
 
 ## Architecture
-Compiled React/TS widget consumes public-safe bot config and normalized chat stream; appearance schema shared by preview/runtime. Public chat runtime authority is resolved server-side from persisted configuration and reuses M10/M11 retrieval/generation composition rather than duplicating it.
+Public chatbot surfaces are adapters over one `PublicWidgetBootstrap` mount authority and one public widget runtime. Public chat resolves persisted production configuration server-side and reuses the existing M10/M11 retrieval/generation composition rather than duplicating semantic/lexical retrieval, fusion, reranking, grounding, prompt construction, memory, citations, provider/model selection, embedding selection, or vector-store selection. Administrator preview and public runtime reuse the same normalized appearance authority.
 
 ## Acceptance Criteria
-No provider secrets in bundles/HTML/API; widget works desktop/mobile; long answers/URLs/source cards don't overflow; assets only load when applicable; appearance preview matches runtime.
+- No provider secrets or runtime authority in bundles/HTML/public API.
+- Floating, embedded, fullscreen, shortcode, and Gutenberg surfaces use the shared runtime.
+- Desktop/mobile behavior remains bounded and accessible.
+- Long answers/URLs/source cards do not create unbounded presentation.
+- Public assets load conditionally.
+- Appearance preview uses the same normalized application authority as runtime.
+- Real WordPress smoke covers widget surfaces.
+- Final exact-head CI, review, merge, and post-merge `main` verification are required before marking the milestone fully integrated.
 
 ## Tasks
-
 - [x] Task 1 — shared normalized appearance configuration.
 - [x] Task 2 — bot-scoped appearance persistence and public-safe widget configuration.
 - [x] Task 3 — protected administrator appearance save/read contracts.
@@ -31,58 +37,60 @@ No provider secrets in bundles/HTML/API; widget works desktop/mobile; long answe
   - [x] Task 6A — deterministic accessible responsive launcher/panel shell.
   - [x] Task 6B — non-streaming public conversation submit/loading/error/retry behavior.
   - [x] Task 6C — safe message/citation/link/history presentation and Task 6 closeout.
-- [x] Task 7 — streaming/simulated public chat UX.
+- [x] Task 7 — bounded streaming/simulated public chat UX.
 - [x] Task 8 — administrator visual customizer/live preview.
-- [ ] Task 9 — block/direct/fullscreen embedding surfaces.
-- [ ] Task 10 — milestone integration, visual verification, review, and closeout.
+- [x] Task 9 — block/direct/fullscreen embedding surfaces.
+- [x] Task 10 — milestone integration, real WordPress smoke, accessibility/mobile/performance/security review and closeout.
 
-## TDD Evidence
-Per-task RED/GREEN chronology is recorded under `docs/progress/M14-*`. Task 4 final production-composition chronology and invalid checkpoints are summarized in `docs/progress/M14-TASK4-CLOSEOUT.md`; Task 5 mount/build/smoke chronology is recorded in `docs/progress/M14-TASK5-PUBLIC-WIDGET-MOUNT.md`; Task 6 is recorded in `docs/progress/M14-TASK6A-WIDGET-SHELL.md`, `docs/progress/M14-TASK6B-NONSTREAMING-CONVERSATION.md`, and `docs/progress/M14-TASK6C-WIDGET-PRESENTATION.md`; Task 7 is recorded in `docs/progress/M14-TASK7-STREAMING-SIMULATED-TYPING.md`; Task 8 is recorded in `docs/progress/M14-TASK8-ADMIN-CUSTOMIZER.md`.
+## TDD / Implementation Evidence
+Detailed RED/GREEN chronology, invalid NOT RED/NOT GREEN checkpoints, focused review findings, and fixes are preserved under `docs/progress/M14-*`.
 
-## Integration Test Evidence
-Task 4 real WordPress REST smoke covers malformed public requests, arbitrary runtime-override rejection, abuse-control ordering, and disabled-bot fail-closed behavior. Task 5 proves shortcode registration, no eager assets, invalid/disabled fail-closed mounts, valid conditional asset enqueue, deterministic mount output, and public bootstrap secret/runtime-authority exclusion. Task 6 final implementation head `ddd4de2e1cd1af2ada84a0f703226377c958e030` passed exact-head CI `34729280110` across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`. Task 7 implementation head `82262b96c6088917d67e44922d007669c4e88065` passed exact-head CI `34734183151` across the same permanent gates and verifies one-request bounded progressive presentation, UTF-16-safe reveal, delayed completion controls, and stale-timer cancellation. Task 8 final implementation head `362d47c65d4cafd43086e2862d606595341baa99` passed exact-head CI `34741614657` across all permanent gates and verifies shared preview/runtime appearance behavior plus latest-request-wins appearance load/save correlation.
+Key final implementation evidence:
+- Task 4 production path: `e850863d5487ee7603547413bdb9c667c8d04b8e` / CI `34717786952` GREEN.
+- Task 5 public mount/bootstrap: `18436c394f826e83885cbb43bff30b509a00a205` / CI `34722486144` GREEN.
+- Task 6 final widget conversation/presentation: `ddd4de2e1cd1af2ada84a0f703226377c958e030` / CI `34729280110` GREEN.
+- Task 7 progressive presentation: `82262b96c6088917d67e44922d007669c4e88065` / CI `34734183151` GREEN.
+- Task 8 customizer/live preview: `362d47c65d4cafd43086e2862d606595341baa99` / CI `34741614657` GREEN.
+- Task 9 package/build GREEN: `02962ed49882089548dffb813a75ade048bb9abb` / CI `34747631044`; real WordPress widget-surface smoke GREEN at `2faf9677da3e8759021e22324b3d1f005f5a33de` / CI `34747870930`; repaired regression-test head `a4150af0c29d46a23f24bbb9452079ca970c4224` / CI `34748133442` GREEN.
+- Integrated pre-closeout branch head: `d170d56f725b6dabad704b9cad0fdbcba68f93a7` / CI `34748315547` GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
 
-## E2E / Visual Verification
-Tasks 6-7 provide the bounded desktop/mobile launcher/panel shell, keyboard open/close/Escape behavior, focus restoration, accessible launcher/dialog semantics, non-streaming submit/loading/error/retry, safe answer/citation rendering, copy controls, finite transcript history, safe citation links, and bounded simulated progressive answer presentation. Task 8 provides seven bounded administrator appearance controls and an immediate non-network preview using the same browser appearance application authority as the public runtime. Broader embed and final milestone visual/integration verification remain Tasks 9-10.
+Task 10 introduces no production behavior change, so no new behavioral RED/GREEN cycle is appropriate. It is a verification/review/documentation unit. Evidence: `docs/progress/M14-TASK10-CLOSEOUT.md`.
+
+## Integration / Visual Verification
+The permanent WordPress smoke job includes activation, database, providers, knowledge, file ingestion, WooCommerce knowledge, Playground REST, and widget-surface tests. The widget-surface smoke verifies the production shortcode/direct/embed/fullscreen/Gutenberg adapters in a real WordPress environment. Existing Tasks 6–9 tests cover responsive launcher/panel behavior, always-open embedded/fullscreen surfaces, Escape/focus behavior, bounded progressive presentation, safe citation/link rendering, finite transcript history, and shared appearance application.
 
 ## Security Review
-Task 6 keeps the browser request contract closed to `bot_id`, `question`, and optional server-issued `conversation_id`; model/user/citation strings render as text; citation anchors allow only `http:`/`https:` and use `noopener noreferrer`; unknown response fields and raw server/provider error details are ignored. Task 7 adds only a bounded presentation layer over that same completed response, with no second provider/retrieval/generation path and no client-side provider/model/credential/embedding/vector/retrieval authority. Task 8 persists only the existing seven-field appearance allow-list through the protected administrator route; it does not add arbitrary CSS/raw HTML or provider/runtime overrides, and stale responses cannot mutate a newer selected-bot appearance generation.
+Final scoped security review has **0 Critical / 0 Important unresolved**. The browser request/config boundary remains closed: no provider credentials, provider/model overrides, embedding/vector-store configuration, retrieval limits, raw HTML, arbitrary CSS, or unrestricted bot configuration are accepted/exposed. Public abuse controls execute before expensive runtime work. Administrator appearance persistence remains capability protected and allow-listed.
 
-## Accessibility Review where UI exists
-Task 6 uses native launcher/close/send/retry/copy/form/details controls, a bot-scoped named dialog, polite live regions, predictable focus transfer/restoration, and Escape dismissal. Task 6A's Important visible-label/dialog-name finding was resolved. Task 7 suppresses repeated partial live-region announcements during progressive reveal and restores polite completion semantics. Task 8 uses labelled native bounded controls, explicit save semantics, bounded error messaging, and a named preview surface; the stale-save repair changes no markup or focus behavior. Final Tasks 6-8 scoped review state is **0 Critical / 0 Important unresolved**.
+## Accessibility / Mobile Review
+Final scoped accessibility/mobile review has **0 Critical / 0 Important unresolved**. Floating mode uses visible native controls, named dialog semantics, focus transfer/restoration, Escape dismissal, and polite status messaging. Embedded/fullscreen surfaces remain always-open adapters rather than inheriting floating-only close behavior. Customizer controls are labelled native bounded controls.
 
-## Performance Review where relevant
-Assets remain conditional from Task 5. The runtime is idempotent per mount, enforces one in-flight public chat request per widget, caps response citations at 8, caps rendered transcript history at 40 top-level entries, and Task 7 caps progressive presentation at 48 reveal ticks with one active timer and no additional network/provider call. Task 8 live preview is local and non-network until explicit save; stale correlation adds only bounded generation-token comparisons.
+## Performance Review
+Final scoped performance review has **0 Critical / 0 Important unresolved**. Assets remain conditional; one public chat request is in flight per widget; citations/transcript history are bounded; progressive presentation uses one active timer and at most 48 reveal ticks; live appearance preview is local until explicit save.
 
-## Code Review Findings
-Independent reviewer transport was unavailable during connector-only Task 6-8 runs, so the repository-approved scoped fallback review was used and the limitation is recorded. Important findings resolved during Task 6 include visible launcher/dialog semantics, the real nested public error envelope, finite transcript history, and alignment with the server's nullable `conversation_id` response contract. Task 7 fallback correctness/security/performance/accessibility/architecture review found **0 Critical / 0 Important unresolved** and confirmed that real incremental browser transport must not be invented until a reviewed public seam exists. Task 8 fallback review identified and resolved an Important stale-save race: an older bot-A save could win after A → B → A; save completion now reuses the existing `botAppearanceGeneration` authority. Final Task 8 state is **0 Critical / 0 Important unresolved**.
+## Code Review
+Per-task fallback reviews resolved all recorded Important findings. At Task 10 recovery PR #19 had no unresolved inline review threads. Independent-review transport remained unavailable during connector-only runs, so the repository-approved scoped fallback review was used and this limitation is recorded in the task evidence.
 
-## Fixes
-Invalid RED/GREEN checkpoints are preserved honestly in the task progress records. Task 6C records `4758b0899538b5c2844a1611c0efae4dad74b04b` / CI `34727755857` as **NOT GREEN** because Prettier stopped JavaScript verification before Jest. The final review-driven nullable-conversation repair used RED `de6dc1860fe0225699d50441e39622ae801037bd` / CI `34729171223` and GREEN `ddd4de2e1cd1af2ada84a0f703226377c958e030` / CI `34729280110`. Task 7 records implementation head `78cee1885406502e67810c1c2cacc9139e350e1b` / CI `34732421653` and formatting repair `10a36bc469d50a117474600c03feff5c12b7f0fc` / CI `34734096420` as **NOT GREEN / NOT RED** because Prettier stopped before Jest; formatting-only recovery culminated in GREEN `82262b96c6088917d67e44922d007669c4e88065` / CI `34734183151`. Task 8 records `a4a565586364adcd24213515e6420c990ee26e6d` / CI `34739706111` as **NOT RED** because Prettier stopped before Jest, genuine stale-save RED `79e1609cd693661a80a919812dd86af4ecc0f1d9` / CI `34741381595`, and GREEN `362d47c65d4cafd43086e2862d606595341baa99` / CI `34741614657`.
+## Fresh Verification
+Pre-closeout exact head `d170d56f725b6dabad704b9cad0fdbcba68f93a7` passed CI `34748315547` across all permanent jobs. The documentation-only Task 10 closeout commits require a new exact-final-head GREEN run before merge.
 
-## Fresh Verification Commands
-CI is authoritative for scheduled connector-only runs. Permanent gates include Composer validation/audit, PHPCS, PHPStan, PHPUnit, JavaScript verification/audit/gating, production package assertion, and real WordPress smoke.
+## Durable Evidence
+- `docs/progress/STATUS.md`
+- `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` through `docs/progress/M14-TASK10-CLOSEOUT.md`
+- `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md`
+- `docs/superpowers/plans/2026-09-13-m14-task7-streaming-simulated-typing.md`
+- `docs/superpowers/plans/2026-09-13-m14-task8-admin-customizer-live-preview.md`
+- `docs/superpowers/plans/2026-09-13-m14-task9-embed-surfaces.md`
+- PR #19 — active milestone branch and merge gate.
 
-## Fresh Verification Results
-Task 8 implementation head `362d47c65d4cafd43086e2862d606595341baa99`: CI `34741614657` GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`. The Task 8 documentation closeout commits made after that implementation require exact-final-documentation-head CI before Task 9 implementation work is treated as based on a verified branch head.
-
-## Commits
-See `docs/progress/M14-*` for exact task commit chronology. Active milestone PR is #19 on `feat/m14-frontend-chatbot-customizer`.
-
-## Files Changed
-Tracked by PR #19; per-task progress documents identify the focused implementation surfaces.
-
-## Known Limitations
-Task 7 intentionally uses bounded simulated typing because M11's normalized stream is application-layer authority and the current public REST/widget seam exposes a completed normalized response; no reviewed public incremental transport exists to reuse. Task 8 intentionally excludes arbitrary custom CSS/raw HTML despite the broader aspirational milestone wording because the security boundary requires bounded normalized appearance. Broader block/direct/fullscreen embed surfaces and final milestone integration/visual verification remain Tasks 9-10.
-
-## Documentation Updated
-`docs/progress/STATUS.md`, per-task M14 evidence records including `docs/progress/M14-TASK8-ADMIN-CUSTOMIZER.md`, this milestone ledger, and M14 Superpowers design/plans.
-
-## Completion Checklist
-Milestone remains open until Tasks 9-10, final UI/security/accessibility/performance review, exact-final-head CI, merge gate, and post-merge main verification complete.
-
-## Current Work
-Close Task 8 with exact-final-documentation-head CI, then continue immediately to Task 9 — block/direct/fullscreen embedding surfaces. Reuse the Task 5 conditional mount/bootstrap authority and Task 6-7 public runtime rather than adding a second public chat/retrieval/generation implementation.
+## Completion Gate
+Task implementation/review is complete. Remaining integration steps are mechanical evidence gates:
+1. exact-final-documentation-head CI GREEN;
+2. PR remains mergeable with no unresolved Critical/Important findings or review threads;
+3. merge PR #19 with expected-head protection;
+4. recover the new default-branch SHA;
+5. verify fresh post-merge `main` CI;
+6. update durable global status to M14 COMPLETE and proceed to M15 only after post-merge verification is green.
 
 ## Next Milestone
 M15 — Display Rules/RTL/Accessibility.
