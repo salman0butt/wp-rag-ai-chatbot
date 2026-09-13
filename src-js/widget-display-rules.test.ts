@@ -1,7 +1,4 @@
-import {
-	mountWidgets,
-	type WidgetBootstrapConfig,
-} from './widget-runtime';
+import { mountWidgets, type WidgetBootstrapConfig } from './widget-runtime';
 
 const BOT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 
