@@ -61,14 +61,18 @@ Task 6C adds safe copy/citation/link presentation and finite transcript renderin
 ### Task 7 — streaming/simulated typing integration — COMPLETE
 The public widget now presents one completed Task 4 response progressively in one assistant container with a bounded 24 ms / 48-tick schedule, UTF-16-safe reveal boundaries, typing status, delayed copy/source controls, and stale-timer cancellation when the panel closes. The implementation deliberately does not invent public SSE/provider-specific streaming because M11's normalized streaming contract is application-layer authority and no reviewed public incremental transport seam currently projects it to the browser. Primary and cancellation/Unicode tests reached genuine behavioral RED at `0a018e848d6087291761aedac2e46037d86bc260` / CI `34729760794` and `9fb1b2c8e15f86630b85eff4abc14ca92a0ff644` / CI `34732327263`. Implementation/checkpoint heads `78cee1885406502e67810c1c2cacc9139e350e1b` / CI `34732421653` and `10a36bc469d50a117474600c03feff5c12b7f0fc` / CI `34734096420` are preserved as **NOT GREEN / NOT RED** because Prettier stopped before Jest. Final implementation GREEN is `82262b96c6088917d67e44922d007669c4e88065` / CI `34734183151`, all permanent jobs successful. Scoped fallback correctness/security/performance/accessibility/architecture review has **0 Critical / 0 Important unresolved**; independent reviewer transport remained unavailable. Evidence: `docs/progress/M14-TASK7-STREAMING-SIMULATED-TYPING.md`.
 
+### Task 8 — administrator visual customizer/live preview — COMPLETE pending exact-final-documentation-head CI
+The administrator bot screen now provides seven bounded appearance controls, immediate non-network live preview using the same `WidgetAppearance`/`applyWidgetAppearance()` browser authority as the public runtime, and explicit persistence through the existing protected Task 3 appearance route. Bot-switching loads and saves use the shared `botAppearanceGeneration` latest-request-wins authority. Review-driven stale-save hardening preserves `a4a565586364adcd24213515e6420c990ee26e6d` / CI `34739706111` as **NOT RED** because Prettier stopped before Jest; genuine RED is `79e1609cd693661a80a919812dd86af4ecc0f1d9` / CI `34741381595`, where the single new regression failed while 108 tests passed; genuine GREEN implementation is `362d47c65d4cafd43086e2862d606595341baa99` / CI `34741614657`, with all permanent jobs successful. Scoped fallback correctness/security/performance/accessibility/architecture review has **0 Critical / 0 Important unresolved**; independent reviewer transport was unavailable. Evidence: `docs/progress/M14-TASK8-ADMIN-CUSTOMIZER.md`.
+
 ## Current work
 
-Continue M14 on existing PR #19 at **Task 8 — administrator visual customizer/live preview**. Reuse the shared normalized `AppearanceConfig`, protected Task 3 appearance REST authority, and public runtime appearance projection. The preview must not create a second appearance schema or become a provider/model/credential/runtime override channel.
+Close Task 8 by obtaining exact-final-documentation-head CI for its evidence/status/ledger updates, then continue immediately to **Task 9 — block/direct/fullscreen embedding surfaces**. Task 9 must reuse the existing conditional Task 5 mount/bootstrap authority and the Task 6–7 public widget runtime rather than create a parallel chat/retrieval/generation path.
 
 ## Durable recovery
 
 - `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md` — M14 auto-approved design and task order.
 - `docs/superpowers/plans/2026-09-13-m14-task7-streaming-simulated-typing.md` — Task 7 progressive-presentation plan and public-streaming seam gate.
+- `docs/superpowers/plans/2026-09-13-m14-task8-admin-customizer-live-preview.md` — Task 8 customizer/live-preview integration plan.
 - `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` — Task 1 evidence.
 - `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection evidence and scoped review.
 - `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md` — Task 3 protected REST evidence and review.
@@ -78,5 +82,6 @@ Continue M14 on existing PR #19 at **Task 8 — administrator visual customizer/
 - `docs/progress/M14-TASK6B-NONSTREAMING-CONVERSATION.md` — Task 6B conversation/error/retry TDD and integration review evidence.
 - `docs/progress/M14-TASK6C-WIDGET-PRESENTATION.md` — Task 6C safe presentation/history/null-contract evidence and Task 6 closeout review.
 - `docs/progress/M14-TASK7-STREAMING-SIMULATED-TYPING.md` — Task 7 RED/GREEN, invalid checkpoints, streaming seam decision, and fallback review.
+- `docs/progress/M14-TASK8-ADMIN-CUSTOMIZER.md` — Task 8 customizer integration, stale-save RED/GREEN, exact implementation CI, and review evidence.
 - PR #19 — active M14 implementation branch and execution source of truth.
 - `docs/milestones/M14-frontend-chatbot-customizer.md` — current M14 milestone ledger.
