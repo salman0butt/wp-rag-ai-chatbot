@@ -101,6 +101,7 @@ describe( 'public widget simulated typing fallback', () => {
 		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
 		expect( assistant ).not.toBeNull();
 		expect( assistant?.textContent ).not.toBe( answer );
+		expect( assistant?.getAttribute( 'aria-live' ) ).toBe( 'off' );
 		expect( status?.textContent ).toBe( 'Assistant is typing…' );
 		expect(
 			document.querySelector( '[data-wp-rag-ai-chatbot-copy]' )
@@ -112,6 +113,7 @@ describe( 'public widget simulated typing fallback', () => {
 		jest.runAllTimers();
 
 		expect( assistant?.textContent ).toBe( answer );
+		expect( assistant?.getAttribute( 'aria-live' ) ).toBe( 'polite' );
 		expect( status?.textContent ).toBe( '' );
 		expect(
 			document.querySelector( '[data-wp-rag-ai-chatbot-copy]' )
