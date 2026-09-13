@@ -20,6 +20,12 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		Monkey\setUp();
+		Functions\when( 'wp_unslash' )->alias(
+			static fn ( mixed $value ): mixed => is_string( $value ) ? stripslashes( $value ) : $value
+		);
+		Functions\when( 'wp_parse_url' )->alias(
+			static fn ( string $url, int $component = -1 ): mixed => parse_url( $url, $component )
+		);
 	}
 
 	/** Restore global state after each test. */

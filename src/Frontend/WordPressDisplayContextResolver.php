@@ -59,8 +59,8 @@ final class WordPressDisplayContextResolver {
 	/** Resolve and normalize the current request path without query or fragment data. */
 	private function resolve_path(): string {
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only the URL path is extracted and normalized below; query/fragment data is discarded.
-		$request_uri = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '/';
-		$path        = parse_url( $request_uri, PHP_URL_PATH );
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '/';
+		$path        = wp_parse_url( $request_uri, PHP_URL_PATH );
 
 		if ( ! is_string( $path ) || '' === $path ) {
 			return '/';
