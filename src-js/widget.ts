@@ -1,4 +1,5 @@
 import { mountWidgets, type WidgetBootstrapConfig } from './widget-runtime';
+import { mountStarterSuggestions } from './widget-starters';
 
 type WidgetConfigWindow = Window & {
 	wpRagAiChatbotWidgetConfigs?: WidgetBootstrapConfig[];
@@ -11,3 +12,4 @@ if ( ! Array.isArray( widgetWindow.wpRagAiChatbotWidgetConfigs ) ) {
 }
 
 mountWidgets( document, widgetWindow.wpRagAiChatbotWidgetConfigs );
+mountStarterSuggestions( document, widgetWindow.wpRagAiChatbotWidgetConfigs );
