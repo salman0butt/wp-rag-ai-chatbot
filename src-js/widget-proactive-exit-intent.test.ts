@@ -10,13 +10,16 @@ const readExitIntent = ( displayRules: unknown ): boolean | undefined =>
 		}
 	 ).exitIntent;
 
-const withExitIntent = (
-	displayRules: unknown
-): ReturnType< typeof readProactiveDelayConfig > & { exitIntent: boolean } =>
-	( {
+type ExitIntentConfig = ReturnType< typeof readProactiveDelayConfig > & {
+	exitIntent: boolean;
+};
+
+const withExitIntent = ( displayRules: unknown ): ExitIntentConfig => {
+	return {
 		...readProactiveDelayConfig( displayRules ),
 		exitIntent: true,
-	} as ReturnType< typeof readProactiveDelayConfig > & { exitIntent: boolean } );
+	};
+};
 
 const setFinePointer = ( matches: boolean ): void => {
 	Object.defineProperty( window, 'matchMedia', {
