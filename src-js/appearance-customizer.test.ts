@@ -170,6 +170,7 @@ describe( 'AppearanceCustomizer', () => {
 		radius.dispatchEvent( new Event( 'change', { bubbles: true } ) );
 		expect( onChange ).toHaveBeenLastCalledWith( {
 			...loadedAppearance,
+			primary_color: '#dc2626',
 			radius_px: 12,
 		} );
 		expect(
