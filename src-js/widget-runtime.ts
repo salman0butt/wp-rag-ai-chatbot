@@ -297,6 +297,7 @@ export const mountWidgets = (
 			let requestInFlight = false;
 			let conversationId: string | null = null;
 			let retryQuestion: string | null = null;
+			let cancelPresentation: ( () => void ) | null = null;
 
 			const trimMessageHistory = (): void => {
 				while ( messages.childElementCount > MAX_RENDERED_MESSAGES ) {
@@ -321,10 +322,18 @@ export const mountWidgets = (
 				send.disabled = false;
 			};
 
+			const cancelActivePresentation = (): void => {
+				const cancel = cancelPresentation;
+				cancelPresentation = null;
+				cancel?.();
+			};
+
 			const appendAssistantMessage = (
 				text: string,
 				citations: readonly PublicCitation[]
 			): void => {
+				cancelActivePresentation();
+
 				const wrapper = documentRoot.createElement( 'article' );
 				wrapper.dataset.wpRagAiChatbotMessageContainer = 'assistant';
 
@@ -385,8 +394,24 @@ export const mountWidgets = (
 					Math.ceil( text.length / MAX_TYPING_TICKS )
 				);
 				let revealedLength = 0;
+				let cancelled = false;
+				let timer: ReturnType< typeof setTimeout > | null = null;
+
+				cancelPresentation = () => {
+					cancelled = true;
+					if ( timer !== null ) {
+						clearTimeout( timer );
+						timer = null;
+					}
+					finishRequest();
+					status.textContent = '';
+				};
 
 				const revealNextChunk = (): void => {
+					if ( cancelled ) {
+						return;
+					}
+
 					let nextLength = Math.min(
 						text.length,
 						revealedLength + chunkSize
@@ -416,10 +441,12 @@ export const mountWidgets = (
 					message.textContent = text.slice( 0, revealedLength );
 
 					if ( revealedLength < text.length ) {
-						setTimeout( revealNextChunk, TYPING_INTERVAL_MS );
+						timer = setTimeout( revealNextChunk, TYPING_INTERVAL_MS );
 						return;
 					}
 
+					timer = null;
+					cancelPresentation = null;
 					appendCompletionControls();
 					finishRequest();
 					status.textContent = '';
@@ -430,6 +457,7 @@ export const mountWidgets = (
 			};
 
 			const closePanel = (): void => {
+				cancelActivePresentation();
 				launcher.setAttribute( 'aria-expanded', 'false' );
 				panel.hidden = true;
 				launcher.focus();
