@@ -93,6 +93,9 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		$bots->expects( self::once() )->method( 'find' )->willReturn( $bot );
 		$appearances->expects( self::once() )->method( 'find' )->willReturn( AppearanceConfig::defaults() );
 		$this->stub_public_render_functions();
+		Functions\when( 'wp_enqueue_style' )->justReturn( null );
+		Functions\when( 'wp_enqueue_script' )->justReturn( null );
+		Functions\when( 'wp_add_inline_script' )->justReturn( true );
 
 		$bootstrap = new PublicWidgetBootstrap(
 			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) ),
@@ -209,9 +212,6 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		Functions\when( 'esc_attr' )->alias(
 			static fn ( string $value ): string => htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' )
 		);
-		Functions\when( 'wp_enqueue_style' )->justReturn( null );
-		Functions\when( 'wp_enqueue_script' )->justReturn( null );
-		Functions\when( 'wp_add_inline_script' )->justReturn( true );
 	}
 
 	/**
