@@ -3,6 +3,7 @@ type ProactiveDelayConfig = {
 	delayMs: number | null;
 	scrollPercent: number | null;
 	inactivityMs: number | null;
+	exitIntent: boolean;
 };
 
 export type ProactiveDelayCoordinator = {
@@ -13,6 +14,7 @@ export type ProactiveDelayCoordinator = {
 const MAX_TIMER_MS = 600000;
 const MAX_SCROLL_PERCENT = 100;
 const INACTIVITY_EVENTS = [ 'pointerdown', 'keydown' ] as const;
+const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
 const asRecord = ( value: unknown ): Record< string, unknown > =>
 	typeof value === 'object' && value !== null
@@ -46,6 +48,7 @@ export const readProactiveDelayConfig = (
 		delayMs: normalizeDelay( proactive.delay_ms ),
 		scrollPercent: normalizeScrollPercent( proactive.scroll_percent ),
 		inactivityMs: normalizeDelay( proactive.inactivity_ms ),
+		exitIntent: proactive.exit_intent === true,
 	};
 };
 
@@ -58,6 +61,7 @@ export const createProactiveDelayCoordinator = (
 	let scrollFrame: number | null = null;
 	let listeningForScroll = false;
 	let listeningForActivity = false;
+	let listeningForExitIntent = false;
 	let completed = false;
 
 	const stopScrollListener = (): void => {
@@ -84,6 +88,13 @@ export const createProactiveDelayCoordinator = (
 		}
 	};
 
+	const stopExitIntentListener = (): void => {
+		if ( listeningForExitIntent ) {
+			window.removeEventListener( 'mouseout', handleExitIntent );
+			listeningForExitIntent = false;
+		}
+	};
+
 	const complete = (): void => {
 		if ( completed ) {
 			return;
@@ -96,6 +107,7 @@ export const createProactiveDelayCoordinator = (
 		}
 		stopScrollListener();
 		stopInactivityListener();
+		stopExitIntentListener();
 		onOpen();
 	};
 
@@ -150,6 +162,19 @@ export const createProactiveDelayCoordinator = (
 		}, config.inactivityMs );
 	}
 
+	function handleExitIntent( event: MouseEvent ): void {
+		if (
+			completed ||
+			! config.exitIntent ||
+			event.relatedTarget !== null ||
+			event.clientY > 0
+		) {
+			return;
+		}
+
+		complete();
+	}
+
 	const cancel = (): void => {
 		completed = true;
 		if ( timer !== null ) {
@@ -158,6 +183,7 @@ export const createProactiveDelayCoordinator = (
 		}
 		stopScrollListener();
 		stopInactivityListener();
+		stopExitIntentListener();
 	};
 
 	const start = (): void => {
@@ -186,6 +212,16 @@ export const createProactiveDelayCoordinator = (
 				window.addEventListener( eventName, resetInactivityTimer );
 			} );
 			resetInactivityTimer();
+		}
+
+		if (
+			! listeningForExitIntent &&
+			config.exitIntent &&
+			typeof window.matchMedia === 'function' &&
+			window.matchMedia( FINE_POINTER_QUERY ).matches
+		) {
+			listeningForExitIntent = true;
+			window.addEventListener( 'mouseout', handleExitIntent );
 		}
 	};
 
