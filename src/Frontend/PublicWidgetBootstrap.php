@@ -73,6 +73,7 @@ final readonly class PublicWidgetBootstrap {
 		$browser_config = array(
 			'botId'    => $config->bot_id,
 			'restBase' => untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) ),
+			'surface'  => 'floating',
 			'config'   => $config->to_array(),
 		);
 		$encoded_config = wp_json_encode( $browser_config );
@@ -99,6 +100,6 @@ final readonly class PublicWidgetBootstrap {
 			'before'
 		);
 
-		return '<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="' . esc_attr( $config->bot_id ) . '"></div>';
+		return '<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="' . esc_attr( $config->bot_id ) . '" data-wp-rag-ai-chatbot-surface="floating"></div>';
 	}
 }
