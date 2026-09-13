@@ -18,10 +18,15 @@ final class ChatbotBlockMetadataTest extends TestCase {
 		$metadata_path = dirname( __DIR__, 3 ) . '/blocks/chatbot/block.json';
 
 		self::assertFileExists( $metadata_path );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local packaged metadata fixture.
 		$contents = file_get_contents( $metadata_path );
 		self::assertIsString( $contents );
 
-		/** @var array<string,mixed> $metadata */
+		/**
+		 * Decoded block metadata.
+		 *
+		 * @var array<string,mixed> $metadata
+		 */
 		$metadata = json_decode( $contents, true, 512, JSON_THROW_ON_ERROR );
 
 		self::assertSame( 3, $metadata['apiVersion'] ?? null );
