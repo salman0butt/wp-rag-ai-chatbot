@@ -1,10 +1,22 @@
 export type DisplayDirection = 'auto' | 'ltr' | 'rtl';
+export type DisplayAudience =
+	| 'all'
+	| 'authenticated'
+	| 'anonymous'
+	| 'selected_roles';
+export type WooArea = 'shop' | 'product' | 'cart' | 'checkout' | 'account';
+export type DeviceBucket = 'desktop' | 'tablet' | 'mobile';
 
 export type DisplayRulesConfig = {
 	enabled: boolean;
 	visibility: {
 		url_include: readonly string[];
 		url_exclude: readonly string[];
+		post_types: readonly string[];
+		audience: DisplayAudience;
+		roles: readonly string[];
+		woo_areas: readonly WooArea[];
+		devices: readonly DeviceBucket[];
 	};
 	proactive: {
 		enabled: boolean;
@@ -21,6 +33,11 @@ export type DisplayRulesConfig = {
 
 export type DisplayRuleFacts = {
 	path?: string;
+	isAuthenticated?: boolean;
+	roleMatches?: readonly string[];
+	postType?: string;
+	wooArea?: WooArea;
+	device?: DeviceBucket;
 };
 
 export type DisplayDecision = {
@@ -35,6 +52,27 @@ export type DisplayDecision = {
 const MAX_URL_PATTERNS = 32;
 const MAX_URL_PATTERN_LENGTH = 256;
 const MAX_URL_WILDCARDS = 4;
+const MAX_SLUG_VALUES = 16;
+const MAX_SLUG_LENGTH = 64;
+const SLUG_PATTERN = /^[a-z0-9_-]+$/;
+const AUDIENCES: readonly DisplayAudience[] = [
+	'all',
+	'authenticated',
+	'anonymous',
+	'selected_roles',
+];
+const WOO_AREAS: readonly WooArea[] = [
+	'shop',
+	'product',
+	'cart',
+	'checkout',
+	'account',
+];
+const DEVICE_BUCKETS: readonly DeviceBucket[] = [
+	'desktop',
+	'tablet',
+	'mobile',
+];
 
 const asRecord = ( value: unknown ): Record< string, unknown > =>
 	typeof value === 'object' && value !== null
@@ -86,6 +124,63 @@ const normalizePatterns = (
 
 	return patterns;
 };
+
+const normalizeSlugList = ( value: unknown ): readonly string[] => {
+	if ( ! Array.isArray( value ) ) {
+		return [];
+	}
+
+	const slugs: string[] = [];
+	for ( const candidate of value ) {
+		if ( typeof candidate !== 'string' ) {
+			continue;
+		}
+
+		const normalized = candidate.trim().toLowerCase();
+		if (
+			normalized === '' ||
+			normalized.length > MAX_SLUG_LENGTH ||
+			! SLUG_PATTERN.test( normalized ) ||
+			slugs.includes( normalized )
+		) {
+			continue;
+		}
+
+		slugs.push( normalized );
+		if ( slugs.length >= MAX_SLUG_VALUES ) {
+			break;
+		}
+	}
+
+	return slugs;
+};
+
+const normalizeChoiceList = < T extends string >(
+	value: unknown,
+	allowed: readonly T[]
+): readonly T[] => {
+	if ( ! Array.isArray( value ) ) {
+		return [];
+	}
+
+	const choices: T[] = [];
+	for ( const candidate of value ) {
+		if (
+		typeof candidate === 'string' &&
+		allowed.includes( candidate as T ) &&
+		! choices.includes( candidate as T )
+		) {
+			choices.push( candidate as T );
+		}
+	}
+
+	return choices;
+};
+
+const normalizeAudience = ( value: unknown ): DisplayAudience =>
+	typeof value === 'string' && AUDIENCES.includes( value as DisplayAudience )
+		? ( value as DisplayAudience )
+		: 'all';
 
 const pathMatchesPattern = ( path: string, pattern: string ): boolean => {
 	let pathIndex = 0;
@@ -156,6 +251,30 @@ const baseDecision = (
 	reasons,
 } );
 
+const audienceMatches = (
+	config: DisplayRulesConfig,
+	facts: DisplayRuleFacts
+): boolean => {
+	switch ( config.visibility.audience ) {
+		case 'authenticated':
+			return facts.isAuthenticated === true;
+		case 'anonymous':
+			return facts.isAuthenticated === false;
+		case 'selected_roles':
+			return (
+				facts.isAuthenticated === true &&
+				config.visibility.roles.length > 0 &&
+				Array.isArray( facts.roleMatches ) &&
+				facts.roleMatches.some( ( role ) =>
+					config.visibility.roles.includes( role )
+				)
+			);
+		case 'all':
+		default:
+			return true;
+	}
+};
+
 export const normalizeDisplayRules = ( value: unknown ): DisplayRulesConfig => {
 	const candidate = asRecord( value );
 	const visibility = asRecord( candidate.visibility );
@@ -173,6 +292,14 @@ export const normalizeDisplayRules = ( value: unknown ): DisplayRulesConfig => {
 		visibility: {
 			url_include: urlInclude,
 			url_exclude: urlExclude,
+			post_types: normalizeSlugList( visibility.post_types ),
+			audience: normalizeAudience( visibility.audience ),
+			roles: normalizeSlugList( visibility.roles ),
+			woo_areas: normalizeChoiceList( visibility.woo_areas, WOO_AREAS ),
+			devices: normalizeChoiceList(
+				visibility.devices,
+				DEVICE_BUCKETS
+			),
 		},
 		proactive: {
 			enabled: false,
@@ -205,15 +332,44 @@ export const evaluateDisplayRules = (
 		return baseDecision( config, false, [ 'url_excluded' ] );
 	}
 
+	const reasons = [ 'enabled' ];
 	if ( config.visibility.url_include.length > 0 ) {
 		const included = config.visibility.url_include.some( ( pattern ) =>
 			pathMatchesPattern( path, pattern )
 		);
-
-		return included
-			? baseDecision( config, true, [ 'enabled', 'url_included' ] )
-			: baseDecision( config, false, [ 'url_not_included' ] );
+		if ( ! included ) {
+			return baseDecision( config, false, [ 'url_not_included' ] );
+		}
+		reasons.push( 'url_included' );
 	}
 
-	return baseDecision( config, true, [ 'enabled' ] );
+	if ( ! audienceMatches( config, facts ) ) {
+		return baseDecision( config, false, [ 'audience_mismatch' ] );
+	}
+
+	if (
+		config.visibility.post_types.length > 0 &&
+		( typeof facts.postType !== 'string' ||
+			! config.visibility.post_types.includes( facts.postType ) )
+	) {
+		return baseDecision( config, false, [ 'post_type_mismatch' ] );
+	}
+
+	if (
+		config.visibility.woo_areas.length > 0 &&
+		( facts.wooArea === undefined ||
+			! config.visibility.woo_areas.includes( facts.wooArea ) )
+	) {
+		return baseDecision( config, false, [ 'woo_area_mismatch' ] );
+	}
+
+	if (
+		config.visibility.devices.length > 0 &&
+		( facts.device === undefined ||
+			! config.visibility.devices.includes( facts.device ) )
+	) {
+		return baseDecision( config, false, [ 'device_mismatch' ] );
+	}
+
+	return baseDecision( config, true, reasons );
 };
