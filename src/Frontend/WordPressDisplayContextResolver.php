@@ -22,13 +22,19 @@ final class WordPressDisplayContextResolver {
 	 *     path: string,
 	 *     isAuthenticated: bool,
 	 *     postType: ?string,
-	 *     roleMatches: list<string>
+	 *     roleMatches: list<string>,
+	 *     wooArea: ?string,
+	 *     siteLocale: string,
+	 *     siteDirection: 'ltr'|'rtl',
+	 *     siteWeekday: int,
+	 *     siteMinuteOfDay: int
 	 * }
 	 */
 	public function resolve(): array {
 		$is_authenticated = is_user_logged_in();
 		$post_type        = $this->normalize_token( get_post_type() );
 		$roles            = array();
+		$site_datetime    = current_datetime();
 
 		if ( $is_authenticated ) {
 			$user = wp_get_current_user();
@@ -51,6 +57,11 @@ final class WordPressDisplayContextResolver {
 			'isAuthenticated' => $is_authenticated,
 			'postType'        => $post_type,
 			'roleMatches'     => $roles,
+			'wooArea'         => $this->resolve_woo_area( $post_type ),
+			'siteLocale'      => $this->normalize_locale( get_locale() ),
+			'siteDirection'   => is_rtl() ? 'rtl' : 'ltr',
+			'siteWeekday'     => (int) $site_datetime->format( 'w' ),
+			'siteMinuteOfDay' => ( (int) $site_datetime->format( 'G' ) * 60 ) + (int) $site_datetime->format( 'i' ),
 		);
 	}
 
@@ -67,6 +78,38 @@ final class WordPressDisplayContextResolver {
 		$path = strtolower( $path );
 
 		return str_starts_with( $path, '/' ) ? $path : '/' . $path;
+	}
+
+	/** Resolve a finite WooCommerce presentation-area token without requiring WooCommerce. */
+	private function resolve_woo_area( ?string $post_type ): ?string {
+		if ( 'product' === $post_type ) {
+			return 'product';
+		}
+
+		$checks = array(
+			'is_cart'         => 'cart',
+			'is_checkout'     => 'checkout',
+			'is_account_page' => 'account',
+			'is_shop'         => 'shop',
+		);
+
+		foreach ( $checks as $predicate => $area ) {
+			if ( function_exists( $predicate ) && true === $predicate() ) {
+				return $area;
+			}
+		}
+
+		return null;
+	}
+
+	/** Normalize WordPress locale syntax to the browser-safe M15 locale token. */
+	private function normalize_locale( string $locale ): string {
+		$locale = strtolower( str_replace( '_', '-', trim( $locale ) ) );
+		if ( 1 === preg_match( '/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/', $locale ) && strlen( $locale ) <= 35 ) {
+			return $locale;
+		}
+
+		return 'en';
 	}
 
 	/**
