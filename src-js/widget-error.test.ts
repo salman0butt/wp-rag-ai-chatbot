@@ -52,8 +52,10 @@ describe( 'public widget conversation errors', () => {
 		fetchMock = jest.fn().mockResolvedValue( {
 			ok: false,
 			json: async () => ( {
-				code: 'rate_limited',
-				message: 'provider secret detail must not render',
+				error: {
+					code: 'rate_limited',
+					message: 'provider secret detail must not render',
+				},
 			} ),
 		} );
 		Object.defineProperty( globalThis, 'fetch', {
@@ -73,7 +75,7 @@ describe( 'public widget conversation errors', () => {
 		} );
 	} );
 
-	it( 'maps public errors to safe copy and retries the same bounded request', async () => {
+	it( 'maps the real public error envelope to safe copy and bounded retry', async () => {
 		loadWidget();
 		submitQuestion( 'Help me' );
 		await flushPromises();
