@@ -70,9 +70,12 @@ final readonly class PublicWidgetBootstrap {
 			return '';
 		}
 
-		$browser_config             = $config->to_array();
-		$browser_config['restBase'] = untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) );
-		$encoded_config             = wp_json_encode( $browser_config );
+		$browser_config = array(
+			'botId'    => $config->bot_id,
+			'restBase' => untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) ),
+			'config'   => $config->to_array(),
+		);
+		$encoded_config = wp_json_encode( $browser_config );
 		if ( false === $encoded_config ) {
 			return '';
 		}
