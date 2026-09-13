@@ -33,17 +33,15 @@ final class WordPressDisplayContextResolver {
 		if ( $is_authenticated ) {
 			$user = wp_get_current_user();
 
-			if ( is_object( $user ) && isset( $user->roles ) && is_array( $user->roles ) ) {
-				foreach ( $user->roles as $role ) {
-					$normalized = $this->normalize_token( $role );
-					if ( null === $normalized || in_array( $normalized, $roles, true ) ) {
-						continue;
-					}
+			foreach ( $user->roles as $role ) {
+				$normalized = $this->normalize_token( $role );
+				if ( null === $normalized || in_array( $normalized, $roles, true ) ) {
+					continue;
+				}
 
-					$roles[] = $normalized;
-					if ( self::MAX_ROLE_MATCHES === count( $roles ) ) {
-						break;
-					}
+				$roles[] = $normalized;
+				if ( self::MAX_ROLE_MATCHES === count( $roles ) ) {
+					break;
 				}
 			}
 		}
