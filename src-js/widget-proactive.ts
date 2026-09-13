@@ -118,7 +118,9 @@ export const createProactiveDelayCoordinator = (
 
 		if ( ! listeningForScroll && config.scrollPercent !== null ) {
 			listeningForScroll = true;
-			window.addEventListener( 'scroll', handleScroll, { passive: true } );
+			window.addEventListener( 'scroll', handleScroll, {
+				passive: true,
+			} );
 			handleScroll();
 		}
 	};
