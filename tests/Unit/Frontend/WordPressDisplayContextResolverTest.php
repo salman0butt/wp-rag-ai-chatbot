@@ -11,6 +11,8 @@ namespace WpRagAiChatbot\Tests\Unit\Frontend;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use DateTimeImmutable;
+use DateTimeZone;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Frontend\WordPressDisplayContextResolver;
 
@@ -33,6 +35,11 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 
 				return is_string( $path ) ? $path : false;
 			}
+		);
+		Functions\when( 'get_locale' )->justReturn( 'en_US' );
+		Functions\when( 'is_rtl' )->justReturn( false );
+		Functions\when( 'current_datetime' )->justReturn(
+			new DateTimeImmutable( '2026-09-13 12:00:00', new DateTimeZone( 'UTC' ) )
 		);
 	}
 
@@ -68,6 +75,11 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 		self::assertTrue( $facts['isAuthenticated'] );
 		self::assertSame( 'page', $facts['postType'] );
 		self::assertSame( array( 'administrator', 'customer' ), $facts['roleMatches'] );
+		self::assertNull( $facts['wooArea'] );
+		self::assertSame( 'en-us', $facts['siteLocale'] );
+		self::assertSame( 'ltr', $facts['siteDirection'] );
+		self::assertSame( 0, $facts['siteWeekday'] );
+		self::assertSame( 720, $facts['siteMinuteOfDay'] );
 		self::assertArrayNotHasKey( 'user', $facts );
 		self::assertArrayNotHasKey( 'userId', $facts );
 		self::assertArrayNotHasKey( 'email', $facts );
@@ -90,5 +102,27 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 		self::assertFalse( $facts['isAuthenticated'] );
 		self::assertNull( $facts['postType'] );
 		self::assertSame( array(), $facts['roleMatches'] );
+		self::assertNull( $facts['wooArea'] );
+	}
+
+	/** Site and Woo presentation facts use bounded deterministic tokens and site-local time. */
+	public function test_resolve_projects_site_locale_direction_time_and_product_area(): void {
+		$_SERVER['REQUEST_URI'] = '/product/lamp/';
+
+		Functions\when( 'is_user_logged_in' )->justReturn( false );
+		Functions\when( 'get_post_type' )->justReturn( 'product' );
+		Functions\when( 'get_locale' )->justReturn( 'ur_PK' );
+		Functions\when( 'is_rtl' )->justReturn( true );
+		Functions\when( 'current_datetime' )->justReturn(
+			new DateTimeImmutable( '2026-09-13 23:45:00', new DateTimeZone( 'Asia/Karachi' ) )
+		);
+
+		$facts = ( new WordPressDisplayContextResolver() )->resolve();
+
+		self::assertSame( 'product', $facts['wooArea'] );
+		self::assertSame( 'ur-pk', $facts['siteLocale'] );
+		self::assertSame( 'rtl', $facts['siteDirection'] );
+		self::assertSame( 0, $facts['siteWeekday'] );
+		self::assertSame( 1425, $facts['siteMinuteOfDay'] );
 	}
 }
