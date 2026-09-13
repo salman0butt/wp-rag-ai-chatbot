@@ -1644,6 +1644,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			return;
 		}
 
+		const requestGeneration = ++botAppearanceGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botAppearanceGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
 		const normalized = normalizeWidgetAppearance( next );
 		currentBotAppearance = normalized;
 		currentBotAppearanceSaving = true;
@@ -1660,7 +1665,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				}
 			)
 			.then( ( response ) => {
-				if ( activeBotId() !== botId ) {
+				if ( ! isCurrentRequest() ) {
 					return;
 				}
 
@@ -1670,13 +1675,13 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				currentBotAppearanceError = undefined;
 			} )
 			.catch( () => {
-				if ( activeBotId() === botId ) {
+				if ( isCurrentRequest() ) {
 					currentBotAppearanceError =
 						'Appearance settings could not be saved.';
 				}
 			} )
 			.finally( () => {
-				if ( activeBotId() === botId ) {
+				if ( isCurrentRequest() ) {
 					currentBotAppearanceSaving = false;
 					renderState( stateFromReadiness() );
 				}
