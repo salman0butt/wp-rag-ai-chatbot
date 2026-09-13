@@ -481,7 +481,7 @@ final readonly class DisplayRulesConfig {
 		$timezone = array_key_exists( 'timezone', $schedule )
 			? self::normalize_choice( $schedule['timezone'], array( 'site' ) )
 			: 'site';
-		$days = array();
+		$days     = array();
 		if ( array_key_exists( 'days', $schedule ) ) {
 			if ( ! is_array( $schedule['days'] ) ) {
 				throw new InvalidArgumentException( 'Schedule days must be a list.' );
