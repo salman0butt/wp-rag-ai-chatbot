@@ -27,10 +27,10 @@ final class WidgetConfigResolverTest extends TestCase {
 		self::assertTrue( class_exists( WidgetConfig::class ), 'M15 Task 2D requires WidgetConfig.' );
 		self::assertTrue( class_exists( WidgetConfigResolver::class ), 'M15 Task 2D requires WidgetConfigResolver.' );
 
-		$bot_id        = new BotId( '0123456789abcdef0123456789abcdef' );
-		$bot           = $this->bot( $bot_id, true );
-		$appearance    = AppearanceConfig::from_array( array( 'primary_color' => '#ABCDEF' ) );
-		$display_rules = DisplayRulesConfig::from_array(
+		$bot_id         = new BotId( '0123456789abcdef0123456789abcdef' );
+		$bot            = $this->bot( $bot_id, true );
+		$appearance     = AppearanceConfig::from_array( array( 'primary_color' => '#ABCDEF' ) );
+		$display_rules  = DisplayRulesConfig::from_array(
 			array(
 				'enabled'      => false,
 				'localization' => array(
