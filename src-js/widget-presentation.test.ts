@@ -43,6 +43,7 @@ const submitQuestion = ( value: string ): void => {
 
 describe( 'public widget message presentation', () => {
 	beforeEach( () => {
+		jest.useFakeTimers();
 		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
 		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [
 			{
@@ -84,6 +85,7 @@ describe( 'public widget message presentation', () => {
 	} );
 
 	afterEach( () => {
+		jest.useRealTimers();
 		document.body.innerHTML = '';
 		delete ( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs;
 		Object.defineProperty( globalThis, 'fetch', {
@@ -101,6 +103,7 @@ describe( 'public widget message presentation', () => {
 		loadWidget();
 		submitQuestion( 'Show sources' );
 		await flushPromises();
+		jest.runAllTimers();
 
 		const assistant = document.querySelector< HTMLElement >(
 			'[data-wp-rag-ai-chatbot-message="assistant"]'
@@ -144,6 +147,7 @@ describe( 'public widget message presentation', () => {
 		for ( let index = 0; index < 25; index += 1 ) {
 			submitQuestion( `Question ${ index }` );
 			await flushPromises();
+			jest.runAllTimers();
 		}
 
 		const messages = document.querySelector< HTMLElement >(
