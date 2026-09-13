@@ -205,4 +205,64 @@ final class DisplayRulesConfigTest extends TestCase {
 			)
 		);
 	}
+
+	/** Schedule and click-selector fields normalize into the shared persistence shape. */
+	public function test_from_array_normalizes_schedule_and_click_selector(): void {
+		$config = DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'schedule' => array(
+						'timezone' => 'site',
+						'days'     => array( 1, 5, 1 ),
+						'start'    => '09:30',
+						'end'      => '17:00',
+					),
+				),
+				'proactive'  => array(
+					'click_selector' => ' .support-button ',
+				),
+			)
+		);
+
+		$normalized = $config->to_array();
+		self::assertSame(
+			array(
+				'timezone' => 'site',
+				'days'     => array( 1, 5 ),
+				'start'    => '09:30',
+				'end'      => '17:00',
+			),
+			$normalized['visibility']['schedule']
+		);
+		self::assertSame( '.support-button', $normalized['proactive']['click_selector'] );
+	}
+
+	/** Invalid schedule times must fail closed instead of being silently projected. */
+	public function test_from_array_rejects_invalid_schedule_time(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'schedule' => array(
+						'timezone' => 'site',
+						'days'     => array( 1 ),
+						'start'    => '25:00',
+						'end'      => null,
+					),
+				),
+			)
+		);
+	}
+
+	/** Selector lists and pseudo selectors are outside the proactive click grammar. */
+	public function test_from_array_rejects_unsafe_click_selector(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'proactive' => array(
+					'click_selector' => 'a:hover, .support-button',
+				),
+			)
+		);
+	}
 }
