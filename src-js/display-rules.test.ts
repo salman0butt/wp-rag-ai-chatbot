@@ -63,16 +63,16 @@ describe( 'display rule URL precedence', () => {
 	} );
 
 	test( 'allows include matches and lets exclusions win', () => {
-		expect( evaluateDisplayRules( rules, { path: '/docs/guide' } ) ).toEqual(
-		{
+		expect(
+			evaluateDisplayRules( rules, { path: '/docs/guide' } )
+		).toEqual( {
 			visible: true,
 			proactiveEligible: false,
 			starters: [],
 			locale: 'site',
 			direction: 'ltr',
 			reasons: [ 'enabled', 'url_included' ],
-		}
-	);
+		} );
 
 		expect(
 			evaluateDisplayRules( rules, { path: '/docs/private/secret' } )
