@@ -308,9 +308,11 @@ const normalizeLocaleToken = ( value: unknown ): string | null => {
 	}
 
 	const normalized = value.trim().replaceAll( '_', '-' ).toLowerCase();
-	return normalized.length <= MAX_LOCALE_LENGTH && LOCALE_PATTERN.test( normalized )
-		? normalized
-		: null;
+	return
+		normalized.length <= MAX_LOCALE_LENGTH &&
+		LOCALE_PATTERN.test( normalized )
+			? normalized
+			: null;
 };
 
 const normalizeLocaleSetting = ( value: unknown ): string => {
@@ -464,7 +466,10 @@ const selectStarters = (
 	let best: StarterRule | null = null;
 	let bestSpecificity = -1;
 	for ( const rule of config.starters.by_page ) {
-		if ( ! rule.pattern.includes( '*' ) || ! pathMatchesPattern( path, rule.pattern ) ) {
+		if (
+			! rule.pattern.includes( '*' ) ||
+			! pathMatchesPattern( path, rule.pattern )
+		) {
 			continue;
 		}
 
@@ -502,16 +507,24 @@ const resolveDirection = (
 	facts: DisplayRuleFacts,
 	locale: string
 ): 'ltr' | 'rtl' => {
-	if ( config.localization.direction === 'ltr' || config.localization.direction === 'rtl' ) {
+	if (
+		config.localization.direction === 'ltr' ||
+		config.localization.direction === 'rtl'
+	) {
 		return config.localization.direction;
 	}
 
 	const language = locale.split( '-', 1 )[ 0 ];
-	if ( RTL_LOCALES.includes( language as ( typeof RTL_LOCALES )[ number ] ) ) {
+	if (
+		RTL_LOCALES.includes( language as ( typeof RTL_LOCALES )[ number ] )
+	) {
 		return 'rtl';
 	}
 
-	if ( config.localization.locale === 'site' && facts.siteDirection !== undefined ) {
+	if (
+		config.localization.locale === 'site' &&
+		facts.siteDirection !== undefined
+	) {
 		return facts.siteDirection;
 	}
 
