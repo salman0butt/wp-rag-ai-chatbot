@@ -80,6 +80,8 @@ describe( 'shared widget appearance renderer', () => {
 			font_family: 'system',
 		} );
 		expect( mount.getAttribute( 'style' ) ).not.toContain( 'javascript:' );
-		expect( mount.getAttribute( 'style' ) ).not.toContain( 'display: none' );
+		expect( mount.getAttribute( 'style' ) ).not.toContain(
+			'display: none'
+		);
 	} );
 } );
