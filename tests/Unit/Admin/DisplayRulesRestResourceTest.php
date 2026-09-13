@@ -20,11 +20,14 @@ use WpRagAiChatbot\Frontend\DisplayRulesConfig;
 final class DisplayRulesRestResourceTest extends TestCase {
 	/** Read returns only normalized display rules for one valid bot identifier. */
 	public function test_read_projects_normalized_display_rules(): void {
-		self::assertTrue( class_exists( DisplayRulesRestResource::class ), 'M15 Task 2C requires DisplayRulesRestResource.' );
+		self::assertTrue(
+			class_exists( DisplayRulesRestResource::class ),
+			'M15 Task 2C requires DisplayRulesRestResource.'
+		);
 
-		$bot_id      = new BotId( '0123456789abcdef0123456789abcdef' );
+		$bot_id        = new BotId( '0123456789abcdef0123456789abcdef' );
 		$display_rules = DisplayRulesConfig::from_array( array( 'enabled' => false ) );
-		$repository  = $this->createMock( BotDisplayRulesRepository::class );
+		$repository    = $this->createMock( BotDisplayRulesRepository::class );
 		$repository->expects( self::once() )->method( 'find' )->with( $bot_id )->willReturn( $display_rules );
 
 		self::assertSame(
@@ -35,7 +38,10 @@ final class DisplayRulesRestResourceTest extends TestCase {
 
 	/** Invalid bot identifiers fail closed before repository access. */
 	public function test_read_rejects_invalid_bot_identifier(): void {
-		self::assertTrue( class_exists( DisplayRulesRestResource::class ), 'M15 Task 2C requires DisplayRulesRestResource.' );
+		self::assertTrue(
+			class_exists( DisplayRulesRestResource::class ),
+			'M15 Task 2C requires DisplayRulesRestResource.'
+		);
 
 		$repository = $this->createMock( BotDisplayRulesRepository::class );
 		$repository->expects( self::never() )->method( 'find' );
@@ -48,11 +54,14 @@ final class DisplayRulesRestResourceTest extends TestCase {
 
 	/** Valid writes normalize and persist only the shared display-rule authority. */
 	public function test_write_normalizes_and_persists_display_rules(): void {
-		self::assertTrue( class_exists( DisplayRulesRestResource::class ), 'M15 Task 2C requires DisplayRulesRestResource.' );
+		self::assertTrue(
+			class_exists( DisplayRulesRestResource::class ),
+			'M15 Task 2C requires DisplayRulesRestResource.'
+		);
 
-		$bot_id       = new BotId( '0123456789abcdef0123456789abcdef' );
+		$bot_id        = new BotId( '0123456789abcdef0123456789abcdef' );
 		$display_rules = DisplayRulesConfig::from_array( array( 'enabled' => false ) );
-		$repository   = $this->createMock( BotDisplayRulesRepository::class );
+		$repository    = $this->createMock( BotDisplayRulesRepository::class );
 		$repository->expects( self::once() )
 			->method( 'save' )
 			->with( $bot_id, $display_rules );
@@ -68,7 +77,10 @@ final class DisplayRulesRestResourceTest extends TestCase {
 
 	/** Unknown runtime fields and persistence failures expose stable non-sensitive errors. */
 	public function test_write_rejects_runtime_overrides_and_normalizes_persistence_failure(): void {
-		self::assertTrue( class_exists( DisplayRulesRestResource::class ), 'M15 Task 2C requires DisplayRulesRestResource.' );
+		self::assertTrue(
+			class_exists( DisplayRulesRestResource::class ),
+			'M15 Task 2C requires DisplayRulesRestResource.'
+		);
 
 		$bot_id     = new BotId( '0123456789abcdef0123456789abcdef' );
 		$repository = $this->createMock( BotDisplayRulesRepository::class );
@@ -83,6 +95,9 @@ final class DisplayRulesRestResourceTest extends TestCase {
 		$response = $resource->write( $bot_id->value, array( 'enabled' => false ) );
 
 		self::assertSame( 'display_rules_save_failed', $response['error']['code'] );
-		self::assertStringNotContainsString( 'Sensitive persistence detail', (string) $response['error']['message'] );
+		self::assertStringNotContainsString(
+			'Sensitive persistence detail',
+			(string) $response['error']['message']
+		);
 	}
 }
