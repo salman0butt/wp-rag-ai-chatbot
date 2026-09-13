@@ -942,8 +942,8 @@ export const KnowledgeManagementScreen = ( {
 			id: 'knowledge-job-source-id',
 			min: 1,
 			name: 'source_id',
-			required: true,
-			type: 'number',
+				required: true,
+				type: 'number',
 		} ),
 		createElement(
 			'label',
@@ -1710,8 +1710,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			}
 
 			currentBotDisplayRules = normalizeDisplayRules( undefined );
-			currentBotDisplayRulesError =
-				'Display rules could not be loaded.';
+			currentBotDisplayRulesError = 'Display rules could not be loaded.';
 			loadedBotDisplayRulesId = botId;
 			return true;
 		}
