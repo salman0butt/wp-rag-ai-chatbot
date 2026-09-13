@@ -74,6 +74,45 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		$bootstrap->register_block();
 	}
 
+	/** Gutenberg rendering forwards only the bounded bot identifier to the embedded authority. */
+	public function test_render_block_discards_unknown_attributes_before_mount_resolution(): void {
+		$bot_id      = new BotId( self::BOT_ID );
+		$bots        = $this->createMock( BotRepository::class );
+		$appearances = $this->createMock( BotAppearanceRepository::class );
+		$bot         = new Bot(
+			$bot_id,
+			'Support',
+			true,
+			'openai',
+			'gpt-5',
+			1,
+			'2026-09-12 00:00:00',
+			'2026-09-12 00:00:00'
+		);
+
+		$bots->expects( self::once() )->method( 'find' )->willReturn( $bot );
+		$appearances->expects( self::once() )->method( 'find' )->willReturn( AppearanceConfig::defaults() );
+		$this->stub_public_render_functions();
+
+		$bootstrap = new PublicWidgetBootstrap(
+			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) ),
+			self::PLUGIN_FILE
+		);
+
+		$output = $bootstrap->render_block(
+			array(
+				'bot'                => self::BOT_ID,
+				'provider_override'  => 'openai',
+				'retrieval_limit'    => 99,
+				'arbitrary_css_rule' => 'display:none',
+			)
+		);
+
+		self::assertStringContainsString( 'data-wp-rag-ai-chatbot-surface="embedded"', $output );
+		self::assertStringNotContainsString( 'provider_override', $output );
+		self::assertStringNotContainsString( 'retrieval_limit', $output );
+	}
+
 	/** Invalid or missing bot mounts fail closed without public assets. */
 	public function test_invalid_mount_fails_closed_without_enqueuing_assets(): void {
 		$bootstrap = $this->bootstrap_with_empty_repositories();
@@ -104,23 +143,7 @@ final class PublicWidgetBootstrapTest extends TestCase {
 
 		$bots->expects( self::once() )->method( 'find' )->willReturn( $bot );
 		$appearances->expects( self::once() )->method( 'find' )->willReturn( AppearanceConfig::defaults() );
-
-		Functions\when( 'plugins_url' )->alias(
-			static fn ( string $path, string $plugin_file ): string => str_ends_with( $plugin_file, 'wp-rag-ai-chatbot.php' )
-				? 'https://example.test/plugins/wp-rag-ai-chatbot/' . $path
-				: ''
-		);
-		Functions\when( 'rest_url' )->justReturn( 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/' );
-		Functions\when( 'untrailingslashit' )->alias( static fn ( string $value ): string => rtrim( $value, '/' ) );
-		Functions\when( 'wp_json_encode' )->alias(
-			static function ( array $value ): string {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test double must serialize the received value without recursively calling the mocked WordPress function.
-				return json_encode( $value, JSON_THROW_ON_ERROR );
-			}
-		);
-		Functions\when( 'esc_attr' )->alias(
-			static fn ( string $value ): string => htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' )
-		);
+		$this->stub_public_render_functions();
 
 		Functions\expect( 'wp_enqueue_style' )
 			->once()
@@ -166,6 +189,29 @@ final class PublicWidgetBootstrapTest extends TestCase {
 			'<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="' . self::BOT_ID . '" data-wp-rag-ai-chatbot-surface="floating"></div>',
 			$bootstrap->render_shortcode( array( 'bot' => self::BOT_ID ) )
 		);
+	}
+
+	/** Stub WordPress helpers used only after public mount resolution succeeds. */
+	private function stub_public_render_functions(): void {
+		Functions\when( 'plugins_url' )->alias(
+			static fn ( string $path, string $plugin_file ): string => str_ends_with( $plugin_file, 'wp-rag-ai-chatbot.php' )
+				? 'https://example.test/plugins/wp-rag-ai-chatbot/' . $path
+				: ''
+		);
+		Functions\when( 'rest_url' )->justReturn( 'https://example.test/wp-json/wp-rag-ai-chatbot/v1/' );
+		Functions\when( 'untrailingslashit' )->alias( static fn ( string $value ): string => rtrim( $value, '/' ) );
+		Functions\when( 'wp_json_encode' )->alias(
+			static function ( array $value ): string {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test double must serialize the received value without recursively calling the mocked WordPress function.
+				return json_encode( $value, JSON_THROW_ON_ERROR );
+			}
+		);
+		Functions\when( 'esc_attr' )->alias(
+			static fn ( string $value ): string => htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' )
+		);
+		Functions\when( 'wp_enqueue_style' )->justReturn( null );
+		Functions\when( 'wp_enqueue_script' )->justReturn( null );
+		Functions\when( 'wp_add_inline_script' )->justReturn( true );
 	}
 
 	/**
