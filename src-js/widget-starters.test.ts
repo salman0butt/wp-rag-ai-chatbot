@@ -1,4 +1,10 @@
-import { mountWidgets, type WidgetBootstrapConfig } from './widget-runtime';
+import type { WidgetBootstrapConfig } from './widget-runtime';
+
+declare const require: ( path: string ) => unknown;
+
+type WidgetConfigWindow = Window & {
+	wpRagAiChatbotWidgetConfigs?: WidgetBootstrapConfig[];
+};
 
 const config: WidgetBootstrapConfig = {
 	botId: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
@@ -28,18 +34,27 @@ const config: WidgetBootstrapConfig = {
 	},
 };
 
+const loadWidget = (): void => {
+	jest.resetModules();
+	jest.isolateModules( () => {
+		require( './widget' );
+	} );
+};
+
 describe( 'M15 widget starter suggestions', () => {
 	beforeEach( () => {
 		document.body.innerHTML =
 			'<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"></div>';
+		( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs = [ config ];
 	} );
 
 	afterEach( () => {
 		document.body.innerHTML = '';
+		delete ( window as WidgetConfigWindow ).wpRagAiChatbotWidgetConfigs;
 	} );
 
 	it( 'renders selected page starters as bounded native text buttons', () => {
-		mountWidgets( document, [ config ] );
+		loadWidget();
 
 		const starters = Array.from(
 			document.querySelectorAll< HTMLButtonElement >(
