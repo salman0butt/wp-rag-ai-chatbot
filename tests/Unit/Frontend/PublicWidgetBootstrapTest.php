@@ -123,7 +123,7 @@ final class PublicWidgetBootstrapTest extends TestCase {
 				self::callback(
 					static function ( string $script ): bool {
 						return str_contains( $script, '"botId":"' . self::BOT_ID . '"' )
-							&& str_contains( $script, '"restBase":"https://example.test/wp-json/wp-rag-ai-chatbot/v1"' )
+							&& str_contains( $script, '"restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1"' )
 							&& str_contains( $script, '"config":{"bot_id":"' . self::BOT_ID . '","name":"Support"' )
 							&& ! str_contains( $script, 'openai' )
 							&& ! str_contains( $script, 'gpt-5' )
