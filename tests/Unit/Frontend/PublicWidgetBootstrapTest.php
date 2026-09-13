@@ -40,13 +40,19 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		parent::tearDown();
 	}
 
-	/** Register wires the stable public shortcode exactly once. */
-	public function test_register_wires_stable_public_shortcode(): void {
+	/** Register wires the stable floating, embedded, and fullscreen shortcodes exactly once. */
+	public function test_register_wires_public_surface_shortcodes(): void {
 		$bootstrap = $this->bootstrap_with_empty_repositories();
 
 		Functions\expect( 'add_shortcode' )
 			->once()
 			->with( 'wp_rag_ai_chatbot', array( $bootstrap, 'render_shortcode' ) );
+		Functions\expect( 'add_shortcode' )
+			->once()
+			->with( 'wp_rag_ai_chatbot_embed', array( $bootstrap, 'render_embed_shortcode' ) );
+		Functions\expect( 'add_shortcode' )
+			->once()
+			->with( 'wp_rag_ai_chatbot_fullscreen', array( $bootstrap, 'render_fullscreen_shortcode' ) );
 
 		$bootstrap->register();
 	}
