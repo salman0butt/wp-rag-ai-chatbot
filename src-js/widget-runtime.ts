@@ -159,7 +159,10 @@ const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
 		? candidate.citations
 				.slice( 0, MAX_CITATIONS )
 				.map( readCitation )
-				.filter( ( citation ): citation is PublicCitation => citation !== null )
+				.filter(
+					( citation ): citation is PublicCitation =>
+						citation !== null
+				)
 		: [];
 
 	return {
@@ -320,9 +323,12 @@ export const mountWidgets = (
 				copy.dataset.wpRagAiChatbotCopy = '';
 				copy.setAttribute( 'aria-label', 'Copy assistant message' );
 				copy.addEventListener( 'click', () => {
-					const clipboard = documentRoot.defaultView?.navigator.clipboard;
+					const clipboard =
+						documentRoot.defaultView?.navigator.clipboard;
 					if ( clipboard ) {
-						void clipboard.writeText( text ).catch( () => undefined );
+						void clipboard
+							.writeText( text )
+							.catch( () => undefined );
 					}
 				} );
 				wrapper.append( copy );
