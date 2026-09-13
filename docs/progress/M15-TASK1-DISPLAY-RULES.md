@@ -97,6 +97,38 @@ Scoped fallback review completed after exact-head GREEN because independent revi
 - Accessibility: no direct UI behavior changed in Task 1C.
 - Architecture/duplication: no parallel rule engine was introduced; the same pure evaluator remains the display-policy authority.
 
+## Task 1D — site-time schedule/day/time rules
+
+### TDD chronology
+
+- `cb9c566aedea073fc8694002effeaa8e36b81d80` — **RED**. CI `34754730429` passed formatting and typecheck, reached Jest, ran 51 suites, and failed only the three new schedule assertions; the other 50 suites passed.
+- `db9b9fb1103c2632bfc85b62263401fc0599b7e6` — **NOT GREEN**. CI `34754852869` stopped in Prettier on the schedule implementation before typecheck/Jest.
+- `753973f17da8692a8a35fd6035833a9be49f41d7` — intermediate implementation candidate. JavaScript/PHP/package verification passed, but scoped review found an **Important** correctness defect before Task 1D closeout: an explicitly empty schedule incorrectly required time facts and hid the widget, violating the milestone's empty-category semantics.
+- `0233ea8ec3482914058fd4d98fbeabf469fd46b2` — **RED** regression checkpoint. CI `34755052770` passed lint and typecheck, reached Jest, ran 51 suites, and failed only `treats an explicitly empty schedule as no restriction`; 50 suites and 126 tests passed.
+- `32d50bd996d314b3513766ad4ff1e855c068f978` — **GREEN**. CI `34755164651` passed `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite on the exact fix SHA.
+
+### Implemented behavior
+
+- Schedule configuration is site-time only; evaluator facts are explicit `siteWeekday` and `siteMinuteOfDay`, so the pure evaluator never reads an ambient clock or browser timezone.
+- Weekdays normalize to unique integer values `0..6`; invalid entries are discarded.
+- Start/end times normalize only strict `HH:MM` values.
+- Same-day windows use inclusive start/end boundaries.
+- Overnight windows are attributed to the configured start day; early-next-day minutes match only when the previous weekday is configured.
+- Day-only, start-only, and end-only restrictions remain deterministic.
+- An absent schedule and an explicitly empty schedule impose no restriction.
+- Invalid/missing projected site-time facts fail closed only when a non-empty schedule actually needs them.
+- Schedule mismatch reason is stable as `schedule_mismatch`.
+
+### Review
+
+Scoped fallback review completed after the regression fix and exact-head GREEN because independent reviewer/subagent transport was unavailable.
+
+- Correctness: the Important empty-schedule finding was resolved through a dedicated RED→GREEN regression cycle; no Critical/Important findings remain for Task 1D.
+- Security/privacy: no Critical/Important findings. Time facts remain presentation-only; no authorization decision or user identity is derived from schedule policy.
+- Performance: no Critical/Important findings; schedule evaluation is constant-time over bounded normalized values.
+- Accessibility: no direct UI behavior changed in Task 1D.
+- Architecture/duplication: no clock/timezone side effects or second evaluator were introduced.
+
 ## Exact next unfinished unit
 
-Task 1D — add deterministic weekday/time-window schedule evaluation using explicit time facts, covering same-day and overnight windows plus inclusive boundaries. Preserve site-time semantics without making the evaluator read clocks or timezones itself. Prove the behavior with a fresh real RED before production changes.
+Task 1E — add deterministic page-specific starter selection plus locale/direction projection. Exact starter matches must beat globs; equal-specificity matches use the first normalized rule. Prompt lists must remain bounded plain text. Explicit `rtl`/`ltr` direction overrides auto; auto must infer an RTL direction for at least one supported RTL locale fixture and LTR for fallback locale. Prove all behavior with a fresh genuine RED before production changes.
