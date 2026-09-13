@@ -19,16 +19,16 @@ describe( 'display rule defaults and disabled behavior', () => {
 	} );
 
 	test( 'returns a bounded visible decision for defaults and a disabled decision when disabled', () => {
-		expect( evaluateDisplayRules( normalizeDisplayRules( undefined ) ) ).toEqual(
-			{
-				visible: true,
-				proactiveEligible: false,
-				starters: [],
-				locale: 'site',
-				direction: 'ltr',
-				reasons: [ 'enabled' ],
-			}
-		);
+		expect(
+			evaluateDisplayRules( normalizeDisplayRules( undefined ) )
+		).toEqual( {
+			visible: true,
+			proactiveEligible: false,
+			starters: [],
+			locale: 'site',
+			direction: 'ltr',
+			reasons: [ 'enabled' ],
+		} );
 
 		expect(
 			evaluateDisplayRules( normalizeDisplayRules( { enabled: false } ) )
