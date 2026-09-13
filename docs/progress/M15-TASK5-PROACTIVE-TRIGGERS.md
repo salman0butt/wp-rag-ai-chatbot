@@ -61,6 +61,67 @@ Task 5A implementation GREEN: `2cbceba211889c0f18a8d860f03da6169206ec76`, CI `34
 
 Task 5A final regression head: `2f2a4fecf302d9fa49cdac140c25f43903785541`, CI `34781248361` — GREEN across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
 
+## Task 5B — bounded scroll trigger
+
+Status: COMPLETE.
+
+### Scope
+
+Extend the same proactive coordinator with bounded scroll-percentage opening while preserving the existing floating-widget lifecycle and chat/RAG authority.
+
+Required behavior:
+
+- persisted/browser scroll threshold semantics stay aligned at 1..100 percent;
+- the page opens once when the configured percentage is reached;
+- a page with no scrollable distance does not count as 100 percent scrolled;
+- scroll work is coalesced through `requestAnimationFrame` instead of evaluating every raw scroll event;
+- the scroll listener is passive and is removed after completion/cancellation;
+- any pending animation frame is cancelled on completion/cancellation;
+- delay and scroll triggers race through the same one-shot completion path;
+- automatic open sends no chat request and does not steal focus;
+- manual launcher open cancels pending proactive scroll work.
+
+### TDD evidence
+
+- `f4b0597c3688dfe197891c64529e83587d22839b` — **RED**, CI `34781502024`. JavaScript lint and typecheck passed and Jest reached the new scroll-trigger test. All 52 pre-existing suites passed; only the intended threshold-crossing behavior failed because the widget did not yet open on scroll.
+- `07f96aee635e655bf5425e07c7476d642111a2e1` — initial scroll-trigger implementation. CI `34781948326` is **NOT GREEN** because `verify:js` stopped at Prettier before behavioral verification.
+- `ac3a42948fc90a1a72d6234601fb4a57843cf2de` — formatting repair; CI `34782005939` passed all four permanent jobs. Scoped review then found Important correctness/performance gaps, so this was a behavioral GREEN checkpoint but not Task 5B completion: browser normalization accepted 0 despite persisted 1..100 bounds, raw scroll handlers evaluated synchronously on every event, and zero-scrollable-distance pages were treated as fully scrolled.
+- `d5d95dd3f39dcd62b798a359a472cbb87ecf35dd` — **RED**, CI `34782256899`, adding review-regression assertions for the 1-percent lower bound, animation-frame coalescing, and no-scroll-page handling. Lint/typecheck passed and all 53 existing suites passed; only the three new hardening assertions failed.
+- `1d76d894fe542ead3a3f378fa10806655f5a9790` — refined **RED**, CI `34782330479`, explicitly exercising scheduled-frame behavior on a non-scrollable page. Lint/typecheck again passed and the same three intended hardening assertions failed while all existing suites remained green.
+- `233887a78d7cb695ab7040138df7df6d44b7db42` — **GREEN**, CI `34782396162`. Exact-head `php-quality`, `js-quality`, `package`, and `wordpress-smoke` all passed after the hardening implementation.
+
+### Implementation
+
+`src-js/widget-proactive.ts` remains the single proactive coordinator authority and now:
+
+- normalizes browser scroll percentage to the persisted 1..100 contract;
+- keeps at most one pending animation frame for scroll evaluation;
+- uses one stable passive scroll-listener function;
+- schedules scroll evaluation with `requestAnimationFrame`, coalescing burst events;
+- ignores threshold opening when the document has no scrollable distance;
+- cancels a pending frame and removes the listener on completion or `cancel()`;
+- shares the existing one-shot `complete()` path with the delay trigger.
+
+The existing `src-js/widget-runtime.ts` integration remains unchanged in authority: proactive opening only changes floating presentation state, does not issue a chat request, does not move focus, and manual opening cancels the coordinator.
+
+### Review
+
+Independent reviewer/subagent transport was unavailable in this runtime, so the repository-approved scoped fallback review was used and the limitation is recorded honestly.
+
+Initial review of `ac3a42948fc90a1a72d6234601fb4a57843cf2de` found three Important issues: unthrottled scroll evaluation, a browser-side 0-percent bound inconsistent with the persisted 1-percent minimum, and automatic opening on a non-scrollable page. All three were converted to real failing regression tests before production fixes.
+
+Final review of `233887a78d7cb695ab7040138df7df6d44b7db42`:
+
+- Correctness: 0 unresolved Critical/Important findings. Bounds match persisted config, zero-distance pages stay closed, first eligible delay/scroll trigger wins once, and cancellation removes pending work.
+- Security/privacy: 0 unresolved Critical/Important findings. Only normalized public presentation configuration and browser scroll geometry are used; no credentials/provider/model/retrieval/user authority is introduced.
+- Performance: 0 unresolved Critical/Important findings. Scroll evaluation is passive and `requestAnimationFrame`-coalesced with at most one pending frame; listeners/frames are cleaned up deterministically.
+- Accessibility: 0 unresolved Critical/Important findings. Proactive opening continues to use the existing no-focus-steal path; manual opening retains the established focus behavior.
+- Architecture/duplication: 0 unresolved Critical/Important findings. The existing single coordinator/runtime seam is extended; no parallel trigger, chat, or RAG path exists.
+
+### Verification
+
+Task 5B final implementation: `233887a78d7cb695ab7040138df7df6d44b7db42`, CI `34782396162` — GREEN across `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite.
+
 ## Next unfinished unit
 
-Task 5B — scroll trigger. Establish test-only RED for bounded threshold crossing, one-shot behavior/no duplicate open, listener cleanup/cancellation, and bounded scroll calculation. Extend the same proactive coordinator and the same widget-runtime integration seam; do not create a second trigger/chat path.
+Task 5C — inactivity trigger. Establish test-only RED for one bounded inactivity timer, reset-on-activity behavior, one-shot opening, manual/open/dispose cleanup, no chat request, and interaction with the existing delay/scroll one-shot coordinator. Extend the same coordinator/runtime seam; do not create a parallel trigger or chat path.
