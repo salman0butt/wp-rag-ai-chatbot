@@ -1,3 +1,8 @@
+import {
+	evaluateDisplayRules,
+	normalizeDisplayRules,
+} from './display-rules';
+
 export type WidgetSurface = 'floating' | 'embedded' | 'fullscreen';
 
 export type WidgetBootstrapConfig = {
@@ -8,6 +13,7 @@ export type WidgetBootstrapConfig = {
 		bot_id: string;
 		name: string;
 		appearance: Record< string, unknown >;
+		display_rules?: unknown;
 	};
 };
 
@@ -245,6 +251,13 @@ export const mountWidgets = (
 			const config = findConfig( botId, configs );
 
 			if ( ! config ) {
+				return;
+			}
+
+			const displayDecision = evaluateDisplayRules(
+				normalizeDisplayRules( config.config.display_rules )
+			);
+			if ( ! displayDecision.visible ) {
 				return;
 			}
 
