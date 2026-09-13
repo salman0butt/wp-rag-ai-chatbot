@@ -65,6 +65,38 @@ Scoped fallback review completed after exact-head GREEN because independent revi
 - Accessibility: no direct UI behavior changed in Task 1B.
 - Architecture/duplication: no new runtime authority was added. The same pure evaluator remains the only display-rule domain authority. The earlier duplicate invocation seam in `widget.ts`/`widget-runtime.ts` remains scheduled for reconciliation in Task 4 rather than being expanded here.
 
+## Task 1C — audience, post type, WooCommerce, and device gates
+
+### TDD chronology
+
+- `4a9745978c9b570d105a54d718c85b0007818d6f` — **NOT RED**. CI `34754124246` stopped in Prettier before typecheck/Jest.
+- `462ec073dd2daeaa1ac7c5babd24340b0425e7e8` — **RED**. CI `34754189113` passed lint and typecheck, reached Jest, ran all 50 suites, and failed only the new audience/context assertions while the other 49 suites passed.
+- `9c50cf8a7d202bb056af86f5a15902d212b592ad` — **RED refinement**. CI `34754293425` again passed lint and typecheck, reached Jest, and failed only `display-rules.test.ts` for the intentionally missing normalized default/category fields and audience decisions; 49/50 suites passed and `wordpress-smoke` independently passed.
+- `8df72314743341881f82f03e4538212e25458c38` — **NOT GREEN**. CI `34754328967` stopped in Prettier on the implementation before typecheck/Jest.
+- `6968c89c0d2eae681323eb5d28448b56f9a26169` — **GREEN**. CI `34754417924` passed `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite on the exact implementation SHA.
+
+### Implemented behavior
+
+- Visibility normalization now always produces bounded `post_types`, `audience`, `roles`, `woo_areas`, and `devices` fields in addition to URL rules.
+- Audience strategies are finite: `all`, `authenticated`, `anonymous`, and `selected_roles`; invalid values normalize to `all`.
+- Roles/post types normalize to lowercase bounded slugs with deduplication and a 16-value cap per category.
+- WooCommerce areas are restricted to `shop`, `product`, `cart`, `checkout`, and `account`.
+- Device buckets are restricted to `desktop`, `tablet`, and `mobile`.
+- Values within configured categories use OR semantics, while configured categories are applied with AND semantics.
+- `selected_roles` requires authenticated presentation facts and at least one projected `roleMatches` token matching a configured role.
+- The evaluator consumes projected presentation facts (`isAuthenticated`, `roleMatches`, `postType`, `wooArea`, `device`) rather than user objects; it remains presentation-only and is not an authorization/security authority.
+- Mismatch reasons are stable for this slice: `audience_mismatch`, `post_type_mismatch`, `woo_area_mismatch`, and `device_mismatch`.
+
+### Review
+
+Scoped fallback review completed after exact-head GREEN because independent reviewer/subagent transport was not available in this execution environment.
+
+- Correctness: no Critical/Important findings. OR-within/AND-across behavior and audience strategies are deterministic.
+- Security/privacy: no Critical/Important findings. Only bounded projected presentation facts are consumed; no user identity object, credential, or backend authorization state is exposed as evaluator authority.
+- Performance: no Critical/Important findings. Role/post-type categories are capped at 16 values and Woo/device categories are naturally finite.
+- Accessibility: no direct UI behavior changed in Task 1C.
+- Architecture/duplication: no parallel rule engine was introduced; the same pure evaluator remains the display-policy authority.
+
 ## Exact next unfinished unit
 
-Task 1C — add presentation-only audience/post/Woo/device facts and deterministic gates. Values within a configured category must use OR semantics while configured categories are ANDed. Prove authenticated/anonymous/selected-role, post type, finite Woo area, and desktop/tablet/mobile behavior with a fresh real RED before production changes.
+Task 1D — add deterministic weekday/time-window schedule evaluation using explicit time facts, covering same-day and overnight windows plus inclusive boundaries. Preserve site-time semantics without making the evaluator read clocks or timezones itself. Prove the behavior with a fresh real RED before production changes.
