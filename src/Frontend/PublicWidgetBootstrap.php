@@ -76,7 +76,12 @@ final readonly class PublicWidgetBootstrap {
 	 * @param array<string,mixed> $attributes Block attributes.
 	 */
 	public function render_block( array $attributes = array() ): string {
-		return $this->render_embed_shortcode( $attributes );
+		$bot = $attributes['bot'] ?? null;
+		if ( ! is_string( $bot ) ) {
+			return '';
+		}
+
+		return $this->render_embed_shortcode( array( 'bot' => $bot ) );
 	}
 
 	/**
