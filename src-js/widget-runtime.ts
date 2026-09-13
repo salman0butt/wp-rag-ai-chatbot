@@ -16,7 +16,7 @@ type PublicCitation = {
 
 type PublicChatSuccess = {
 	answer: string;
-	conversation_id: string;
+	conversation_id: string | null;
 	citations: PublicCitation[];
 };
 
@@ -148,10 +148,11 @@ const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
 	}
 
 	const candidate = value as Record< string, unknown >;
+	const conversationId = candidate.conversation_id;
 
 	if (
 		typeof candidate.answer !== 'string' ||
-		typeof candidate.conversation_id !== 'string'
+		( typeof conversationId !== 'string' && conversationId !== null )
 	) {
 		return null;
 	}
@@ -168,7 +169,7 @@ const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
 
 	return {
 		answer: candidate.answer,
-		conversation_id: candidate.conversation_id,
+		conversation_id: conversationId,
 		citations,
 	};
 };
