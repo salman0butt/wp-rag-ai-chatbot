@@ -134,6 +134,7 @@ final readonly class PublicWidgetBootstrap {
 			'restBase' => untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) ),
 			'surface'  => $surface,
 			'config'   => $config->to_array(),
+			'facts'    => ( new WordPressDisplayContextResolver() )->resolve(),
 		);
 		$encoded_config = wp_json_encode( $browser_config );
 		if ( false === $encoded_config ) {
