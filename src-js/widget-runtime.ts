@@ -13,6 +13,10 @@ type PublicChatSuccess = {
 	conversation_id: string;
 };
 
+type PublicChatError = {
+	code: string;
+};
+
 const MOUNT_SELECTOR = '.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]';
 const MOUNTED_DATA_KEY = 'wpRagAiChatbotMounted';
 
@@ -129,6 +133,28 @@ const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
 	};
 };
 
+const readError = ( value: unknown ): PublicChatError | null => {
+	if ( typeof value !== 'object' || value === null ) {
+		return null;
+	}
+
+	const code = ( value as Record< string, unknown > ).code;
+
+	return typeof code === 'string' ? { code } : null;
+};
+
+const publicErrorMessage = ( code: string | null ): string => {
+	if ( code === 'rate_limited' ) {
+		return 'Too many requests. Please try again shortly.';
+	}
+
+	if ( code === 'chat_unavailable' ) {
+		return 'Chat is temporarily unavailable. Please try again.';
+	}
+
+	return "We couldn't send your message. Please try again.";
+};
+
 export const mountWidgets = (
 	documentRoot: Document,
 	configs: readonly WidgetBootstrapConfig[]
@@ -193,14 +219,21 @@ export const mountWidgets = (
 			send.dataset.wpRagAiChatbotSend = '';
 			send.setAttribute( 'aria-label', 'Send message' );
 
+			const retry = documentRoot.createElement( 'button' );
+			retry.type = 'button';
+			retry.textContent = 'Retry';
+			retry.dataset.wpRagAiChatbotRetry = '';
+			retry.hidden = true;
+
 			const status = documentRoot.createElement( 'p' );
 			status.dataset.wpRagAiChatbotStatus = '';
 			status.setAttribute( 'role', 'status' );
 			status.setAttribute( 'aria-live', 'polite' );
-			form.append( question, send, status );
+			form.append( question, send, retry, status );
 
 			let requestInFlight = false;
 			let conversationId: string | null = null;
+			let retryQuestion: string | null = null;
 
 			const appendMessage = (
 				role: 'user' | 'assistant',
@@ -221,7 +254,70 @@ export const mountWidgets = (
 			const finishRequest = (): void => {
 				requestInFlight = false;
 				send.disabled = false;
-				status.textContent = '';
+			};
+
+			const showError = ( code: string | null, value: string ): void => {
+				finishRequest();
+				retryQuestion = value;
+				status.textContent = publicErrorMessage( code );
+				retry.hidden = false;
+			};
+
+			const sendQuestion = ( value: string, appendUser: boolean ): void => {
+				if ( requestInFlight ) {
+					return;
+				}
+
+				requestInFlight = true;
+				send.disabled = true;
+				retry.hidden = true;
+				status.textContent = 'Sending…';
+
+				if ( appendUser ) {
+					appendMessage( 'user', value );
+				}
+
+				const requestBody: Record< string, string > = {
+					bot_id: config.config.bot_id,
+					question: value,
+				};
+
+				if ( conversationId !== null ) {
+					requestBody.conversation_id = conversationId;
+				}
+
+				void fetch( chatUrl( config.restBase ), {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify( requestBody ),
+				} )
+					.then( async ( response ) => ( {
+						ok: response.ok,
+						payload: ( await response.json() ) as unknown,
+					} ) )
+					.then(
+						( result ) => {
+							if ( ! result.ok ) {
+								showError( readError( result.payload )?.code ?? null, value );
+								return;
+							}
+
+							const success = readSuccess( result.payload );
+							if ( success === null ) {
+								showError( null, value );
+								return;
+							}
+
+							conversationId = success.conversation_id;
+							retryQuestion = null;
+							appendMessage( 'assistant', success.answer );
+							finishRequest();
+							status.textContent = '';
+						},
+						() => showError( null, value )
+					);
 			};
 
 			launcher.addEventListener( 'click', () => {
@@ -240,40 +336,16 @@ export const mountWidgets = (
 				event.preventDefault();
 				const value = question.value.trim();
 
-				if ( value === '' || requestInFlight ) {
+				if ( value === '' ) {
 					return;
 				}
 
-				requestInFlight = true;
-				send.disabled = true;
-				status.textContent = 'Sending…';
-				appendMessage( 'user', value );
-
-				const requestBody: Record< string, string > = {
-					bot_id: config.config.bot_id,
-					question: value,
-				};
-
-				if ( conversationId !== null ) {
-					requestBody.conversation_id = conversationId;
+				sendQuestion( value, true );
+			} );
+			retry.addEventListener( 'click', () => {
+				if ( retryQuestion !== null ) {
+					sendQuestion( retryQuestion, false );
 				}
-
-				void fetch( chatUrl( config.restBase ), {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify( requestBody ),
-				} )
-					.then( ( response ) => response.json() )
-					.then( ( payload: unknown ) => {
-						const success = readSuccess( payload );
-						if ( success !== null ) {
-							conversationId = success.conversation_id;
-							appendMessage( 'assistant', success.answer );
-						}
-					} )
-					.then( finishRequest, finishRequest );
 			} );
 
 			panel.append( close, messages, form );
