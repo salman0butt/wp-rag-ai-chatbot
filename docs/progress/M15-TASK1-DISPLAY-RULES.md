@@ -1,6 +1,6 @@
 # M15 Task 1 — Deterministic Display-Rule Domain
 
-Status: IN PROGRESS
+Status: COMPLETE
 
 ## Task 1A — M14-compatible defaults and disabled behavior
 
@@ -18,7 +18,6 @@ Status: IN PROGRESS
 - Missing/invalid display configuration defaults to enabled visibility.
 - Proactive behavior defaults disabled.
 - Default and page-scoped starter collections default empty.
-- Localization defaults to site locale with automatic direction; the current default decision projects `ltr` until locale/direction logic is added in Task 1E.
 - Explicit `enabled: false` remains the highest-precedence hidden decision.
 - The evaluator remains pure and side-effect free; it does not authorize data access or bypass backend security.
 
@@ -30,7 +29,7 @@ Scoped fallback review completed after exact-head GREEN because an independent r
 - Security/privacy: no Critical/Important findings; display policy remains presentation-only.
 - Performance: no Critical/Important findings; evaluation is constant-time for this slice.
 - Accessibility: no new UI behavior in Task 1A.
-- Architecture/duplication: no parallel evaluator implementation was introduced. Existing early runtime integration invokes the same authority and will be reconciled during the planned runtime-integration slice rather than forked.
+- Architecture/duplication: no parallel evaluator implementation was introduced.
 
 ## Task 1B — include/exclude URL/path matching and precedence
 
@@ -53,17 +52,16 @@ Scoped fallback review completed after exact-head GREEN because an independent r
 - A non-empty include list hides paths that match no include rule.
 - Empty include lists impose no URL restriction.
 - Reasons are stable for this slice: `disabled`, `url_excluded`, `url_not_included`, and `enabled`/`url_included`.
-- The evaluator remains presentation-only and side-effect free.
 
 ### Review
 
 Scoped fallback review completed after exact-head GREEN because independent reviewer/subagent transport was not available in this execution environment.
 
-- Correctness: no Critical/Important findings. Exclude-over-include and empty-category semantics are deterministic.
-- Security/privacy: no Critical/Important findings. The matcher does not execute arbitrary regex and uses conservative pattern-count/length/wildcard bounds.
-- Performance: no Critical/Important findings for configured inputs; work is bounded by at most 32 short patterns and a deterministic matcher.
-- Accessibility: no direct UI behavior changed in Task 1B.
-- Architecture/duplication: no new runtime authority was added. The same pure evaluator remains the only display-rule domain authority. The earlier duplicate invocation seam in `widget.ts`/`widget-runtime.ts` remains scheduled for reconciliation in Task 4 rather than being expanded here.
+- Correctness: no Critical/Important findings.
+- Security/privacy: no Critical/Important findings; no arbitrary regex execution channel exists.
+- Performance: no Critical/Important findings; work is bounded by normalized pattern limits.
+- Accessibility: no direct UI behavior changed.
+- Architecture/duplication: the same pure evaluator remains the display-rule authority.
 
 ## Task 1C — audience, post type, WooCommerce, and device gates
 
@@ -71,31 +69,27 @@ Scoped fallback review completed after exact-head GREEN because independent revi
 
 - `4a9745978c9b570d105a54d718c85b0007818d6f` — **NOT RED**. CI `34754124246` stopped in Prettier before typecheck/Jest.
 - `462ec073dd2daeaa1ac7c5babd24340b0425e7e8` — **RED**. CI `34754189113` passed lint and typecheck, reached Jest, ran all 50 suites, and failed only the new audience/context assertions while the other 49 suites passed.
-- `9c50cf8a7d202bb056af86f5a15902d212b592ad` — **RED refinement**. CI `34754293425` again passed lint and typecheck, reached Jest, and failed only `display-rules.test.ts` for the intentionally missing normalized default/category fields and audience decisions; 49/50 suites passed and `wordpress-smoke` independently passed.
+- `9c50cf8a7d202bb056af86f5a15902d212b592ad` — **RED refinement**. CI `34754293425` reached Jest and failed only the intentional display-rule fixture assertions; 49/50 suites passed and WordPress smoke independently passed.
 - `8df72314743341881f82f03e4538212e25458c38` — **NOT GREEN**. CI `34754328967` stopped in Prettier on the implementation before typecheck/Jest.
 - `6968c89c0d2eae681323eb5d28448b56f9a26169` — **GREEN**. CI `34754417924` passed `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite on the exact implementation SHA.
 
 ### Implemented behavior
 
-- Visibility normalization now always produces bounded `post_types`, `audience`, `roles`, `woo_areas`, and `devices` fields in addition to URL rules.
-- Audience strategies are finite: `all`, `authenticated`, `anonymous`, and `selected_roles`; invalid values normalize to `all`.
+- Visibility normalization produces bounded `post_types`, `audience`, `roles`, `woo_areas`, and `devices` fields.
+- Audience strategies are finite: `all`, `authenticated`, `anonymous`, and `selected_roles`.
 - Roles/post types normalize to lowercase bounded slugs with deduplication and a 16-value cap per category.
 - WooCommerce areas are restricted to `shop`, `product`, `cart`, `checkout`, and `account`.
 - Device buckets are restricted to `desktop`, `tablet`, and `mobile`.
-- Values within configured categories use OR semantics, while configured categories are applied with AND semantics.
-- `selected_roles` requires authenticated presentation facts and at least one projected `roleMatches` token matching a configured role.
-- The evaluator consumes projected presentation facts (`isAuthenticated`, `roleMatches`, `postType`, `wooArea`, `device`) rather than user objects; it remains presentation-only and is not an authorization/security authority.
-- Mismatch reasons are stable for this slice: `audience_mismatch`, `post_type_mismatch`, `woo_area_mismatch`, and `device_mismatch`.
+- Values within configured categories use OR semantics; configured categories are ANDed.
+- `selected_roles` consumes only projected presentation match tokens/facts, never user objects or authorization authority.
 
 ### Review
 
-Scoped fallback review completed after exact-head GREEN because independent reviewer/subagent transport was not available in this execution environment.
-
-- Correctness: no Critical/Important findings. OR-within/AND-across behavior and audience strategies are deterministic.
-- Security/privacy: no Critical/Important findings. Only bounded projected presentation facts are consumed; no user identity object, credential, or backend authorization state is exposed as evaluator authority.
-- Performance: no Critical/Important findings. Role/post-type categories are capped at 16 values and Woo/device categories are naturally finite.
-- Accessibility: no direct UI behavior changed in Task 1C.
-- Architecture/duplication: no parallel rule engine was introduced; the same pure evaluator remains the display-policy authority.
+- Correctness: no Critical/Important findings.
+- Security/privacy: no Critical/Important findings; only bounded presentation facts are consumed.
+- Performance: no Critical/Important findings.
+- Accessibility: no direct UI behavior changed.
+- Architecture/duplication: no parallel rule engine introduced.
 
 ## Task 1D — site-time schedule/day/time rules
 
@@ -103,32 +97,60 @@ Scoped fallback review completed after exact-head GREEN because independent revi
 
 - `cb9c566aedea073fc8694002effeaa8e36b81d80` — **RED**. CI `34754730429` passed formatting and typecheck, reached Jest, ran 51 suites, and failed only the three new schedule assertions; the other 50 suites passed.
 - `db9b9fb1103c2632bfc85b62263401fc0599b7e6` — **NOT GREEN**. CI `34754852869` stopped in Prettier on the schedule implementation before typecheck/Jest.
-- `753973f17da8692a8a35fd6035833a9be49f41d7` — intermediate implementation candidate. JavaScript/PHP/package verification passed, but scoped review found an **Important** correctness defect before Task 1D closeout: an explicitly empty schedule incorrectly required time facts and hid the widget, violating the milestone's empty-category semantics.
-- `0233ea8ec3482914058fd4d98fbeabf469fd46b2` — **RED** regression checkpoint. CI `34755052770` passed lint and typecheck, reached Jest, ran 51 suites, and failed only `treats an explicitly empty schedule as no restriction`; 50 suites and 126 tests passed.
-- `32d50bd996d314b3513766ad4ff1e855c068f978` — **GREEN**. CI `34755164651` passed `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite on the exact fix SHA.
+- `753973f17da8692a8a35fd6035833a9be49f41d7` — intermediate implementation candidate. Review found an **Important** correctness defect: explicitly empty schedule configuration incorrectly required time facts and hid the widget.
+- `0233ea8ec3482914058fd4d98fbeabf469fd46b2` — **RED** regression checkpoint. CI `34755052770` reached Jest and failed only `treats an explicitly empty schedule as no restriction`; 50 suites and 126 tests passed.
+- `32d50bd996d314b3513766ad4ff1e855c068f978` — **GREEN**. CI `34755164651` passed all four permanent jobs on the exact fix SHA.
 
 ### Implemented behavior
 
-- Schedule configuration is site-time only; evaluator facts are explicit `siteWeekday` and `siteMinuteOfDay`, so the pure evaluator never reads an ambient clock or browser timezone.
-- Weekdays normalize to unique integer values `0..6`; invalid entries are discarded.
-- Start/end times normalize only strict `HH:MM` values.
-- Same-day windows use inclusive start/end boundaries.
-- Overnight windows are attributed to the configured start day; early-next-day minutes match only when the previous weekday is configured.
-- Day-only, start-only, and end-only restrictions remain deterministic.
-- An absent schedule and an explicitly empty schedule impose no restriction.
-- Invalid/missing projected site-time facts fail closed only when a non-empty schedule actually needs them.
-- Schedule mismatch reason is stable as `schedule_mismatch`.
+- Schedule evaluation consumes explicit projected site weekday/minute facts; it never reads ambient clocks/timezones.
+- Weekdays normalize to unique `0..6`; times normalize strict `HH:MM`.
+- Same-day boundaries are inclusive; overnight windows are attributed to the configured start day.
+- Absent and explicitly empty schedules impose no restriction.
+- Missing/invalid facts fail closed only when a non-empty schedule requires them.
 
 ### Review
 
-Scoped fallback review completed after the regression fix and exact-head GREEN because independent reviewer/subagent transport was unavailable.
+- Correctness: the Important empty-schedule finding was resolved through a RED→GREEN regression cycle; no Critical/Important findings remain.
+- Security/privacy: no Critical/Important findings.
+- Performance: no Critical/Important findings.
+- Accessibility: no direct UI behavior changed.
+- Architecture/duplication: no ambient clock/timezone side effects or second evaluator introduced.
 
-- Correctness: the Important empty-schedule finding was resolved through a dedicated RED→GREEN regression cycle; no Critical/Important findings remain for Task 1D.
-- Security/privacy: no Critical/Important findings. Time facts remain presentation-only; no authorization decision or user identity is derived from schedule policy.
-- Performance: no Critical/Important findings; schedule evaluation is constant-time over bounded normalized values.
-- Accessibility: no direct UI behavior changed in Task 1D.
-- Architecture/duplication: no clock/timezone side effects or second evaluator were introduced.
+## Task 1E — page starters and locale/direction projection
+
+### TDD chronology
+
+- `5eb6ab5c608a0f8385a18f4011340a707dc0552c` — **NOT RED**. CI `34755391857` stopped in Prettier before typecheck/Jest.
+- `4ad372d37511b36c1ee211b2c4f337f995a9871d` — **RED**. CI `34755448999` passed lint/typecheck, reached Jest, ran 52 suites, and failed only the three new starter/localization tests; 51 suites passed.
+- `fbdde518e194898a7ad2ff6d567094cd91bcc98e` — **NOT GREEN**. CI `34755562589` stopped in Prettier before typecheck/Jest.
+- `ac4667b65ce3d97fc7b39cfbc849cf22a8f4b8bc` — **NOT GREEN**. CI `34755659410` stopped on an ASI/lint issue in the locale normalizer before typecheck/Jest.
+- `e9d4adbd076333142e000a38332cfdc8fd9e8853` — **GREEN**. CI `34755743017` passed `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite on the exact implementation SHA.
+
+### Implemented behavior
+
+- Starter mappings are bounded to 8 rules, with at most 4 non-empty plain-text prompts per set and 160 Unicode code points per prompt.
+- Starter path matching reuses the existing deterministic matcher; exact path wins before glob, and the first normalized rule wins among equal specificity.
+- Default starters are used when no page rule matches.
+- Locale settings normalize to `site`, `auto`, or a bounded normalized locale identifier.
+- `auto` locale prefers projected document locale, then projected site locale; explicit normalized locale remains authoritative.
+- Explicit `ltr`/`rtl` direction overrides auto. Auto maps supported RTL language fixtures (`ar`, `fa`, `he`, `ur`) to RTL and otherwise falls back to LTR/projected site direction where applicable.
+- The evaluator remains pure; it does not mutate host-page language/direction and does not read DOM/browser globals.
+
+### Review
+
+Scoped fallback review completed after exact-head GREEN because independent reviewer/subagent transport was unavailable.
+
+- Correctness: no Critical/Important findings; exact/glob precedence, tie-breaking, bounds, locale normalization, and direction precedence match the approved design.
+- Security/privacy: no Critical/Important findings; starter text and locale/path facts remain bounded presentation data with no executable HTML/CSS/JS channel.
+- Performance: no Critical/Important findings; starter selection is bounded by at most 8 mappings and reuses the bounded path matcher.
+- Accessibility: no Critical/Important findings at the pure-domain layer; runtime `lang`/`dir`, message catalog, focus and reading-order behavior remain later milestone tasks.
+- Architecture/duplication: no second matching/localization engine was introduced.
+
+## Task 1 completion
+
+Task 1 is COMPLETE. Its pure TypeScript authority now covers deterministic visibility precedence, URL rules, audience/context gates, schedule windows, page starters, and locale/direction decisions with real RED/GREEN evidence and resolved review findings.
 
 ## Exact next unfinished unit
 
-Task 1E — add deterministic page-specific starter selection plus locale/direction projection. Exact starter matches must beat globs; equal-specificity matches use the first normalized rule. Prompt lists must remain bounded plain text. Explicit `rtl`/`ltr` direction overrides auto; auto must infer an RTL direction for at least one supported RTL locale fixture and LTR for fallback locale. Prove all behavior with a fresh genuine RED before production changes.
+Task 2A — implement immutable normalized PHP `DisplayRulesConfig` following the existing M14 appearance/config conventions. Begin with PHPUnit RED covering M14-compatible defaults, strict unknown-key rejection, finite enums, collection/string/timer/scroll bounds, glob/selector validation, prompt bounds, and localization normalization. Do not duplicate the TypeScript evaluator in PHP; PHP owns validation/normalization/persistence projection, while TypeScript remains the browser evaluation authority.
