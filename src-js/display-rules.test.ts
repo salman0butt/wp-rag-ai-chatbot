@@ -76,9 +76,7 @@ describe( 'display rule URL precedence', () => {
 	} );
 
 	test( 'allows include matches and lets exclusions win', () => {
-		expect(
-			evaluateForPath( rules, { path: '/docs/guide' } )
-		).toEqual( {
+		expect( evaluateForPath( rules, { path: '/docs/guide' } ) ).toEqual( {
 			visible: true,
 			proactiveEligible: false,
 			starters: [],
