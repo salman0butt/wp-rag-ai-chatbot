@@ -137,4 +137,22 @@ describe( 'public widget message presentation', () => {
 		expect( document.body.textContent ).toContain( 'Unsafe source' );
 		expect( sources?.querySelector( 'a[href^="javascript:"]' ) ).toBeNull();
 	} );
+
+	it( 'caps rendered transcript history to forty message entries', async () => {
+		loadWidget();
+
+		for ( let index = 0; index < 25; index += 1 ) {
+			submitQuestion( `Question ${ index }` );
+			await flushPromises();
+		}
+
+		const messages = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-messages]'
+		);
+
+		expect( fetchMock ).toHaveBeenCalledTimes( 25 );
+		expect( messages?.children ).toHaveLength( 40 );
+		expect( messages?.textContent ).not.toContain( 'Question 0' );
+		expect( messages?.textContent ).toContain( 'Question 24' );
+	} );
 } );
