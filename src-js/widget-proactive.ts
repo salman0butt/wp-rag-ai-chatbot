@@ -51,7 +51,12 @@ export const createProactiveDelayCoordinator = (
 	};
 
 	const start = (): void => {
-		if ( completed || timer !== null || ! config.enabled || config.delayMs === null ) {
+		if (
+			completed ||
+			timer !== null ||
+			! config.enabled ||
+			config.delayMs === null
+		) {
 			return;
 		}
 
