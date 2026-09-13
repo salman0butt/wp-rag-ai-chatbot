@@ -33,6 +33,11 @@ describe( 'display rule defaults and disabled behavior', () => {
 			visibility: {
 				url_include: [],
 				url_exclude: [],
+				post_types: [],
+				audience: 'all',
+				roles: [],
+				woo_areas: [],
+				devices: [],
 			},
 			proactive: {
 				enabled: false,
@@ -84,10 +89,12 @@ describe( 'display rule URL precedence', () => {
 	test( 'normalizes bounded include and exclude path patterns', () => {
 		const normalized = rules as unknown as Record< string, unknown >;
 
-		expect( normalized.visibility ).toEqual( {
-			url_include: [ '/docs/*', '/pricing' ],
-			url_exclude: [ '/docs/private/*' ],
-		} );
+		expect( normalized.visibility ).toEqual(
+			expect.objectContaining( {
+				url_include: [ '/docs/*', '/pricing' ],
+				url_exclude: [ '/docs/private/*' ],
+			} )
+		);
 	} );
 
 	test( 'allows include matches and lets exclusions win', () => {
