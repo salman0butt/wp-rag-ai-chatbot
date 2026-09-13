@@ -10,6 +10,14 @@ const readExitIntent = ( displayRules: unknown ): boolean | undefined =>
 		}
 	 ).exitIntent;
 
+const withExitIntent = (
+	displayRules: unknown
+): ReturnType< typeof readProactiveDelayConfig > & { exitIntent: boolean } =>
+	( {
+		...readProactiveDelayConfig( displayRules ),
+		exitIntent: true,
+	} as ReturnType< typeof readProactiveDelayConfig > & { exitIntent: boolean } );
+
 const setFinePointer = ( matches: boolean ): void => {
 	Object.defineProperty( window, 'matchMedia', {
 		configurable: true,
@@ -61,12 +69,9 @@ describe( 'M15 proactive widget exit-intent trigger', () => {
 		setFinePointer( true );
 		const onOpen = jest.fn();
 		const coordinator = createProactiveDelayCoordinator(
-			{
-				...readProactiveDelayConfig( {
-					proactive: { enabled: true, exit_intent: true },
-				} ),
-				exitIntent: true,
-			},
+			withExitIntent( {
+				proactive: { enabled: true, exit_intent: true },
+			} ),
 			onOpen
 		);
 
@@ -91,12 +96,9 @@ describe( 'M15 proactive widget exit-intent trigger', () => {
 		setFinePointer( false );
 		const onOpen = jest.fn();
 		const coordinator = createProactiveDelayCoordinator(
-			{
-				...readProactiveDelayConfig( {
-					proactive: { enabled: true, exit_intent: true },
-				} ),
-				exitIntent: true,
-			},
+			withExitIntent( {
+				proactive: { enabled: true, exit_intent: true },
+			} ),
 			onOpen
 		);
 
@@ -116,12 +118,9 @@ describe( 'M15 proactive widget exit-intent trigger', () => {
 		const removeEventListener = jest.spyOn( window, 'removeEventListener' );
 		const onOpen = jest.fn();
 		const coordinator = createProactiveDelayCoordinator(
-			{
-				...readProactiveDelayConfig( {
-					proactive: { enabled: true, exit_intent: true },
-				} ),
-				exitIntent: true,
-			},
+			withExitIntent( {
+				proactive: { enabled: true, exit_intent: true },
+			} ),
 			onOpen
 		);
 
