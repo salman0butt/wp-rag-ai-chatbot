@@ -15,18 +15,18 @@ const appearance = {
 const mountSurface = ( surface: 'embedded' | 'fullscreen' ): HTMLElement => {
 	document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }" data-wp-rag-ai-chatbot-surface="${ surface }"></div>`;
 
-	mountWidgets( document, [
-		{
-			botId: BOT_ID,
-			restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
-			surface,
-			config: {
-				bot_id: BOT_ID,
-				name: 'Support bot',
-				appearance,
-			},
+	const config = {
+		botId: BOT_ID,
+		restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+		surface,
+		config: {
+			bot_id: BOT_ID,
+			name: 'Support bot',
+			appearance,
 		},
-	] );
+	};
+
+	mountWidgets( document, [ config ] );
 
 	const mount = document.querySelector< HTMLElement >(
 		'.wp-rag-ai-chatbot-widget'
