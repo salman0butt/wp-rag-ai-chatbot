@@ -306,6 +306,14 @@ const scheduleMatches = (
 		return true;
 	}
 
+	if (
+		schedule.days.length === 0 &&
+		schedule.start === null &&
+		schedule.end === null
+	) {
+		return true;
+	}
+
 	const weekday = facts.siteWeekday;
 	const minute = facts.siteMinuteOfDay;
 	if (
