@@ -3,6 +3,13 @@ import {
 	readProactiveDelayConfig,
 } from './widget-proactive';
 
+const readInactivityMs = ( displayRules: unknown ): number | null | undefined =>
+	(
+		readProactiveDelayConfig( displayRules ) as {
+			inactivityMs?: number | null;
+		}
+	).inactivityMs;
+
 describe( 'M15 proactive widget inactivity trigger', () => {
 	beforeEach( () => {
 		jest.useFakeTimers();
@@ -15,19 +22,19 @@ describe( 'M15 proactive widget inactivity trigger', () => {
 
 	it( 'normalizes the bounded inactivity duration from public display rules', () => {
 		expect(
-			readProactiveDelayConfig( {
+			readInactivityMs( {
 				proactive: { enabled: true, inactivity_ms: 0 },
-			} ).inactivityMs
+			} )
 		).toBe( 0 );
 		expect(
-			readProactiveDelayConfig( {
+			readInactivityMs( {
 				proactive: { enabled: true, inactivity_ms: 600000 },
-			} ).inactivityMs
+			} )
 		).toBe( 600000 );
 		expect(
-			readProactiveDelayConfig( {
+			readInactivityMs( {
 				proactive: { enabled: true, inactivity_ms: 600001 },
-			} ).inactivityMs
+			} )
 		).toBeNull();
 	} );
 
