@@ -28,7 +28,7 @@ const normalizeDelay = ( value: unknown ): number | null =>
 const normalizeScrollPercent = ( value: unknown ): number | null =>
 	typeof value === 'number' &&
 	Number.isInteger( value ) &&
-	value >= 0 &&
+	value >= 1 &&
 	value <= MAX_SCROLL_PERCENT
 		? value
 		: null;
@@ -51,12 +51,17 @@ export const createProactiveDelayCoordinator = (
 	onOpen: () => void
 ): ProactiveDelayCoordinator => {
 	let timer: ReturnType< typeof setTimeout > | null = null;
+	let scrollFrame: number | null = null;
 	let listeningForScroll = false;
 	let completed = false;
 
 	const stopScrollListener = (): void => {
+		if ( scrollFrame !== null ) {
+			window.cancelAnimationFrame( scrollFrame );
+			scrollFrame = null;
+		}
 		if ( listeningForScroll ) {
-			window.removeEventListener( 'scroll', handleScroll );
+			window.removeEventListener( 'scroll', scheduleScrollEvaluation );
 			listeningForScroll = false;
 		}
 	};
@@ -75,7 +80,7 @@ export const createProactiveDelayCoordinator = (
 		onOpen();
 	};
 
-	function handleScroll(): void {
+	const evaluateScroll = (): void => {
 		if ( completed || config.scrollPercent === null ) {
 			return;
 		}
@@ -85,14 +90,31 @@ export const createProactiveDelayCoordinator = (
 			0,
 			root.scrollHeight - root.clientHeight
 		);
+		if ( scrollableDistance === 0 ) {
+			return;
+		}
+
 		const percent =
-			scrollableDistance === 0
-				? MAX_SCROLL_PERCENT
-				: ( window.scrollY / scrollableDistance ) * MAX_SCROLL_PERCENT;
+			( window.scrollY / scrollableDistance ) * MAX_SCROLL_PERCENT;
 
 		if ( percent >= config.scrollPercent ) {
 			complete();
 		}
+	};
+
+	function scheduleScrollEvaluation(): void {
+		if (
+			completed ||
+			config.scrollPercent === null ||
+			scrollFrame !== null
+		) {
+			return;
+		}
+
+		scrollFrame = window.requestAnimationFrame( () => {
+			scrollFrame = null;
+			evaluateScroll();
+		} );
 	}
 
 	const cancel = (): void => {
@@ -118,10 +140,10 @@ export const createProactiveDelayCoordinator = (
 
 		if ( ! listeningForScroll && config.scrollPercent !== null ) {
 			listeningForScroll = true;
-			window.addEventListener( 'scroll', handleScroll, {
+			window.addEventListener( 'scroll', scheduleScrollEvaluation, {
 				passive: true,
 			} );
-			handleScroll();
+			scheduleScrollEvaluation();
 		}
 	};
 
