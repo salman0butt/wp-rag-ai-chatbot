@@ -27,6 +27,7 @@ type PublicChatError = {
 const MOUNT_SELECTOR = '.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]';
 const MOUNTED_DATA_KEY = 'wpRagAiChatbotMounted';
 const MAX_CITATIONS = 8;
+const MAX_RENDERED_MESSAGES = 40;
 
 const COLOR_MODES = [ 'light', 'dark', 'system' ] as const;
 const POSITIONS = [ 'bottom-left', 'bottom-right' ] as const;
@@ -294,6 +295,12 @@ export const mountWidgets = (
 			let conversationId: string | null = null;
 			let retryQuestion: string | null = null;
 
+			const trimMessageHistory = (): void => {
+				while ( messages.childElementCount > MAX_RENDERED_MESSAGES ) {
+					messages.firstElementChild?.remove();
+				}
+			};
+
 			const appendMessage = (
 				role: 'user' | 'assistant',
 				text: string
@@ -302,6 +309,7 @@ export const mountWidgets = (
 				message.dataset.wpRagAiChatbotMessage = role;
 				message.textContent = text;
 				messages.append( message );
+				trimMessageHistory();
 				return message;
 			};
 
@@ -361,6 +369,7 @@ export const mountWidgets = (
 				}
 
 				messages.append( wrapper );
+				trimMessageHistory();
 			};
 
 			const closePanel = (): void => {
