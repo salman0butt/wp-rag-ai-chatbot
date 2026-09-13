@@ -20,17 +20,16 @@ export interface DisplayRulesEditorProps {
 	onSave: ( next: DisplayRulesConfig ) => void;
 }
 
-const fieldId = ( name: string ): string => `wp-rag-ai-chatbot-rules-${ name }`;
+const fieldId = ( name: string ): string =>
+	`wp-rag-ai-chatbot-rules-${ name }`;
 
-const readValue = ( event: Event ): string =>
-	(
-		event.currentTarget as
-			| HTMLInputElement
-			| HTMLSelectElement
-			| HTMLTextAreaElement
-	).value;
+const readValue = ( event: Event ): string => {
+	const target = event.currentTarget as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+	return target.value;
+};
 
-const splitLines = ( value: string ): readonly string[] => value.split( /\r?\n/u );
+const splitLines = ( value: string ): readonly string[] =>
+	value.split( /\r?\n/u );
 
 const selectOptions = (
 	createElement: ElementFactory,
@@ -93,7 +92,11 @@ export const DisplayRulesEditor = (
 			},
 		},
 		createElement( 'h2', null, 'Display rules' ),
-		createElement( 'label', { htmlFor: includeId }, 'Show on URL patterns' ),
+		createElement(
+			'label',
+			{ htmlFor: includeId },
+			'Show on URL patterns'
+		),
 		createElement( 'textarea', {
 			id: includeId,
 			name: 'url_include',
@@ -101,10 +104,16 @@ export const DisplayRulesEditor = (
 			maxLength: 8224,
 			value: draft.visibility.url_include.join( '\n' ),
 			onChange: ( event: Event ) => {
-				updateVisibility( { url_include: splitLines( readValue( event ) ) } );
+				updateVisibility( {
+					url_include: splitLines( readValue( event ) ),
+				} );
 			},
 		} ),
-		createElement( 'label', { htmlFor: excludeId }, 'Hide on URL patterns' ),
+		createElement(
+			'label',
+			{ htmlFor: excludeId },
+			'Hide on URL patterns'
+		),
 		createElement( 'textarea', {
 			id: excludeId,
 			name: 'url_exclude',
@@ -112,7 +121,9 @@ export const DisplayRulesEditor = (
 			maxLength: 8224,
 			value: draft.visibility.url_exclude.join( '\n' ),
 			onChange: ( event: Event ) => {
-				updateVisibility( { url_exclude: splitLines( readValue( event ) ) } );
+				updateVisibility( {
+					url_exclude: splitLines( readValue( event ) ),
+				} );
 			},
 		} ),
 		createElement( 'label', { htmlFor: audienceId }, 'Audience' ),
@@ -124,7 +135,9 @@ export const DisplayRulesEditor = (
 				value: draft.visibility.audience,
 				onChange: ( event: Event ) => {
 					updateVisibility( {
-						audience: readValue( event ) as DisplayRulesConfig[ 'visibility' ][ 'audience' ],
+						audience: readValue(
+							event
+						) as DisplayRulesConfig[ 'visibility' ][ 'audience' ],
 					} );
 				},
 			},
@@ -155,7 +168,9 @@ export const DisplayRulesEditor = (
 				value: draft.localization.direction,
 				onChange: ( event: Event ) => {
 					updateLocalization( {
-						direction: readValue( event ) as DisplayRulesConfig[ 'localization' ][ 'direction' ],
+						direction: readValue(
+							event
+						) as DisplayRulesConfig[ 'localization' ][ 'direction' ],
 					} );
 				},
 			},
