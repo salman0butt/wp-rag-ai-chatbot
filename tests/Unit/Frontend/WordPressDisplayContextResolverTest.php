@@ -24,7 +24,15 @@ final class WordPressDisplayContextResolverTest extends TestCase {
 			static fn ( mixed $value ): mixed => is_string( $value ) ? stripslashes( $value ) : $value
 		);
 		Functions\when( 'wp_parse_url' )->alias(
-			static fn ( string $url, int $component = -1 ): mixed => parse_url( $url, $component )
+			static function ( string $url, int $component = -1 ): mixed {
+				if ( PHP_URL_PATH !== $component ) {
+					return false;
+				}
+
+				$path = preg_replace( '/[?#].*$/', '', $url );
+
+				return is_string( $path ) ? $path : false;
+			}
 		);
 	}
 
