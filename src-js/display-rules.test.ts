@@ -1,5 +1,16 @@
 import { evaluateDisplayRules, normalizeDisplayRules } from './display-rules';
 
+type PathFacts = {
+	path: string;
+};
+
+type PathEvaluator = (
+	config: ReturnType< typeof normalizeDisplayRules >,
+	facts: PathFacts
+) => ReturnType< typeof evaluateDisplayRules >;
+
+const evaluateForPath = evaluateDisplayRules as unknown as PathEvaluator;
+
 describe( 'display rule defaults and disabled behavior', () => {
 	test( 'normalizes missing config to M14-compatible presentation defaults', () => {
 		expect( normalizeDisplayRules( undefined ) ).toEqual( {
@@ -56,7 +67,9 @@ describe( 'display rule URL precedence', () => {
 	} );
 
 	test( 'normalizes bounded include and exclude path patterns', () => {
-		expect( rules.visibility ).toEqual( {
+		const normalized = rules as unknown as Record< string, unknown >;
+
+		expect( normalized.visibility ).toEqual( {
 			url_include: [ '/docs/*', '/pricing' ],
 			url_exclude: [ '/docs/private/*' ],
 		} );
@@ -64,7 +77,7 @@ describe( 'display rule URL precedence', () => {
 
 	test( 'allows include matches and lets exclusions win', () => {
 		expect(
-			evaluateDisplayRules( rules, { path: '/docs/guide' } )
+			evaluateForPath( rules, { path: '/docs/guide' } )
 		).toEqual( {
 			visible: true,
 			proactiveEligible: false,
@@ -75,7 +88,7 @@ describe( 'display rule URL precedence', () => {
 		} );
 
 		expect(
-			evaluateDisplayRules( rules, { path: '/docs/private/secret' } )
+			evaluateForPath( rules, { path: '/docs/private/secret' } )
 		).toEqual( {
 			visible: false,
 			proactiveEligible: false,
@@ -87,7 +100,7 @@ describe( 'display rule URL precedence', () => {
 	} );
 
 	test( 'hides paths outside a non-empty include list', () => {
-		expect( evaluateDisplayRules( rules, { path: '/contact' } ) ).toEqual( {
+		expect( evaluateForPath( rules, { path: '/contact' } ) ).toEqual( {
 			visible: false,
 			proactiveEligible: false,
 			starters: [],
