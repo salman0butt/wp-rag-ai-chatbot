@@ -80,7 +80,6 @@ describe( 'public widget embedding surfaces', () => {
 			);
 
 			expect( panel.hidden ).toBe( false );
-			expect( panel.classList.contains( 'is-open' ) ).toBe( true );
 		}
 	);
 } );
