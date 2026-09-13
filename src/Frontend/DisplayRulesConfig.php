@@ -642,7 +642,7 @@ final readonly class DisplayRulesConfig {
 			if ( ! array_key_exists( 'pattern', $mapping ) || ! array_key_exists( 'prompts', $mapping ) ) {
 				throw new InvalidArgumentException( 'Starter mapping is incomplete.' );
 			}
-			$patterns = self::normalize_path_patterns( array( $mapping['pattern'] ) );
+			$patterns   = self::normalize_path_patterns( array( $mapping['pattern'] ) );
 			$mappings[] = array(
 				'pattern' => $patterns[0],
 				'prompts' => self::normalize_prompt_list( $mapping['prompts'], true ),
