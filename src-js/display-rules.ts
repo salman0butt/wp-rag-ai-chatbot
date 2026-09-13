@@ -7,6 +7,13 @@ export type DisplayAudience =
 export type WooArea = 'shop' | 'product' | 'cart' | 'checkout' | 'account';
 export type DeviceBucket = 'desktop' | 'tablet' | 'mobile';
 
+export type DisplaySchedule = {
+	timezone: 'site';
+	days: readonly number[];
+	start: string | null;
+	end: string | null;
+};
+
 export type DisplayRulesConfig = {
 	enabled: boolean;
 	visibility: {
@@ -17,6 +24,7 @@ export type DisplayRulesConfig = {
 		roles: readonly string[];
 		woo_areas: readonly WooArea[];
 		devices: readonly DeviceBucket[];
+		schedule?: DisplaySchedule;
 	};
 	proactive: {
 		enabled: boolean;
@@ -38,6 +46,8 @@ export type DisplayRuleFacts = {
 	postType?: string;
 	wooArea?: WooArea;
 	device?: DeviceBucket;
+	siteWeekday?: number;
+	siteMinuteOfDay?: number;
 };
 
 export type DisplayDecision = {
@@ -55,6 +65,7 @@ const MAX_URL_WILDCARDS = 4;
 const MAX_SLUG_VALUES = 16;
 const MAX_SLUG_LENGTH = 64;
 const SLUG_PATTERN = /^[a-z0-9_-]+$/;
+const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 const AUDIENCES: readonly DisplayAudience[] = [
 	'all',
 	'authenticated',
@@ -182,6 +193,44 @@ const normalizeAudience = ( value: unknown ): DisplayAudience =>
 		? ( value as DisplayAudience )
 		: 'all';
 
+const normalizeSchedule = ( value: unknown ): DisplaySchedule | undefined => {
+	if ( typeof value !== 'object' || value === null || Array.isArray( value ) ) {
+		return undefined;
+	}
+
+	const candidate = value as Record< string, unknown >;
+	const days: number[] = [];
+	if ( Array.isArray( candidate.days ) ) {
+		for ( const day of candidate.days ) {
+			if (
+				typeof day === 'number' &&
+				Number.isInteger( day ) &&
+				day >= 0 &&
+				day <= 6 &&
+				! days.includes( day )
+			) {
+				days.push( day );
+			}
+		}
+	}
+
+	const start =
+		typeof candidate.start === 'string' && TIME_PATTERN.test( candidate.start )
+			? candidate.start
+			: null;
+	const end =
+		typeof candidate.end === 'string' && TIME_PATTERN.test( candidate.end )
+			? candidate.end
+			: null;
+
+	return {
+		timezone: 'site',
+		days,
+		start,
+		end,
+	};
+};
+
 const pathMatchesPattern = ( path: string, pattern: string ): boolean => {
 	let pathIndex = 0;
 	let patternIndex = 0;
@@ -238,6 +287,67 @@ const normalizeFactPath = ( value: unknown ): string => {
 	return trimmed[ 0 ] === '/' ? trimmed : `/${ trimmed }`;
 };
 
+const timeToMinute = ( value: string ): number => {
+	const [ hours, minutes ] = value.split( ':' ).map( Number );
+	return hours * 60 + minutes;
+};
+
+const scheduleMatches = (
+	config: DisplayRulesConfig,
+	facts: DisplayRuleFacts
+): boolean => {
+	const schedule = config.visibility.schedule;
+	if ( schedule === undefined ) {
+		return true;
+	}
+
+	const weekday = facts.siteWeekday;
+	const minute = facts.siteMinuteOfDay;
+	if (
+		typeof weekday !== 'number' ||
+		! Number.isInteger( weekday ) ||
+		weekday < 0 ||
+		weekday > 6 ||
+		typeof minute !== 'number' ||
+		! Number.isInteger( minute ) ||
+		minute < 0 ||
+		minute > 1439
+	) {
+		return false;
+	}
+
+	const dayMatches = ( day: number ): boolean =>
+		schedule.days.length === 0 || schedule.days.includes( day );
+	const start = schedule.start === null ? null : timeToMinute( schedule.start );
+	const end = schedule.end === null ? null : timeToMinute( schedule.end );
+
+	if ( start === null && end === null ) {
+		return dayMatches( weekday );
+	}
+
+	if ( start !== null && end === null ) {
+		return dayMatches( weekday ) && minute >= start;
+	}
+
+	if ( start === null && end !== null ) {
+		return dayMatches( weekday ) && minute <= end;
+	}
+
+	if ( start === null || end === null ) {
+		return false;
+	}
+
+	if ( start <= end ) {
+		return dayMatches( weekday ) && minute >= start && minute <= end;
+	}
+
+	const previousWeekday = ( weekday + 6 ) % 7;
+	return (
+		( minute >= start && dayMatches( weekday ) ) ||
+		( minute <= end && dayMatches( previousWeekday ) )
+	);
+};
+
 const baseDecision = (
 	config: DisplayRulesConfig,
 	visible: boolean,
@@ -286,6 +396,7 @@ export const normalizeDisplayRules = ( value: unknown ): DisplayRulesConfig => {
 		visibility.url_exclude,
 		MAX_URL_PATTERNS - urlInclude.length
 	);
+	const schedule = normalizeSchedule( visibility.schedule );
 
 	return {
 		enabled: candidate.enabled !== false,
@@ -297,6 +408,7 @@ export const normalizeDisplayRules = ( value: unknown ): DisplayRulesConfig => {
 			roles: normalizeSlugList( visibility.roles ),
 			woo_areas: normalizeChoiceList( visibility.woo_areas, WOO_AREAS ),
 			devices: normalizeChoiceList( visibility.devices, DEVICE_BUCKETS ),
+			...( schedule === undefined ? {} : { schedule } ),
 		},
 		proactive: {
 			enabled: false,
@@ -366,6 +478,10 @@ export const evaluateDisplayRules = (
 			! config.visibility.devices.includes( facts.device ) )
 	) {
 		return baseDecision( config, false, [ 'device_mismatch' ] );
+	}
+
+	if ( ! scheduleMatches( config, facts ) ) {
+		return baseDecision( config, false, [ 'schedule_mismatch' ] );
 	}
 
 	return baseDecision( config, true, reasons );
