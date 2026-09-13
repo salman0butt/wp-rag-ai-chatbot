@@ -27,6 +27,7 @@
     "src/**",
     "build/**",
     "assets/**",
+    "blocks/**",
     "vendor/**",
     "readme.txt",
     "LICENSE"
@@ -38,7 +39,7 @@
     "typescript": "^5.9.0"
   },
   "scripts": {
-    "build": "wp-scripts build src-js/index src-js/widget --output-path=build",
+    "build": "wp-scripts build src-js/index src-js/widget src-js/chatbot-block --output-path=build",
     "check-engines": "wp-scripts check-engines",
     "env:start": "wp-env start --update",
     "env:stop": "wp-env stop",
