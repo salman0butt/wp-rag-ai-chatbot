@@ -14,6 +14,11 @@ export type DisplaySchedule = {
 	end: string | null;
 };
 
+export type StarterRule = {
+	pattern: string;
+	prompts: readonly string[];
+};
+
 export type DisplayRulesConfig = {
 	enabled: boolean;
 	visibility: {
@@ -31,7 +36,7 @@ export type DisplayRulesConfig = {
 	};
 	starters: {
 		default: readonly string[];
-		by_page: readonly unknown[];
+		by_page: readonly StarterRule[];
 	};
 	localization: {
 		locale: string;
@@ -48,6 +53,9 @@ export type DisplayRuleFacts = {
 	device?: DeviceBucket;
 	siteWeekday?: number;
 	siteMinuteOfDay?: number;
+	siteLocale?: string;
+	documentLocale?: string;
+	siteDirection?: 'ltr' | 'rtl';
 };
 
 export type DisplayDecision = {
@@ -64,8 +72,13 @@ const MAX_URL_PATTERN_LENGTH = 256;
 const MAX_URL_WILDCARDS = 4;
 const MAX_SLUG_VALUES = 16;
 const MAX_SLUG_LENGTH = 64;
+const MAX_STARTER_MAPPINGS = 8;
+const MAX_STARTER_PROMPTS = 4;
+const MAX_PROMPT_CODEPOINTS = 160;
+const MAX_LOCALE_LENGTH = 35;
 const SLUG_PATTERN = /^[a-z0-9_-]+$/;
 const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
+const LOCALE_PATTERN = /^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/;
 const AUDIENCES: readonly DisplayAudience[] = [
 	'all',
 	'authenticated',
@@ -84,6 +97,7 @@ const DEVICE_BUCKETS: readonly DeviceBucket[] = [
 	'tablet',
 	'mobile',
 ];
+const RTL_LOCALES = [ 'ar', 'fa', 'he', 'ur' ] as const;
 
 const asRecord = ( value: unknown ): Record< string, unknown > =>
 	typeof value === 'object' && value !== null
@@ -236,6 +250,80 @@ const normalizeSchedule = ( value: unknown ): DisplaySchedule | undefined => {
 	};
 };
 
+const normalizePromptList = ( value: unknown ): readonly string[] => {
+	if ( ! Array.isArray( value ) ) {
+		return [];
+	}
+
+	const prompts: string[] = [];
+	for ( const candidate of value ) {
+		if ( typeof candidate !== 'string' ) {
+			continue;
+		}
+
+		const normalized = candidate.trim();
+		if (
+			normalized === '' ||
+			[ ...normalized ].length > MAX_PROMPT_CODEPOINTS
+		) {
+			continue;
+		}
+
+		prompts.push( normalized );
+		if ( prompts.length >= MAX_STARTER_PROMPTS ) {
+			break;
+		}
+	}
+
+	return prompts;
+};
+
+const normalizeStarterRules = ( value: unknown ): readonly StarterRule[] => {
+	if ( ! Array.isArray( value ) ) {
+		return [];
+	}
+
+	const rules: StarterRule[] = [];
+	for ( const candidate of value ) {
+		if ( rules.length >= MAX_STARTER_MAPPINGS ) {
+			break;
+		}
+
+		const record = asRecord( candidate );
+		const pattern = normalizePathPattern( record.pattern );
+		const prompts = normalizePromptList( record.prompts );
+		if ( pattern === null || prompts.length === 0 ) {
+			continue;
+		}
+
+		rules.push( { pattern, prompts } );
+	}
+
+	return rules;
+};
+
+const normalizeLocaleToken = ( value: unknown ): string | null => {
+	if ( typeof value !== 'string' ) {
+		return null;
+	}
+
+	const normalized = value.trim().replaceAll( '_', '-' ).toLowerCase();
+	return normalized.length <= MAX_LOCALE_LENGTH && LOCALE_PATTERN.test( normalized )
+		? normalized
+		: null;
+};
+
+const normalizeLocaleSetting = ( value: unknown ): string => {
+	if ( value === 'site' || value === 'auto' ) {
+		return value;
+	}
+
+	return normalizeLocaleToken( value ) ?? 'site';
+};
+
+const normalizeDirection = ( value: unknown ): DisplayDirection =>
+	value === 'ltr' || value === 'rtl' || value === 'auto' ? value : 'auto';
+
 const pathMatchesPattern = ( path: string, pattern: string ): boolean => {
 	let pathIndex = 0;
 	let patternIndex = 0;
@@ -362,18 +450,92 @@ const scheduleMatches = (
 	);
 };
 
+const selectStarters = (
+	config: DisplayRulesConfig,
+	path: string
+): readonly string[] => {
+	const exact = config.starters.by_page.find(
+		( rule ) => ! rule.pattern.includes( '*' ) && rule.pattern === path
+	);
+	if ( exact !== undefined ) {
+		return exact.prompts;
+	}
+
+	let best: StarterRule | null = null;
+	let bestSpecificity = -1;
+	for ( const rule of config.starters.by_page ) {
+		if ( ! rule.pattern.includes( '*' ) || ! pathMatchesPattern( path, rule.pattern ) ) {
+			continue;
+		}
+
+		const specificity = rule.pattern.replaceAll( '*', '' ).length;
+		if ( specificity > bestSpecificity ) {
+			best = rule;
+			bestSpecificity = specificity;
+		}
+	}
+
+	return best?.prompts ?? config.starters.default;
+};
+
+const resolveLocale = (
+	config: DisplayRulesConfig,
+	facts: DisplayRuleFacts
+): string => {
+	if ( config.localization.locale === 'auto' ) {
+		return (
+			normalizeLocaleToken( facts.documentLocale ) ??
+			normalizeLocaleToken( facts.siteLocale ) ??
+			'site'
+		);
+	}
+
+	if ( config.localization.locale === 'site' ) {
+		return normalizeLocaleToken( facts.siteLocale ) ?? 'site';
+	}
+
+	return config.localization.locale;
+};
+
+const resolveDirection = (
+	config: DisplayRulesConfig,
+	facts: DisplayRuleFacts,
+	locale: string
+): 'ltr' | 'rtl' => {
+	if ( config.localization.direction === 'ltr' || config.localization.direction === 'rtl' ) {
+		return config.localization.direction;
+	}
+
+	const language = locale.split( '-', 1 )[ 0 ];
+	if ( RTL_LOCALES.includes( language as ( typeof RTL_LOCALES )[ number ] ) ) {
+		return 'rtl';
+	}
+
+	if ( config.localization.locale === 'site' && facts.siteDirection !== undefined ) {
+		return facts.siteDirection;
+	}
+
+	return 'ltr';
+};
+
 const baseDecision = (
 	config: DisplayRulesConfig,
+	facts: DisplayRuleFacts,
 	visible: boolean,
 	reasons: readonly string[]
-): DisplayDecision => ( {
-	visible,
-	proactiveEligible: false,
-	starters: [],
-	locale: config.localization.locale,
-	direction: config.localization.direction === 'rtl' ? 'rtl' : 'ltr',
-	reasons,
-} );
+): DisplayDecision => {
+	const path = normalizeFactPath( facts.path );
+	const locale = resolveLocale( config, facts );
+
+	return {
+		visible,
+		proactiveEligible: false,
+		starters: selectStarters( config, path ),
+		locale,
+		direction: resolveDirection( config, facts, locale ),
+		reasons,
+	};
+};
 
 const audienceMatches = (
 	config: DisplayRulesConfig,
@@ -402,6 +564,8 @@ const audienceMatches = (
 export const normalizeDisplayRules = ( value: unknown ): DisplayRulesConfig => {
 	const candidate = asRecord( value );
 	const visibility = asRecord( candidate.visibility );
+	const starters = asRecord( candidate.starters );
+	const localization = asRecord( candidate.localization );
 	const urlInclude = normalizePatterns(
 		visibility.url_include,
 		MAX_URL_PATTERNS
@@ -428,12 +592,12 @@ export const normalizeDisplayRules = ( value: unknown ): DisplayRulesConfig => {
 			enabled: false,
 		},
 		starters: {
-			default: [],
-			by_page: [],
+			default: normalizePromptList( starters.default ),
+			by_page: normalizeStarterRules( starters.by_page ),
 		},
 		localization: {
-			locale: 'site',
-			direction: 'auto',
+			locale: normalizeLocaleSetting( localization.locale ),
+			direction: normalizeDirection( localization.direction ),
 		},
 	};
 };
@@ -443,7 +607,7 @@ export const evaluateDisplayRules = (
 	facts: DisplayRuleFacts = {}
 ): DisplayDecision => {
 	if ( ! config.enabled ) {
-		return baseDecision( config, false, [ 'disabled' ] );
+		return baseDecision( config, facts, false, [ 'disabled' ] );
 	}
 
 	const path = normalizeFactPath( facts.path );
@@ -452,7 +616,7 @@ export const evaluateDisplayRules = (
 			pathMatchesPattern( path, pattern )
 		)
 	) {
-		return baseDecision( config, false, [ 'url_excluded' ] );
+		return baseDecision( config, facts, false, [ 'url_excluded' ] );
 	}
 
 	const reasons = [ 'enabled' ];
@@ -461,13 +625,13 @@ export const evaluateDisplayRules = (
 			pathMatchesPattern( path, pattern )
 		);
 		if ( ! included ) {
-			return baseDecision( config, false, [ 'url_not_included' ] );
+			return baseDecision( config, facts, false, [ 'url_not_included' ] );
 		}
 		reasons.push( 'url_included' );
 	}
 
 	if ( ! audienceMatches( config, facts ) ) {
-		return baseDecision( config, false, [ 'audience_mismatch' ] );
+		return baseDecision( config, facts, false, [ 'audience_mismatch' ] );
 	}
 
 	if (
@@ -475,7 +639,7 @@ export const evaluateDisplayRules = (
 		( typeof facts.postType !== 'string' ||
 			! config.visibility.post_types.includes( facts.postType ) )
 	) {
-		return baseDecision( config, false, [ 'post_type_mismatch' ] );
+		return baseDecision( config, facts, false, [ 'post_type_mismatch' ] );
 	}
 
 	if (
@@ -483,7 +647,7 @@ export const evaluateDisplayRules = (
 		( facts.wooArea === undefined ||
 			! config.visibility.woo_areas.includes( facts.wooArea ) )
 	) {
-		return baseDecision( config, false, [ 'woo_area_mismatch' ] );
+		return baseDecision( config, facts, false, [ 'woo_area_mismatch' ] );
 	}
 
 	if (
@@ -491,12 +655,12 @@ export const evaluateDisplayRules = (
 		( facts.device === undefined ||
 			! config.visibility.devices.includes( facts.device ) )
 	) {
-		return baseDecision( config, false, [ 'device_mismatch' ] );
+		return baseDecision( config, facts, false, [ 'device_mismatch' ] );
 	}
 
 	if ( ! scheduleMatches( config, facts ) ) {
-		return baseDecision( config, false, [ 'schedule_mismatch' ] );
+		return baseDecision( config, facts, false, [ 'schedule_mismatch' ] );
 	}
 
-	return baseDecision( config, true, reasons );
+	return baseDecision( config, facts, true, reasons );
 };
