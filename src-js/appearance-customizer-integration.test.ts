@@ -148,7 +148,9 @@ describe( 'appearance customizer persistence integration', () => {
 			value: fetcher,
 		} );
 
-		expect( bootstrapAdminApp( '#/bots/bot-existing?page=1' ) ).toBe( true );
+		expect( bootstrapAdminApp( '#/bots/bot-existing?page=1' ) ).toBe(
+			true
+		);
 		await tick();
 		await tick();
 		await tick();
