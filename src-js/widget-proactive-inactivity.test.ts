@@ -4,9 +4,11 @@ import {
 } from './widget-proactive';
 
 const readInactivityMs = ( displayRules: unknown ): number | null | undefined =>
-	( readProactiveDelayConfig( displayRules ) as {
-		inactivityMs?: number | null;
-	} ).inactivityMs;
+	(
+		readProactiveDelayConfig( displayRules ) as {
+			inactivityMs?: number | null;
+		}
+	 ).inactivityMs;
 
 describe( 'M15 proactive widget inactivity trigger', () => {
 	beforeEach( () => {
