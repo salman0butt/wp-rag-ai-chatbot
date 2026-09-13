@@ -5,6 +5,11 @@ import {
 	ProviderSettingsScreen,
 } from './provider-settings';
 import { AppearanceCustomizer } from './appearance-customizer';
+import { DisplayRulesEditor } from './display-rules-editor';
+import {
+	normalizeDisplayRules,
+	type DisplayRulesConfig,
+} from './display-rules';
 import type { PlaygroundControllerState } from './playground-controller';
 import { PlaygroundPanel } from './playground-panel';
 import { createPlaygroundRuntime } from './playground-runtime';
@@ -138,6 +143,11 @@ export interface AdminShellProps {
 	botAppearanceError?: string;
 	onChangeBotAppearance?: ( next: WidgetAppearance ) => void;
 	onSaveBotAppearance?: ( next: WidgetAppearance ) => void;
+	botDisplayRules?: DisplayRulesConfig;
+	botDisplayRulesSaving?: boolean;
+	botDisplayRulesError?: string;
+	onChangeBotDisplayRules?: ( next: DisplayRulesConfig ) => void;
+	onSaveBotDisplayRules?: ( next: DisplayRulesConfig ) => void;
 	knowledgePage?: KnowledgeSourcePage;
 	selectedKnowledgeSourceId?: string;
 	selectedKnowledgeDocumentKey?: string;
@@ -1171,6 +1181,11 @@ export const AdminShell = ( {
 	botAppearanceError,
 	onChangeBotAppearance,
 	onSaveBotAppearance,
+	botDisplayRules,
+	botDisplayRulesSaving = false,
+	botDisplayRulesError,
+	onChangeBotDisplayRules,
+	onSaveBotDisplayRules,
 	knowledgePage,
 	selectedKnowledgeSourceId,
 	selectedKnowledgeDocumentKey,
@@ -1286,6 +1301,16 @@ export const AdminShell = ( {
 						error: botAppearanceError,
 						onChange: onChangeBotAppearance ?? ( () => undefined ),
 						onSave: onSaveBotAppearance ?? ( () => undefined ),
+				  } ),
+			botDisplayRules === undefined
+				? undefined
+				: DisplayRulesEditor( {
+						config: botDisplayRules,
+						saving: botDisplayRulesSaving,
+						error: botDisplayRulesError,
+						onChange:
+							onChangeBotDisplayRules ?? ( () => undefined ),
+						onSave: onSaveBotDisplayRules ?? ( () => undefined ),
 				  } )
 		);
 	} else if ( screen === 'knowledge' && knowledgePage !== undefined ) {
@@ -1361,6 +1386,11 @@ const renderAdminShell = (
 	botAppearanceError?: string,
 	onChangeBotAppearance?: ( next: WidgetAppearance ) => void,
 	onSaveBotAppearance?: ( next: WidgetAppearance ) => void,
+	botDisplayRules?: DisplayRulesConfig,
+	botDisplayRulesSaving?: boolean,
+	botDisplayRulesError?: string,
+	onChangeBotDisplayRules?: ( next: DisplayRulesConfig ) => void,
+	onSaveBotDisplayRules?: ( next: DisplayRulesConfig ) => void,
 	knowledgePage?: KnowledgeSourcePage,
 	selectedKnowledgeSourceId?: string,
 	selectedKnowledgeDocumentKey?: string,
@@ -1398,6 +1428,11 @@ const renderAdminShell = (
 			botAppearanceError,
 			onChangeBotAppearance,
 			onSaveBotAppearance,
+			botDisplayRules,
+			botDisplayRulesSaving,
+			botDisplayRulesError,
+			onChangeBotDisplayRules,
+			onSaveBotDisplayRules,
 			knowledgePage,
 			selectedKnowledgeSourceId,
 			selectedKnowledgeDocumentKey,
@@ -1442,6 +1477,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentBotAppearanceError: string | undefined;
 	let loadedBotAppearanceId: string | undefined;
 	let botAppearanceGeneration = 0;
+	let currentBotDisplayRules: DisplayRulesConfig | undefined;
+	let currentBotDisplayRulesSaving = false;
+	let currentBotDisplayRulesError: string | undefined;
+	let loadedBotDisplayRulesId: string | undefined;
+	let botDisplayRulesGeneration = 0;
 	let currentKnowledgePage: KnowledgeSourcePage | undefined;
 	let currentKnowledgeDetail: KnowledgeSourceDetail | undefined;
 	let currentKnowledgeDocuments: KnowledgeDocumentPage | undefined;
@@ -1477,6 +1517,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let changeBotAppearance: ( next: WidgetAppearance ) => void = () =>
 		undefined;
 	let saveBotAppearance: ( next: WidgetAppearance ) => void = () => undefined;
+	let changeBotDisplayRules: ( next: DisplayRulesConfig ) => void = () =>
+		undefined;
+	let saveBotDisplayRules: ( next: DisplayRulesConfig ) => void = () =>
+		undefined;
 	let replaceProviderCredential: (
 		credential: string
 	) => Promise< void > = async () => undefined;
@@ -1513,6 +1557,15 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				: undefined,
 			changeBotAppearance,
 			saveBotAppearance,
+			currentActiveBotId === loadedBotDisplayRulesId
+				? currentBotDisplayRules
+				: undefined,
+			currentBotDisplayRulesSaving,
+			currentActiveBotId === loadedBotDisplayRulesId
+				? currentBotDisplayRulesError
+				: undefined,
+			changeBotDisplayRules,
+			saveBotDisplayRules,
 			currentKnowledgePage,
 			resolveSelectedKnowledgeSourceId( currentHash() ),
 			selectedKnowledgeDocumentKey,
@@ -1626,6 +1679,43 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			return true;
 		}
 	};
+	const refreshBotDisplayRules = async (
+		botId: string
+	): Promise< boolean > => {
+		const requestGeneration = ++botDisplayRulesGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botDisplayRulesGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
+
+		currentBotDisplayRulesError = undefined;
+
+		try {
+			const response = await client.request< { display_rules: unknown } >(
+				`/admin/bots/${ encodeURIComponent( botId ) }/display-rules`
+			);
+
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+
+			currentBotDisplayRules = normalizeDisplayRules(
+				response.display_rules
+			);
+			loadedBotDisplayRulesId = botId;
+			return true;
+		} catch {
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+
+			currentBotDisplayRules = normalizeDisplayRules( undefined );
+			currentBotDisplayRulesError =
+				'Display rules could not be loaded.';
+			loadedBotDisplayRulesId = botId;
+			return true;
+		}
+	};
 	changeBotAppearance = ( next: WidgetAppearance ): void => {
 		const botId = activeBotId();
 
@@ -1683,6 +1773,67 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			.finally( () => {
 				if ( isCurrentRequest() ) {
 					currentBotAppearanceSaving = false;
+					renderState( stateFromReadiness() );
+				}
+			} );
+	};
+	changeBotDisplayRules = ( next: DisplayRulesConfig ): void => {
+		const botId = activeBotId();
+
+		if ( botId === undefined || botId !== loadedBotDisplayRulesId ) {
+			return;
+		}
+
+		currentBotDisplayRules = normalizeDisplayRules( next );
+		currentBotDisplayRulesError = undefined;
+		renderState( stateFromReadiness() );
+	};
+	saveBotDisplayRules = ( next: DisplayRulesConfig ): void => {
+		const botId = activeBotId();
+
+		if ( botId === undefined ) {
+			return;
+		}
+
+		const requestGeneration = ++botDisplayRulesGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botDisplayRulesGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
+		const normalized = normalizeDisplayRules( next );
+		currentBotDisplayRules = normalized;
+		currentBotDisplayRulesSaving = true;
+		currentBotDisplayRulesError = undefined;
+		loadedBotDisplayRulesId = botId;
+		renderState( stateFromReadiness() );
+
+		void client
+			.request< { display_rules: unknown } >(
+				`/admin/bots/${ encodeURIComponent( botId ) }/display-rules`,
+				{
+					method: 'PUT',
+					body: normalized,
+				}
+			)
+			.then( ( response ) => {
+				if ( ! isCurrentRequest() ) {
+					return;
+				}
+
+				currentBotDisplayRules = normalizeDisplayRules(
+					response.display_rules
+				);
+				currentBotDisplayRulesError = undefined;
+			} )
+			.catch( () => {
+				if ( isCurrentRequest() ) {
+					currentBotDisplayRulesError =
+						'Display rules could not be saved.';
+				}
+			} )
+			.finally( () => {
+				if ( isCurrentRequest() ) {
+					currentBotDisplayRulesSaving = false;
 					renderState( stateFromReadiness() );
 				}
 			} );
@@ -1894,6 +2045,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentBotAppearanceSaving = false;
 			currentBotAppearanceError = undefined;
 			loadedBotAppearanceId = undefined;
+			botDisplayRulesGeneration += 1;
+			currentBotDisplayRules = undefined;
+			currentBotDisplayRulesSaving = false;
+			currentBotDisplayRulesError = undefined;
+			loadedBotDisplayRulesId = undefined;
 		}
 
 		if ( screen !== 'knowledge' ) {
@@ -1924,7 +2080,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				.then( async () => {
 					const botId = activeBotId();
 					if ( botId !== undefined ) {
-						await refreshBotAppearance( botId );
+						await Promise.all( [
+							refreshBotAppearance( botId ),
+							refreshBotDisplayRules( botId ),
+						] );
 					}
 				} )
 				.then( () => renderState( stateFromReadiness() ) )
@@ -1937,19 +2096,24 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		if (
 			screen === 'bots' &&
 			currentActiveBotId !== undefined &&
-			currentActiveBotId !== loadedBotAppearanceId
+			( currentActiveBotId !== loadedBotAppearanceId ||
+				currentActiveBotId !== loadedBotDisplayRulesId )
 		) {
 			currentBotAppearance = undefined;
 			currentBotAppearanceSaving = false;
 			currentBotAppearanceError = undefined;
+			currentBotDisplayRules = undefined;
+			currentBotDisplayRulesSaving = false;
+			currentBotDisplayRulesError = undefined;
 			renderState( currentState );
-			void refreshBotAppearance( currentActiveBotId ).then(
-				( current ) => {
-					if ( current ) {
-						renderState( stateFromReadiness() );
-					}
+			void Promise.all( [
+				refreshBotAppearance( currentActiveBotId ),
+				refreshBotDisplayRules( currentActiveBotId ),
+			] ).then( ( results ) => {
+				if ( results.some( Boolean ) ) {
+					renderState( stateFromReadiness() );
 				}
-			);
+			} );
 			return;
 		}
 
@@ -2201,7 +2365,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				await refreshBotPage();
 				const botId = activeBotId();
 				if ( botId !== undefined ) {
-					await refreshBotAppearance( botId );
+					await Promise.all( [
+						refreshBotAppearance( botId ),
+						refreshBotDisplayRules( botId ),
+					] );
 				}
 			}
 
