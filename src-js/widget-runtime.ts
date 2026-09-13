@@ -316,6 +316,11 @@ export const mountWidgets = (
 				return message;
 			};
 
+			const finishRequest = (): void => {
+				requestInFlight = false;
+				send.disabled = false;
+			};
+
 			const appendAssistantMessage = (
 				text: string,
 				citations: readonly PublicCitation[]
@@ -325,6 +330,7 @@ export const mountWidgets = (
 
 				const message = documentRoot.createElement( 'p' );
 				message.dataset.wpRagAiChatbotMessage = 'assistant';
+				message.setAttribute( 'aria-live', 'off' );
 				wrapper.append( message );
 				messages.append( wrapper );
 				trimMessageHistory();
@@ -381,10 +387,16 @@ export const mountWidgets = (
 				let revealedLength = 0;
 
 				const revealNextChunk = (): void => {
-					revealedLength = Math.min(
+					const nextLength = Math.min(
 						text.length,
 						revealedLength + chunkSize
 					);
+
+					if ( nextLength === text.length ) {
+						message.setAttribute( 'aria-live', 'polite' );
+					}
+
+					revealedLength = nextLength;
 					message.textContent = text.slice( 0, revealedLength );
 
 					if ( revealedLength < text.length ) {
@@ -405,11 +417,6 @@ export const mountWidgets = (
 				launcher.setAttribute( 'aria-expanded', 'false' );
 				panel.hidden = true;
 				launcher.focus();
-			};
-
-			const finishRequest = (): void => {
-				requestInFlight = false;
-				send.disabled = false;
 			};
 
 			const showError = ( code: string | null, value: string ): void => {
