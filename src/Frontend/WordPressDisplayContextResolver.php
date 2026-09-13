@@ -86,6 +86,10 @@ final class WordPressDisplayContextResolver {
 	 * @param string|null $post_type Normalized current post type.
 	 */
 	private function resolve_woo_area( ?string $post_type ): ?string {
+		if ( did_action( 'woocommerce_init' ) < 1 ) {
+			return null;
+		}
+
 		if ( 'product' === $post_type ) {
 			return 'product';
 		}
