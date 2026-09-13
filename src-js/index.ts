@@ -1589,7 +1589,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			`/admin/bots?page=${ page }&per_page=20`
 		);
 	};
-	const refreshBotAppearance = async ( botId: string ): Promise< boolean > => {
+	const refreshBotAppearance = async (
+		botId: string
+	): Promise< boolean > => {
 		const requestGeneration = ++botAppearanceGeneration;
 		const isCurrentRequest = (): boolean =>
 			requestGeneration === botAppearanceGeneration &&
@@ -1607,7 +1609,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				return false;
 			}
 
-			currentBotAppearance = normalizeWidgetAppearance( response.appearance );
+			currentBotAppearance = normalizeWidgetAppearance(
+				response.appearance
+			);
 			loadedBotAppearanceId = botId;
 			return true;
 		} catch {
@@ -1932,11 +1936,13 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		) {
 			currentBotAppearance = undefined;
 			currentBotAppearanceError = undefined;
-			void refreshBotAppearance( currentActiveBotId ).then( ( current ) => {
-				if ( current ) {
-					renderState( stateFromReadiness() );
+			void refreshBotAppearance( currentActiveBotId ).then(
+				( current ) => {
+					if ( current ) {
+						renderState( stateFromReadiness() );
+					}
 				}
-			} );
+			);
 			return;
 		}
 
