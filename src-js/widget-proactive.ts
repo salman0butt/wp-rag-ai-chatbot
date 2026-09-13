@@ -23,7 +23,8 @@ const MAX_SCROLL_PERCENT = 100;
 const MAX_CLICK_SELECTOR_BYTES = 160;
 const INACTIVITY_EVENTS = [ 'pointerdown', 'keydown' ] as const;
 const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
-const SAFE_CLICK_SELECTOR = /^(?:[a-zA-Z][a-zA-Z0-9_-]*)?(?:[.#][a-zA-Z_][a-zA-Z0-9_-]*|\[[a-zA-Z_][a-zA-Z0-9_-]*(?:=(?:"[^"]*"|'[^']*'|[a-zA-Z0-9_-]+))?\])*$/;
+const SAFE_CLICK_SELECTOR =
+	/^(?:[a-zA-Z][a-zA-Z0-9_-]*)?(?:[.#][a-zA-Z_][a-zA-Z0-9_-]*|\[[a-zA-Z_][a-zA-Z0-9_-]*(?:=(?:"[^"]*"|'[^']*'|[a-zA-Z0-9_-]+))?\])*$/;
 const FIRST_VISIT_KEY_PREFIX = 'wp-rag-ai-chatbot:proactive-seen:';
 const sessionSeenBots = new Set< string >();
 
@@ -58,7 +59,9 @@ const normalizeClickSelector = ( value: unknown ): string | null => {
 		return null;
 	}
 
-	if ( new TextEncoder().encode( selector ).length > MAX_CLICK_SELECTOR_BYTES ) {
+	if (
+		new TextEncoder().encode( selector ).length > MAX_CLICK_SELECTOR_BYTES
+	) {
 		return null;
 	}
 
@@ -260,7 +263,11 @@ export const createProactiveDelayCoordinator = (
 
 		const key = `${ FIRST_VISIT_KEY_PREFIX }${ context.botId }`;
 		try {
-			if ( context.documentRoot.defaultView?.localStorage.getItem( key ) === '1' ) {
+			if (
+				context.documentRoot.defaultView?.localStorage.getItem(
+					key
+				) === '1'
+			) {
 				sessionSeenBots.add( context.botId );
 				return false;
 			}
