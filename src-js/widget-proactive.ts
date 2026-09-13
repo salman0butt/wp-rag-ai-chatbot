@@ -2,6 +2,7 @@ type ProactiveDelayConfig = {
 	enabled: boolean;
 	delayMs: number | null;
 	scrollPercent: number | null;
+	inactivityMs: number | null;
 };
 
 export type ProactiveDelayCoordinator = {
@@ -11,6 +12,7 @@ export type ProactiveDelayCoordinator = {
 
 const MAX_TIMER_MS = 600000;
 const MAX_SCROLL_PERCENT = 100;
+const INACTIVITY_EVENTS = [ 'pointerdown', 'keydown' ] as const;
 
 const asRecord = ( value: unknown ): Record< string, unknown > =>
 	typeof value === 'object' && value !== null
@@ -43,6 +45,7 @@ export const readProactiveDelayConfig = (
 		enabled: proactive.enabled === true,
 		delayMs: normalizeDelay( proactive.delay_ms ),
 		scrollPercent: normalizeScrollPercent( proactive.scroll_percent ),
+		inactivityMs: normalizeDelay( proactive.inactivity_ms ),
 	};
 };
 
@@ -51,8 +54,10 @@ export const createProactiveDelayCoordinator = (
 	onOpen: () => void
 ): ProactiveDelayCoordinator => {
 	let timer: ReturnType< typeof setTimeout > | null = null;
+	let inactivityTimer: ReturnType< typeof setTimeout > | null = null;
 	let scrollFrame: number | null = null;
 	let listeningForScroll = false;
+	let listeningForActivity = false;
 	let completed = false;
 
 	const stopScrollListener = (): void => {
@@ -63,6 +68,19 @@ export const createProactiveDelayCoordinator = (
 		if ( listeningForScroll ) {
 			window.removeEventListener( 'scroll', scheduleScrollEvaluation );
 			listeningForScroll = false;
+		}
+	};
+
+	const stopInactivityListener = (): void => {
+		if ( inactivityTimer !== null ) {
+			clearTimeout( inactivityTimer );
+			inactivityTimer = null;
+		}
+		if ( listeningForActivity ) {
+			INACTIVITY_EVENTS.forEach( ( eventName ) => {
+				window.removeEventListener( eventName, resetInactivityTimer );
+			} );
+			listeningForActivity = false;
 		}
 	};
 
@@ -77,6 +95,7 @@ export const createProactiveDelayCoordinator = (
 			timer = null;
 		}
 		stopScrollListener();
+		stopInactivityListener();
 		onOpen();
 	};
 
@@ -117,6 +136,20 @@ export const createProactiveDelayCoordinator = (
 		} );
 	}
 
+	function resetInactivityTimer(): void {
+		if ( completed || config.inactivityMs === null ) {
+			return;
+		}
+
+		if ( inactivityTimer !== null ) {
+			clearTimeout( inactivityTimer );
+		}
+		inactivityTimer = setTimeout( () => {
+			inactivityTimer = null;
+			complete();
+		}, config.inactivityMs );
+	}
+
 	const cancel = (): void => {
 		completed = true;
 		if ( timer !== null ) {
@@ -124,6 +157,7 @@ export const createProactiveDelayCoordinator = (
 			timer = null;
 		}
 		stopScrollListener();
+		stopInactivityListener();
 	};
 
 	const start = (): void => {
@@ -144,6 +178,14 @@ export const createProactiveDelayCoordinator = (
 				passive: true,
 			} );
 			scheduleScrollEvaluation();
+		}
+
+		if ( ! listeningForActivity && config.inactivityMs !== null ) {
+			listeningForActivity = true;
+			INACTIVITY_EVENTS.forEach( ( eventName ) => {
+				window.addEventListener( eventName, resetInactivityTimer );
+			} );
+			resetInactivityTimer();
 		}
 	};
 
