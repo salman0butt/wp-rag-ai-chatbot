@@ -30,8 +30,11 @@ export const mountStarterSuggestions = (
 			const form = mount.querySelector< HTMLFormElement >(
 				'[data-wp-rag-ai-chatbot-form]'
 			);
+			const question = mount.querySelector< HTMLTextAreaElement >(
+				'[data-wp-rag-ai-chatbot-question]'
+			);
 
-			if ( config === undefined || form === null ) {
+			if ( config === undefined || form === null || question === null ) {
 				return;
 			}
 
@@ -54,6 +57,10 @@ export const mountStarterSuggestions = (
 				starter.type = 'button';
 				starter.dataset.wpRagAiChatbotStarter = '';
 				starter.textContent = prompt;
+				starter.addEventListener( 'click', () => {
+					question.value = prompt;
+					form.requestSubmit();
+				} );
 				container.append( starter );
 			}
 
