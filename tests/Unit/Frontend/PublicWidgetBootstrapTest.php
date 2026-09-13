@@ -40,8 +40,8 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		parent::tearDown();
 	}
 
-	/** Register wires the stable floating, embedded, and fullscreen shortcodes exactly once. */
-	public function test_register_wires_public_surface_shortcodes(): void {
+	/** Register wires stable public surfaces and the dynamic block registration hook. */
+	public function test_register_wires_public_surface_adapters(): void {
 		$bootstrap = $this->bootstrap_with_empty_repositories();
 
 		Functions\expect( 'add_shortcode' )
@@ -53,6 +53,9 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		Functions\expect( 'add_shortcode' )
 			->once()
 			->with( 'wp_rag_ai_chatbot_fullscreen', array( $bootstrap, 'render_fullscreen_shortcode' ) );
+		Functions\expect( 'add_action' )
+			->once()
+			->with( 'init', array( $bootstrap, 'register_block' ) );
 
 		$bootstrap->register();
 	}
