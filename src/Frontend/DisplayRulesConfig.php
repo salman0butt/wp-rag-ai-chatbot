@@ -11,9 +11,15 @@ namespace WpRagAiChatbot\Frontend;
 
 use InvalidArgumentException;
 
-/** Immutable normalized display-rules configuration value. */
+/**
+ * Immutable normalized display-rules configuration value.
+ */
 final readonly class DisplayRulesConfig {
-	/** @var list<string> */
+	/**
+	 * Allowed persisted top-level keys.
+	 *
+	 * @var list<string>
+	 */
 	private const ALLOWED_KEYS = array(
 		'enabled',
 		'visibility',
@@ -22,7 +28,11 @@ final readonly class DisplayRulesConfig {
 		'localization',
 	);
 
-	/** @var list<string> */
+	/**
+	 * Allowed visibility keys.
+	 *
+	 * @var list<string>
+	 */
 	private const VISIBILITY_KEYS = array(
 		'url_include',
 		'url_exclude',
@@ -34,7 +44,11 @@ final readonly class DisplayRulesConfig {
 		'schedule',
 	);
 
-	/** @var list<string> */
+	/**
+	 * Allowed proactive keys.
+	 *
+	 * @var list<string>
+	 */
 	private const PROACTIVE_KEYS = array(
 		'enabled',
 		'first_visit_only',
@@ -45,7 +59,11 @@ final readonly class DisplayRulesConfig {
 		'click_selector',
 	);
 
-	/** @var list<string> */
+	/**
+	 * Allowed localization keys.
+	 *
+	 * @var list<string>
+	 */
 	private const LOCALIZATION_KEYS = array( 'locale', 'direction' );
 
 	/**
@@ -56,7 +74,9 @@ final readonly class DisplayRulesConfig {
 	private function __construct( private array $data ) {
 	}
 
-	/** Return deterministic M14-compatible defaults. */
+	/**
+	 * Return deterministic M14-compatible defaults.
+	 */
 	public static function defaults(): self {
 		return new self( self::default_data() );
 	}
@@ -78,8 +98,12 @@ final readonly class DisplayRulesConfig {
 		if ( array_key_exists( 'visibility', $input ) ) {
 			$visibility = self::normalize_section( $input['visibility'], 'visibility' );
 			self::assert_known_keys( $visibility, self::VISIBILITY_KEYS, 'visibility' );
+
 			if ( array_key_exists( 'post_types', $visibility ) ) {
-				$data['visibility']['post_types'] = self::normalize_slug_list( $visibility['post_types'], 'post_types' );
+				$data['visibility']['post_types'] = self::normalize_slug_list(
+					$visibility['post_types'],
+					'post_types'
+				);
 			}
 			if ( array_key_exists( 'audience', $visibility ) ) {
 				$data['visibility']['audience'] = self::normalize_choice(
@@ -89,7 +113,10 @@ final readonly class DisplayRulesConfig {
 				);
 			}
 			if ( array_key_exists( 'roles', $visibility ) ) {
-				$data['visibility']['roles'] = self::normalize_slug_list( $visibility['roles'], 'roles' );
+				$data['visibility']['roles'] = self::normalize_slug_list(
+					$visibility['roles'],
+					'roles'
+				);
 			}
 			if ( array_key_exists( 'woo_areas', $visibility ) ) {
 				$data['visibility']['woo_areas'] = self::normalize_choice_list(
@@ -110,25 +137,42 @@ final readonly class DisplayRulesConfig {
 		if ( array_key_exists( 'proactive', $input ) ) {
 			$proactive = self::normalize_section( $input['proactive'], 'proactive' );
 			self::assert_known_keys( $proactive, self::PROACTIVE_KEYS, 'proactive' );
+
 			foreach ( array( 'enabled', 'first_visit_only', 'exit_intent' ) as $key ) {
 				if ( array_key_exists( $key, $proactive ) ) {
 					$data['proactive'][ $key ] = self::normalize_bool( $proactive[ $key ], $key );
 				}
 			}
 			if ( array_key_exists( 'delay_ms', $proactive ) ) {
-				$data['proactive']['delay_ms'] = self::normalize_nullable_int( $proactive['delay_ms'], 0, 600000, 'delay_ms' );
+				$data['proactive']['delay_ms'] = self::normalize_nullable_int(
+					$proactive['delay_ms'],
+					0,
+					600000,
+					'delay_ms'
+				);
 			}
 			if ( array_key_exists( 'scroll_percent', $proactive ) ) {
-				$data['proactive']['scroll_percent'] = self::normalize_nullable_int( $proactive['scroll_percent'], 1, 100, 'scroll_percent' );
+				$data['proactive']['scroll_percent'] = self::normalize_nullable_int(
+					$proactive['scroll_percent'],
+					1,
+					100,
+					'scroll_percent'
+				);
 			}
 			if ( array_key_exists( 'inactivity_ms', $proactive ) ) {
-				$data['proactive']['inactivity_ms'] = self::normalize_nullable_int( $proactive['inactivity_ms'], 0, 600000, 'inactivity_ms' );
+				$data['proactive']['inactivity_ms'] = self::normalize_nullable_int(
+					$proactive['inactivity_ms'],
+					0,
+					600000,
+					'inactivity_ms'
+				);
 			}
 		}
 
 		if ( array_key_exists( 'localization', $input ) ) {
 			$localization = self::normalize_section( $input['localization'], 'localization' );
 			self::assert_known_keys( $localization, self::LOCALIZATION_KEYS, 'localization' );
+
 			if ( array_key_exists( 'locale', $localization ) ) {
 				$data['localization']['locale'] = self::normalize_locale( $localization['locale'] );
 			}
@@ -194,8 +238,11 @@ final readonly class DisplayRulesConfig {
 	/**
 	 * Reject unknown object keys.
 	 *
-	 * @param array<string,mixed> $input Candidate object.
-	 * @param list<string>        $allowed Allowed keys.
+	 * @param array<string,mixed> $input   Candidate object.
+	 * @param array               $allowed Explicit allowed keys.
+	 * @param string              $label   Object label for validation errors.
+	 * @phpstan-param list<string> $allowed
+	 * @throws InvalidArgumentException When an unknown key is supplied.
 	 */
 	private static function assert_known_keys( array $input, array $allowed, string $label ): void {
 		if ( array() !== array_diff( array_keys( $input ), $allowed ) ) {
@@ -203,16 +250,29 @@ final readonly class DisplayRulesConfig {
 		}
 	}
 
-	/** @return array<string,mixed> */
+	/**
+	 * Normalize one nested configuration object.
+	 *
+	 * @param mixed  $value Candidate nested object.
+	 * @param string $label Object label for validation errors.
+	 * @return array<string,mixed>
+	 * @throws InvalidArgumentException When the value is not an array.
+	 */
 	private static function normalize_section( mixed $value, string $label ): array {
 		if ( ! is_array( $value ) ) {
 			throw new InvalidArgumentException( $label . ' must be an object.' );
 		}
 
-		/** @var array<string,mixed> $value */
 		return $value;
 	}
 
+	/**
+	 * Normalize a strict boolean.
+	 *
+	 * @param mixed  $value Candidate value.
+	 * @param string $label Field label for validation errors.
+	 * @throws InvalidArgumentException When the value is not boolean.
+	 */
 	private static function normalize_bool( mixed $value, string $label ): bool {
 		if ( ! is_bool( $value ) ) {
 			throw new InvalidArgumentException( $label . ' must be boolean.' );
@@ -221,7 +281,15 @@ final readonly class DisplayRulesConfig {
 		return $value;
 	}
 
-	/** @param list<string> $allowed */
+	/**
+	 * Normalize one enum-like string value.
+	 *
+	 * @param mixed  $value   Candidate value.
+	 * @param array  $allowed Explicit allowed values.
+	 * @param string $label   Field label for validation errors.
+	 * @phpstan-param list<string> $allowed
+	 * @throws InvalidArgumentException When the value is not supported.
+	 */
 	private static function normalize_choice( mixed $value, array $allowed, string $label ): string {
 		if ( ! is_string( $value ) ) {
 			throw new InvalidArgumentException( $label . ' must be a supported value.' );
@@ -235,7 +303,14 @@ final readonly class DisplayRulesConfig {
 		return $normalized;
 	}
 
-	/** @return list<string> */
+	/**
+	 * Normalize one bounded list of slug-like values.
+	 *
+	 * @param mixed  $value Candidate list.
+	 * @param string $label Field label for validation errors.
+	 * @return list<string>
+	 * @throws InvalidArgumentException When a list value is invalid or unbounded.
+	 */
 	private static function normalize_slug_list( mixed $value, string $label ): array {
 		if ( ! is_array( $value ) ) {
 			throw new InvalidArgumentException( $label . ' must be a list.' );
@@ -265,8 +340,14 @@ final readonly class DisplayRulesConfig {
 	}
 
 	/**
-	 * @param list<string> $allowed Allowed values.
+	 * Normalize a list of finite enum values.
+	 *
+	 * @param mixed  $value   Candidate list.
+	 * @param array  $allowed Explicit allowed values.
+	 * @param string $label   Field label for validation errors.
+	 * @phpstan-param list<string> $allowed
 	 * @return list<string>
+	 * @throws InvalidArgumentException When a list value is invalid.
 	 */
 	private static function normalize_choice_list( mixed $value, array $allowed, string $label ): array {
 		if ( ! is_array( $value ) ) {
@@ -284,7 +365,21 @@ final readonly class DisplayRulesConfig {
 		return $normalized;
 	}
 
-	private static function normalize_nullable_int( mixed $value, int $minimum, int $maximum, string $label ): ?int {
+	/**
+	 * Normalize one nullable bounded integer.
+	 *
+	 * @param mixed  $value   Candidate value.
+	 * @param int    $minimum Inclusive minimum.
+	 * @param int    $maximum Inclusive maximum.
+	 * @param string $label   Field label for validation errors.
+	 * @throws InvalidArgumentException When the value is outside the supported range.
+	 */
+	private static function normalize_nullable_int(
+		mixed $value,
+		int $minimum,
+		int $maximum,
+		string $label
+	): ?int {
 		if ( null === $value ) {
 			return null;
 		}
@@ -296,6 +391,12 @@ final readonly class DisplayRulesConfig {
 		return $value;
 	}
 
+	/**
+	 * Normalize one browser-safe locale identifier.
+	 *
+	 * @param mixed $value Candidate locale.
+	 * @throws InvalidArgumentException When the locale is malformed.
+	 */
 	private static function normalize_locale( mixed $value ): string {
 		if ( ! is_string( $value ) ) {
 			throw new InvalidArgumentException( 'locale must be a supported value.' );
