@@ -58,14 +58,17 @@ Task 6B provides the non-streaming public conversation transport over the existi
 
 Task 6C adds safe copy/citation/link presentation and finite transcript rendering. Fallback review found and resolved two Important issues: unbounded transcript DOM and rejection of the server-authorized nullable `conversation_id`. History RED `947fa6beed97bb363cbb3163d88e65b37f5ca5e9` / CI `34728917027` became GREEN `f985e4f9cd117c7e931d3a31c85b58e88016d874` / CI `34729000652`; nullable-contract RED `de6dc1860fe0225699d50441e39622ae801037bd` / CI `34729171223` became GREEN `ddd4de2e1cd1af2ada84a0f703226377c958e030` / CI `34729280110`. Final Task 6 review state is **0 Critical / 0 Important unresolved**. Evidence: `docs/progress/M14-TASK6C-WIDGET-PRESENTATION.md`.
 
+### Task 7 — streaming/simulated typing integration — COMPLETE
+The public widget now presents one completed Task 4 response progressively in one assistant container with a bounded 24 ms / 48-tick schedule, UTF-16-safe reveal boundaries, typing status, delayed copy/source controls, and stale-timer cancellation when the panel closes. The implementation deliberately does not invent public SSE/provider-specific streaming because M11's normalized streaming contract is application-layer authority and no reviewed public incremental transport seam currently projects it to the browser. Primary and cancellation/Unicode tests reached genuine behavioral RED at `0a018e848d6087291761aedac2e46037d86bc260` / CI `34729760794` and `9fb1b2c8e15f86630b85eff4abc14ca92a0ff644` / CI `34732327263`. Implementation/checkpoint heads `78cee1885406502e67810c1c2cacc9139e350e1b` / CI `34732421653` and `10a36bc469d50a117474600c03feff5c12b7f0fc` / CI `34734096420` are preserved as **NOT GREEN / NOT RED** because Prettier stopped before Jest. Final implementation GREEN is `82262b96c6088917d67e44922d007669c4e88065` / CI `34734183151`, all permanent jobs successful. Scoped fallback correctness/security/performance/accessibility/architecture review has **0 Critical / 0 Important unresolved**; independent reviewer transport remained unavailable. Evidence: `docs/progress/M14-TASK7-STREAMING-SIMULATED-TYPING.md`.
+
 ## Current work
 
-Continue M14 on existing PR #19 at **Task 7 — streaming/simulated typing integration**. Reuse the existing production streaming authority where capability permits it; otherwise use a bounded simulated-typing presentation over the established non-streaming result. Preserve the Task 6 renderer and Task 4 server-owned runtime/provider/retrieval authority rather than creating parallel implementations.
+Continue M14 on existing PR #19 at **Task 8 — administrator visual customizer/live preview**. Reuse the shared normalized `AppearanceConfig`, protected Task 3 appearance REST authority, and public runtime appearance projection. The preview must not create a second appearance schema or become a provider/model/credential/runtime override channel.
 
 ## Durable recovery
 
 - `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md` — M14 auto-approved design and task order.
-- `docs/superpowers/plans/2026-09-13-m14-task6-launcher-panel-ui.md` — authoritative Task 6A-6C execution plan and closeout requirements.
+- `docs/superpowers/plans/2026-09-13-m14-task7-streaming-simulated-typing.md` — Task 7 progressive-presentation plan and public-streaming seam gate.
 - `docs/progress/M14-TASK1-APPEARANCE-CONFIG.md` — Task 1 evidence.
 - `docs/progress/M14-TASK2-WIDGET-CONFIG.md` — Task 2 persistence/projection evidence and scoped review.
 - `docs/progress/M14-TASK3-ADMIN-APPEARANCE.md` — Task 3 protected REST evidence and review.
@@ -74,5 +77,6 @@ Continue M14 on existing PR #19 at **Task 7 — streaming/simulated typing integ
 - `docs/progress/M14-TASK6A-WIDGET-SHELL.md` — Task 6A shell TDD, CI, accessibility remediation, and review evidence.
 - `docs/progress/M14-TASK6B-NONSTREAMING-CONVERSATION.md` — Task 6B conversation/error/retry TDD and integration review evidence.
 - `docs/progress/M14-TASK6C-WIDGET-PRESENTATION.md` — Task 6C safe presentation/history/null-contract evidence and Task 6 closeout review.
+- `docs/progress/M14-TASK7-STREAMING-SIMULATED-TYPING.md` — Task 7 RED/GREEN, invalid checkpoints, streaming seam decision, and fallback review.
 - PR #19 — active M14 implementation branch and execution source of truth.
 - `docs/milestones/M14-frontend-chatbot-customizer.md` — current M14 milestone ledger.
