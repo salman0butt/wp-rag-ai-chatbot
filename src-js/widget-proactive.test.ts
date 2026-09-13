@@ -24,6 +24,43 @@ const proactiveConfig = ( delayMs = 1000 ): WidgetBootstrapConfig =>
 		},
 	} ) as unknown as WidgetBootstrapConfig;
 
+const scrollConfig = ( scrollPercent = 50 ): WidgetBootstrapConfig =>
+	( {
+		botId: BOT_ID,
+		restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+		config: {
+			bot_id: BOT_ID,
+			name: 'Support bot',
+			appearance: {},
+			display_rules: {
+				enabled: true,
+				proactive: {
+					enabled: true,
+					scroll_percent: scrollPercent,
+				},
+			},
+		},
+	} ) as unknown as WidgetBootstrapConfig;
+
+const setScrollState = (
+	scrollY: number,
+	scrollHeight = 1500,
+	clientHeight = 500
+): void => {
+	Object.defineProperty( window, 'scrollY', {
+		configurable: true,
+		value: scrollY,
+	} );
+	Object.defineProperty( document.documentElement, 'scrollHeight', {
+		configurable: true,
+		value: scrollHeight,
+	} );
+	Object.defineProperty( document.documentElement, 'clientHeight', {
+		configurable: true,
+		value: clientHeight,
+	} );
+};
+
 describe( 'M15 proactive widget delay', () => {
 	let originalFetch: typeof globalThis.fetch;
 
@@ -119,5 +156,74 @@ describe( 'M15 proactive widget delay', () => {
 		jest.advanceTimersByTime( 500 );
 
 		expect( onOpen ).not.toHaveBeenCalled();
+	} );
+} );
+
+describe( 'M15 proactive widget scroll trigger', () => {
+	let originalFetch: typeof globalThis.fetch;
+
+	beforeEach( () => {
+		jest.useFakeTimers();
+		originalFetch = globalThis.fetch;
+		globalThis.fetch = jest.fn() as unknown as typeof globalThis.fetch;
+		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
+		setScrollState( 0 );
+	} );
+
+	afterEach( () => {
+		jest.useRealTimers();
+		globalThis.fetch = originalFetch;
+		document.body.innerHTML = '';
+	} );
+
+	it( 'opens once when the bounded scroll percentage crosses the configured threshold', () => {
+		mountWidgets( document, [ scrollConfig( 50 ) ] );
+
+		const panel = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-panel]'
+		);
+		const close = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-close]'
+		);
+
+		setScrollState( 499 );
+		window.dispatchEvent( new Event( 'scroll' ) );
+		jest.runOnlyPendingTimers();
+		expect( panel?.hidden ).toBe( true );
+
+		setScrollState( 500 );
+		window.dispatchEvent( new Event( 'scroll' ) );
+		jest.runOnlyPendingTimers();
+		expect( panel?.hidden ).toBe( false );
+		expect( globalThis.fetch ).not.toHaveBeenCalled();
+
+		close?.click();
+		setScrollState( 1000 );
+		window.dispatchEvent( new Event( 'scroll' ) );
+		jest.runOnlyPendingTimers();
+		expect( panel?.hidden ).toBe( true );
+	} );
+
+	it( 'cancels pending scroll-trigger work after a manual open', () => {
+		mountWidgets( document, [ scrollConfig( 25 ) ] );
+
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const panel = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-panel]'
+		);
+		const close = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-close]'
+		);
+
+		launcher?.click();
+		close?.click();
+		setScrollState( 1000 );
+		window.dispatchEvent( new Event( 'scroll' ) );
+		jest.runOnlyPendingTimers();
+
+		expect( panel?.hidden ).toBe( true );
+		expect( globalThis.fetch ).not.toHaveBeenCalled();
 	} );
 } );
