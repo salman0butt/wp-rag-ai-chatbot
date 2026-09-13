@@ -15,7 +15,7 @@ Verified behavior:
 - send is disabled while pending and a polite live status announces loading;
 - user and assistant messages render with `textContent`, never raw HTML;
 - successful responses preserve only the server-issued conversation identifier for later continuity;
-- public errors map to bounded local copy and never display arbitrary server/provider messages;
+- public errors consume the real Task 4 `{ error: { code } }` response envelope, map only stable codes to bounded local copy, and never display arbitrary server/provider messages;
 - retry replays the last bounded request without duplicating the visible user message;
 - malformed/network failures fail closed through generic local copy;
 - the Task 4 server endpoint remains the sole runtime/retrieval/provider authority.
@@ -50,11 +50,20 @@ Verified behavior:
 - `45d10f754859a101cc1fe353af6b247b8d5783ef` / push CI `34726611942` — **NOT RED**. Prettier stopped JavaScript verification before typecheck/Jest; PHP/package/WordPress smoke remained green.
 - `25e96159bc6161206bd9c6d27ebdafd9c86e57d5` / CI `34726821848` — **RED**. Lint/typecheck passed, 39 existing suites passed, and only the new safe-error test failed because no bounded error/retry UI existed.
 - `cba5db8eac30ea2df4691ef97d2e038f4aee41f4` / CI `34726908206` — **NOT GREEN**. Error/retry implementation was present, but two Prettier findings stopped JavaScript verification before Jest.
-- `730e7330e627c93af814e99ced3287c8c0394cbf` / CI `34726994193` — **GREEN** across `php-quality`, `js-quality`, `package`, and `wordpress-smoke`.
+- `730e7330e627c93af814e99ced3287c8c0394cbf` / CI `34726994193` — **GREEN** for the initial local error mapper/retry behavior.
+
+### Review-discovered real REST error-envelope mismatch
+
+A deeper integration review against `PublicChatRestResource` found an **Important** mismatch after the initial Task 6B closeout: the server emits public errors as `{ error: { code } }`, while the browser parser expected a top-level `{ code }`. That would have degraded known public errors to generic copy in production.
+
+- `9c9d012d7afcaf8b9443d35755a1e40d504fb921` / CI `34727235080` — **RED**. Lint/typecheck and the existing JavaScript suite passed; the new real-envelope assertion failed because `rate_limited` nested under `error.code` was not recognized.
+- `77b15a55b4ac6383eb0f7dd2faefb8a69d67ad54` / CI `34727350832` — **GREEN** across all permanent jobs. `readError()` now accepts only the real nested `error.code` field and continues to ignore server `message`/provider detail.
 
 ## Review
 
-Independent reviewer transport was unavailable in this connector-only scheduled run. The repository-approved fallback review covered correctness, security, performance, accessibility, and architecture/duplication.
+Independent reviewer transport was unavailable in this connector-only scheduled run. The repository-approved fallback review covered correctness, security, performance, accessibility, architecture/duplication, and integration with the actual Task 4 DTOs.
+
+The review discovered one **Important** integration finding after the initial green error/retry implementation: browser error parsing did not match the server's nested `{ error: { code } }` envelope. The strict RED/GREEN repair above resolved it.
 
 Final Task 6B review state: **0 Critical / 0 Important unresolved**.
 
@@ -63,15 +72,15 @@ Key review conclusions:
 - request construction is closed and derived only from trusted bootstrap identity plus a server-issued conversation identifier;
 - retry cannot inject arbitrary request fields and remains under the same one-in-flight guard;
 - response/error strings use DOM `textContent`; raw server `message`, stack, provider payload, and unknown fields are ignored;
-- error copy is local and bounded (`rate_limited`, `chat_unavailable`, generic fallback);
+- the browser parses the actual Task 4 nested public error envelope and local error copy is bounded (`rate_limited`, `chat_unavailable`, generic fallback);
 - loading/error status uses a polite live region and controls remain native keyboard-operable;
 - no second production RAG/chat/provider composition was introduced.
 
 ## Final Verification
 
-Final Task 6B implementation head: `730e7330e627c93af814e99ced3287c8c0394cbf`.
+Final Task 6B implementation head: `77b15a55b4ac6383eb0f7dd2faefb8a69d67ad54`.
 
-Exact-head CI `34726994193`: **GREEN** for:
+Exact-head CI `34727350832`: **GREEN** for:
 
 - `php-quality`;
 - `js-quality`;
