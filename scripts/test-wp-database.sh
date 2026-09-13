@@ -16,7 +16,7 @@ $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-chunk-search.
 # Simulate a site that completed only V001.
 $WP eval '$p=$GLOBALS["wpdb"]->prefix; $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_message_citations"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_messages"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_conversations"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_bots"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_chunk_search"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_jobs"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_vectors"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_vector_collections"); $GLOBALS["wpdb"]->query("DROP TABLE IF EXISTS {$p}rag_ai_documents"); update_option("wp_rag_ai_db_version", 1, false);'
 # A new WP-CLI process loads active plugins and must perform the normal plugins_loaded upgrade through the current schema.
-$WP eval 'if ((int) get_option("wp_rag_ai_db_version", 0) !== 10) { fwrite(STDERR, "Automatic V1 to V10 upgrade failed\n"); exit(1); }'
+$WP eval 'if ((int) get_option("wp_rag_ai_db_version", 0) !== \WpRagAiChatbot\Database\DatabaseSchema::VERSION) { fwrite(STDERR, "Automatic V1 to current schema upgrade failed\n"); exit(1); }'
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-database.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-bots.php
 $WP eval-file wp-content/plugins/wp-rag-ai-chatbot/scripts/test-wp-model-readiness.php

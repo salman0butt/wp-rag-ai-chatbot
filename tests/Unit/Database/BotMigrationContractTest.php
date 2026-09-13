@@ -18,10 +18,10 @@ use WpRagAiChatbot\Database\TableNames;
  * Defines the schema identity and table-name contract for persisted bots.
  */
 final class BotMigrationContractTest extends TestCase {
-	/** Task 2 introduces one new schema version and table. */
-	public function test_bot_table_is_part_of_schema_version_ten(): void {
+	/** Task 2 introduced schema version ten and the persistent bots table. */
+	public function test_bot_table_was_introduced_in_schema_version_ten(): void {
 		self::assertTrue( class_exists( V010CreateBotsTable::class ), 'M12 Task 2 requires V010CreateBotsTable.' );
-		self::assertSame( 10, DatabaseSchema::VERSION );
+		self::assertGreaterThanOrEqual( 10, DatabaseSchema::VERSION );
 
 		$tables = new TableNames( 'wp_' );
 		self::assertSame( 'wp_rag_ai_bots', $tables->bots() );

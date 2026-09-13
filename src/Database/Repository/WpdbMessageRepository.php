@@ -15,15 +15,17 @@ use WpRagAiChatbot\Conversations\MessageRepository;
 use WpRagAiChatbot\Database\Connection;
 use WpRagAiChatbot\Database\DatabaseException;
 use WpRagAiChatbot\Database\TableNames;
+use WpRagAiChatbot\Memory\ConversationHistory;
 
 // phpcs:disable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid -- Approved M11 repository contract uses explicit owner-scoped snake_case methods.
 /**
- * Persists messages through one owner-scoped atomic insert-select.
+ * Persists messages and supplies owner-scoped bounded conversation history.
  */
-final class WpdbMessageRepository implements MessageRepository {
+final class WpdbMessageRepository implements MessageRepository, ConversationHistory {
 	private const MAX_IDENTIFIER_BYTES = 191;
 	private const MAX_ROLE_BYTES       = 32;
 	private const MAX_CONTENT_BYTES    = 65536;
+	private const MAX_HISTORY_MESSAGES = 100;
 
 	/**
 	 * Create the repository.
@@ -84,6 +86,61 @@ final class WpdbMessageRepository implements MessageRepository {
 		if ( 1 !== $result ) {
 			throw new DatabaseException( 'Conversation is unavailable for message append.' );
 		}
+	}
+
+	/**
+	 * Return recent owner-scoped messages in chronological order.
+	 *
+	 * @param string $conversation_id Stable conversation identifier.
+	 * @param string $owner_scope Trusted owner scope.
+	 * @param int    $limit Requested message limit.
+	 * @return list<ConversationMessage>
+	 */
+	public function recent_for_owner( string $conversation_id, string $owner_scope, int $limit ): array {
+		$conversation_id = $this->boundedConversationId( $conversation_id );
+		$owner_scope     = $this->boundedOwnerScope( $owner_scope );
+		$limit           = min( max( 0, $limit ), self::MAX_HISTORY_MESSAGES );
+
+		if ( 0 === $limit ) {
+			return array();
+		}
+
+		$sql  = $this->connection->prepare(
+			'SELECT role, content FROM %i WHERE conversation_id = %s AND owner_scope = %s ORDER BY id DESC LIMIT %d',
+			$this->tables->messages(),
+			$conversation_id,
+			$owner_scope,
+			$limit
+		);
+		$rows = array_reverse( $this->connection->get_results( $sql ) );
+
+		$messages = array();
+		foreach ( $rows as $row ) {
+			$role    = isset( $row['role'] ) && is_string( $row['role'] ) ? trim( $row['role'] ) : '';
+			$content = isset( $row['content'] ) && is_string( $row['content'] ) ? $row['content'] : '';
+
+			if ( '' === $role || '' === $content ) {
+				continue;
+			}
+
+			$messages[] = new ConversationMessage( $role, $content );
+		}
+
+		return $messages;
+	}
+
+	/**
+	 * Return no summary until a dedicated persisted summary authority exists.
+	 *
+	 * @param string $conversation_id Stable conversation identifier.
+	 * @param string $owner_scope Trusted owner scope.
+	 * @return array{version:int,text:string}|null
+	 */
+	public function summary_for_owner( string $conversation_id, string $owner_scope ): ?array {
+		$this->boundedConversationId( $conversation_id );
+		$this->boundedOwnerScope( $owner_scope );
+
+		return null;
 	}
 
 	/**

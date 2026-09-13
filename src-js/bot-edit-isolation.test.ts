@@ -54,6 +54,16 @@ const tick = async (): Promise< void > => {
 	await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 };
 
+const appearance = {
+	primary_color: '#2563eb',
+	color_mode: 'light',
+	position: 'bottom-right',
+	launcher_style: 'icon',
+	panel_size: 'medium',
+	radius_px: 16,
+	font_family: 'system',
+};
+
 describe( 'bot editor record isolation', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
@@ -123,6 +133,16 @@ describe( 'bot editor record isolation', () => {
 					page: 1,
 					per_page: 20,
 				} ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
+				json: async () => ( { appearance } ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
+				json: async () => ( { appearance } ),
 			} );
 		Object.defineProperty( window, 'fetch', {
 			configurable: true,

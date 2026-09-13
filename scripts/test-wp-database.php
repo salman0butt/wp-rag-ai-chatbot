@@ -9,6 +9,7 @@
  */
 
 use WpRagAiChatbot\Database\DatabaseBootstrap;
+use WpRagAiChatbot\Database\DatabaseSchema;
 use WpRagAiChatbot\Database\MigrationStatus;
 use WpRagAiChatbot\Database\Repository\WpdbDocumentRepository;
 use WpRagAiChatbot\Database\Repository\WpdbKnowledgeSourceRepository;
@@ -35,8 +36,8 @@ $messages           = $prefix . 'rag_ai_messages';
 $message_citations  = $prefix . 'rag_ai_message_citations';
 $bots               = $prefix . 'rag_ai_bots';
 
-if ( 10 !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
-	$fail( 'Schema version is not 10.' );
+if ( DatabaseSchema::VERSION !== (int) get_option( 'wp_rag_ai_db_version', 0 ) ) {
+	$fail( 'Schema version is not current.' );
 }
 foreach ( array( $sources, $documents, $vector_collections, $vectors, $jobs, $chunk_search, $conversations, $messages, $message_citations, $bots ) as $table ) {
 	$found = $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) );

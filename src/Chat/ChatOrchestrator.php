@@ -28,7 +28,7 @@ use WpRagAiChatbot\Retrieval\RetrievalException;
 /**
  * Coordinates the bounded non-streaming M11 request pipeline around existing M03/M10 contracts.
  */
-final class ChatOrchestrator {
+final class ChatOrchestrator implements ChatResponder {
 	/**
 	 * Create one non-streaming orchestrator.
 	 *
