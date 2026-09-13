@@ -19,7 +19,12 @@ jobs:
           tools: composer:v2
       - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
-      - run: composer verify:php
+      - name: Run PHP coding standards
+        run: composer lint:php
+      - name: Run PHP static analysis
+        run: composer analyse
+      - name: Run PHPUnit
+        run: composer test
       - run: composer audit
 
   js-quality:
@@ -111,6 +116,7 @@ jobs:
       - run: npm run test:wp:file-ingestion
       - run: npm run test:wp:woocommerce-knowledge
       - run: npm run test:wp:playground-rest
+      - run: npm run test:wp:widget-surfaces
       - if: always()
         run: npm run env:stop
 

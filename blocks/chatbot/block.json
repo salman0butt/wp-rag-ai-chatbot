@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "wp-rag-ai-chatbot/chatbot",
+  "version": "0.1.0-dev",
+  "title": "RAG AI Chatbot",
+  "category": "widgets",
+  "icon": "format-chat",
+  "description": "Embed a configured RAG AI chatbot.",
+  "textdomain": "wp-rag-ai-chatbot",
+  "attributes": {
+    "bot": {
+      "type": "string",
+      "default": ""
+    }
+  },
+  "supports": {
+    "html": false
+  },
+  "editorScript": [
+    "wp-blocks",
+    "wp-element",
+    "file:../../build/chatbot-block.js"
+  ]
+}

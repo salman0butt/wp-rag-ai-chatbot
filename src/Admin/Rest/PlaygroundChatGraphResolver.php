@@ -10,15 +10,10 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Admin\Rest;
 
 use WpRagAiChatbot\Chat\ChatAccessContext;
-use WpRagAiChatbot\Chat\ChatOrchestrator;
-use WpRagAiChatbot\Chat\ChatRequestPolicy;
-use WpRagAiChatbot\Citations\CitationValidator;
+use WpRagAiChatbot\Chat\ProductionChatResponderFactory;
 use WpRagAiChatbot\Debug\DebugTraceProjector;
-use WpRagAiChatbot\Memory\MemoryAssembler;
 use WpRagAiChatbot\Providers\GenerationProvider;
 use WpRagAiChatbot\RAG\GroundingMode;
-use WpRagAiChatbot\RAG\GroundingPolicy;
-use WpRagAiChatbot\RAG\PromptBuilder;
 use WpRagAiChatbot\Retrieval\HybridRetriever;
 
 /**
@@ -26,21 +21,13 @@ use WpRagAiChatbot\Retrieval\HybridRetriever;
  */
 final class PlaygroundChatGraphResolver {
 	/**
-	 * Create the composition boundary from existing production collaborators.
+	 * Create the composition boundary from the shared production graph factory.
 	 *
-	 * @param ChatRequestPolicy   $request_policy Existing M11 request policy.
-	 * @param MemoryAssembler     $memory Existing M11 memory assembler.
-	 * @param GroundingPolicy     $grounding Existing M11 grounding policy.
-	 * @param PromptBuilder       $prompt Existing M11 prompt builder.
-	 * @param CitationValidator   $citations Existing M11 citation validator.
-	 * @param DebugTraceProjector $projector Existing M13 safe debug projector.
+	 * @param ProductionChatResponderFactory $responders Shared M11 responder composition authority.
+	 * @param DebugTraceProjector            $projector Existing M13 safe debug projector.
 	 */
 	public function __construct(
-		private readonly ChatRequestPolicy $request_policy,
-		private readonly MemoryAssembler $memory,
-		private readonly GroundingPolicy $grounding,
-		private readonly PromptBuilder $prompt,
-		private readonly CitationValidator $citations,
+		private readonly ProductionChatResponderFactory $responders,
 		private readonly DebugTraceProjector $projector
 	) {
 	}
@@ -61,21 +48,16 @@ final class PlaygroundChatGraphResolver {
 		PlaygroundRetrievalCapture $capture,
 		string $model_id
 	): ProductionPlaygroundExecutor {
-		$orchestrator = new ChatOrchestrator(
-			$this->request_policy,
-			$this->memory,
+		$responder = $this->responders->create(
 			$retriever,
-			$this->grounding,
-			$this->prompt,
 			$provider,
-			$this->citations,
 			null,
 			null,
 			$capture
 		);
 
 		return new ProductionPlaygroundExecutor(
-			$orchestrator,
+			$responder,
 			$access,
 			$capture,
 			$this->projector,

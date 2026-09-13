@@ -10,6 +10,9 @@ make_base_package() {
   mkdir -p \
     "$target/wp-rag-ai-chatbot/src/Core" \
     "$target/wp-rag-ai-chatbot/src/Database" \
+    "$target/wp-rag-ai-chatbot/build" \
+    "$target/wp-rag-ai-chatbot/assets" \
+    "$target/wp-rag-ai-chatbot/blocks/chatbot" \
     "$target/wp-rag-ai-chatbot/vendor/smalot/pdfparser/src/Smalot/PdfParser" \
     "$target/wp-rag-ai-chatbot/vendor/phpoffice/phpword/src/PhpWord"
   touch \
@@ -17,6 +20,10 @@ make_base_package() {
     "$target/wp-rag-ai-chatbot/uninstall.php" \
     "$target/wp-rag-ai-chatbot/src/Core/Bootstrap.php" \
     "$target/wp-rag-ai-chatbot/src/Database/DatabaseUninstaller.php" \
+    "$target/wp-rag-ai-chatbot/build/widget.js" \
+    "$target/wp-rag-ai-chatbot/build/chatbot-block.js" \
+    "$target/wp-rag-ai-chatbot/assets/widget.css" \
+    "$target/wp-rag-ai-chatbot/blocks/chatbot/block.json" \
     "$target/wp-rag-ai-chatbot/vendor/autoload.php" \
     "$target/wp-rag-ai-chatbot/vendor/smalot/pdfparser/src/Smalot/PdfParser/Parser.php" \
     "$target/wp-rag-ai-chatbot/vendor/phpoffice/phpword/src/PhpWord/IOFactory.php"
@@ -49,6 +56,40 @@ rm "$missing_parser/wp-rag-ai-chatbot/vendor/smalot/pdfparser/src/Smalot/PdfPars
   fi
 )
 
+missing_widget_bundle="$workdir/missing-widget-bundle"
+mkdir -p "$missing_widget_bundle"
+make_base_package "$missing_widget_bundle"
+mkdir -p "$missing_widget_bundle/wp-rag-ai-chatbot/src"
+cp -R "$repo_root/src/Providers" "$missing_widget_bundle/wp-rag-ai-chatbot/src/Providers"
+rm \
+  "$missing_widget_bundle/wp-rag-ai-chatbot/build/widget.js" \
+  "$missing_widget_bundle/wp-rag-ai-chatbot/assets/widget.css"
+(
+  cd "$missing_widget_bundle"
+  zip -qr wp-rag-ai-chatbot.zip wp-rag-ai-chatbot
+  if bash "$repo_root/scripts/assert-package.sh" >/dev/null 2>&1; then
+    echo "Package assertion accepted an archive missing the public widget bundle." >&2
+    exit 1
+  fi
+)
+
+missing_chatbot_block="$workdir/missing-chatbot-block"
+mkdir -p "$missing_chatbot_block"
+make_base_package "$missing_chatbot_block"
+mkdir -p "$missing_chatbot_block/wp-rag-ai-chatbot/src"
+cp -R "$repo_root/src/Providers" "$missing_chatbot_block/wp-rag-ai-chatbot/src/Providers"
+rm \
+  "$missing_chatbot_block/wp-rag-ai-chatbot/build/chatbot-block.js" \
+  "$missing_chatbot_block/wp-rag-ai-chatbot/blocks/chatbot/block.json"
+(
+  cd "$missing_chatbot_block"
+  zip -qr wp-rag-ai-chatbot.zip wp-rag-ai-chatbot
+  if bash "$repo_root/scripts/assert-package.sh" >/dev/null 2>&1; then
+    echo "Package assertion accepted an archive missing the Gutenberg chatbot block runtime." >&2
+    exit 1
+  fi
+)
+
 script_leak="$workdir/script-leak"
 mkdir -p "$script_leak"
 make_base_package "$script_leak"
@@ -65,4 +106,4 @@ touch "$script_leak/wp-rag-ai-chatbot/scripts/test-wp-providers.php"
   fi
 )
 
-echo "Package assertion rejects missing provider/parser runtime and development scripts."
+echo "Package assertion rejects missing provider/parser/widget/block runtime and development scripts."

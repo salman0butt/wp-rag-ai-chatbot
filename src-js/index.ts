@@ -4,10 +4,15 @@ import {
 	ProviderSettingsIssue,
 	ProviderSettingsScreen,
 } from './provider-settings';
+import { AppearanceCustomizer } from './appearance-customizer';
 import type { PlaygroundControllerState } from './playground-controller';
 import { PlaygroundPanel } from './playground-panel';
 import { createPlaygroundRuntime } from './playground-runtime';
 import type { PlaygroundRequestDraft } from './playground-screen';
+import {
+	normalizeWidgetAppearance,
+	type WidgetAppearance,
+} from './widget-appearance';
 
 export const pluginIdentity = Object.freeze( {
 	slug: 'wp-rag-ai-chatbot',
@@ -128,6 +133,11 @@ export interface AdminShellProps {
 	onboardingIssue?: OnboardingIssue;
 	botPage?: BotPage;
 	selectedBotId?: string;
+	botAppearance?: WidgetAppearance;
+	botAppearanceSaving?: boolean;
+	botAppearanceError?: string;
+	onChangeBotAppearance?: ( next: WidgetAppearance ) => void;
+	onSaveBotAppearance?: ( next: WidgetAppearance ) => void;
 	knowledgePage?: KnowledgeSourcePage;
 	selectedKnowledgeSourceId?: string;
 	selectedKnowledgeDocumentKey?: string;
@@ -1156,6 +1166,11 @@ export const AdminShell = ( {
 	onboardingIssue,
 	botPage,
 	selectedBotId,
+	botAppearance,
+	botAppearanceSaving = false,
+	botAppearanceError,
+	onChangeBotAppearance,
+	onSaveBotAppearance,
 	knowledgePage,
 	selectedKnowledgeSourceId,
 	selectedKnowledgeDocumentKey,
@@ -1262,7 +1277,16 @@ export const AdminShell = ( {
 				onCreate: onCreateBot,
 				onUpdate: onUpdateBot,
 				onDelete: onDeleteBot,
-			} )
+			} ),
+			botAppearance === undefined
+				? undefined
+				: AppearanceCustomizer( {
+						appearance: botAppearance,
+						saving: botAppearanceSaving,
+						error: botAppearanceError,
+						onChange: onChangeBotAppearance ?? ( () => undefined ),
+						onSave: onSaveBotAppearance ?? ( () => undefined ),
+				  } )
 		);
 	} else if ( screen === 'knowledge' && knowledgePage !== undefined ) {
 		screenContent = createElement(
@@ -1332,6 +1356,11 @@ const renderAdminShell = (
 	onboardingIssue?: OnboardingIssue,
 	botPage?: BotPage,
 	selectedBotId?: string,
+	botAppearance?: WidgetAppearance,
+	botAppearanceSaving?: boolean,
+	botAppearanceError?: string,
+	onChangeBotAppearance?: ( next: WidgetAppearance ) => void,
+	onSaveBotAppearance?: ( next: WidgetAppearance ) => void,
 	knowledgePage?: KnowledgeSourcePage,
 	selectedKnowledgeSourceId?: string,
 	selectedKnowledgeDocumentKey?: string,
@@ -1364,6 +1393,11 @@ const renderAdminShell = (
 			onboardingIssue,
 			botPage,
 			selectedBotId,
+			botAppearance,
+			botAppearanceSaving,
+			botAppearanceError,
+			onChangeBotAppearance,
+			onSaveBotAppearance,
 			knowledgePage,
 			selectedKnowledgeSourceId,
 			selectedKnowledgeDocumentKey,
@@ -1403,6 +1437,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
+	let currentBotAppearance: WidgetAppearance | undefined;
+	let currentBotAppearanceSaving = false;
+	let currentBotAppearanceError: string | undefined;
+	let loadedBotAppearanceId: string | undefined;
+	let botAppearanceGeneration = 0;
 	let currentKnowledgePage: KnowledgeSourcePage | undefined;
 	let currentKnowledgeDetail: KnowledgeSourceDetail | undefined;
 	let currentKnowledgeDocuments: KnowledgeDocumentPage | undefined;
@@ -1435,6 +1474,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	) => Promise< void > = async () => undefined;
 	let deleteBot: ( bot: BotListItem ) => Promise< void > = async () =>
 		undefined;
+	let changeBotAppearance: ( next: WidgetAppearance ) => void = () =>
+		undefined;
+	let saveBotAppearance: ( next: WidgetAppearance ) => void = () => undefined;
 	let replaceProviderCredential: (
 		credential: string
 	) => Promise< void > = async () => undefined;
@@ -1443,9 +1485,13 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		request: PlaygroundRequestDraft
 	) => Promise< void > = async () => undefined;
 	const currentHash = (): string => window.location.hash || hash;
+	const activeBotId = (): string | undefined =>
+		resolveSelectedBotId( currentHash() ) ?? currentBotPage?.items[ 0 ]?.id;
 	const renderState = ( state: AdminShellState ): void => {
 		currentState = state;
 		const providerId = resolveSelectedProviderId( currentHash() );
+		const selectedBotId = resolveSelectedBotId( currentHash() );
+		const currentActiveBotId = activeBotId();
 		const selectedKnowledgeSourceId =
 			resolveSelectedPersistedKnowledgeSourceId( currentHash() );
 		const selectedKnowledgeDocumentKey =
@@ -1457,7 +1503,16 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentOnboardingStep,
 			currentOnboardingIssue,
 			currentBotPage,
-			resolveSelectedBotId( currentHash() ),
+			selectedBotId,
+			currentActiveBotId === loadedBotAppearanceId
+				? currentBotAppearance
+				: undefined,
+			currentBotAppearanceSaving,
+			currentActiveBotId === loadedBotAppearanceId
+				? currentBotAppearanceError
+				: undefined,
+			changeBotAppearance,
+			saveBotAppearance,
 			currentKnowledgePage,
 			resolveSelectedKnowledgeSourceId( currentHash() ),
 			selectedKnowledgeDocumentKey,
@@ -1533,6 +1588,104 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		currentBotPage = await client.request< BotPage >(
 			`/admin/bots?page=${ page }&per_page=20`
 		);
+	};
+	const refreshBotAppearance = async (
+		botId: string
+	): Promise< boolean > => {
+		const requestGeneration = ++botAppearanceGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botAppearanceGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
+
+		currentBotAppearanceError = undefined;
+
+		try {
+			const response = await client.request< { appearance: unknown } >(
+				`/admin/bots/${ encodeURIComponent( botId ) }/appearance`
+			);
+
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+
+			currentBotAppearance = normalizeWidgetAppearance(
+				response.appearance
+			);
+			loadedBotAppearanceId = botId;
+			return true;
+		} catch {
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+
+			currentBotAppearance = normalizeWidgetAppearance( undefined );
+			currentBotAppearanceError =
+				'Appearance settings could not be loaded.';
+			loadedBotAppearanceId = botId;
+			return true;
+		}
+	};
+	changeBotAppearance = ( next: WidgetAppearance ): void => {
+		const botId = activeBotId();
+
+		if ( botId === undefined || botId !== loadedBotAppearanceId ) {
+			return;
+		}
+
+		currentBotAppearance = normalizeWidgetAppearance( next );
+		currentBotAppearanceError = undefined;
+		renderState( stateFromReadiness() );
+	};
+	saveBotAppearance = ( next: WidgetAppearance ): void => {
+		const botId = activeBotId();
+
+		if ( botId === undefined ) {
+			return;
+		}
+
+		const requestGeneration = ++botAppearanceGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botAppearanceGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
+		const normalized = normalizeWidgetAppearance( next );
+		currentBotAppearance = normalized;
+		currentBotAppearanceSaving = true;
+		currentBotAppearanceError = undefined;
+		loadedBotAppearanceId = botId;
+		renderState( stateFromReadiness() );
+
+		void client
+			.request< { appearance: unknown } >(
+				`/admin/bots/${ encodeURIComponent( botId ) }/appearance`,
+				{
+					method: 'PUT',
+					body: normalized,
+				}
+			)
+			.then( ( response ) => {
+				if ( ! isCurrentRequest() ) {
+					return;
+				}
+
+				currentBotAppearance = normalizeWidgetAppearance(
+					response.appearance
+				);
+				currentBotAppearanceError = undefined;
+			} )
+			.catch( () => {
+				if ( isCurrentRequest() ) {
+					currentBotAppearanceError =
+						'Appearance settings could not be saved.';
+				}
+			} )
+			.finally( () => {
+				if ( isCurrentRequest() ) {
+					currentBotAppearanceSaving = false;
+					renderState( stateFromReadiness() );
+				}
+			} );
 	};
 	const refreshKnowledgePage = async (
 		page = resolveKnowledgePage( currentHash() )
@@ -1735,6 +1888,14 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		const screen = resolveAdminScreen( currentHash() );
 
+		if ( screen !== 'bots' ) {
+			botAppearanceGeneration += 1;
+			currentBotAppearance = undefined;
+			currentBotAppearanceSaving = false;
+			currentBotAppearanceError = undefined;
+			loadedBotAppearanceId = undefined;
+		}
+
 		if ( screen !== 'knowledge' ) {
 			knowledgePageGeneration += 1;
 			knowledgeSelectionGeneration += 1;
@@ -1760,8 +1921,35 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				currentBotPage.page !== targetPage )
 		) {
 			void refreshBotPage( targetPage )
+				.then( async () => {
+					const botId = activeBotId();
+					if ( botId !== undefined ) {
+						await refreshBotAppearance( botId );
+					}
+				} )
 				.then( () => renderState( stateFromReadiness() ) )
 				.catch( () => renderState( 'error' ) );
+			return;
+		}
+
+		const currentActiveBotId = activeBotId();
+
+		if (
+			screen === 'bots' &&
+			currentActiveBotId !== undefined &&
+			currentActiveBotId !== loadedBotAppearanceId
+		) {
+			currentBotAppearance = undefined;
+			currentBotAppearanceSaving = false;
+			currentBotAppearanceError = undefined;
+			renderState( currentState );
+			void refreshBotAppearance( currentActiveBotId ).then(
+				( current ) => {
+					if ( current ) {
+						renderState( stateFromReadiness() );
+					}
+				}
+			);
 			return;
 		}
 
@@ -2011,6 +2199,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 			if ( screen === 'bots' ) {
 				await refreshBotPage();
+				const botId = activeBotId();
+				if ( botId !== undefined ) {
+					await refreshBotAppearance( botId );
+				}
 			}
 
 			if ( screen === 'knowledge' ) {

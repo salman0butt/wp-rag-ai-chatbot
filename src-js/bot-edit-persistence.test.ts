@@ -54,6 +54,16 @@ const tick = async (): Promise< void > => {
 	await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 };
 
+const appearance = {
+	primary_color: '#2563eb',
+	color_mode: 'light',
+	position: 'bottom-right',
+	launcher_style: 'icon',
+	panel_size: 'medium',
+	radius_px: 16,
+	font_family: 'system',
+};
+
 describe( 'persisted bot editing', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
@@ -124,6 +134,11 @@ describe( 'persisted bot editing', () => {
 			.mockResolvedValueOnce( {
 				ok: true,
 				status: 200,
+				json: async () => ( { appearance } ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
 				json: async () => ( { bot: updatedBot } ),
 			} )
 			.mockResolvedValueOnce( {
@@ -171,7 +186,7 @@ describe( 'persisted bot editing', () => {
 		await tick();
 
 		expect( fetcher ).toHaveBeenNthCalledWith(
-			3,
+			4,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots/bot-existing',
 			expect.objectContaining( {
 				method: 'PUT',
@@ -188,7 +203,7 @@ describe( 'persisted bot editing', () => {
 			} )
 		);
 		expect( fetcher ).toHaveBeenNthCalledWith(
-			4,
+			5,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots?page=1&per_page=20',
 			expect.objectContaining( {
 				headers: expect.objectContaining( {

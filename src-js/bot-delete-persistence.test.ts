@@ -54,6 +54,16 @@ const tick = async (): Promise< void > => {
 	await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 };
 
+const appearance = {
+	primary_color: '#2563eb',
+	color_mode: 'light',
+	position: 'bottom-right',
+	launcher_style: 'icon',
+	panel_size: 'medium',
+	radius_px: 16,
+	font_family: 'system',
+};
+
 describe( 'persisted bot deletion', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
@@ -118,6 +128,11 @@ describe( 'persisted bot deletion', () => {
 			.mockResolvedValueOnce( {
 				ok: true,
 				status: 200,
+				json: async () => ( { appearance } ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
 				json: async () => ( { deleted: true } ),
 			} )
 			.mockResolvedValueOnce( {
@@ -151,7 +166,7 @@ describe( 'persisted bot deletion', () => {
 		deleteButton!.click();
 		await tick();
 		expect( confirm ).toHaveBeenCalledTimes( 1 );
-		expect( fetcher ).toHaveBeenCalledTimes( 2 );
+		expect( fetcher ).toHaveBeenCalledTimes( 3 );
 
 		deleteButton!.click();
 		await tick();
@@ -159,7 +174,7 @@ describe( 'persisted bot deletion', () => {
 
 		expect( confirm ).toHaveBeenCalledTimes( 2 );
 		expect( fetcher ).toHaveBeenNthCalledWith(
-			3,
+			4,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots/bot-existing',
 			expect.objectContaining( {
 				method: 'DELETE',
@@ -169,7 +184,7 @@ describe( 'persisted bot deletion', () => {
 			} )
 		);
 		expect( fetcher ).toHaveBeenNthCalledWith(
-			4,
+			5,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots?page=1&per_page=20',
 			expect.objectContaining( {
 				headers: expect.objectContaining( {
