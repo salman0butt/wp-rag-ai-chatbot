@@ -1,7 +1,4 @@
-import {
-	evaluateDisplayRules,
-	normalizeDisplayRules,
-} from './display-rules';
+import { evaluateDisplayRules, normalizeDisplayRules } from './display-rules';
 
 export type WidgetSurface = 'floating' | 'embedded' | 'fullscreen';
 
