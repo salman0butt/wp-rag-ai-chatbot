@@ -23,7 +23,8 @@ type AudienceEvaluator = (
 ) => ReturnType< typeof evaluateDisplayRules >;
 
 const evaluateForPath = evaluateDisplayRules as unknown as PathEvaluator;
-const evaluateForAudience = evaluateDisplayRules as unknown as AudienceEvaluator;
+const evaluateForAudience =
+	evaluateDisplayRules as unknown as AudienceEvaluator;
 
 describe( 'display rule defaults and disabled behavior', () => {
 	test( 'normalizes missing config to M14-compatible presentation defaults', () => {
