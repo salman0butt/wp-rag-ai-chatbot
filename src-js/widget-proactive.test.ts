@@ -1,3 +1,7 @@
+import {
+	createProactiveDelayCoordinator,
+	readProactiveDelayConfig,
+} from './widget-proactive';
 import { mountWidgets, type WidgetBootstrapConfig } from './widget-runtime';
 
 const BOT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -99,5 +103,21 @@ describe( 'M15 proactive widget delay', () => {
 		jest.advanceTimersByTime( 500 );
 		expect( panel?.hidden ).toBe( true );
 		expect( globalThis.fetch ).not.toHaveBeenCalled();
+	} );
+
+	it( 'clears a pending delay when the coordinator is disposed through cancel', () => {
+		const onOpen = jest.fn();
+		const coordinator = createProactiveDelayCoordinator(
+			readProactiveDelayConfig( {
+				proactive: { enabled: true, delay_ms: 500 },
+			} ),
+			onOpen
+		);
+
+		coordinator.start();
+		coordinator.cancel();
+		jest.advanceTimersByTime( 500 );
+
+		expect( onOpen ).not.toHaveBeenCalled();
 	} );
 } );
