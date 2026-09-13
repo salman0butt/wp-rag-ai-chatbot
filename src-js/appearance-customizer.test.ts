@@ -52,9 +52,7 @@ const createTestElement = (
 
 	for ( const child of children ) {
 		if ( child !== undefined ) {
-			element.append(
-				child instanceof Node ? child : String( child )
-			);
+			element.append( child instanceof Node ? child : String( child ) );
 		}
 	}
 
