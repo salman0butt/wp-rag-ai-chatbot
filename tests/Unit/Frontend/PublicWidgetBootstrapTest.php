@@ -60,6 +60,20 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		$bootstrap->register();
 	}
 
+	/** The Gutenberg adapter registers metadata and delegates rendering to this bootstrap. */
+	public function test_register_block_uses_packaged_metadata_and_shared_render_callback(): void {
+		$bootstrap = $this->bootstrap_with_empty_repositories();
+
+		Functions\expect( 'register_block_type' )
+			->once()
+			->with(
+				'/tmp/wp-rag-ai-chatbot/blocks/chatbot',
+				array( 'render_callback' => array( $bootstrap, 'render_block' ) )
+			);
+
+		$bootstrap->register_block();
+	}
+
 	/** Invalid or missing bot mounts fail closed without public assets. */
 	public function test_invalid_mount_fails_closed_without_enqueuing_assets(): void {
 		$bootstrap = $this->bootstrap_with_empty_repositories();
