@@ -59,8 +59,9 @@ final class WpdbBotDisplayRulesRepositoryTest extends TestCase {
 		);
 
 		$config = $this->repository( $connection )->find( new BotId( 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' ) );
-		self::assertFalse( $config->enabled );
-		self::assertSame( array( '/pricing/*' ), $config->to_array()['visibility']['url_include'] ?? null );
+		$data   = $config->to_array();
+		self::assertFalse( $data['enabled'] ?? true );
+		self::assertSame( array( '/pricing/*' ), $data['visibility']['url_include'] ?? null );
 	}
 
 	/** Save writes one normalized JSON projection scoped to the supplied bot id. */
