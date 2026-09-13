@@ -1,7 +1,4 @@
-import {
-	evaluateDisplayRules,
-	normalizeDisplayRules,
-} from './display-rules';
+import { evaluateDisplayRules, normalizeDisplayRules } from './display-rules';
 import type { WidgetBootstrapConfig } from './widget-runtime';
 
 const MOUNT_SELECTOR = '.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]';
