@@ -19,20 +19,39 @@ Build the M15 bot-scoped display-rules editor by reusing the existing protected 
 
 The test verifies that simulated visitor facts such as path, authentication state and device bucket affect the preview decision without being written into or mutating the normalized persisted `DisplayRulesConfig` object.
 
-## Review
+## Task 7B — normalized native editor controls
 
-Independent reviewer/subagent transport is unavailable in this execution runtime, so the repository-approved scoped fallback review was used and the limitation is recorded honestly.
+### TDD evidence
 
-- Correctness: 0 unresolved Critical/Important findings. Preview uses the same production evaluator and returns the evaluator decision unchanged.
-- Security/privacy: 0 unresolved Critical/Important findings. Simulated visitor facts remain call-local and are not merged into persisted rules; no credentials/provider/model/embedding/vector/retrieval authority is introduced.
-- Performance: 0 unresolved Critical/Important findings. The adapter adds no I/O and one direct pure evaluator call.
-- Accessibility: no UI was introduced in this slice; no accessibility finding applies yet.
-- Architecture/duplication: 0 unresolved Critical/Important findings. There is no second rule engine; the adapter reuses Task 1 exactly.
+- `d8add6901b160c531c34f79f62a21287940056e1` — **NOT RED**, CI `34789609139`. The test-only checkpoint stopped on two Prettier findings before TypeScript/Jest, so it is not behavioral RED evidence.
+- `070f8ce35e4704b5ec96afc28364f0bd64b59f2c` — **RED**, CI `34789665252`. Package lint, ESLint/Prettier and TypeScript passed; all 59 pre-existing suites / 155 pre-existing tests passed, and only the new editor-controls test failed because `DisplayRulesEditor` did not exist.
+- `789d847e0e405171e7f2f7f783dcdeebf8e3b953` — **NOT GREEN**, CI `34789729946`. PHP quality passed, but JavaScript verification stopped on eight Prettier-only findings in the new implementation before typecheck/Jest.
+- `e7691340aae5a033eb975d23185c98896fc92668` — **NOT GREEN**, CI `34789806457`. The first formatting repair reduced the JavaScript failure to two remaining Prettier findings; no behavioral failure was reached.
+- `86d23928ac629a8166bb53db539b2cad32334f02` — **GREEN**, CI `34789901143`. Exact-head `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke` all passed.
+
+### Implementation
+
+`DisplayRulesEditor` now renders bounded native controls for URL include/exclude patterns, audience selection, locale and direction. Each change flows through the existing `normalizeDisplayRules()` authority before `onChange` or `onSave`, so the component does not introduce a parallel validator or rule model.
+
+Labels are programmatically associated with their controls. The save action is a native form submit, exposes an accessible `role="alert"` validation/error surface, and disables the submit button while saving. The component remains persistence-agnostic: it accepts normalized config and callbacks and does not own REST/provider/model/retrieval authority.
+
+### Review
+
+Independent reviewer/subagent transport remains unavailable in this execution runtime, so the repository-approved scoped fallback review was used.
+
+- Correctness: 0 unresolved Critical/Important findings. Editing is normalized through the production config authority and submit sends the current normalized draft.
+- Security/privacy: 0 unresolved Critical/Important findings. The editor only edits the allow-listed display-rules DTO; visitor simulation facts, credentials, provider/model selection, embeddings, vector-store and retrieval authority are absent.
+- Performance: 0 unresolved Critical/Important findings. Editing is local deterministic normalization with no extra I/O.
+- Accessibility: 0 unresolved Critical/Important findings. Native textarea/select/input/button controls have associated labels; errors use `role="alert"`; save state disables the button.
+- Architecture/duplication: 0 unresolved Critical/Important findings. The editor reuses `normalizeDisplayRules()` and remains transport-agnostic; no duplicate rule engine or persistence authority was created.
 
 ## Verification
 
-Task 7A final implementation GREEN: `3350b7962f86437753130e778dbe428d29cc7469`, CI `34789360184` — GREEN across `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`.
+- Task 7A final implementation GREEN: `3350b7962f86437753130e778dbe428d29cc7469`, CI `34789360184`.
+- Task 7B final implementation GREEN: `86d23928ac629a8166bb53db539b2cad32334f02`, CI `34789901143`.
+
+Both exact implementation heads passed `php-quality`, `js-quality`, `package`, and complete `wordpress-smoke`.
 
 ## Next unfinished unit
 
-Continue Task 7 with bot-scoped admin load/edit/save behavior through the existing protected `/admin/bots/{id}/display-rules` GET/PUT authority. Required remaining coverage includes normalized native controls, validation feedback, per-bot isolation, stale load/save response protection, keyboard-accessible labels, and deterministic preview facts that are never persisted.
+Continue Task 7 with bot-scoped admin load/edit/save behavior through the existing protected `/admin/bots/{id}/display-rules` GET/PUT authority. Required remaining coverage includes per-bot isolation, stale load/save response protection, route validation feedback, and deterministic preview facts that are never persisted.
