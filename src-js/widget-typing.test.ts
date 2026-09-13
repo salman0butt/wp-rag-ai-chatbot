@@ -149,4 +149,55 @@ describe( 'public widget simulated typing fallback', () => {
 		jest.runAllTimers();
 		expect( assistant?.textContent ).toBe( unicodeAnswer );
 	} );
+
+	it( 'cancels stale presentation work when the panel closes', async () => {
+		loadWidget();
+
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const close = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-close]'
+		);
+		launcher?.click();
+		submitQuestion( 'Explain cancellation' );
+		await flushPromises();
+
+		const assistant = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-message="assistant"]'
+		);
+		const status = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-status]'
+		);
+		const send = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-send]'
+		);
+		const partial = assistant?.textContent ?? '';
+
+		expect( partial ).not.toBe( '' );
+		expect( partial ).not.toBe( answer );
+		close?.click();
+		jest.runAllTimers();
+
+		expect( assistant?.textContent ).toBe( partial );
+		expect( status?.textContent ).toBe( '' );
+		expect( send?.disabled ).toBe( false );
+		expect(
+			document.querySelector( '[data-wp-rag-ai-chatbot-copy]' )
+		).toBeNull();
+		expect(
+			document.querySelector( '[data-wp-rag-ai-chatbot-sources]' )
+		).toBeNull();
+
+		launcher?.click();
+		jest.runAllTimers();
+
+		expect( assistant?.textContent ).toBe( partial );
+		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
+		expect(
+			document.querySelectorAll(
+				'[data-wp-rag-ai-chatbot-message-container="assistant"]'
+			)
+		).toHaveLength( 1 );
+	} );
 } );
