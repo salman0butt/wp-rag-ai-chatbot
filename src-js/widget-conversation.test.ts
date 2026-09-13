@@ -184,4 +184,36 @@ describe( 'public widget conversation controls', () => {
 			} )
 		);
 	} );
+
+	it( 'accepts a successful response without a persisted conversation id', async () => {
+		fetchMock.mockResolvedValue( {
+			ok: true,
+			json: async () => ( {
+				answer: 'Stateless answer',
+				conversation_id: null,
+				citations: [],
+			} ),
+		} );
+		loadWidget();
+		submitQuestion( 'One-off question' );
+		await flushPromises();
+
+		const assistantMessage = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-message="assistant"]'
+		);
+		const retry = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-retry]'
+		);
+
+		expect( assistantMessage?.textContent ).toBe( 'Stateless answer' );
+		expect( retry?.hidden ).toBe( true );
+
+		submitQuestion( 'Second one-off question' );
+		expect( fetchMock.mock.calls[ 1 ][ 1 ].body ).toBe(
+			JSON.stringify( {
+				bot_id: BOT_ID,
+				question: 'Second one-off question',
+			} )
+		);
+	} );
 } );
