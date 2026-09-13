@@ -60,4 +60,27 @@ describe( 'public widget embedding surfaces', () => {
 			expect( mount.dataset.wpRagAiChatbotSurface ).toBe( surface );
 		}
 	);
+
+	it.each( [ 'embedded', 'fullscreen' ] as const )(
+		'keeps the %s surface open when Escape is pressed because there is no launcher to reopen it',
+		( surface ) => {
+			const mount = mountSurface( surface );
+			const panel = mount.querySelector< HTMLElement >(
+				'[data-wp-rag-ai-chatbot-panel]'
+			);
+			if ( panel === null ) {
+				throw new Error( 'Expected widget panel.' );
+			}
+
+			panel.dispatchEvent(
+				new KeyboardEvent( 'keydown', {
+					key: 'Escape',
+					bubbles: true,
+				} )
+			);
+
+			expect( panel.hidden ).toBe( false );
+			expect( panel.classList.contains( 'is-open' ) ).toBe( true );
+		}
+	);
 } );
