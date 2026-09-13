@@ -11,6 +11,8 @@ namespace WpRagAiChatbot\Tests\Unit\Frontend;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use DateTimeImmutable;
+use DateTimeZone;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Bots\Bot;
 use WpRagAiChatbot\Bots\BotId;
@@ -147,6 +149,7 @@ final class PublicWidgetBootstrapTest extends TestCase {
 							&& str_contains( $script, '"surface":"floating"' )
 							&& str_contains( $script, '"config":{"bot_id":"' . self::BOT_ID . '","name":"Support"' )
 							&& str_contains( $script, '"display_rules":' )
+							&& str_contains( $script, '"facts":{"path":"\/","isAuthenticated":false,"postType":null,"roleMatches":[],"wooArea":null,"siteLocale":"en-us","siteDirection":"ltr","siteWeekday":0,"siteMinuteOfDay":720}' )
 							&& ! str_contains( $script, 'openai' )
 							&& ! str_contains( $script, 'gpt-5' )
 							&& ! str_contains( $script, 'retrieval_limit' );
@@ -183,6 +186,28 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		);
 		Functions\when( 'esc_attr' )->alias(
 			static fn ( string $value ): string => htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' )
+		);
+		Functions\when( 'is_user_logged_in' )->justReturn( false );
+		Functions\when( 'get_post_type' )->justReturn( false );
+		Functions\when( 'get_locale' )->justReturn( 'en_US' );
+		Functions\when( 'is_rtl' )->justReturn( false );
+		Functions\when( 'did_action' )->justReturn( 0 );
+		Functions\when( 'current_datetime' )->justReturn(
+			new DateTimeImmutable( '2026-09-13 12:00:00', new DateTimeZone( 'UTC' ) )
+		);
+		Functions\when( 'wp_unslash' )->alias(
+			static fn ( mixed $value ): mixed => is_string( $value ) ? stripslashes( $value ) : $value
+		);
+		Functions\when( 'wp_parse_url' )->alias(
+			static function ( string $url, int $component = -1 ): mixed {
+				if ( PHP_URL_PATH !== $component ) {
+					return false;
+				}
+
+				$path = preg_replace( '/[?#].*$/', '', $url );
+
+				return is_string( $path ) ? $path : false;
+			}
 		);
 	}
 
