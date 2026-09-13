@@ -34,7 +34,7 @@ final readonly class PublicWidgetBootstrap {
 	}
 
 	/**
-	 * Compose persisted production repositories and register the public shortcodes.
+	 * Compose persisted production repositories and register the public surfaces.
 	 */
 	public static function register_default(): void {
 		global $wpdb;
@@ -54,11 +54,29 @@ final readonly class PublicWidgetBootstrap {
 		$bootstrap->register();
 	}
 
-	/** Register the stable public widget shortcodes. */
+	/** Register the stable public widget adapters. */
 	public function register(): void {
 		add_shortcode( 'wp_rag_ai_chatbot', array( $this, 'render_shortcode' ) );
 		add_shortcode( 'wp_rag_ai_chatbot_embed', array( $this, 'render_embed_shortcode' ) );
 		add_shortcode( 'wp_rag_ai_chatbot_fullscreen', array( $this, 'render_fullscreen_shortcode' ) );
+		add_action( 'init', array( $this, 'register_block' ) );
+	}
+
+	/** Register the dynamic Gutenberg chatbot block from packaged metadata. */
+	public function register_block(): void {
+		register_block_type(
+			dirname( $this->plugin_file ) . '/blocks/chatbot',
+			array( 'render_callback' => array( $this, 'render_block' ) )
+		);
+	}
+
+	/**
+	 * Render the Gutenberg chatbot block through the embedded surface authority.
+	 *
+	 * @param array<string,mixed> $attributes Block attributes.
+	 */
+	public function render_block( array $attributes = array() ): string {
+		return $this->render_embed_shortcode( $attributes );
 	}
 
 	/**
