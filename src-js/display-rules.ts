@@ -166,9 +166,9 @@ const normalizeChoiceList = < T extends string >(
 	const choices: T[] = [];
 	for ( const candidate of value ) {
 		if (
-		typeof candidate === 'string' &&
-		allowed.includes( candidate as T ) &&
-		! choices.includes( candidate as T )
+			typeof candidate === 'string' &&
+			allowed.includes( candidate as T ) &&
+			! choices.includes( candidate as T )
 		) {
 			choices.push( candidate as T );
 		}
@@ -296,10 +296,7 @@ export const normalizeDisplayRules = ( value: unknown ): DisplayRulesConfig => {
 			audience: normalizeAudience( visibility.audience ),
 			roles: normalizeSlugList( visibility.roles ),
 			woo_areas: normalizeChoiceList( visibility.woo_areas, WOO_AREAS ),
-			devices: normalizeChoiceList(
-				visibility.devices,
-				DEVICE_BUCKETS
-			),
+			devices: normalizeChoiceList( visibility.devices, DEVICE_BUCKETS ),
 		},
 		proactive: {
 			enabled: false,
