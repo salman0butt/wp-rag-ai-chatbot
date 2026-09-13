@@ -16,7 +16,10 @@ type BlockSettings = {
 type WordPressBlockWindow = {
 	wp: {
 		blocks: {
-			registerBlockType: ( name: string, settings: BlockSettings ) => void;
+			registerBlockType: (
+				name: string,
+				settings: BlockSettings
+			) => void;
 		};
 		element: {
 			createElement: (
