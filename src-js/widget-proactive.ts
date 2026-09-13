@@ -49,6 +49,22 @@ const normalizeScrollPercent = ( value: unknown ): number | null =>
 		? value
 		: null;
 
+const utf8ByteLength = ( value: string ): number => {
+	let bytes = 0;
+	for ( const character of value ) {
+		const codePoint = character.codePointAt( 0 ) ?? 0;
+		bytes +=
+			codePoint <= 0x7f
+				? 1
+				: codePoint <= 0x7ff
+					? 2
+					: codePoint <= 0xffff
+						? 3
+						: 4;
+	}
+	return bytes;
+};
+
 const normalizeClickSelector = ( value: unknown ): string | null => {
 	if ( typeof value !== 'string' ) {
 		return null;
@@ -59,9 +75,7 @@ const normalizeClickSelector = ( value: unknown ): string | null => {
 		return null;
 	}
 
-	if (
-		new TextEncoder().encode( selector ).length > MAX_CLICK_SELECTOR_BYTES
-	) {
+	if ( utf8ByteLength( selector ) > MAX_CLICK_SELECTOR_BYTES ) {
 		return null;
 	}
 
