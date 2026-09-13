@@ -62,13 +62,13 @@ describe( 'display rule starters and localization decisions', () => {
 
 		expect(
 			evaluateWithLocalization( rules, { path: '/docs/exact' } ).starters
-	).toEqual( [ 'Exact' ] );
+		).toEqual( [ 'Exact' ] );
 		expect(
 			evaluateWithLocalization( rules, { path: '/docs/guide' } ).starters
-	).toEqual( [ 'First glob' ] );
+		).toEqual( [ 'First glob' ] );
 		expect(
 			evaluateWithLocalization( rules, { path: '/other' } ).starters
-	).toEqual( [ 'General' ] );
+		).toEqual( [ 'General' ] );
 	} );
 
 	test( 'uses explicit direction overrides and auto RTL locale inference', () => {
