@@ -6,14 +6,6 @@ const mockCreateElement = jest.fn(
 	} )
 );
 
-jest.mock( '@wordpress/blocks', () => ( {
-	registerBlockType: mockRegisterBlockType,
-} ) );
-
-jest.mock( '@wordpress/element', () => ( {
-	createElement: mockCreateElement,
-} ) );
-
 type EditorProps = {
 	attributes: { bot: string };
 	setAttributes: ( attributes: { bot: string } ) => void;
@@ -30,11 +22,27 @@ type BlockSettings = {
 	save: () => null;
 };
 
+type WordPressWindow = Window &
+	typeof globalThis & {
+		wp?: {
+			blocks: { registerBlockType: typeof mockRegisterBlockType };
+			element: { createElement: typeof mockCreateElement };
+		};
+	};
+
 describe( 'chatbot Gutenberg block editor adapter', () => {
 	beforeEach( () => {
 		jest.resetModules();
 		mockRegisterBlockType.mockClear();
 		mockCreateElement.mockClear();
+		( window as WordPressWindow ).wp = {
+			blocks: { registerBlockType: mockRegisterBlockType },
+			element: { createElement: mockCreateElement },
+		};
+	} );
+
+	afterEach( () => {
+		delete ( window as WordPressWindow ).wp;
 	} );
 
 	it( 'registers one bounded bot-id editor and stays dynamic on save', () => {
