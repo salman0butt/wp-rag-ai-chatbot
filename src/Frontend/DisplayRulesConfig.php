@@ -69,6 +69,9 @@ final readonly class DisplayRulesConfig {
 		'direction',
 	);
 
+	private const MAX_LOCALE_LENGTH      = 35;
+	private const MAX_SLUG_LENGTH        = 64;
+	private const MAX_SLUG_VALUES        = 16;
 	private const MAX_TIMER_MS           = 600000;
 	private const MAX_URL_PATTERNS       = 32;
 	private const MAX_URL_PATTERN_LENGTH = 256;
@@ -354,7 +357,7 @@ final readonly class DisplayRulesConfig {
 	}
 
 	/**
-	 * Normalize a list of slug-like strings.
+	 * Normalize a bounded list of slug-like strings.
 	 *
 	 * @param mixed $value Candidate value.
 	 * @return list<string>
@@ -372,8 +375,18 @@ final readonly class DisplayRulesConfig {
 			}
 
 			$item = strtolower( trim( $item ) );
+			if (
+				strlen( $item ) > self::MAX_SLUG_LENGTH ||
+				1 !== preg_match( '/^[a-z0-9_-]+$/', $item )
+			) {
+				throw new InvalidArgumentException( 'Configuration slug is outside the supported grammar.' );
+			}
+
 			if ( ! in_array( $item, $normalized, true ) ) {
 				$normalized[] = $item;
+				if ( count( $normalized ) > self::MAX_SLUG_VALUES ) {
+					throw new InvalidArgumentException( 'Too many configuration slug values.' );
+				}
 			}
 		}
 
@@ -439,6 +452,18 @@ final readonly class DisplayRulesConfig {
 			throw new InvalidArgumentException( 'Locale must be a string.' );
 		}
 
-		return strtolower( str_replace( '_', '-', trim( $value ) ) );
+		$locale = strtolower( str_replace( '_', '-', trim( $value ) ) );
+		if ( in_array( $locale, array( 'site', 'auto' ), true ) ) {
+			return $locale;
+		}
+		if (
+			'' === $locale ||
+			strlen( $locale ) > self::MAX_LOCALE_LENGTH ||
+			1 !== preg_match( '/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/', $locale )
+		) {
+			throw new InvalidArgumentException( 'Locale is outside the supported grammar.' );
+		}
+
+		return $locale;
 	}
 }
