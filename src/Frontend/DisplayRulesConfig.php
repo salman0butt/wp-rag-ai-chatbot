@@ -140,7 +140,10 @@ final readonly class DisplayRulesConfig {
 
 			foreach ( array( 'enabled', 'first_visit_only', 'exit_intent' ) as $key ) {
 				if ( array_key_exists( $key, $proactive ) ) {
-					$data['proactive'][ $key ] = self::normalize_bool( $proactive[ $key ], $key );
+					$data['proactive'][ $key ] = self::normalize_bool(
+						$proactive[ $key ],
+						$key
+					);
 				}
 			}
 			if ( array_key_exists( 'delay_ms', $proactive ) ) {
@@ -170,11 +173,20 @@ final readonly class DisplayRulesConfig {
 		}
 
 		if ( array_key_exists( 'localization', $input ) ) {
-			$localization = self::normalize_section( $input['localization'], 'localization' );
-			self::assert_known_keys( $localization, self::LOCALIZATION_KEYS, 'localization' );
+			$localization = self::normalize_section(
+				$input['localization'],
+				'localization'
+			);
+			self::assert_known_keys(
+				$localization,
+				self::LOCALIZATION_KEYS,
+				'localization'
+			);
 
 			if ( array_key_exists( 'locale', $localization ) ) {
-				$data['localization']['locale'] = self::normalize_locale( $localization['locale'] );
+				$data['localization']['locale'] = self::normalize_locale(
+					$localization['locale']
+				);
 			}
 			if ( array_key_exists( 'direction', $localization ) ) {
 				$data['localization']['direction'] = self::normalize_choice(
@@ -240,13 +252,20 @@ final readonly class DisplayRulesConfig {
 	 *
 	 * @param array<string,mixed> $input   Candidate object.
 	 * @param array               $allowed Explicit allowed keys.
-	 * @param string              $label   Object label for validation errors.
+	 * @param string              $label   Validation label.
 	 * @phpstan-param list<string> $allowed
 	 * @throws InvalidArgumentException When an unknown key is supplied.
 	 */
-	private static function assert_known_keys( array $input, array $allowed, string $label ): void {
-		if ( array() !== array_diff( array_keys( $input ), $allowed ) ) {
-			throw new InvalidArgumentException( $label . ' configuration contains unknown keys.' );
+	private static function assert_known_keys(
+		array $input,
+		array $allowed,
+		string $label
+	): void {
+		$unknown_keys = array_diff( array_keys( $input ), $allowed );
+		if ( array() !== $unknown_keys ) {
+			throw new InvalidArgumentException(
+				$label . ' configuration contains unknown keys.'
+			);
 		}
 	}
 
@@ -254,9 +273,9 @@ final readonly class DisplayRulesConfig {
 	 * Normalize one nested configuration object.
 	 *
 	 * @param mixed  $value Candidate nested object.
-	 * @param string $label Object label for validation errors.
-	 * @return array<string,mixed>
+	 * @param string $label Validation label.
 	 * @throws InvalidArgumentException When the value is not an array.
+	 * @return array<string,mixed>
 	 */
 	private static function normalize_section( mixed $value, string $label ): array {
 		if ( ! is_array( $value ) ) {
@@ -270,7 +289,7 @@ final readonly class DisplayRulesConfig {
 	 * Normalize a strict boolean.
 	 *
 	 * @param mixed  $value Candidate value.
-	 * @param string $label Field label for validation errors.
+	 * @param string $label Validation label.
 	 * @throws InvalidArgumentException When the value is not boolean.
 	 */
 	private static function normalize_bool( mixed $value, string $label ): bool {
@@ -286,18 +305,26 @@ final readonly class DisplayRulesConfig {
 	 *
 	 * @param mixed  $value   Candidate value.
 	 * @param array  $allowed Explicit allowed values.
-	 * @param string $label   Field label for validation errors.
+	 * @param string $label   Validation label.
 	 * @phpstan-param list<string> $allowed
 	 * @throws InvalidArgumentException When the value is not supported.
 	 */
-	private static function normalize_choice( mixed $value, array $allowed, string $label ): string {
+	private static function normalize_choice(
+		mixed $value,
+		array $allowed,
+		string $label
+	): string {
 		if ( ! is_string( $value ) ) {
-			throw new InvalidArgumentException( $label . ' must be a supported value.' );
+			throw new InvalidArgumentException(
+				$label . ' must be a supported value.'
+			);
 		}
 
 		$normalized = strtolower( trim( $value ) );
 		if ( ! in_array( $normalized, $allowed, true ) ) {
-			throw new InvalidArgumentException( $label . ' must be a supported value.' );
+			throw new InvalidArgumentException(
+				$label . ' must be a supported value.'
+			);
 		}
 
 		return $normalized;
@@ -307,9 +334,9 @@ final readonly class DisplayRulesConfig {
 	 * Normalize one bounded list of slug-like values.
 	 *
 	 * @param mixed  $value Candidate list.
-	 * @param string $label Field label for validation errors.
+	 * @param string $label Validation label.
+	 * @throws InvalidArgumentException When a value is invalid or unbounded.
 	 * @return list<string>
-	 * @throws InvalidArgumentException When a list value is invalid or unbounded.
 	 */
 	private static function normalize_slug_list( mixed $value, string $label ): array {
 		if ( ! is_array( $value ) ) {
@@ -319,12 +346,17 @@ final readonly class DisplayRulesConfig {
 		$normalized = array();
 		foreach ( $value as $candidate ) {
 			if ( ! is_string( $candidate ) ) {
-				throw new InvalidArgumentException( $label . ' contains an invalid value.' );
+				throw new InvalidArgumentException(
+					$label . ' contains an invalid value.'
+				);
 			}
 
 			$slug = strtolower( trim( $candidate ) );
-			if ( '' === $slug || strlen( $slug ) > 64 || 1 !== preg_match( '/^[a-z0-9_-]+$/', $slug ) ) {
-				throw new InvalidArgumentException( $label . ' contains an invalid value.' );
+			$valid_slug = 1 === preg_match( '/^[a-z0-9_-]+$/', $slug );
+			if ( '' === $slug || strlen( $slug ) > 64 || ! $valid_slug ) {
+				throw new InvalidArgumentException(
+					$label . ' contains an invalid value.'
+				);
 			}
 
 			if ( ! in_array( $slug, $normalized, true ) ) {
@@ -333,7 +365,9 @@ final readonly class DisplayRulesConfig {
 		}
 
 		if ( count( $normalized ) > 16 ) {
-			throw new InvalidArgumentException( $label . ' contains too many values.' );
+			throw new InvalidArgumentException(
+				$label . ' contains too many values.'
+			);
 		}
 
 		return $normalized;
@@ -344,12 +378,16 @@ final readonly class DisplayRulesConfig {
 	 *
 	 * @param mixed  $value   Candidate list.
 	 * @param array  $allowed Explicit allowed values.
-	 * @param string $label   Field label for validation errors.
+	 * @param string $label   Validation label.
 	 * @phpstan-param list<string> $allowed
-	 * @return list<string>
 	 * @throws InvalidArgumentException When a list value is invalid.
+	 * @return list<string>
 	 */
-	private static function normalize_choice_list( mixed $value, array $allowed, string $label ): array {
+	private static function normalize_choice_list(
+		mixed $value,
+		array $allowed,
+		string $label
+	): array {
 		if ( ! is_array( $value ) ) {
 			throw new InvalidArgumentException( $label . ' must be a list.' );
 		}
@@ -371,8 +409,8 @@ final readonly class DisplayRulesConfig {
 	 * @param mixed  $value   Candidate value.
 	 * @param int    $minimum Inclusive minimum.
 	 * @param int    $maximum Inclusive maximum.
-	 * @param string $label   Field label for validation errors.
-	 * @throws InvalidArgumentException When the value is outside the supported range.
+	 * @param string $label   Validation label.
+	 * @throws InvalidArgumentException When the value is out of range.
 	 */
 	private static function normalize_nullable_int(
 		mixed $value,
@@ -384,7 +422,10 @@ final readonly class DisplayRulesConfig {
 			return null;
 		}
 
-		if ( ! is_int( $value ) || $value < $minimum || $value > $maximum ) {
+		$out_of_range = ! is_int( $value )
+			|| $value < $minimum
+			|| $value > $maximum;
+		if ( $out_of_range ) {
 			throw new InvalidArgumentException( $label . ' is out of range.' );
 		}
 
@@ -399,7 +440,9 @@ final readonly class DisplayRulesConfig {
 	 */
 	private static function normalize_locale( mixed $value ): string {
 		if ( ! is_string( $value ) ) {
-			throw new InvalidArgumentException( 'locale must be a supported value.' );
+			throw new InvalidArgumentException(
+				'locale must be a supported value.'
+			);
 		}
 
 		$normalized = strtolower( str_replace( '_', '-', trim( $value ) ) );
@@ -407,8 +450,14 @@ final readonly class DisplayRulesConfig {
 			return $normalized;
 		}
 
-		if ( strlen( $normalized ) > 35 || 1 !== preg_match( '/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/', $normalized ) ) {
-			throw new InvalidArgumentException( 'locale must be a supported value.' );
+		$valid_locale = 1 === preg_match(
+			'/^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$/',
+			$normalized
+		);
+		if ( strlen( $normalized ) > 35 || ! $valid_locale ) {
+			throw new InvalidArgumentException(
+				'locale must be a supported value.'
+			);
 		}
 
 		return $normalized;
