@@ -106,7 +106,11 @@ final class WpdbBotDisplayRulesRepositoryTest extends TestCase {
 		return $this->createMock( Connection::class );
 	}
 
-	/** Create the repository under test. */
+	/**
+	 * Create the repository under test.
+	 *
+	 * @param Connection $connection Mocked persistence connection.
+	 */
 	private function repository( Connection $connection ): WpdbBotDisplayRulesRepository {
 		return new WpdbBotDisplayRulesRepository( $connection, new TableNames( 'wp_' ) );
 	}
