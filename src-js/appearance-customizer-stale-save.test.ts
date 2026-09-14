@@ -139,6 +139,11 @@ describe( 'appearance customizer stale save protection', () => {
 				appearance: ReturnType< typeof appearance >;
 			} >;
 		} >();
+		const displayRulesResponse = {
+			ok: true,
+			status: 200,
+			json: async () => ( { display_rules: {} } ),
+		};
 		const fetcher = jest
 			.fn()
 			.mockResolvedValueOnce( {
@@ -161,17 +166,20 @@ describe( 'appearance customizer stale save protection', () => {
 				status: 200,
 				json: async () => ( { appearance: appearance( '#2563eb' ) } ),
 			} )
+			.mockResolvedValueOnce( displayRulesResponse )
 			.mockImplementationOnce( () => staleSave.promise )
 			.mockResolvedValueOnce( {
 				ok: true,
 				status: 200,
 				json: async () => ( { appearance: appearance( '#7c3aed' ) } ),
 			} )
+			.mockResolvedValueOnce( displayRulesResponse )
 			.mockResolvedValueOnce( {
 				ok: true,
 				status: 200,
 				json: async () => ( { appearance: appearance( '#16a34a' ) } ),
-			} );
+			} )
+			.mockResolvedValueOnce( displayRulesResponse );
 		Object.defineProperty( window, 'fetch', {
 			configurable: true,
 			value: fetcher,
