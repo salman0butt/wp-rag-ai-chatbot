@@ -339,6 +339,6 @@ describe( 'display rules editor persistence integration', () => {
 			root.querySelector< HTMLElement >(
 				'form[data-display-rules-editor] [role="alert"]'
 			)?.textContent
-		).toBe( 'Display-rule settings are invalid.' );
+		).toBe( 'Display rules could not be saved.' );
 	} );
 } );
