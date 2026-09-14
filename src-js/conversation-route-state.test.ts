@@ -5,12 +5,15 @@ type ConversationRouteState = {
 	selectedConversationId?: string;
 };
 
-type ConversationRouteStateResolver = ( hash: string ) => ConversationRouteState;
+type ConversationRouteStateResolver = (
+	hash: string
+) => ConversationRouteState;
 
 describe( 'M16 conversation admin route state', () => {
 	it( 'parses bounded page state and an optional decoded conversation selection', () => {
 		const exports = plugin as unknown as Record< string, unknown >;
-		const resolveConversationRouteState = exports.resolveConversationRouteState;
+		const resolveConversationRouteState =
+			exports.resolveConversationRouteState;
 
 		expect( typeof resolveConversationRouteState ).toBe( 'function' );
 		if ( typeof resolveConversationRouteState !== 'function' ) {
@@ -34,6 +37,6 @@ describe( 'M16 conversation admin route state', () => {
 		} );
 		expect( resolve( '#/conversations/%E0%A4%A?page=4' ) ).toEqual( {
 			page: 4,
-	} );
+		} );
 	} );
 } );
