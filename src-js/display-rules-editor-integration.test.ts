@@ -108,6 +108,55 @@ const serverRules = normalizeDisplayRules( {
 	},
 } );
 
+const bot = {
+	id: 'bot-existing',
+	name: 'Existing Bot',
+	enabled: true,
+	provider_id: 'openai',
+	model_id: 'gpt-5-mini',
+	version: 7,
+	created_at: '2026-09-08T01:00:00+00:00',
+	updated_at: '2026-09-08T01:00:00+00:00',
+};
+
+const installAdmin = ( fetcher: typeof fetch ): HTMLElement => {
+	const render = jest.fn( ( element: Node, root: Element ) => {
+		root.replaceChildren( element );
+	} );
+	Object.defineProperty( window, 'wp', {
+		configurable: true,
+		value: {
+			element: {
+				createElement: createTestElement,
+				render,
+			},
+		},
+	} );
+	const root = document.createElement( 'div' );
+	root.id = 'wp-rag-ai-chatbot-admin';
+	document.body.append( root );
+	Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+		configurable: true,
+		value: {
+			plugin: 'wp-rag-ai-chatbot',
+			restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+			nonce: 'rest-nonce',
+		},
+	} );
+	Object.defineProperty( window, 'fetch', {
+		configurable: true,
+		value: fetcher,
+	} );
+
+	return root;
+};
+
+const successResponse = ( payload: unknown ) => ( {
+	ok: true,
+	status: 200,
+	json: async () => payload,
+} );
+
 describe( 'display rules editor persistence integration', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
@@ -117,99 +166,37 @@ describe( 'display rules editor persistence integration', () => {
 	} );
 
 	it( 'loads and saves normalized rules for only the selected bot', async () => {
-		const render = jest.fn( ( element: Node, root: Element ) => {
-			root.replaceChildren( element );
-		} );
-		Object.defineProperty( window, 'wp', {
-			configurable: true,
-			value: {
-				element: {
-					createElement: createTestElement,
-					render,
-				},
-			},
-		} );
-		const root = document.createElement( 'div' );
-		root.id = 'wp-rag-ai-chatbot-admin';
-		document.body.append( root );
-		Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
-			configurable: true,
-			value: {
-				plugin: 'wp-rag-ai-chatbot',
-				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
-				nonce: 'rest-nonce',
-			},
-		} );
-
-		const bot = {
-			id: 'bot-existing',
-			name: 'Existing Bot',
-			enabled: true,
-			provider_id: 'openai',
-			model_id: 'gpt-5-mini',
-			version: 7,
-			created_at: '2026-09-08T01:00:00+00:00',
-			updated_at: '2026-09-08T01:00:00+00:00',
-		};
 		const fetcher = jest.fn(
 			async ( input: RequestInfo | URL, init?: RequestInit ) => {
 				const url = String( input );
 				if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
-					return {
-						ok: true,
-						status: 200,
-						json: async () => ( {
-							ready: true,
-							next_step: 'complete',
-						} ),
-					};
+					return successResponse( { ready: true, next_step: 'complete' } );
 				}
 				if ( url.includes( '/admin/bots?' ) ) {
-					return {
-						ok: true,
-						status: 200,
-						json: async () => ( {
-							items: [ bot ],
-							total: 1,
-							page: 1,
-							per_page: 20,
-						} ),
-					};
+					return successResponse( {
+						items: [ bot ],
+						total: 1,
+						page: 1,
+						per_page: 20,
+					} );
 				}
 				if ( url.endsWith( '/admin/bots/bot-existing/appearance' ) ) {
-					return {
-						ok: true,
-						status: 200,
-						json: async () => ( { appearance } ),
-					};
+					return successResponse( { appearance } );
 				}
 				if (
 					url.endsWith( '/admin/bots/bot-existing/display-rules' )
 				) {
 					if ( init?.method === 'PUT' ) {
-						return {
-							ok: true,
-							status: 200,
-							json: async () => ( {
-								display_rules: JSON.parse(
-									String( init.body )
-								),
-							} ),
-						};
+						return successResponse( {
+							display_rules: JSON.parse( String( init.body ) ),
+						} );
 					}
-					return {
-						ok: true,
-						status: 200,
-						json: async () => ( { display_rules: serverRules } ),
-					};
+					return successResponse( { display_rules: serverRules } );
 				}
 				throw new Error( `Unexpected fetch: ${ url }` );
 			}
-		);
-		Object.defineProperty( window, 'fetch', {
-			configurable: true,
-			value: fetcher,
-		} );
+		) as typeof fetch;
+		const root = installAdmin( fetcher );
 
 		expect( bootstrapAdminApp( '#/bots/bot-existing?page=1' ) ).toBe(
 			true
@@ -276,5 +263,65 @@ describe( 'display rules editor persistence integration', () => {
 		expect( JSON.stringify( expected ) ).not.toContain( 'provider_id' );
 		expect( JSON.stringify( expected ) ).not.toContain( 'model_id' );
 		expect( JSON.stringify( expected ) ).not.toContain( 'isAuthenticated' );
+	} );
+
+	it( 'shows bounded validation feedback for an invalid save', async () => {
+		const fetcher = jest.fn(
+			async ( input: RequestInfo | URL, init?: RequestInit ) => {
+				const url = String( input );
+				if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+					return successResponse( { ready: true, next_step: 'complete' } );
+				}
+				if ( url.includes( '/admin/bots?' ) ) {
+					return successResponse( {
+						items: [ bot ],
+						total: 1,
+						page: 1,
+						per_page: 20,
+					} );
+				}
+				if ( url.endsWith( '/admin/bots/bot-existing/appearance' ) ) {
+					return successResponse( { appearance } );
+				}
+				if (
+					url.endsWith( '/admin/bots/bot-existing/display-rules' )
+				) {
+					if ( init?.method === 'PUT' ) {
+						return {
+							ok: false,
+							status: 400,
+							json: async () => ( { code: 'invalid_display_rules' } ),
+						};
+					}
+					return successResponse( { display_rules: serverRules } );
+				}
+				throw new Error( `Unexpected fetch: ${ url }` );
+			}
+		) as typeof fetch;
+		const root = installAdmin( fetcher );
+
+		expect( bootstrapAdminApp( '#/bots/bot-existing?page=1' ) ).toBe(
+			true
+		);
+		await tick();
+		await tick();
+		await tick();
+		await tick();
+
+		root
+			.querySelector< HTMLFormElement >(
+				'form[data-display-rules-editor]'
+			)
+			?.dispatchEvent(
+				new Event( 'submit', { bubbles: true, cancelable: true } )
+			);
+		await tick();
+		await tick();
+
+		expect(
+			root.querySelector< HTMLElement >(
+				'form[data-display-rules-editor] [role="alert"]'
+			)?.textContent
+		).toBe( 'Display-rule settings are invalid.' );
 	} );
 } );
