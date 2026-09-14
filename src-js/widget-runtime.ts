@@ -7,6 +7,10 @@ import {
 	createProactiveDelayCoordinator,
 	readProactiveDelayConfig,
 } from './widget-proactive';
+import {
+	resolveWidgetMessage,
+	type WidgetMessageKey,
+} from './widget-messages';
 
 export type WidgetSurface = 'floating' | 'embedded' | 'fullscreen';
 
@@ -213,16 +217,16 @@ const readError = ( value: unknown ): PublicChatError | null => {
 	return typeof code === 'string' ? { code } : null;
 };
 
-const publicErrorMessage = ( code: string | null ): string => {
+const publicErrorMessageKey = ( code: string | null ): WidgetMessageKey => {
 	if ( code === 'rate_limited' ) {
-		return 'Too many requests. Please try again shortly.';
+		return 'rate_limited';
 	}
 
 	if ( code === 'chat_unavailable' ) {
-		return 'Chat is temporarily unavailable. Please try again.';
+		return 'chat_unavailable';
 	}
 
-	return "We couldn't send your message. Please try again.";
+	return 'send_failed';
 };
 
 const safeHttpUrl = ( value: string | null ): string | null => {
@@ -268,6 +272,12 @@ export const mountWidgets = (
 				return;
 			}
 
+			const widgetMessage = (
+				key: WidgetMessageKey,
+				params: { botName?: string } = {}
+			): string =>
+				resolveWidgetMessage( displayDecision.locale, key, params );
+			const botName = { botName: config.config.name };
 			const surface = readSurface( config.surface );
 			const isFloating = surface === 'floating';
 			mount.dataset.wpRagAiChatbotSurface = surface;
@@ -275,11 +285,11 @@ export const mountWidgets = (
 
 			const launcher = documentRoot.createElement( 'button' );
 			launcher.type = 'button';
-			launcher.textContent = 'Chat';
+			launcher.textContent = widgetMessage( 'chat' );
 			launcher.dataset.wpRagAiChatbotLauncher = '';
 			launcher.setAttribute(
 				'aria-label',
-				`Open ${ config.config.name } chat`
+				widgetMessage( 'open_chat', botName )
 			);
 			launcher.setAttribute( 'aria-expanded', 'false' );
 
@@ -287,15 +297,18 @@ export const mountWidgets = (
 			panel.dataset.wpRagAiChatbotPanel = '';
 			panel.hidden = isFloating;
 			panel.setAttribute( 'role', 'dialog' );
-			panel.setAttribute( 'aria-label', `${ config.config.name } chat` );
+			panel.setAttribute(
+				'aria-label',
+				widgetMessage( 'chat_label', botName )
+			);
 
 			const close = documentRoot.createElement( 'button' );
 			close.type = 'button';
-			close.textContent = 'Close';
+			close.textContent = widgetMessage( 'close' );
 			close.dataset.wpRagAiChatbotClose = '';
 			close.setAttribute(
 				'aria-label',
-				`Close ${ config.config.name } chat`
+				widgetMessage( 'close_chat', botName )
 			);
 
 			const messages = documentRoot.createElement( 'div' );
@@ -307,17 +320,17 @@ export const mountWidgets = (
 
 			const question = documentRoot.createElement( 'textarea' );
 			question.dataset.wpRagAiChatbotQuestion = '';
-			question.setAttribute( 'aria-label', 'Message' );
+			question.setAttribute( 'aria-label', widgetMessage( 'message' ) );
 
 			const send = documentRoot.createElement( 'button' );
 			send.type = 'submit';
-			send.textContent = 'Send';
+			send.textContent = widgetMessage( 'send' );
 			send.dataset.wpRagAiChatbotSend = '';
-			send.setAttribute( 'aria-label', 'Send message' );
+			send.setAttribute( 'aria-label', widgetMessage( 'send_message' ) );
 
 			const retry = documentRoot.createElement( 'button' );
 			retry.type = 'button';
-			retry.textContent = 'Retry';
+			retry.textContent = widgetMessage( 'retry' );
 			retry.dataset.wpRagAiChatbotRetry = '';
 			retry.hidden = true;
 
@@ -380,9 +393,12 @@ export const mountWidgets = (
 				const appendCompletionControls = (): void => {
 					const copy = documentRoot.createElement( 'button' );
 					copy.type = 'button';
-					copy.textContent = 'Copy';
+					copy.textContent = widgetMessage( 'copy' );
 					copy.dataset.wpRagAiChatbotCopy = '';
-					copy.setAttribute( 'aria-label', 'Copy assistant message' );
+					copy.setAttribute(
+						'aria-label',
+						widgetMessage( 'copy_assistant_message' )
+					);
 					copy.addEventListener( 'click', () => {
 						const clipboard =
 							documentRoot.defaultView?.navigator.clipboard;
@@ -398,7 +414,7 @@ export const mountWidgets = (
 						const details = documentRoot.createElement( 'details' );
 						details.dataset.wpRagAiChatbotSources = '';
 						const summary = documentRoot.createElement( 'summary' );
-						summary.textContent = 'Sources';
+						summary.textContent = widgetMessage( 'sources' );
 						const list = documentRoot.createElement( 'ul' );
 						details.append( summary, list );
 
@@ -488,7 +504,7 @@ export const mountWidgets = (
 					status.textContent = '';
 				};
 
-				status.textContent = 'Assistant is typing…';
+				status.textContent = widgetMessage( 'assistant_typing' );
 				revealNextChunk();
 			};
 
@@ -515,7 +531,7 @@ export const mountWidgets = (
 			const showError = ( code: string | null, value: string ): void => {
 				finishRequest();
 				retryQuestion = value;
-				status.textContent = publicErrorMessage( code );
+				status.textContent = widgetMessage( publicErrorMessageKey( code ) );
 				retry.hidden = false;
 			};
 
@@ -530,7 +546,7 @@ export const mountWidgets = (
 				requestInFlight = true;
 				send.disabled = true;
 				retry.hidden = true;
-				status.textContent = 'Sending…';
+				status.textContent = widgetMessage( 'sending' );
 
 				if ( appendUser ) {
 					appendMessage( 'user', value );
