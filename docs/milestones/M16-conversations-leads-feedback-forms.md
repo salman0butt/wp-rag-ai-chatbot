@@ -26,7 +26,8 @@ Ownership/admin permissions pass; exports escape CSV safely; validation is serve
   - 1B bounded admin conversation query contract: IN PROGRESS
     - pagination bounds authority: COMPLETE
     - immutable list summary projection: COMPLETE
-    - admin list filters/read repository: NEXT
+    - canonical admin list read repository: COMPLETE
+    - bot/date/transcript filters: NEXT
   - 1C detail projection and delete semantics: PENDING
 - Task 2 — Protected admin conversation REST: PENDING
 - Task 3 — Admin inbox/detail UI: PENDING
@@ -53,6 +54,10 @@ Ownership/admin permissions pass; exports escape CSV safely; validation is serve
 - Pagination GREEN: `1ce2c82609af07f7b29fc685dadfb79304679014`, CI `34802027933`. Composer validation, PHPCS, PHPStan, PHPUnit, Composer audit, JavaScript quality/live-gating/package assertions, package build/assertion, and the complete WordPress smoke suite all passed on the exact SHA.
 - Summary projection RED: `da136efb817b3724104d0cc9dde950c6c2fedac4`, CI `34802297133`. PHPCS and PHPStan passed; PHPUnit failed only because `ConversationSummary` was missing.
 - Summary projection GREEN: `c2d2d5725b5a67f38c6c307e9e83fc2100d4f932`, CI `34802423148`. PHP quality, JavaScript quality, package, and full WordPress smoke all passed on the exact SHA.
+- Read repository initial checkpoint: `0c5d1b2c5a02666a890da28343331901622547b9`, CI `34802687164`: **NOT RED**. PHPCS stopped on two test-array alignment warnings before PHPStan/PHPUnit.
+- Read repository RED: `5a047f23f5055a367daa263a0c64f100b50d8400`, CI `34802796170`. Composer validation, PHPCS and PHPStan passed; PHPUnit failed only because `WpdbConversationReadRepository` was missing.
+- Read contract intermediate implementation: `acbccce14986d591034b98e19f8aba7848ca0f84`; this was an implementation checkpoint, not claimed GREEN.
+- Read repository GREEN: `ae185b5f55c954140f230a72c12e19185392d5a1`, CI `34802886455`. PHP quality, JavaScript quality, package, and full WordPress smoke all passed on the exact SHA.
 
 ## Integration Test Evidence
 Task 1A exact-head WordPress smoke in CI `34801027067` passed activation, database, providers, knowledge, file-ingestion, WooCommerce knowledge, Playground REST, and widget-surface smoke checks.
@@ -60,6 +65,8 @@ Task 1A exact-head WordPress smoke in CI `34801027067` passed activation, databa
 Task 1B pagination exact-head WordPress smoke in CI `34802027933` passed activation, database, providers, knowledge, file-ingestion, WooCommerce knowledge, Playground REST, and widget-surface smoke checks.
 
 Task 1B summary exact-head WordPress smoke in CI `34802423148` passed activation, database, providers, knowledge, file-ingestion, WooCommerce knowledge, Playground REST, and widget-surface smoke checks.
+
+Task 1B read-repository exact-head WordPress smoke in CI `34802886455` passed activation, database, providers, knowledge, file-ingestion, WooCommerce knowledge, Playground REST, and widget-surface smoke checks.
 
 ## E2E / Visual Verification
 Pending UI-bearing M16 tasks.
@@ -71,6 +78,8 @@ Task 1B pagination fallback scoped review: 0 Critical, 0 Important. `Conversatio
 
 Task 1B summary fallback scoped review: 0 Critical, 0 Important. `ConversationSummary` is immutable and exposes only conversation identity, explicit nullable bot association, start/latest timestamps, and message count; it does not expose owner scope or message content. Independent reviewer transport was unavailable in this runtime, so no independent review is claimed.
 
+Task 1B read-repository fallback scoped review: 0 Critical, 0 Important. The dedicated repository reads only canonical conversation/message tables, joins messages on both `conversation_id` and `owner_scope`, uses prepared `%i`/`%d` placeholders, exposes no owner scope/message content through the summary DTO, and does not accept request-controlled SQL identifiers. Historical unassigned rows remain valid. Independent reviewer transport was unavailable in this runtime, so no independent review is claimed.
+
 ## Accessibility Review where UI exists
 Pending UI-bearing M16 tasks.
 
@@ -81,12 +90,16 @@ Task 1B pagination adds constant-time scalar normalization only. No Important pe
 
 Task 1B summary is an immutable in-memory DTO with no I/O. No Important performance finding.
 
+Task 1B read repository limits the returned rows and uses the existing `conversation_owner_id (conversation_id, owner_scope, id)` message index for the canonical join. The aggregate currently ranks the eligible conversation set before `LIMIT`; bot/date/search filtering remains the next Task 1B work and should be used to constrain admin queries. No Critical/Important performance finding for this slice.
+
 ## Code Review Findings
 Task 1A fallback correctness/security/performance/architecture review: 0 Critical, 0 Important. The production path reuses `ConversationRepository`, `WpdbConversationRepository`, `ProductionPublicChatExecutor`, and the existing runtime composition root rather than creating a parallel chat or persistence path.
 
 Task 1B pagination fallback correctness/security/performance/architecture review: 0 Critical, 0 Important. The immutable query object is a bounded domain authority and does not duplicate persistence or admin transport concerns.
 
 Task 1B summary fallback correctness/security/performance/architecture review: 0 Critical, 0 Important. The projection remains separate from the M11 write repository and is suitable for the dedicated read repository required by the M16 plan.
+
+Task 1B read-repository fallback correctness/security/performance/architecture review: 0 Critical, 0 Important. The new `ConversationReadRepository` keeps M11 write persistence narrow; `WpdbConversationReadRepository` reuses `Connection` and `TableNames`, performs stable latest-activity ordering with a deterministic conversation-id row tiebreak, preserves nullable bot association, and normalizes database row types before projection.
 
 ## Fixes
 - Added backward-compatible nullable `bot_id` to conversation identity/repository persistence and schema version 14 migration.
@@ -95,6 +108,7 @@ Task 1B summary fallback correctness/security/performance/architecture review: 0
 - New public chats now create an owner-scoped conversation with the explicit validated route bot ID before running the existing M11 responder exactly once.
 - Added immutable conversation-list pagination normalization with page >= 1 and page size bounded to 1-100; repaired readonly/static-analysis and WPCS prerequisite failures without rewriting TDD history.
 - Added immutable `ConversationSummary` list projection with nullable historical bot association and latest-message timestamp.
+- Added dedicated canonical conversation administration read contract/repository with stable recency pagination and message aggregates, without expanding the M11 write repository.
 
 ## Fresh Verification Commands
 Permanent CI workflow gates on exact implementation SHAs: Composer validation, PHPCS, PHPStan, PHPUnit, Composer audit, JavaScript verification/audit/live-gating/package assertion, package build/assertion, and full WordPress smoke.
@@ -106,6 +120,8 @@ Task 1B pagination exact-head CI `34802027933`: SUCCESS.
 
 Task 1B summary exact-head CI `34802423148`: SUCCESS.
 
+Task 1B read repository exact-head CI `34802886455`: SUCCESS.
+
 ## Commits
 Task 1A includes RED checkpoints and implementation commits from `b9ea7f9dd8d0a485a1c69f4077109656f436002b` through `7be973f5d97b043af5d962cb1e00f0833ecea403`, preserving invalid NOT GREEN evidence explicitly.
 
@@ -113,19 +129,21 @@ Task 1B pagination includes RED `e926ce31f891eda7650c9abff2a02509fbd46f9b`, impl
 
 Task 1B summary includes RED `da136efb817b3724104d0cc9dde950c6c2fedac4` and verified GREEN `c2d2d5725b5a67f38c6c307e9e83fc2100d4f932`.
 
+Task 1B read repository includes invalid NOT RED `0c5d1b2c5a02666a890da28343331901622547b9`, formatting repair/genuine RED `5a047f23f5055a367daa263a0c64f100b50d8400`, intermediate contract `acbccce14986d591034b98e19f8aba7848ca0f84`, and verified GREEN `ae185b5f55c954140f230a72c12e19185392d5a1`.
+
 ## Files Changed
 Task 1A touched conversation domain/repository/schema/migration coverage plus the existing public executor/resolver/bootstrap path and focused unit tests.
 
-Task 1B adds `ConversationListQuery`, `ConversationSummary`, focused unit coverage, and durable evidence updates.
+Task 1B adds `ConversationListQuery`, `ConversationSummary`, `ConversationReadRepository`, `WpdbConversationReadRepository`, focused unit coverage, and durable evidence updates.
 
 ## Known Limitations
-Task 1B still needs bounded admin filters and a dedicated canonical conversation/message read repository. Conversation detail/delete, lead capture, feedback, forms, exports, and associated UI remain later M16 work.
+Task 1B still needs bounded bot/date/transcript-search filters on the canonical read repository. Conversation detail/delete, lead capture, feedback, forms, exports, and associated UI remain later M16 work.
 
 ## Documentation Updated
-This ledger records Task 1A evidence plus Task 1B pagination and summary RED/GREEN chronology, fallback review, and exact next unfinished work.
+This ledger records Task 1A evidence plus Task 1B pagination, summary, and canonical read-repository RED/NOT RED/GREEN chronology, fallback review, and exact next unfinished work.
 
 ## Completion Checklist
-M16 remains open. Task 1A plus Task 1B pagination and immutable list-summary slices are complete; remaining Task 1B read/filter repository work plus Tasks 1C-9 remain.
+M16 remains open. Task 1A plus Task 1B pagination, immutable list-summary, and canonical read-repository slices are complete; remaining Task 1B filter/search work plus Tasks 1C-9 remain.
 
 ## Next Milestone
 M17 — Human Handoff.
