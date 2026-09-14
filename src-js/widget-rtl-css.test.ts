@@ -1,8 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+type FsModule = {
+	readFileSync: ( path: string, encoding: 'utf8' ) => string;
+};
 
-const readWidgetCss = (): string =>
-	readFileSync( resolve( process.cwd(), 'assets/widget.css' ), 'utf8' );
+const { readFileSync } = jest.requireActual< FsModule >( 'fs' );
+
+const readWidgetCss = (): string => readFileSync( 'assets/widget.css', 'utf8' );
 
 describe( 'widget logical RTL layout', () => {
 	it( 'uses logical inline positioning instead of physical left and right offsets', () => {
