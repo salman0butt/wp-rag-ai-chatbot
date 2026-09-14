@@ -39,7 +39,7 @@ export interface ConversationAdminLoader {
 	) => Promise< void >;
 	loadDetail: (
 		conversationId: string,
-		apply: ( response: ConversationDetailResponse ) => void
+		apply: ( detail: ConversationDetail ) => void
 	) => Promise< void >;
 	invalidateDetail: () => void;
 }
@@ -69,7 +69,7 @@ export const createConversationAdminLoader = (
 			) ) as ConversationDetailResponse;
 
 			if ( generations.isCurrent( generation ) ) {
-				apply( response );
+				apply( response.conversation );
 			}
 		},
 		invalidateDetail() {
