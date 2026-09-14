@@ -37,7 +37,7 @@ final class WpdbConversationAdminRepository implements ConversationAdminReposito
 	 *
 	 * @param string $conversation_id Stable conversation identifier.
 	 * @throws InvalidArgumentException When the identifier is blank or oversized.
-	 * @throws Throwable When a persistence failure is propagated after rollback.
+	 * @throws DatabaseException When a persistence or transaction operation fails.
 	 */
 	public function delete( string $conversation_id ): bool {
 		$conversation_id = $this->boundedConversationId( $conversation_id );
@@ -97,7 +97,10 @@ final class WpdbConversationAdminRepository implements ConversationAdminReposito
 			return true;
 		} catch ( Throwable $error ) {
 			$this->connection->query( 'ROLLBACK' );
-			throw $error;
+			if ( $error instanceof DatabaseException ) {
+				throw $error;
+			}
+			throw new DatabaseException( 'Conversation deletion failed.', 0, $error );
 		}
 	}
 
