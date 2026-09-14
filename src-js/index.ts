@@ -1380,7 +1380,10 @@ export const AdminShell = ( {
 				onRetryJob: onRetryKnowledgeJob,
 			} )
 		);
-	} else if ( screen === 'conversations' && conversationDetail !== undefined ) {
+	} else if (
+		screen === 'conversations' &&
+		conversationDetail !== undefined
+	) {
 		screenContent = createElement(
 			'div',
 			null,
@@ -1388,9 +1391,12 @@ export const AdminShell = ( {
 			ConversationDetailScreen( {
 				conversation: conversationDetail,
 				deleteConfirmationOpen: conversationDeleteConfirmationOpen,
-				onRequestDelete: onRequestConversationDelete ?? ( () => undefined ),
-				onCancelDelete: onCancelConversationDelete ?? ( () => undefined ),
-				onConfirmDelete: onConfirmConversationDelete ?? ( () => undefined ),
+				onRequestDelete:
+					onRequestConversationDelete ?? ( () => undefined ),
+				onCancelDelete:
+					onCancelConversationDelete ?? ( () => undefined ),
+				onConfirmDelete:
+					onConfirmConversationDelete ?? ( () => undefined ),
 			} )
 		);
 	} else if ( screen === 'conversations' && conversationList !== undefined ) {
