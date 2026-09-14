@@ -40,7 +40,11 @@ final class WpdbConversationReadRepository implements ConversationReadRepository
 	public function list( ConversationListQuery $query ): array {
 		$offset = ( $query->page - 1 ) * $query->page_size;
 
-		/** @var literal-string $where */
+		/**
+		 * Controlled SQL filter suffix.
+		 *
+		 * @var literal-string $where
+		 */
 		$where = '';
 		$args  = array(
 			$this->tables->conversations(),
@@ -55,13 +59,13 @@ final class WpdbConversationReadRepository implements ConversationReadRepository
 		}
 
 		if ( null !== $query->date_from ) {
-			$where  .= '' === $where ? 'WHERE c.created_at >= %s' : ' AND c.created_at >= %s';
-			$args[]  = $query->date_from;
+			$where .= '' === $where ? 'WHERE c.created_at >= %s' : ' AND c.created_at >= %s';
+			$args[] = $query->date_from;
 		}
 
 		if ( null !== $query->date_to ) {
-			$where  .= '' === $where ? 'WHERE c.created_at <= %s' : ' AND c.created_at <= %s';
-			$args[]  = $query->date_to;
+			$where .= '' === $where ? 'WHERE c.created_at <= %s' : ' AND c.created_at <= %s';
+			$args[] = $query->date_to;
 		}
 
 		if ( null !== $query->search ) {
@@ -75,7 +79,11 @@ final class WpdbConversationReadRepository implements ConversationReadRepository
 		$args[] = $query->page_size;
 		$args[] = $offset;
 
-		/** @var literal-string $sql_template */
+		/**
+		 * Literal SQL template composed only from repository-controlled fragments.
+		 *
+		 * @var literal-string $sql_template
+		 */
 		$sql_template = 'SELECT c.conversation_id, c.bot_id, c.created_at AS started_at, MAX(m.created_at) AS latest_message_at, COUNT(m.id) AS message_count
 			FROM %i AS c
 			LEFT JOIN %i AS m ON m.conversation_id = c.conversation_id AND m.owner_scope = c.owner_scope
