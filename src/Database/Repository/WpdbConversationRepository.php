@@ -22,6 +22,7 @@ use WpRagAiChatbot\Database\TableNames;
  */
 final class WpdbConversationRepository implements ConversationRepository {
 	private const MAX_IDENTIFIER_BYTES = 191;
+	private const MAX_BOT_ID_BYTES     = 32;
 
 	/**
 	 * Create the repository.
@@ -46,7 +47,7 @@ final class WpdbConversationRepository implements ConversationRepository {
 		$conversation_id = $this->boundedConversationId( $conversation_id );
 		$owner_scope     = $this->boundedOwnerScope( $owner_scope );
 		$sql             = $this->connection->prepare(
-			'SELECT conversation_id, owner_scope FROM %i WHERE conversation_id = %s AND owner_scope = %s LIMIT 1',
+			'SELECT conversation_id, owner_scope, bot_id FROM %i WHERE conversation_id = %s AND owner_scope = %s LIMIT 1',
 			$this->tables->conversations(),
 			$conversation_id,
 			$owner_scope
@@ -57,7 +58,16 @@ final class WpdbConversationRepository implements ConversationRepository {
 			return null;
 		}
 
-		return new Conversation( (string) $row['conversation_id'], (string) $row['owner_scope'] );
+		$bot_id = null;
+		if ( array_key_exists( 'bot_id', $row ) && null !== $row['bot_id'] ) {
+			$bot_id = (string) $row['bot_id'];
+		}
+
+		return new Conversation(
+			(string) $row['conversation_id'],
+			(string) $row['owner_scope'],
+			$bot_id
+		);
 	}
 
 	/**
@@ -83,7 +93,8 @@ final class WpdbConversationRepository implements ConversationRepository {
 		$formats         = array( '%s', '%s', '%s', '%s' );
 
 		if ( null !== $bot_id ) {
-			$data['bot_id'] = $this->boundedBotId( $bot_id );
+			$bot_id        = $this->boundedBotId( $bot_id );
+			$data['bot_id'] = $bot_id;
 			$formats[]      = '%s';
 		}
 
@@ -97,7 +108,7 @@ final class WpdbConversationRepository implements ConversationRepository {
 			throw new DatabaseException( 'Could not create conversation.' );
 		}
 
-		return new Conversation( $conversation_id, $owner_scope );
+		return new Conversation( $conversation_id, $owner_scope, $bot_id );
 	}
 
 	/**
@@ -145,7 +156,7 @@ final class WpdbConversationRepository implements ConversationRepository {
 		if ( '' === $value ) {
 			throw new InvalidArgumentException( 'Bot identifier must not be blank.' );
 		}
-		if ( strlen( $value ) > self::MAX_IDENTIFIER_BYTES ) {
+		if ( strlen( $value ) > self::MAX_BOT_ID_BYTES ) {
 			throw new InvalidArgumentException( 'Bot identifier exceeds the persistence limit.' );
 		}
 		return $value;
