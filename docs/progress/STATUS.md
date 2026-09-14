@@ -9,7 +9,8 @@
 - M16 Task 1A explicit bot association: **COMPLETE**.
 - M16 Task 1B bounded admin conversation query/read model: **COMPLETE**.
 - M16 Task 1C detail projection and explicit admin delete semantics: **COMPLETE**. Final chronology GREEN `b45225eda3b01931a907821a42fda77330c53b76`, CI `34811065345`.
-- Current unfinished unit: **M16 Task 2 — protected administrator conversation REST**.
+- M16 Task 2 protected administrator conversation REST: **COMPLETE**. Final implementation GREEN `302c77e4c0ae7fea49c5007cbee4c3b4d66d937a`, CI `34825392498`.
+- Current unfinished unit: **M16 Task 3 — administrator inbox/detail UI**.
 
 This file is the concise recovery index. Detailed RED/GREEN chronology, invalid checkpoints, reviews, security/accessibility/performance findings, implementation notes, and CI evidence remain in milestone ledgers and `docs/progress/MXX-*` evidence files.
 
@@ -60,15 +61,19 @@ Completed current slices:
 - Task 1B bounded bot/date/transcript query authority: GREEN `060f5614e995ddd23b97c717beaba43ddfd16c7b`, CI `34803852942`.
 - Task 1B prepared repository filters/search: GREEN `2d826482d45ec47c1c2b3edfb1d9b3c034774066`, CI `34804366360`.
 - Task 1C bounded conversation detail plus explicit administrator deletion: COMPLETE. Final chronology acceptance GREEN `b45225eda3b01931a907821a42fda77330c53b76`, CI `34811065345`. Detailed evidence: `docs/progress/M16-TASK1-CONVERSATION-ADMIN.md`.
+- Task 2 protected administrator conversation REST: COMPLETE. Protected list/detail/delete reuse the canonical conversation authorities and `AdminCapability::can_manage`, list/detail inputs stay bounded, and malformed deletes map to a stable non-leaking public error. Final implementation GREEN `302c77e4c0ae7fea49c5007cbee4c3b4d66d937a`, CI `34825392498`. Detailed evidence: `docs/progress/M16-TASK2-CONVERSATION-REST.md`.
 
 Task 1B fallback scoped review: **0 Critical / 0 Important**. Filter values are prepared, table identifiers remain repository-owned, transcript search is bounded and correlated by conversation plus owner scope, wildcard characters are escaped, and the outer aggregate still counts/ranks the complete transcript rather than only matching messages. Independent reviewer transport was unavailable; no independent review is claimed.
 
 Task 1C fallback scoped review: **0 Critical / 0 Important** after repairing stable transcript chronology to `created_at ASC, id ASC`. Owner scope remains internal, detail reads stay capped at 100 messages, deletion stays on a separate explicit admin mutation boundary, and dependent message cleanup remains transactional. Independent reviewer transport was unavailable; no independent review is claimed.
 
-Current unfinished work: Task 2 — protected administrator conversation REST over the existing conversation read/admin authorities. After Task 2, continue directly to the admin inbox/detail UI.
+Task 2 fallback scoped review: **0 Critical / 0 Important** across correctness, security/privacy, performance and architecture/duplication. Every route is capability protected, bounded request parsing feeds the existing read authority, detail remains capped, malformed inputs fail closed, and delete validation errors are projected without exception/PII leakage. Independent reviewer transport was unavailable; no independent review is claimed.
+
+Current unfinished work: Task 3 — administrator inbox/detail UI over the protected conversation REST surface. Start test-first with route/state parsing, pagination/search/filter behavior, empty/error states and bounded transcript rendering; then add stale-response generation guards, explicit delete confirmation and focus restoration.
 
 Durable M16 references:
 - `docs/milestones/M16-conversations-leads-feedback-forms.md`
 - `docs/progress/M16-TASK1-CONVERSATION-ADMIN.md`
+- `docs/progress/M16-TASK2-CONVERSATION-REST.md`
 - `docs/superpowers/specs/2026-09-14-m16-conversations-leads-feedback-forms-design.md`
 - `docs/superpowers/plans/2026-09-14-m16-conversations-leads-feedback-forms.md`
