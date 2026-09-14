@@ -13,6 +13,7 @@ use Brain\Monkey;
 use Brain\Monkey\Functions;
 use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Admin\Rest\AdminRestBootstrap;
 
@@ -67,5 +68,29 @@ final class ConversationRoutesTest extends TestCase {
 		Functions\expect( 'register_rest_route' )->times( 15 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
+	}
+
+	/** The collection callback must consume the bounded request parser rather than rebuilding query rules. */
+	public function test_list_callback_uses_bounded_conversation_request_parser(): void {
+		$method   = new ReflectionMethod( AdminRestBootstrap::class, 'list_conversations' );
+		$filename = $method->getFileName();
+
+		self::assertIsString( $filename );
+		$lines = file( $filename );
+		self::assertIsArray( $lines );
+
+		$source = implode(
+			'',
+			array_slice(
+				$lines,
+				$method->getStartLine() - 1,
+				$method->getEndLine() - $method->getStartLine() + 1
+			)
+		);
+
+		self::assertStringContainsString(
+			'ConversationListRequest::from_array( $request->get_query_params() )',
+			$source
+		);
 	}
 }
