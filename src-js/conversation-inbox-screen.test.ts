@@ -97,8 +97,7 @@ describe( 'ConversationInboxScreen', () => {
 				?.textContent
 		).toBe( 'Search conversations' );
 		expect(
-			root.querySelector( 'label[for="conversation-bot"]' )
-				?.textContent
+			root.querySelector( 'label[for="conversation-bot"]' )?.textContent
 		).toBe( 'Bot ID' );
 		expect(
 			root.querySelector( 'label[for="conversation-date-from"]' )
