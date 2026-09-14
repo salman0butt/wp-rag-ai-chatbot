@@ -170,7 +170,10 @@ describe( 'display rules editor persistence integration', () => {
 			async ( input: RequestInfo | URL, init?: RequestInit ) => {
 				const url = String( input );
 				if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
-					return successResponse( { ready: true, next_step: 'complete' } );
+					return successResponse( {
+						ready: true,
+						next_step: 'complete',
+					} );
 				}
 				if ( url.includes( '/admin/bots?' ) ) {
 					return successResponse( {
@@ -270,7 +273,10 @@ describe( 'display rules editor persistence integration', () => {
 			async ( input: RequestInfo | URL, init?: RequestInit ) => {
 				const url = String( input );
 				if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
-					return successResponse( { ready: true, next_step: 'complete' } );
+					return successResponse( {
+						ready: true,
+						next_step: 'complete',
+					} );
 				}
 				if ( url.includes( '/admin/bots?' ) ) {
 					return successResponse( {
@@ -290,7 +296,9 @@ describe( 'display rules editor persistence integration', () => {
 						return {
 							ok: false,
 							status: 400,
-							json: async () => ( { code: 'invalid_display_rules' } ),
+							json: async () => ( {
+								code: 'invalid_display_rules',
+							} ),
 						};
 					}
 					return successResponse( { display_rules: serverRules } );
