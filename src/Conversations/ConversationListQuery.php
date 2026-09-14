@@ -15,7 +15,7 @@ use InvalidArgumentException;
  * Immutable normalized pagination and filter authority for conversation administration reads.
  */
 final readonly class ConversationListQuery {
-	private const MAX_PAGE_SIZE      = 100;
+	private const MAX_PAGE_SIZE     = 100;
 	private const MAX_SEARCH_LENGTH = 200;
 
 	/**
