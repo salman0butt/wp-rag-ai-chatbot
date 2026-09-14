@@ -44,9 +44,7 @@ describe( 'bounded widget message catalog', () => {
 		expect( resolveWidgetMessage( 'en-US', 'retry' ) ).toBe( 'Retry' );
 		expect( resolveWidgetMessage( 'en-US', 'copy' ) ).toBe( 'Copy' );
 		expect( resolveWidgetMessage( 'en-US', 'sources' ) ).toBe( 'Sources' );
-		expect( resolveWidgetMessage( 'en-US', 'sending' ) ).toBe(
-			'Sending…'
-		);
+		expect( resolveWidgetMessage( 'en-US', 'sending' ) ).toBe( 'Sending…' );
 	} );
 
 	it( 'supports one RTL locale path and falls back unsupported locales to English', () => {
