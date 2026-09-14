@@ -141,6 +141,11 @@ describe( 'appearance customizer persistence integration', () => {
 			.mockResolvedValueOnce( {
 				ok: true,
 				status: 200,
+				json: async () => ( { display_rules: {} } ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
 				json: async () => ( { appearance: savedAppearance } ),
 			} );
 		Object.defineProperty( window, 'fetch', {
@@ -190,7 +195,7 @@ describe( 'appearance customizer persistence integration', () => {
 		await tick();
 
 		expect( fetcher ).toHaveBeenNthCalledWith(
-			4,
+			5,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots/bot-existing/appearance',
 			expect.objectContaining( {
 				method: 'PUT',
