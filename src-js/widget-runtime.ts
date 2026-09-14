@@ -438,6 +438,19 @@ export const mountWidgets = (
 					}
 				};
 
+				const reducedMotion =
+					documentRoot.defaultView?.matchMedia?.(
+						'(prefers-reduced-motion: reduce)'
+					).matches ?? false;
+				if ( reducedMotion ) {
+					message.textContent = text;
+					message.setAttribute( 'aria-live', 'polite' );
+					appendCompletionControls();
+					finishRequest();
+					status.textContent = '';
+					return;
+				}
+
 				const chunkSize = Math.max(
 					1,
 					Math.ceil( text.length / MAX_TYPING_TICKS )
