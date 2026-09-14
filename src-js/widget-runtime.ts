@@ -269,6 +269,9 @@ export const mountWidgets = (
 				return;
 			}
 
+			mount.lang = displayDecision.locale;
+			mount.dir = displayDecision.direction;
+
 			const widgetMessage = (
 				key: WidgetMessageKey,
 				params: { botName?: string } = {}
