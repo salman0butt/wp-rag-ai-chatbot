@@ -1,12 +1,14 @@
 # Global Status
 
-- Completed milestones on `main`: **M00-M14**.
-- Latest completed milestone on `main`: **M14 — Frontend Chatbot / Customizer**.
-- M14 PR: **#19 — MERGED** at merge SHA `937ee81d55b0007147a6c764ce29d5d5fba9459b`.
-- M14 exact-final PR-head CI: **`34748534203` — GREEN** at `2e8c15ba8a09ecc6a6355b8057a61e28741ed7e8`.
-- M14 post-merge `main` CI: **`34750216460` — GREEN** at merge SHA `937ee81d55b0007147a6c764ce29d5d5fba9459b`.
-- Current milestone: **M15 — Display Rules, Proactive Triggers, Multilingual/RTL & Accessibility**.
-- M15 implementation/review/permanent smoke: **COMPLETE on feature branch; PR / merge / post-merge verification pending**.
+- Completed milestones on `main`: **M00-M15**.
+- Latest completed milestone on `main`: **M15 — Display Rules, Proactive Triggers, Multilingual/RTL & Accessibility**.
+- M15 PR: **#20 — MERGED** at merge SHA `dc889a6664ae29dadcad6a2775d65d229d43a191`.
+- M15 post-merge `main` CI: **`34796323781` — GREEN** at merge SHA `dc889a6664ae29dadcad6a2775d65d229d43a191`.
+- Current milestone: **M16 — Conversations, Leads, Feedback & Conversational Forms**.
+- Active M16 branch: `feat/m16-conversations-leads-feedback-forms`.
+- M16 Task 1A explicit bot association: **COMPLETE**.
+- M16 Task 1B bounded admin conversation query/read model: **COMPLETE**.
+- Current unfinished unit: **M16 Task 1C — detail projection and explicit admin delete semantics**.
 
 This file is the concise recovery index. Detailed RED/GREEN chronology, invalid checkpoints, reviews, security/accessibility/performance findings, implementation notes, and CI evidence remain in milestone ledgers and `docs/progress/MXX-*` evidence files.
 
@@ -24,23 +26,15 @@ Durable M14 references:
 - `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md`
 - PR #19 — merged.
 
-## M15 — IMPLEMENTATION COMPLETE / MERGE PENDING
+## M15 — COMPLETE
 
-M15 adds deterministic bot-scoped display rules and presentation facts, bounded proactive triggers, page-aware starter suggestions, protected admin configuration/preview, bounded English/Urdu localization, widget-local RTL semantics, logical CSS, reduced-motion behavior, and focus/lifecycle hardening without introducing parallel widget/RAG/config authorities.
+M15 added deterministic bot-scoped display rules and presentation facts, bounded proactive triggers, page-aware starter suggestions, protected admin configuration/preview, bounded English/Urdu localization, widget-local RTL semantics, logical CSS, reduced-motion behavior, and focus/lifecycle hardening without introducing parallel widget/RAG/config authorities.
 
 Final scoped fallback review: **0 unresolved Critical / 0 unresolved Important** across correctness, security/privacy, performance/lifecycle, accessibility/mobile/RTL, and architecture/duplication. Independent reviewer transport was unavailable and that limitation is recorded durably.
 
-Key exact-head evidence:
-- Task 1 domain: `e9d4adbd076333142e000a38332cfdc8fd9e8853`, CI `34755743017` — GREEN.
-- Task 7 integration/stale-save: `38cadbef21fd8387fb5e4bf6733cc33930536148`, CI `34793226261` — GREEN.
-- Task 8 localized runtime: `a875299414e709a182d7e361e328b07c9c80bc7e`, CI `34794272117` — GREEN.
-- Task 8 widget-local direction: `29bbe3b34ba7616d08b23c2aabfc276c61073944`, CI `34794699995` — GREEN.
-- Task 8 logical RTL CSS: `b05ec97078c790b50a7cdbdfa647234bb174fa9f`, CI `34794973838` — GREEN.
-- Task 8 reduced motion: `fe69aacaf5aee32341e682d2daf1c55bb3bcc888`, CI `34795234377` — GREEN.
-- Task 8 focus/lifecycle: `4431d09f1cc3d3ca3fac5c639b50b1054b4c0424`, CI `34795395647` — GREEN.
-- Task 9 real WordPress integration: `8bd5af09a435bafb3f000f42ae7cce91d86dacfb`, CI `34795728393` — GREEN.
+M15 PR #20 merged to `main` at `dc889a6664ae29dadcad6a2775d65d229d43a191`; fresh post-merge CI `34796323781` is GREEN on that exact SHA.
 
-M15 durable references:
+Durable M15 references:
 - `docs/milestones/M15-display-rules-rtl-accessibility.md`
 - `docs/progress/M15-TASK1-DISPLAY-RULES.md`
 - `docs/progress/M15-TASK3-SERVER-CONTEXT.md`
@@ -53,4 +47,23 @@ M15 durable references:
 - `docs/superpowers/specs/2026-09-13-m15-display-rules-rtl-accessibility-design.md`
 - `docs/superpowers/plans/2026-09-13-m15-display-rules-rtl-accessibility.md`
 
-Current unfinished work: verify exact closeout-documentation branch-head CI, create/recover the single M15 PR, recheck mergeability/reviews/concurrency, merge with expected-head protection, verify fresh post-merge `main` CI, then recover M16 and continue if safe.
+## M16 — IN PROGRESS
+
+M16 reuses the canonical M11 conversation/message authorities and adds administration, lead capture, feedback, focused forms, visitor integration, and safe export incrementally. Bot identity remains explicit; historical unassigned conversations stay valid; `owner_scope` is never parsed to guess a bot.
+
+Completed current slices:
+- Task 1A — explicit bot association and public creation path: COMPLETE. Final GREEN `7be973f5d97b043af5d962cb1e00f0833ecea403`, CI `34801027067`.
+- Task 1B pagination authority: GREEN `1ce2c82609af07f7b29fc685dadfb79304679014`, CI `34802027933`.
+- Task 1B immutable summary projection: GREEN `c2d2d5725b5a67f38c6c307e9e83fc2100d4f932`, CI `34802423148`.
+- Task 1B canonical admin read repository: GREEN `ae185b5f55c954140f230a72c12e19185392d5a1`, CI `34802886455`.
+- Task 1B bounded bot/date/transcript query authority: GREEN `060f5614e995ddd23b97c717beaba43ddfd16c7b`, CI `34803852942`.
+- Task 1B prepared repository filters/search: GREEN `2d826482d45ec47c1c2b3edfb1d9b3c034774066`, CI `34804366360`.
+
+Task 1B fallback scoped review: **0 Critical / 0 Important**. Filter values are prepared, table identifiers remain repository-owned, transcript search is bounded and correlated by conversation plus owner scope, wildcard characters are escaped, and the outer aggregate still counts/ranks the complete transcript rather than only matching messages. Independent reviewer transport was unavailable; no independent review is claimed.
+
+Current unfinished work: Task 1C — read one conversation plus bounded chronological canonical transcript, then specify explicit administrator deletion with dependent-row cleanup and missing-conversation behavior. After Task 1C, continue directly to protected admin conversation REST.
+
+Durable M16 references:
+- `docs/milestones/M16-conversations-leads-feedback-forms.md`
+- `docs/superpowers/specs/2026-09-14-m16-conversations-leads-feedback-forms-design.md`
+- `docs/superpowers/plans/2026-09-14-m16-conversations-leads-feedback-forms.md`
