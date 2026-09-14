@@ -32,6 +32,20 @@ Harness repair / GREEN: `151753f068fb9202f8c26e051d36a25b49b0bf6b`, CI `34851886
 
 Behavior: `ConversationInboxScreen()` now provides semantic conversation rows, a stable empty state, explicit search/bot/from/to labels associated with native inputs, singular/plural message counts, unassigned-bot labeling, and bounded Previous/Next pagination controls. The component is presentation-only and does not introduce a second conversation data authority.
 
+### Request generation guard and detail presentation
+The existing M16 Task 3 branch now includes the conversation admin loader/generation guard plus bounded transcript/detail presentation with an explicit confirmation dialog before deletion. The loader owns list/detail request generations so stale completions cannot overwrite newer navigation state; the detail screen consumes the protected server projection rather than constructing a second transcript authority.
+
+Latest pre-composition exact-head GREEN: `39171ed7ce1b827151a9c3ded5a80dd7408ced3c`, CI `34867130525`.
+
+### Admin-shell composition
+RED: `99c2139ad703ee2818c8a7c8b4f4afe18ca211f4`, CI `34868166945`. Package, PHP and WordPress smoke passed; JavaScript lint passed; TypeScript then failed exactly because `conversationList` and `conversationDetail` were not accepted by `AdminShellProps`. This is the intended missing shell-composition behavior and is a valid RED.
+
+Implementation checkpoint: `ccfd7a5e50c87304e3923786d6e799288e84fd54`, CI `34868709352`: **NOT GREEN**. Package/build passed, but `verify:js` stopped on four Prettier-only errors in `src-js/index.ts` before the implementation could be called GREEN.
+
+Formatting repair / GREEN: `0447a7706f9ae96ff490f80bf29a1ecafafd9f12`, CI `34869371247`. `package`, `php-quality`, `js-quality`, and the complete `wordpress-smoke` suite all passed on the exact SHA.
+
+Behavior: `AdminShell()` now composes the existing `ConversationInboxScreen` for a protected list projection and the existing `ConversationDetailScreen` for a selected transcript. Detail takes precedence when supplied; delete confirmation/callbacks are passed to the detail presentation boundary; no request-level credentials, provider/model overrides, retrieval settings, or direct storage access are introduced.
+
 ## Review
 Independent reviewer transport is unavailable in this runtime, so no independent review is claimed.
 
@@ -51,5 +65,13 @@ Repository-approved fallback scoped review for the inbox presentation slice: 0 C
 - Accessibility: filters use explicit visible labels associated with native inputs; pagination is grouped under a labelled `nav`; disabled states are native button states; empty state remains textual and stable.
 - Architecture/duplication: the screen is presentation-only and is intended to consume the existing protected REST authority rather than duplicate conversation querying.
 
+Repository-approved fallback scoped review for the admin-shell composition slice: **0 Critical, 0 Important** findings.
+
+- Correctness: list/detail composition consumes the already-bounded REST projection types; detail deterministically takes precedence over the list when selected.
+- Security/privacy: server capability enforcement remains authoritative; the composition accepts no credentials, arbitrary provider/model options, retrieval overrides, raw HTML, or storage identifiers beyond the existing protected conversation DTOs.
+- Performance: composition is linear in already-bounded projected data and adds no new network work, loops over unbounded state, polling, or duplicate retrieval.
+- Accessibility: it reuses the previously reviewed semantic inbox controls and explicit `alertdialog` deletion confirmation rather than replacing native/labelled controls.
+- Architecture/duplication: the shell only composes existing loader/presentation authorities; it creates no parallel conversation repository, REST path, transcript parser, or chat/RAG pipeline.
+
 ## Exact next unfinished unit
-Wire protected conversation list/detail loading into the admin shell with stale-response generation guards so older list/detail responses cannot replace newer navigation/filter state. Then complete detail transcript rendering and explicit delete confirmation/focus restoration.
+Wire the existing `createConversationAdminLoader` into `bootstrapAdminApp()` so `#/conversations` loads the protected bounded list/detail state, navigation changes invalidate stale detail/list completions through the existing generation guard, and the shell receives only the current route projection. Then wire inbox detail navigation and protected DELETE confirmation/focus restoration without duplicating request-generation logic.
