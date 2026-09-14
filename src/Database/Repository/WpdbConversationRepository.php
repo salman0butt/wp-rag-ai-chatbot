@@ -93,7 +93,7 @@ final class WpdbConversationRepository implements ConversationRepository {
 		$formats         = array( '%s', '%s', '%s', '%s' );
 
 		if ( null !== $bot_id ) {
-			$bot_id        = $this->boundedBotId( $bot_id );
+			$bot_id         = $this->boundedBotId( $bot_id );
 			$data['bot_id'] = $bot_id;
 			$formats[]      = '%s';
 		}
