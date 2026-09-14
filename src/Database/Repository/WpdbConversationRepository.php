@@ -61,24 +61,36 @@ final class WpdbConversationRepository implements ConversationRepository {
 	}
 
 	/**
-	 * Create one owner-scoped conversation.
+	 * Create one owner-scoped conversation with an optional explicit bot association.
 	 *
-	 * @param string $owner_scope Trusted owner scope.
+	 * The optional association keeps historical and non-bot creation callers backward compatible while
+	 * allowing M16 public creation paths to persist bot identity independently of owner scope.
+	 *
+	 * @param string      $owner_scope Trusted owner scope.
+	 * @param string|null $bot_id Explicit persisted bot identifier when the creating path has bot authority.
 	 * @throws DatabaseException When persistence fails.
 	 */
-	public function create_for_owner( string $owner_scope ): Conversation {
+	public function create_for_owner( string $owner_scope, ?string $bot_id = null ): Conversation {
 		$owner_scope     = $this->boundedOwnerScope( $owner_scope );
 		$conversation_id = bin2hex( random_bytes( 16 ) );
 		$now             = gmdate( 'Y-m-d H:i:s' );
-		$result          = $this->connection->insert(
+		$data            = array(
+			'conversation_id' => $conversation_id,
+			'owner_scope'     => $owner_scope,
+			'created_at'      => $now,
+			'updated_at'      => $now,
+		);
+		$formats         = array( '%s', '%s', '%s', '%s' );
+
+		if ( null !== $bot_id ) {
+			$data['bot_id'] = $this->boundedBotId( $bot_id );
+			$formats[]      = '%s';
+		}
+
+		$result = $this->connection->insert(
 			$this->tables->conversations(),
-			array(
-				'conversation_id' => $conversation_id,
-				'owner_scope'     => $owner_scope,
-				'created_at'      => $now,
-				'updated_at'      => $now,
-			),
-			array( '%s', '%s', '%s', '%s' )
+			$data,
+			$formats
 		);
 
 		if ( false === $result ) {
@@ -118,6 +130,23 @@ final class WpdbConversationRepository implements ConversationRepository {
 		}
 		if ( strlen( $value ) > self::MAX_IDENTIFIER_BYTES ) {
 			throw new InvalidArgumentException( 'Owner scope exceeds the persistence limit.' );
+		}
+		return $value;
+	}
+
+	/**
+	 * Normalize and hard-bound an explicit bot association.
+	 *
+	 * @param string $value Raw bot identifier.
+	 * @throws InvalidArgumentException When bot identity is blank or oversized.
+	 */
+	private function boundedBotId( string $value ): string {
+		$value = trim( $value );
+		if ( '' === $value ) {
+			throw new InvalidArgumentException( 'Bot identifier must not be blank.' );
+		}
+		if ( strlen( $value ) > self::MAX_IDENTIFIER_BYTES ) {
+			throw new InvalidArgumentException( 'Bot identifier exceeds the persistence limit.' );
 		}
 		return $value;
 	}
