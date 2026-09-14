@@ -16,6 +16,8 @@ use WpRagAiChatbot\Chat\ChatRequest;
 use WpRagAiChatbot\Chat\ChatResponder;
 use WpRagAiChatbot\Chat\ChatResult;
 use WpRagAiChatbot\Citations\Citation;
+use WpRagAiChatbot\Conversations\Conversation;
+use WpRagAiChatbot\Conversations\ConversationRepository;
 use WpRagAiChatbot\Frontend\ProductionPublicChatExecutor;
 use WpRagAiChatbot\Frontend\PublicChatCitation;
 use WpRagAiChatbot\Frontend\PublicChatRequest;
@@ -109,5 +111,56 @@ final class ProductionPublicChatExecutorTest extends TestCase {
 		self::assertFalse( property_exists( $response->citations[0], 'chunk_id' ) );
 		self::assertFalse( property_exists( $response->citations[0], 'document_id' ) );
 		self::assertFalse( property_exists( $response->citations[0], 'source_id' ) );
+	}
+
+	/** A new public chat persists one explicit bot association before executing the production responder. */
+	public function test_creates_new_public_conversation_with_explicit_bot_association(): void {
+		$bot_id  = '0123456789abcdef0123456789abcdef';
+		$request = PublicChatRequest::from_array(
+			array(
+				'bot_id'   => $bot_id,
+				'question' => 'How do I reset my password?',
+			)
+		);
+		$access  = new ChatAccessContext(
+			'public:' . $bot_id,
+			new SemanticRetrievalContext(
+				new RetrievalFilter( null, null, array( 42 ) ),
+				static fn ( string $chunk_id ): ?ChunkSearchRecord => '' === $chunk_id ? null : null
+			),
+			new LexicalFilter( 'support-en-v1', null, 42 ),
+			false
+		);
+
+		$conversations = $this->createMock( ConversationRepository::class );
+		$conversations->expects( self::once() )
+			->method( 'create_for_owner' )
+			->with( $access->owner_scope, $bot_id )
+			->willReturn( new Conversation( 'conversation-new', $access->owner_scope, $bot_id ) );
+
+		$responder = $this->createMock( ChatResponder::class );
+		$responder->expects( self::once() )
+			->method( 'respond' )
+			->with(
+				self::callback(
+					static fn ( ChatRequest $chat ): bool =>
+						$request->question === $chat->question
+						&& 'conversation-new' === $chat->conversation_id
+				),
+				$access
+			)
+			->willReturn(
+				new ChatResult(
+					'Reset it from Account Settings.',
+					false,
+					null,
+					array(),
+					'conversation-new'
+				)
+			);
+
+		$response = ( new ProductionPublicChatExecutor( $responder, $access, 'gpt-4.1-mini', $conversations ) )->execute( $request );
+
+		self::assertSame( 'conversation-new', $response->conversation_id );
 	}
 }
