@@ -17,7 +17,8 @@ type AdminScreen =
 	| 'bots'
 	| 'providers'
 	| 'knowledge'
-	| 'playground';
+	| 'playground'
+	| 'conversations';
 
 type AdminShellComponent = ( props: {
 	state: AdminShellState;
@@ -192,6 +193,7 @@ describe( 'AdminShell', () => {
 				'#/providers',
 				'#/knowledge',
 				'#/playground',
+				'#/conversations',
 			]
 		);
 		expect(
