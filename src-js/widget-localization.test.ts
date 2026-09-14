@@ -29,9 +29,9 @@ describe( 'localized widget runtime labels', () => {
 	} );
 
 	it( 'renders Urdu control and accessible labels from the shared display-rule locale decision', () => {
-		expect(
-			mountWidgets( document, [ localizedConfig( 'ur-pk' ) ] )
-		).toBe( 1 );
+		expect( mountWidgets( document, [ localizedConfig( 'ur-pk' ) ] ) ).toBe(
+			1
+		);
 
 		const launcher = document.querySelector< HTMLButtonElement >(
 			'[data-wp-rag-ai-chatbot-launcher]'
@@ -68,9 +68,9 @@ describe( 'localized widget runtime labels', () => {
 	} );
 
 	it( 'keeps unsupported runtime locales on the English fallback', () => {
-		expect(
-			mountWidgets( document, [ localizedConfig( 'fr-fr' ) ] )
-		).toBe( 1 );
+		expect( mountWidgets( document, [ localizedConfig( 'fr-fr' ) ] ) ).toBe(
+			1
+		);
 
 		expect(
 			document.querySelector< HTMLButtonElement >(
