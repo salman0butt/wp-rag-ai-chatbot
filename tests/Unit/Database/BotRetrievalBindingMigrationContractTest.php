@@ -19,13 +19,13 @@ use WpRagAiChatbot\Tests\Support\Database\RecordingConnection;
  * Defines the schema identity for server-owned bot retrieval bindings.
  */
 final class BotRetrievalBindingMigrationContractTest extends TestCase {
-	/** Task 4C advances the schema and preserves all existing bot fields. */
+	/** Task 4C defines migration twelve and later schemas must retain it. */
 	public function test_bot_retrieval_binding_is_part_of_schema_version_twelve(): void {
 		self::assertTrue(
 			class_exists( V012AddBotRetrievalBinding::class ),
 			'M14 Task 4C requires V012AddBotRetrievalBinding.'
 		);
-		self::assertSame( 12, DatabaseSchema::VERSION );
+		self::assertGreaterThanOrEqual( 12, DatabaseSchema::VERSION );
 
 		$connection = new RecordingConnection();
 		$migration  = new V012AddBotRetrievalBinding( new TableNames( 'wp_' ) );

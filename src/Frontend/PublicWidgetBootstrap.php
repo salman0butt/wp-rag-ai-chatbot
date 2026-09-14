@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Frontend;
 
 use WpRagAiChatbot\Database\Repository\WpdbBotAppearanceRepository;
+use WpRagAiChatbot\Database\Repository\WpdbBotDisplayRulesRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
@@ -45,7 +46,8 @@ final readonly class PublicWidgetBootstrap {
 			new PublicWidgetMount(
 				new WidgetConfigResolver(
 					new WpdbBotRepository( $connection, $tables ),
-					new WpdbBotAppearanceRepository( $connection, $tables )
+					new WpdbBotAppearanceRepository( $connection, $tables ),
+					new WpdbBotDisplayRulesRepository( $connection, $tables )
 				)
 			),
 			dirname( __DIR__, 2 ) . '/wp-rag-ai-chatbot.php'
@@ -132,6 +134,7 @@ final readonly class PublicWidgetBootstrap {
 			'restBase' => untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) ),
 			'surface'  => $surface,
 			'config'   => $config->to_array(),
+			'facts'    => ( new WordPressDisplayContextResolver() )->resolve(),
 		);
 		$encoded_config = wp_json_encode( $browser_config );
 		if ( false === $encoded_config ) {

@@ -12,6 +12,7 @@ namespace WpRagAiChatbot\Admin\Rest;
 use WP_REST_Request;
 use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Database\Repository\WpdbBotAppearanceRepository;
+use WpRagAiChatbot\Database\Repository\WpdbBotDisplayRulesRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
 use WpRagAiChatbot\Database\Repository\WpdbDocumentRepository;
 use WpRagAiChatbot\Database\Repository\WpdbJobReadRepository;
@@ -101,6 +102,23 @@ final class AdminRestBootstrap {
 				array(
 					'methods'             => 'PUT',
 					'callback'            => array( self::class, 'put_bot_appearance' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/bots/(?P<id>[^/]+)/display-rules',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( self::class, 'get_bot_display_rules' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( self::class, 'put_bot_display_rules' ),
 					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 				),
 			)
@@ -348,6 +366,29 @@ final class AdminRestBootstrap {
 	}
 
 	/**
+	 * Read normalized display rules for exactly one bot.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function get_bot_display_rules( WP_REST_Request $request ): array {
+		return self::display_rules()->read( (string) $request->get_param( 'id' ) );
+	}
+
+	/**
+	 * Persist normalized display rules for exactly one bot.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function put_bot_display_rules( WP_REST_Request $request ): array {
+		return self::display_rules()->write(
+			(string) $request->get_param( 'id' ),
+			$request->get_json_params()
+		);
+	}
+
+	/**
 	 * Read safe credential configuration state for one direct provider.
 	 *
 	 * @param WP_REST_Request $request REST request.
@@ -572,6 +613,22 @@ final class AdminRestBootstrap {
 
 		return new AppearanceRestResource(
 			new WpdbBotAppearanceRepository(
+				$connection,
+				new TableNames( $connection->prefix() )
+			)
+		);
+	}
+
+	/**
+	 * Build the bot display-rules resource from the established persistence seams.
+	 */
+	private static function display_rules(): DisplayRulesRestResource {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+
+		return new DisplayRulesRestResource(
+			new WpdbBotDisplayRulesRepository(
 				$connection,
 				new TableNames( $connection->prefix() )
 			)

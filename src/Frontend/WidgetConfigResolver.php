@@ -17,12 +17,14 @@ final readonly class WidgetConfigResolver {
 	/**
 	 * Create the resolver.
 	 *
-	 * @param BotRepository           $bots Persisted bot authority.
-	 * @param BotAppearanceRepository $appearances Persisted appearance authority.
+	 * @param BotRepository             $bots Persisted bot authority.
+	 * @param BotAppearanceRepository   $appearances Persisted appearance authority.
+	 * @param BotDisplayRulesRepository $display_rules Persisted display-rules authority.
 	 */
 	public function __construct(
 		private BotRepository $bots,
-		private BotAppearanceRepository $appearances
+		private BotAppearanceRepository $appearances,
+		private BotDisplayRulesRepository $display_rules
 	) {
 	}
 
@@ -40,7 +42,8 @@ final readonly class WidgetConfigResolver {
 		return new WidgetConfig(
 			$bot->id->value,
 			$bot->name,
-			$this->appearances->find( $bot_id )
+			$this->appearances->find( $bot_id ),
+			$this->display_rules->find( $bot_id )
 		);
 	}
 }

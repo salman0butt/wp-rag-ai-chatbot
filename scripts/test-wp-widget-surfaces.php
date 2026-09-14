@@ -1,6 +1,6 @@
 <?php
 /**
- * Real WordPress M14 public widget surface smoke assertions.
+ * Real WordPress M15 public widget surface smoke assertions.
  *
  * WP-CLI eval-file evaluates this file inside generated PHP, so strict_types
  * cannot be declared here because it would no longer be the first statement.
@@ -11,19 +11,32 @@
 use Throwable;
 use WP_Block_Type_Registry;
 use WpRagAiChatbot\Bots\BotId;
+use WpRagAiChatbot\Database\Repository\WpdbBotDisplayRulesRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
+use WpRagAiChatbot\Frontend\DisplayRulesConfig;
 
 $enabled_bot_id      = null;
 $disabled_bot_id     = null;
 $widget_asset_handle = 'wp-rag-ai-chatbot-widget';
 
-$repository = static function (): WpdbBotRepository {
+$connection = static function (): WpdbConnection {
 	global $wpdb;
-	$connection = new WpdbConnection( $wpdb );
 
-	return new WpdbBotRepository( $connection, new TableNames( $connection->prefix() ) );
+	return new WpdbConnection( $wpdb );
+};
+
+$repository = static function () use ( $connection ): WpdbBotRepository {
+	$db = $connection();
+
+	return new WpdbBotRepository( $db, new TableNames( $db->prefix() ) );
+};
+
+$display_rules_repository = static function () use ( $connection ): WpdbBotDisplayRulesRepository {
+	$db = $connection();
+
+	return new WpdbBotDisplayRulesRepository( $db, new TableNames( $db->prefix() ) );
 };
 
 $cleanup = static function () use ( &$enabled_bot_id, &$disabled_bot_id, $repository ): void {
@@ -89,9 +102,9 @@ try {
 		$fail( 'Invalid widget surfaces enqueued public assets.' );
 	}
 
-	$bot_repository  = $repository();
-	$disabled_bot     = $bot_repository->create( 'M14 disabled surface smoke bot', false, 'disabled-secret-provider', 'disabled-secret-model' );
-	$disabled_bot_id  = $disabled_bot->id->value;
+	$bot_repository   = $repository();
+	$disabled_bot      = $bot_repository->create( 'M15 disabled surface smoke bot', false, 'disabled-secret-provider', 'disabled-secret-model' );
+	$disabled_bot_id   = $disabled_bot->id->value;
 	$disabled_surfaces = array(
 		'[wp_rag_ai_chatbot bot="' . esc_attr( $disabled_bot_id ) . '"]',
 		'[wp_rag_ai_chatbot_embed bot="' . esc_attr( $disabled_bot_id ) . '"]',
@@ -108,14 +121,38 @@ try {
 		$fail( 'Disabled widget surfaces enqueued public assets.' );
 	}
 
-	$enabled_bot    = $bot_repository->create( 'M14 enabled surface smoke bot', true, 'surface-secret-provider', 'surface-secret-model' );
+	$enabled_bot    = $bot_repository->create( 'M15 enabled surface smoke bot', true, 'surface-secret-provider', 'surface-secret-model' );
 	$enabled_bot_id = $enabled_bot->id->value;
+	$display_rules_repository()->save(
+		new BotId( $enabled_bot_id ),
+		DisplayRulesConfig::from_array(
+			array(
+				'enabled'      => true,
+				'visibility'   => array(
+					'url_include' => array( '/pricing*' ),
+					'audience'    => 'authenticated',
+				),
+				'proactive'    => array(
+					'enabled'          => true,
+					'first_visit_only' => true,
+					'delay_ms'         => 2500,
+				),
+				'starters'     => array(
+					'default' => array( 'Need pricing help' ),
+				),
+				'localization' => array(
+					'locale'    => 'ur-pk',
+					'direction' => 'rtl',
+				),
+			)
+		)
+	);
 
-	$floating_html = do_shortcode( '[wp_rag_ai_chatbot bot="' . esc_attr( $enabled_bot_id ) . '"]' );
-	$embedded_html = do_shortcode( '[wp_rag_ai_chatbot_embed bot="' . esc_attr( $enabled_bot_id ) . '"]' );
+	$floating_html   = do_shortcode( '[wp_rag_ai_chatbot bot="' . esc_attr( $enabled_bot_id ) . '"]' );
+	$embedded_html   = do_shortcode( '[wp_rag_ai_chatbot_embed bot="' . esc_attr( $enabled_bot_id ) . '"]' );
 	$fullscreen_html = do_shortcode( '[wp_rag_ai_chatbot_fullscreen bot="' . esc_attr( $enabled_bot_id ) . '"]' );
-	$block_markup = '<!-- wp:wp-rag-ai-chatbot/chatbot ' . wp_json_encode( array( 'bot' => $enabled_bot_id ) ) . ' /-->';
-	$block_html   = do_blocks( $block_markup );
+	$block_markup    = '<!-- wp:wp-rag-ai-chatbot/chatbot ' . wp_json_encode( array( 'bot' => $enabled_bot_id ) ) . ' /-->';
+	$block_html      = do_blocks( $block_markup );
 
 	$assert_surface( $floating_html, $enabled_bot_id, 'floating', 'Floating shortcode' );
 	$assert_surface( $embedded_html, $enabled_bot_id, 'embedded', 'Embedded shortcode' );
@@ -131,6 +168,11 @@ try {
 	if ( ! str_contains( $inline_script, $enabled_bot_id ) ) {
 		$fail( 'Widget bootstrap data did not include the enabled bot identity.' );
 	}
+	foreach ( array( '/pricing*', 'Need pricing help', 'ur-pk', 'rtl', '2500' ) as $expected ) {
+		if ( ! str_contains( $inline_script, $expected ) ) {
+			$fail( 'Widget bootstrap omitted normalized M15 public display-rule data: ' . $expected );
+		}
+	}
 	foreach ( array( 'surface-secret-provider', 'surface-secret-model', 'retrieval_limit', 'vector_store', 'credential' ) as $forbidden ) {
 		if ( str_contains( $inline_script, $forbidden ) ) {
 			$fail( 'Widget bootstrap leaked forbidden runtime authority: ' . $forbidden );
@@ -138,7 +180,7 @@ try {
 	}
 
 	$cleanup();
-	fwrite( STDOUT, "WordPress M14 floating, embedded, fullscreen, and Gutenberg widget surface smoke passed.\n" );
+	fwrite( STDOUT, "WordPress M15 widget surface and public display-rule projection smoke passed.\n" );
 } catch ( Throwable $exception ) {
 	$fail( 'WordPress widget surface smoke threw: ' . $exception->getMessage() );
 }

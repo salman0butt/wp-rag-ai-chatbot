@@ -1,0 +1,268 @@
+<?php
+/**
+ * M15 immutable display-rules configuration tests.
+ *
+ * @package WpRagAiChatbot
+ */
+
+declare(strict_types=1);
+
+namespace WpRagAiChatbot\Tests\Unit\Frontend;
+
+use InvalidArgumentException;
+use PHPUnit\Framework\TestCase;
+use WpRagAiChatbot\Frontend\DisplayRulesConfig;
+
+/** Defines the bounded PHP persistence contract for M15 rules. */
+final class DisplayRulesConfigTest extends TestCase {
+	/** Missing M15 config must preserve M14-compatible defaults. */
+	public function test_defaults_are_safe_and_deterministic(): void {
+		self::assertTrue( class_exists( DisplayRulesConfig::class ), 'M15 Task 2A requires DisplayRulesConfig.' );
+
+		$config = DisplayRulesConfig::defaults();
+
+		self::assertSame(
+			array(
+				'enabled'      => true,
+				'visibility'   => array(
+					'url_include' => array(),
+					'url_exclude' => array(),
+					'post_types'  => array(),
+					'audience'    => 'all',
+					'roles'       => array(),
+					'woo_areas'   => array(),
+					'devices'     => array(),
+					'schedule'    => null,
+				),
+				'proactive'    => array(
+					'enabled'          => false,
+					'first_visit_only' => false,
+					'delay_ms'         => null,
+					'scroll_percent'   => null,
+					'exit_intent'      => false,
+					'inactivity_ms'    => null,
+					'click_selector'   => null,
+				),
+				'starters'     => array(
+					'default' => array(),
+					'by_page' => array(),
+				),
+				'localization' => array(
+					'locale'    => 'site',
+					'direction' => 'auto',
+				),
+			),
+			$config->to_array()
+		);
+	}
+
+	/** Supported scalar and finite-enum values are normalized deterministically. */
+	public function test_from_array_normalizes_supported_values(): void {
+		$config = DisplayRulesConfig::from_array(
+			array(
+				'enabled'      => false,
+				'visibility'   => array(
+					'post_types' => array( ' PAGE ', 'product' ),
+					'audience'   => 'selected_roles',
+					'roles'      => array( ' Editor ', 'shop_manager' ),
+					'woo_areas'  => array( 'product', 'cart' ),
+					'devices'    => array( 'desktop', 'mobile' ),
+				),
+				'proactive'    => array(
+					'enabled'          => true,
+					'first_visit_only' => true,
+					'delay_ms'         => 1500,
+					'scroll_percent'   => 60,
+					'exit_intent'      => true,
+					'inactivity_ms'    => 30000,
+				),
+				'localization' => array(
+					'locale'    => ' UR_PK ',
+					'direction' => 'rtl',
+				),
+			)
+		);
+
+		$normalized = $config->to_array();
+		self::assertFalse( $normalized['enabled'] );
+		self::assertSame( array( 'page', 'product' ), $normalized['visibility']['post_types'] );
+		self::assertSame( 'selected_roles', $normalized['visibility']['audience'] );
+		self::assertSame( array( 'editor', 'shop_manager' ), $normalized['visibility']['roles'] );
+		self::assertSame( array( 'product', 'cart' ), $normalized['visibility']['woo_areas'] );
+		self::assertSame( array( 'desktop', 'mobile' ), $normalized['visibility']['devices'] );
+		self::assertTrue( $normalized['proactive']['enabled'] );
+		self::assertTrue( $normalized['proactive']['first_visit_only'] );
+		self::assertSame( 1500, $normalized['proactive']['delay_ms'] );
+		self::assertSame( 60, $normalized['proactive']['scroll_percent'] );
+		self::assertTrue( $normalized['proactive']['exit_intent'] );
+		self::assertSame( 30000, $normalized['proactive']['inactivity_ms'] );
+		self::assertSame( 'ur-pk', $normalized['localization']['locale'] );
+		self::assertSame( 'rtl', $normalized['localization']['direction'] );
+	}
+
+	/** Unknown schema keys must fail closed at the persistence boundary. */
+	public function test_from_array_rejects_unknown_keys(): void {
+		self::assertTrue( class_exists( DisplayRulesConfig::class ), 'M15 Task 2A requires DisplayRulesConfig.' );
+
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array( array( 'provider_override' => 'openai' ) );
+	}
+
+	/** Nested configuration sections must also reject unknown keys. */
+	public function test_from_array_rejects_unknown_nested_keys(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'provider_override' => 'openai',
+				),
+			)
+		);
+	}
+
+	/** Proactive timers must stay within the ten-minute design bound. */
+	public function test_from_array_rejects_out_of_range_timer(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'proactive' => array(
+					'delay_ms' => 600001,
+				),
+			)
+		);
+	}
+
+	/** URL rules normalize to bounded deterministic path patterns. */
+	public function test_from_array_normalizes_url_patterns(): void {
+		$config = DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'url_include' => array( ' pricing ', '/docs/*', '/pricing' ),
+					'url_exclude' => array( '*/checkout' ),
+				),
+			)
+		);
+
+		$normalized = $config->to_array();
+		self::assertSame( array( '/pricing', '/docs/*' ), $normalized['visibility']['url_include'] );
+		self::assertSame( array( '*/checkout' ), $normalized['visibility']['url_exclude'] );
+	}
+
+	/** Include/exclude path rules share the documented 32-pattern bound. */
+	public function test_from_array_rejects_too_many_url_patterns(): void {
+		$patterns = array();
+		for ( $index = 1; $index <= 33; $index++ ) {
+			$patterns[] = '/path-' . $index;
+		}
+
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'url_include' => $patterns,
+				),
+			)
+		);
+	}
+
+	/** Role and post-type collections must remain bounded. */
+	public function test_from_array_rejects_too_many_slug_values(): void {
+		$roles = array();
+		for ( $index = 1; $index <= 17; $index++ ) {
+			$roles[] = 'role_' . $index;
+		}
+
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'roles' => $roles,
+				),
+			)
+		);
+	}
+
+	/** Persisted slugs must use the bounded identifier grammar. */
+	public function test_from_array_rejects_malformed_slug(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'post_types' => array( 'landing page' ),
+				),
+			)
+		);
+	}
+
+	/** Explicit locale identifiers must use the normalized supported grammar. */
+	public function test_from_array_rejects_invalid_locale(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'localization' => array(
+					'locale' => 'not a locale!',
+				),
+			)
+		);
+	}
+
+	/** Schedule and click-selector fields normalize into the shared persistence shape. */
+	public function test_from_array_normalizes_schedule_and_click_selector(): void {
+		$config = DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'schedule' => array(
+						'timezone' => 'site',
+						'days'     => array( 1, 5, 1 ),
+						'start'    => '09:30',
+						'end'      => '17:00',
+					),
+				),
+				'proactive'  => array(
+					'click_selector' => ' .support-button ',
+				),
+			)
+		);
+
+		$normalized = $config->to_array();
+		self::assertSame(
+			array(
+				'timezone' => 'site',
+				'days'     => array( 1, 5 ),
+				'start'    => '09:30',
+				'end'      => '17:00',
+			),
+			$normalized['visibility']['schedule']
+		);
+		self::assertSame( '.support-button', $normalized['proactive']['click_selector'] );
+	}
+
+	/** Invalid schedule times must fail closed instead of being silently projected. */
+	public function test_from_array_rejects_invalid_schedule_time(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'visibility' => array(
+					'schedule' => array(
+						'timezone' => 'site',
+						'days'     => array( 1 ),
+						'start'    => '25:00',
+						'end'      => null,
+					),
+				),
+			)
+		);
+	}
+
+	/** Selector lists and pseudo selectors are outside the proactive click grammar. */
+	public function test_from_array_rejects_unsafe_click_selector(): void {
+		$this->expectException( InvalidArgumentException::class );
+		DisplayRulesConfig::from_array(
+			array(
+				'proactive' => array(
+					'click_selector' => 'a:hover, .support-button',
+				),
+			)
+		);
+	}
+}

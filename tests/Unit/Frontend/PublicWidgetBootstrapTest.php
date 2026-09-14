@@ -11,19 +11,21 @@ namespace WpRagAiChatbot\Tests\Unit\Frontend;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use DateTimeImmutable;
+use DateTimeZone;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Bots\Bot;
 use WpRagAiChatbot\Bots\BotId;
 use WpRagAiChatbot\Bots\BotRepository;
 use WpRagAiChatbot\Frontend\AppearanceConfig;
 use WpRagAiChatbot\Frontend\BotAppearanceRepository;
+use WpRagAiChatbot\Frontend\BotDisplayRulesRepository;
+use WpRagAiChatbot\Frontend\DisplayRulesConfig;
 use WpRagAiChatbot\Frontend\PublicWidgetBootstrap;
 use WpRagAiChatbot\Frontend\PublicWidgetMount;
 use WpRagAiChatbot\Frontend\WidgetConfigResolver;
 
-/**
- * Verifies shortcode registration, fail-closed mounting, and conditional public assets.
- */
+/** Verifies shortcode registration, fail-closed mounting, and conditional public assets. */
 final class PublicWidgetBootstrapTest extends TestCase {
 	private const BOT_ID      = '0123456789abcdef0123456789abcdef';
 	private const PLUGIN_FILE = '/tmp/wp-rag-ai-chatbot/wp-rag-ai-chatbot.php';
@@ -44,18 +46,10 @@ final class PublicWidgetBootstrapTest extends TestCase {
 	public function test_register_wires_public_surface_adapters(): void {
 		$bootstrap = $this->bootstrap_with_empty_repositories();
 
-		Functions\expect( 'add_shortcode' )
-			->once()
-			->with( 'wp_rag_ai_chatbot', array( $bootstrap, 'render_shortcode' ) );
-		Functions\expect( 'add_shortcode' )
-			->once()
-			->with( 'wp_rag_ai_chatbot_embed', array( $bootstrap, 'render_embed_shortcode' ) );
-		Functions\expect( 'add_shortcode' )
-			->once()
-			->with( 'wp_rag_ai_chatbot_fullscreen', array( $bootstrap, 'render_fullscreen_shortcode' ) );
-		Functions\expect( 'add_action' )
-			->once()
-			->with( 'init', array( $bootstrap, 'register_block' ) );
+		Functions\expect( 'add_shortcode' )->once()->with( 'wp_rag_ai_chatbot', array( $bootstrap, 'render_shortcode' ) );
+		Functions\expect( 'add_shortcode' )->once()->with( 'wp_rag_ai_chatbot_embed', array( $bootstrap, 'render_embed_shortcode' ) );
+		Functions\expect( 'add_shortcode' )->once()->with( 'wp_rag_ai_chatbot_fullscreen', array( $bootstrap, 'render_fullscreen_shortcode' ) );
+		Functions\expect( 'add_action' )->once()->with( 'init', array( $bootstrap, 'register_block' ) );
 
 		$bootstrap->register();
 	}
@@ -66,39 +60,29 @@ final class PublicWidgetBootstrapTest extends TestCase {
 
 		Functions\expect( 'register_block_type' )
 			->once()
-			->with(
-				'/tmp/wp-rag-ai-chatbot/blocks/chatbot',
-				array( 'render_callback' => array( $bootstrap, 'render_block' ) )
-			);
+			->with( '/tmp/wp-rag-ai-chatbot/blocks/chatbot', array( 'render_callback' => array( $bootstrap, 'render_block' ) ) );
 
 		$bootstrap->register_block();
 	}
 
 	/** Gutenberg rendering forwards only the bounded bot identifier to the embedded authority. */
 	public function test_render_block_discards_unknown_attributes_before_mount_resolution(): void {
-		$bot_id      = new BotId( self::BOT_ID );
-		$bots        = $this->createMock( BotRepository::class );
-		$appearances = $this->createMock( BotAppearanceRepository::class );
-		$bot         = new Bot(
-			$bot_id,
-			'Support',
-			true,
-			'openai',
-			'gpt-5',
-			1,
-			'2026-09-12 00:00:00',
-			'2026-09-12 00:00:00'
-		);
+		$bot_id        = new BotId( self::BOT_ID );
+		$bots          = $this->createMock( BotRepository::class );
+		$appearances   = $this->createMock( BotAppearanceRepository::class );
+		$display_rules = $this->createMock( BotDisplayRulesRepository::class );
+		$bot           = new Bot( $bot_id, 'Support', true, 'openai', 'gpt-5', 1, '2026-09-12 00:00:00', '2026-09-12 00:00:00' );
 
 		$bots->expects( self::once() )->method( 'find' )->willReturn( $bot );
 		$appearances->expects( self::once() )->method( 'find' )->willReturn( AppearanceConfig::defaults() );
+		$display_rules->expects( self::once() )->method( 'find' )->willReturn( DisplayRulesConfig::defaults() );
 		$this->stub_public_render_functions();
 		Functions\when( 'wp_enqueue_style' )->justReturn( null );
 		Functions\when( 'wp_enqueue_script' )->justReturn( null );
 		Functions\when( 'wp_add_inline_script' )->justReturn( true );
 
 		$bootstrap = new PublicWidgetBootstrap(
-			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) ),
+			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances, $display_rules ) ),
 			self::PLUGIN_FILE
 		);
 
@@ -130,41 +114,30 @@ final class PublicWidgetBootstrapTest extends TestCase {
 
 	/** Enabled bots render one deterministic mount and enqueue public assets only then. */
 	public function test_enabled_bot_mount_renders_public_projection_and_conditionally_enqueues_assets(): void {
-		$bot_id      = new BotId( self::BOT_ID );
-		$bots        = $this->createMock( BotRepository::class );
-		$appearances = $this->createMock( BotAppearanceRepository::class );
-		$bot         = new Bot(
-			$bot_id,
-			'Support',
-			true,
-			'openai',
-			'gpt-5',
-			1,
-			'2026-09-12 00:00:00',
-			'2026-09-12 00:00:00'
-		);
+		$bot_id        = new BotId( self::BOT_ID );
+		$bots          = $this->createMock( BotRepository::class );
+		$appearances   = $this->createMock( BotAppearanceRepository::class );
+		$display_rules = $this->createMock( BotDisplayRulesRepository::class );
+		$bot           = new Bot( $bot_id, 'Support', true, 'openai', 'gpt-5', 1, '2026-09-12 00:00:00', '2026-09-12 00:00:00' );
 
 		$bots->expects( self::once() )->method( 'find' )->willReturn( $bot );
 		$appearances->expects( self::once() )->method( 'find' )->willReturn( AppearanceConfig::defaults() );
+		$display_rules->expects( self::once() )->method( 'find' )->willReturn( DisplayRulesConfig::defaults() );
 		$this->stub_public_render_functions();
 
-		Functions\expect( 'wp_enqueue_style' )
-			->once()
-			->with(
-				'wp-rag-ai-chatbot-widget',
-				'https://example.test/plugins/wp-rag-ai-chatbot/assets/widget.css',
-				array(),
-				'0.1.0-dev'
-			);
-		Functions\expect( 'wp_enqueue_script' )
-			->once()
-			->with(
-				'wp-rag-ai-chatbot-widget',
-				'https://example.test/plugins/wp-rag-ai-chatbot/build/widget.js',
-				array( 'wp-element' ),
-				'0.1.0-dev',
-				true
-			);
+		Functions\expect( 'wp_enqueue_style' )->once()->with(
+			'wp-rag-ai-chatbot-widget',
+			'https://example.test/plugins/wp-rag-ai-chatbot/assets/widget.css',
+			array(),
+			'0.1.0-dev'
+		);
+		Functions\expect( 'wp_enqueue_script' )->once()->with(
+			'wp-rag-ai-chatbot-widget',
+			'https://example.test/plugins/wp-rag-ai-chatbot/build/widget.js',
+			array( 'wp-element' ),
+			'0.1.0-dev',
+			true
+		);
 		Functions\expect( 'wp_add_inline_script' )
 			->once()
 			->with(
@@ -175,6 +148,8 @@ final class PublicWidgetBootstrapTest extends TestCase {
 							&& str_contains( $script, '"restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1"' )
 							&& str_contains( $script, '"surface":"floating"' )
 							&& str_contains( $script, '"config":{"bot_id":"' . self::BOT_ID . '","name":"Support"' )
+							&& str_contains( $script, '"display_rules":' )
+							&& str_contains( $script, '"facts":{"path":"\/","isAuthenticated":false,"postType":null,"roleMatches":[],"wooArea":null,"siteLocale":"en-us","siteDirection":"ltr","siteWeekday":0,"siteMinuteOfDay":720}' )
 							&& ! str_contains( $script, 'openai' )
 							&& ! str_contains( $script, 'gpt-5' )
 							&& ! str_contains( $script, 'retrieval_limit' );
@@ -184,7 +159,7 @@ final class PublicWidgetBootstrapTest extends TestCase {
 			);
 
 		$bootstrap = new PublicWidgetBootstrap(
-			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) ),
+			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances, $display_rules ) ),
 			self::PLUGIN_FILE
 		);
 
@@ -212,19 +187,41 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		Functions\when( 'esc_attr' )->alias(
 			static fn ( string $value ): string => htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' )
 		);
+		Functions\when( 'is_user_logged_in' )->justReturn( false );
+		Functions\when( 'get_post_type' )->justReturn( false );
+		Functions\when( 'get_locale' )->justReturn( 'en_US' );
+		Functions\when( 'is_rtl' )->justReturn( false );
+		Functions\when( 'did_action' )->justReturn( 0 );
+		Functions\when( 'current_datetime' )->justReturn(
+			new DateTimeImmutable( '2026-09-13 12:00:00', new DateTimeZone( 'UTC' ) )
+		);
+		Functions\when( 'wp_unslash' )->alias(
+			static fn ( mixed $value ): mixed => is_string( $value ) ? stripslashes( $value ) : $value
+		);
+		Functions\when( 'wp_parse_url' )->alias(
+			static function ( string $url, int $component = -1 ): mixed {
+				if ( PHP_URL_PATH !== $component ) {
+					return false;
+				}
+
+				$path = preg_replace( '/[?#].*$/', '', $url );
+
+				return is_string( $path ) ? $path : false;
+			}
+		);
 	}
 
-	/**
-	 * Build a bootstrap whose repositories must never be queried.
-	 */
+	/** Build a bootstrap whose repositories must never be queried. */
 	private function bootstrap_with_empty_repositories(): PublicWidgetBootstrap {
-		$bots        = $this->createMock( BotRepository::class );
-		$appearances = $this->createMock( BotAppearanceRepository::class );
+		$bots          = $this->createMock( BotRepository::class );
+		$appearances   = $this->createMock( BotAppearanceRepository::class );
+		$display_rules = $this->createMock( BotDisplayRulesRepository::class );
 		$bots->expects( self::never() )->method( 'find' );
 		$appearances->expects( self::never() )->method( 'find' );
+		$display_rules->expects( self::never() )->method( 'find' );
 
 		return new PublicWidgetBootstrap(
-			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) ),
+			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances, $display_rules ) ),
 			self::PLUGIN_FILE
 		);
 	}

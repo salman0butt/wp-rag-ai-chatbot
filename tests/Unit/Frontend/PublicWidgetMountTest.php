@@ -15,6 +15,8 @@ use WpRagAiChatbot\Bots\BotId;
 use WpRagAiChatbot\Bots\BotRepository;
 use WpRagAiChatbot\Frontend\AppearanceConfig;
 use WpRagAiChatbot\Frontend\BotAppearanceRepository;
+use WpRagAiChatbot\Frontend\BotDisplayRulesRepository;
+use WpRagAiChatbot\Frontend\DisplayRulesConfig;
 use WpRagAiChatbot\Frontend\PublicWidgetMount;
 use WpRagAiChatbot\Frontend\WidgetConfigResolver;
 
@@ -26,10 +28,11 @@ final class PublicWidgetMountTest extends TestCase {
 
 	/** Enabled bot identifiers resolve through the existing public-safe widget projection. */
 	public function test_valid_bot_attribute_resolves_existing_public_widget_projection(): void {
-		$bot_id      = new BotId( self::BOT_ID );
-		$bots        = $this->createMock( BotRepository::class );
-		$appearances = $this->createMock( BotAppearanceRepository::class );
-		$bot         = new Bot(
+		$bot_id        = new BotId( self::BOT_ID );
+		$bots          = $this->createMock( BotRepository::class );
+		$appearances   = $this->createMock( BotAppearanceRepository::class );
+		$display_rules = $this->createMock( BotDisplayRulesRepository::class );
+		$bot           = new Bot(
 			$bot_id,
 			'Support',
 			true,
@@ -48,23 +51,30 @@ final class PublicWidgetMountTest extends TestCase {
 			->method( 'find' )
 			->with( self::callback( static fn ( BotId $id ): bool => self::BOT_ID === $id->value ) )
 			->willReturn( AppearanceConfig::defaults() );
+		$display_rules->expects( self::once() )
+			->method( 'find' )
+			->with( self::callback( static fn ( BotId $id ): bool => self::BOT_ID === $id->value ) )
+			->willReturn( DisplayRulesConfig::defaults() );
 
-		$mount  = new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) );
+		$mount  = new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances, $display_rules ) );
 		$config = $mount->resolve( array( 'bot' => self::BOT_ID ) );
 
 		self::assertNotNull( $config );
 		self::assertSame( self::BOT_ID, $config->bot_id );
 		self::assertSame( 'Support', $config->name );
 		self::assertSame( AppearanceConfig::defaults()->to_array(), $config->appearance->to_array() );
+		self::assertSame( DisplayRulesConfig::defaults()->to_array(), $config->display_rules->to_array() );
 	}
 
 	/** Invalid or missing bot identifiers fail closed before repository access. */
 	public function test_missing_or_invalid_bot_attribute_fails_closed(): void {
-		$bots        = $this->createMock( BotRepository::class );
-		$appearances = $this->createMock( BotAppearanceRepository::class );
+		$bots          = $this->createMock( BotRepository::class );
+		$appearances   = $this->createMock( BotAppearanceRepository::class );
+		$display_rules = $this->createMock( BotDisplayRulesRepository::class );
 		$bots->expects( self::never() )->method( 'find' );
 		$appearances->expects( self::never() )->method( 'find' );
-		$mount = new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) );
+		$display_rules->expects( self::never() )->method( 'find' );
+		$mount = new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances, $display_rules ) );
 
 		self::assertNull( $mount->resolve( array() ) );
 		self::assertNull( $mount->resolve( array( 'bot' => 'not-a-bot-id' ) ) );
@@ -72,11 +82,13 @@ final class PublicWidgetMountTest extends TestCase {
 
 	/** Runtime/provider override-like shortcode attributes are rejected rather than becoming browser authority. */
 	public function test_unknown_runtime_override_attributes_fail_closed(): void {
-		$bots        = $this->createMock( BotRepository::class );
-		$appearances = $this->createMock( BotAppearanceRepository::class );
+		$bots          = $this->createMock( BotRepository::class );
+		$appearances   = $this->createMock( BotAppearanceRepository::class );
+		$display_rules = $this->createMock( BotDisplayRulesRepository::class );
 		$bots->expects( self::never() )->method( 'find' );
 		$appearances->expects( self::never() )->method( 'find' );
-		$mount = new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances ) );
+		$display_rules->expects( self::never() )->method( 'find' );
+		$mount = new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances, $display_rules ) );
 
 		self::assertNull(
 			$mount->resolve(
