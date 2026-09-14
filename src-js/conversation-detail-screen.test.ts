@@ -89,9 +89,9 @@ describe( 'ConversationDetailScreen', () => {
 		);
 
 		expect(
-			root.querySelector( '[data-conversation-detail]' )?.getAttribute(
-				'data-conversation-id'
-			)
+			root
+				.querySelector( '[data-conversation-detail]' )
+				?.getAttribute( 'data-conversation-id' )
 		).toBe( 'conv-alpha' );
 		const messages = Array.from(
 			root.querySelectorAll( '[data-conversation-message]' )
@@ -102,7 +102,9 @@ describe( 'ConversationDetailScreen', () => {
 			)
 		).toEqual( [ 'user', 'assistant' ] );
 		expect( messages[ 0 ]?.textContent ).toContain( 'Where is my order?' );
-		expect( messages[ 1 ]?.textContent ).toContain( 'I can help with that.' );
+		expect( messages[ 1 ]?.textContent ).toContain(
+			'I can help with that.'
+		);
 	} );
 
 	it( 'requires an explicit destructive confirmation before deletion', () => {
@@ -130,8 +132,12 @@ describe( 'ConversationDetailScreen', () => {
 			root.querySelector( '[data-confirm-delete]' )?.textContent
 		).toBe( 'Delete conversation' );
 
-		( root.querySelector( '[data-cancel-delete]' ) as HTMLButtonElement ).click();
-		( root.querySelector( '[data-confirm-delete]' ) as HTMLButtonElement ).click();
+		(
+			root.querySelector( '[data-cancel-delete]' ) as HTMLButtonElement
+		).click();
+		(
+			root.querySelector( '[data-confirm-delete]' ) as HTMLButtonElement
+		).click();
 
 		expect( onCancelDelete ).toHaveBeenCalledTimes( 1 );
 		expect( onConfirmDelete ).toHaveBeenCalledTimes( 1 );
