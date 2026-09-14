@@ -7,10 +7,7 @@ import {
 	createProactiveDelayCoordinator,
 	readProactiveDelayConfig,
 } from './widget-proactive';
-import {
-	resolveWidgetMessage,
-	type WidgetMessageKey,
-} from './widget-messages';
+import { resolveWidgetMessage, type WidgetMessageKey } from './widget-messages';
 
 export type WidgetSurface = 'floating' | 'embedded' | 'fullscreen';
 
@@ -531,7 +528,9 @@ export const mountWidgets = (
 			const showError = ( code: string | null, value: string ): void => {
 				finishRequest();
 				retryQuestion = value;
-				status.textContent = widgetMessage( publicErrorMessageKey( code ) );
+				status.textContent = widgetMessage(
+					publicErrorMessageKey( code )
+				);
 				retry.hidden = false;
 			};
 
