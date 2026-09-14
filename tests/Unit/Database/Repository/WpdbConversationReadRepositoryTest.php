@@ -168,7 +168,7 @@ final class WpdbConversationReadRepositoryTest extends TestCase {
 					self::assertStringContainsString( 'FROM %i AS m', $sql );
 					self::assertStringContainsString( 'm.conversation_id = %s', $sql );
 					self::assertStringContainsString( 'm.owner_scope = %s', $sql );
-					self::assertStringContainsString( 'ORDER BY m.id ASC', $sql );
+					self::assertStringContainsString( 'ORDER BY m.created_at ASC, m.id ASC', $sql );
 					self::assertStringContainsString( 'LIMIT %d', $sql );
 					self::assertSame( array( 'wp_rag_ai_messages', 'conversation-1', 'visitor:abc', 100 ), $args );
 					return 'conversation-messages';
