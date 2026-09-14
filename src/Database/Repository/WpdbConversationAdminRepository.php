@@ -38,6 +38,7 @@ final class WpdbConversationAdminRepository implements ConversationAdminReposito
 	 * @param string $conversation_id Stable conversation identifier.
 	 * @throws InvalidArgumentException When the identifier is blank or oversized.
 	 * @throws DatabaseException When locking, deletion, or transaction finalization fails.
+	 * @throws Throwable When an unexpected persistence failure is propagated after rollback.
 	 */
 	public function delete( string $conversation_id ): bool {
 		$conversation_id = $this->boundedConversationId( $conversation_id );
@@ -101,7 +102,11 @@ final class WpdbConversationAdminRepository implements ConversationAdminReposito
 		}
 	}
 
-	/** Commit the active deletion transaction. */
+	/**
+	 * Commit the active deletion transaction.
+	 *
+	 * @throws DatabaseException When the transaction cannot be committed.
+	 */
 	private function commit(): void {
 		if ( false === $this->connection->query( 'COMMIT' ) ) {
 			throw new DatabaseException( 'Could not commit conversation deletion transaction.' );
