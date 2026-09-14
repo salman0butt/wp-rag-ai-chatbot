@@ -19,6 +19,19 @@ Formatting repair / GREEN: `e46a4de03b365e026e11e78191747fb23ebfc732`, CI `34850
 
 Behavior: `buildConversationListPath()` serializes the UI page plus optional bot/date/search/unassigned filters to the protected `/admin/conversations` endpoint, trims optional values, keeps page size fixed at 25, normalizes invalid UI page state to page 1, and makes `unassigned_only` mutually exclusive with `bot_id`. Server-side `ConversationListRequest` remains the validation/authorization authority.
 
+### Inbox presentation
+Initial test checkpoint `62431837d4f768e49582611b4064b32965b0998e`, CI `34851138461`: **NOT RED**. Prettier rejected the new test before TypeScript could reach the intended missing component.
+
+Formatting checkpoint `4e3176970a4e1c62b4419185c494d92eadb9d33e`, CI `34851307732`: **NOT RED**. One remaining Prettier failure still prevented the intended behavior failure.
+
+RED: `6fe80dbea6d32c822ee630039b8d72ba1c8ecaae`, CI `34851535437`. Lint passed and TypeScript failed only because `./conversation-inbox-screen` did not exist. This is the intended missing behavior.
+
+Implementation checkpoint `8cd1cd3eb57d1b11f524f129d95906cbd7f32701`, CI `34851705773`: **NOT GREEN**. Lint and typecheck passed and the full Jest suite reached the new presentation tests, but the test-only element factory incorrectly stringified nested DOM nodes, so the expected labels/empty state were not represented in the fixture DOM.
+
+Harness repair / GREEN: `151753f068fb9202f8c26e051d36a25b49b0bf6b`, CI `34851886474`. `php-quality`, `js-quality`, `package`, and the complete `wordpress-smoke` suite all passed on the exact SHA.
+
+Behavior: `ConversationInboxScreen()` now provides semantic conversation rows, a stable empty state, explicit search/bot/from/to labels associated with native inputs, singular/plural message counts, unassigned-bot labeling, and bounded Previous/Next pagination controls. The component is presentation-only and does not introduce a second conversation data authority.
+
 ## Review
 Independent reviewer transport is unavailable in this runtime, so no independent review is claimed.
 
@@ -30,5 +43,13 @@ Repository-approved fallback scoped correctness/security/performance/accessibili
 - Accessibility: no UI is rendered in this slice; accessibility review applies to the upcoming screen controls.
 - Architecture/duplication: this is a UI request serializer only and reuses the existing protected REST/read authority rather than duplicating conversation retrieval.
 
+Repository-approved fallback scoped review for the inbox presentation slice: 0 Critical, 0 Important findings.
+
+- Correctness: rendering is deterministic from server-projected summary data and preserves bounded page state without synthesizing transcript data.
+- Security/privacy: no raw HTML injection, credentials, model/provider overrides, or direct storage access are introduced; text values are rendered through element children.
+- Performance: rendering is linear in the already bounded page response and performs no network work itself.
+- Accessibility: filters use explicit visible labels associated with native inputs; pagination is grouped under a labelled `nav`; disabled states are native button states; empty state remains textual and stable.
+- Architecture/duplication: the screen is presentation-only and is intended to consume the existing protected REST authority rather than duplicate conversation querying.
+
 ## Exact next unfinished unit
-Add the first presentational inbox behavior with Jest coverage for semantic conversation list rendering, pagination, and labelled search/bot/date controls. Then wire data loading with stale-response generation guards and detail rendering before delete confirmation/focus restoration.
+Wire protected conversation list/detail loading into the admin shell with stale-response generation guards so older list/detail responses cannot replace newer navigation/filter state. Then complete detail transcript rendering and explicit delete confirmation/focus restoration.
