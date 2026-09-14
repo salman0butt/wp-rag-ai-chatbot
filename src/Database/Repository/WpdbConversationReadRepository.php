@@ -197,10 +197,10 @@ final class WpdbConversationReadRepository implements ConversationReadRepository
 			);
 
 			foreach ( $this->connection->get_results( $message_sql ) as $message_row ) {
-				$role = isset( $message_row['role'] ) && is_string( $message_row['role'] )
+				$role       = isset( $message_row['role'] ) && is_string( $message_row['role'] )
 					? trim( $message_row['role'] )
 					: '';
-				$content = isset( $message_row['content'] ) && is_string( $message_row['content'] )
+				$content    = isset( $message_row['content'] ) && is_string( $message_row['content'] )
 					? $message_row['content']
 					: '';
 				$created_at = isset( $message_row['created_at'] ) && is_string( $message_row['created_at'] )
