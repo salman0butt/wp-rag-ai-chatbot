@@ -95,12 +95,9 @@ final class WpdbConversationAdminRepository implements ConversationAdminReposito
 
 			$this->commit();
 			return true;
-		} catch ( Throwable $error ) {
+		} catch ( Throwable ) {
 			$this->connection->query( 'ROLLBACK' );
-			if ( $error instanceof DatabaseException ) {
-				throw $error;
-			}
-			throw new DatabaseException( 'Conversation deletion failed.', 0, $error );
+			throw new DatabaseException( 'Conversation deletion failed.' );
 		}
 	}
 
