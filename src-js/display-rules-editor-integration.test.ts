@@ -28,9 +28,20 @@ const createTestElement = (
 			continue;
 		}
 
-		if ( key === 'defaultValue' && element instanceof HTMLInputElement ) {
-			element.defaultValue = String( value );
+		if (
+			( key === 'value' || key === 'defaultValue' ) &&
+			( element instanceof HTMLInputElement ||
+				element instanceof HTMLTextAreaElement ||
+				element instanceof HTMLSelectElement )
+		) {
 			element.value = String( value );
+			if (
+				key === 'defaultValue' &&
+				( element instanceof HTMLInputElement ||
+					element instanceof HTMLTextAreaElement )
+			) {
+				element.defaultValue = String( value );
+			}
 			continue;
 		}
 
@@ -130,7 +141,7 @@ describe( 'display rules editor persistence integration', () => {
 		const fetcher = jest.fn(
 			async ( input: RequestInfo | URL, init?: RequestInit ) => {
 				const url = String( input );
-				if ( url.endsWith( '/admin/readiness' ) ) {
+				if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
 					return {
 						ok: true,
 						status: 200,
@@ -211,7 +222,7 @@ describe( 'display rules editor persistence integration', () => {
 			'form[data-display-rules-editor] select[name="audience"]'
 		);
 		expect( include?.value ).toBe( '/pricing' );
-		expect( audience ).not.toBeNull();
+		expect( audience?.value ).toBe( 'authenticated' );
 
 		if ( include === null || audience === null ) {
 			return;
