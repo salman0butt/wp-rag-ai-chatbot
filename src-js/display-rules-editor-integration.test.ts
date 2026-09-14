@@ -9,6 +9,7 @@ const createTestElement = (
 	...children: Array< Node | string | undefined >
 ): HTMLElement => {
 	const element = document.createElement( tagName );
+	let deferredSelectValue: string | undefined;
 
 	for ( const [ key, value ] of Object.entries( props ?? {} ) ) {
 		if ( key === 'key' || value === undefined ) {
@@ -34,6 +35,11 @@ const createTestElement = (
 				element instanceof HTMLTextAreaElement ||
 				element instanceof HTMLSelectElement )
 		) {
+			if ( element instanceof HTMLSelectElement ) {
+				deferredSelectValue = String( value );
+				continue;
+			}
+
 			element.value = String( value );
 			if (
 				key === 'defaultValue' &&
@@ -62,6 +68,10 @@ const createTestElement = (
 		if ( child !== undefined ) {
 			element.append( child );
 		}
+	}
+
+	if ( deferredSelectValue !== undefined && element instanceof HTMLSelectElement ) {
+		element.value = deferredSelectValue;
 	}
 
 	return element;
