@@ -1,0 +1,39 @@
+name: M16 CI format repair
+
+on:
+  push:
+    branches:
+      - feat/m16-conversations-leads-feedback-forms
+    paths:
+      - .github/workflows/m16-ci-format-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format files reported by js-quality
+        run: npx prettier --write src-js/index.ts src-js/conversation-admin-bootstrap.test.ts
+      - name: Verify focused lint
+        run: npx wp-scripts lint-js src-js/index.ts src-js/conversation-admin-bootstrap.test.ts
+      - name: Commit repair and remove one-shot helper
+        run: |
+          git config user.name "Salman Butt"
+          git config user.email "47062638+salman0butt@users.noreply.github.com"
+          git rm .github/workflows/m16-ci-format-repair.yml
+          git add src-js/index.ts src-js/conversation-admin-bootstrap.test.ts
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "style: repair M16 JavaScript formatting"
+          git push origin HEAD:feat/m16-conversations-leads-feedback-forms
