@@ -2309,7 +2309,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			}
 		}
 
-		const conversationRoute = resolveConversationRouteState( currentHash() );
+		const conversationRoute = resolveConversationRouteState(
+			currentHash()
+		);
 		if (
 			screen === 'conversations' &&
 			conversationRoute.selectedConversationId === undefined &&
