@@ -132,12 +132,14 @@ describe( 'ConversationDetailScreen', () => {
 			root.querySelector( '[data-confirm-delete]' )?.textContent
 		).toBe( 'Delete conversation' );
 
-		(
-			root.querySelector( '[data-cancel-delete]' ) as HTMLButtonElement
-		).click();
-		(
-			root.querySelector( '[data-confirm-delete]' ) as HTMLButtonElement
-		).click();
+		const cancelButton = root.querySelector(
+			'[data-cancel-delete]'
+		) as HTMLButtonElement;
+		const confirmButton = root.querySelector(
+			'[data-confirm-delete]'
+		) as HTMLButtonElement;
+		cancelButton.click();
+		confirmButton.click();
 
 		expect( onCancelDelete ).toHaveBeenCalledTimes( 1 );
 		expect( onConfirmDelete ).toHaveBeenCalledTimes( 1 );
