@@ -46,7 +46,7 @@ final class PlaygroundRoutesTest extends TestCase {
 					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 				)
 			);
-		Functions\expect( 'register_rest_route' )->times( 14 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 16 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}
