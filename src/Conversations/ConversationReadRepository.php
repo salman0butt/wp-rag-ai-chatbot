@@ -20,4 +20,12 @@ interface ConversationReadRepository {
 	 * @return list<ConversationSummary>
 	 */
 	public function list( ConversationListQuery $query ): array;
+
+	/**
+	 * Find one conversation with a bounded chronological transcript.
+	 *
+	 * @param string $conversation_id Stable conversation identifier.
+	 * @param int    $message_limit Requested transcript message limit.
+	 */
+	public function find( string $conversation_id, int $message_limit = 100 ): ?ConversationDetail;
 }
