@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Frontend;
 
 use Closure;
 use WpRagAiChatbot\Chat\ChatResponder;
+use WpRagAiChatbot\Conversations\ConversationRepository;
 
 /**
  * Bridges trusted persisted public runtime authority into the existing M11 responder graph.
@@ -21,11 +22,13 @@ final readonly class PublicChatProductionExecutorResolver {
 	 *
 	 * @param Closure                         $responder_factory Existing production M11 responder composer.
 	 * @param PublicChatAccessContextResolver $access_context Trusted bot-scoped retrieval/access resolver.
+	 * @param ConversationRepository|null     $conversation_repository Optional owner-scoped conversation persistence authority.
 	 * @phpstan-param Closure(PublicChatRuntime): ChatResponder $responder_factory
 	 */
 	public function __construct(
 		private Closure $responder_factory,
-		private PublicChatAccessContextResolver $access_context
+		private PublicChatAccessContextResolver $access_context,
+		private ?ConversationRepository $conversation_repository = null
 	) {
 	}
 
@@ -40,7 +43,8 @@ final readonly class PublicChatProductionExecutorResolver {
 		return new ProductionPublicChatExecutor(
 			$responder,
 			$this->access_context->resolve( $runtime ),
-			$runtime->bot->model_id
+			$runtime->bot->model_id,
+			$this->conversation_repository
 		);
 	}
 }
