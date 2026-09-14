@@ -15,10 +15,18 @@ namespace WpRagAiChatbot\Conversations;
 final readonly class ConversationListQuery {
 	private const MAX_PAGE_SIZE = 100;
 
-	/** @var int One-based page number. */
+	/**
+	 * One-based page number.
+	 *
+	 * @var int
+	 */
 	public int $page;
 
-	/** @var int Bounded rows per page. */
+	/**
+	 * Bounded rows per page.
+	 *
+	 * @var int
+	 */
 	public int $page_size;
 
 	/**
