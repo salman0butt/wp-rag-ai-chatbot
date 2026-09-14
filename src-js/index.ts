@@ -458,6 +458,34 @@ const resolvePage = ( hash: string ): number => {
 	return Number.isSafeInteger( page ) && page >= 1 ? page : 1;
 };
 
+export interface ConversationRouteState {
+	page: number;
+	selectedConversationId?: string;
+}
+
+export const resolveConversationRouteState = (
+	hash: string
+): ConversationRouteState => {
+	const state: ConversationRouteState = { page: resolvePage( hash ) };
+	const segments = resolveHashPath( hash ).split( '/' );
+
+	if ( segments[ 0 ] !== 'conversations' || ! segments[ 1 ] ) {
+		return state;
+	}
+
+	try {
+		const selectedConversationId = decodeURIComponent( segments[ 1 ] );
+
+		if ( selectedConversationId !== '' ) {
+			state.selectedConversationId = selectedConversationId;
+		}
+	} catch {
+		return state;
+	}
+
+	return state;
+};
+
 const resolveBotPage = ( hash: string ): number => resolvePage( hash );
 const resolveKnowledgePage = ( hash: string ): number => resolvePage( hash );
 
