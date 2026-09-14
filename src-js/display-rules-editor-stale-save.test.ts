@@ -156,7 +156,9 @@ describe( 'display rules editor stale save protection', () => {
 		const staleSave = createDeferred< {
 			ok: boolean;
 			status: number;
-			json: () => Promise< { display_rules: ReturnType< typeof displayRules > } >;
+			json: () => Promise< {
+				display_rules: ReturnType< typeof displayRules >;
+			} >;
 		} >();
 		const appearanceResponse = {
 			ok: true,
@@ -210,7 +212,9 @@ describe( 'display rules editor stale save protection', () => {
 		alphaInclude!.value = '/stale';
 		alphaInclude!.dispatchEvent( new Event( 'change', { bubbles: true } ) );
 		root
-			.querySelector< HTMLFormElement >( 'form[data-display-rules-editor]' )
+			.querySelector< HTMLFormElement >(
+				'form[data-display-rules-editor]'
+			)
 			?.dispatchEvent(
 				new Event( 'submit', { bubbles: true, cancelable: true } )
 			);
