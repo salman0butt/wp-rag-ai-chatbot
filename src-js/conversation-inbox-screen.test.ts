@@ -93,16 +93,20 @@ describe( 'ConversationInboxScreen', () => {
 		);
 
 		expect(
-			root.querySelector( 'label[for="conversation-search"]' )?.textContent
+			root.querySelector( 'label[for="conversation-search"]' )
+				?.textContent
 		).toBe( 'Search conversations' );
 		expect(
-			root.querySelector( 'label[for="conversation-bot"]' )?.textContent
+			root.querySelector( 'label[for="conversation-bot"]' )
+				?.textContent
 		).toBe( 'Bot ID' );
 		expect(
-			root.querySelector( 'label[for="conversation-date-from"]' )?.textContent
+			root.querySelector( 'label[for="conversation-date-from"]' )
+				?.textContent
 		).toBe( 'From' );
 		expect(
-			root.querySelector( 'label[for="conversation-date-to"]' )?.textContent
+			root.querySelector( 'label[for="conversation-date-to"]' )
+				?.textContent
 		).toBe( 'To' );
 
 		const rows = Array.from(
@@ -132,11 +136,13 @@ describe( 'ConversationInboxScreen', () => {
 				?.textContent
 		).toBe( 'No conversations found.' );
 		expect(
-			emptyRoot.querySelector( 'button[data-page="previous"]' )
+			emptyRoot
+				.querySelector( 'button[data-page="previous"]' )
 				?.hasAttribute( 'disabled' )
 		).toBe( true );
 		expect(
-			emptyRoot.querySelector( 'button[data-page="next"]' )
+			emptyRoot
+				.querySelector( 'button[data-page="next"]' )
 				?.hasAttribute( 'disabled' )
 		).toBe( true );
 	} );
