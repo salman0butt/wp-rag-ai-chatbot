@@ -36,9 +36,9 @@ describe( 'widget-local language and direction', () => {
 	} );
 
 	it( 'applies the evaluator locale and inferred RTL direction to the widget root', () => {
-		expect( mountWidgets( document, [ configFor( 'ur-pk', 'auto' ) ] ) ).toBe(
-			1
-		);
+		expect(
+			mountWidgets( document, [ configFor( 'ur-pk', 'auto' ) ] )
+		).toBe( 1 );
 
 		const mount = document.querySelector< HTMLElement >(
 			'.wp-rag-ai-chatbot-widget'
@@ -49,9 +49,9 @@ describe( 'widget-local language and direction', () => {
 
 	it( 'keeps an explicit widget direction independent from the document direction', () => {
 		document.documentElement.dir = 'rtl';
-		expect( mountWidgets( document, [ configFor( 'ur-pk', 'ltr' ) ] ) ).toBe(
-			1
-		);
+		expect(
+			mountWidgets( document, [ configFor( 'ur-pk', 'ltr' ) ] )
+		).toBe( 1 );
 
 		const mount = document.querySelector< HTMLElement >(
 			'.wp-rag-ai-chatbot-widget'
