@@ -15,11 +15,11 @@
 }
 
 .wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-position="bottom-right"] {
-	right: 1rem;
+	inset-inline-end: 1rem;
 }
 
 .wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-position="bottom-left"] {
-	left: 1rem;
+	inset-inline-start: 1rem;
 }
 
 .wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-font-family="sans"] {
@@ -69,11 +69,11 @@
 }
 
 .wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-position="bottom-right"] [data-wp-rag-ai-chatbot-panel] {
-	right: 0;
+	inset-inline-end: 0;
 }
 
 .wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-position="bottom-left"] [data-wp-rag-ai-chatbot-panel] {
-	left: 0;
+	inset-inline-start: 0;
 }
 
 .wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-panel-size="small"] [data-wp-rag-ai-chatbot-panel] {
@@ -110,11 +110,11 @@
 	}
 
 	.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-position="bottom-right"] {
-		right: 0.75rem;
+		inset-inline-end: 0.75rem;
 	}
 
 	.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-position="bottom-left"] {
-		left: 0.75rem;
+		inset-inline-start: 0.75rem;
 	}
 
 	.wp-rag-ai-chatbot-widget [data-wp-rag-ai-chatbot-panel] {
