@@ -22,9 +22,36 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
+          import re
 
           path = Path('src-js/index.ts')
           text = path.read_text()
+
+          def block_pattern(block: str) -> str:
+              parts = []
+              for line in block.splitlines():
+                  stripped = line.strip()
+                  if stripped:
+                      parts.append(r'^[ \t]*' + re.escape(stripped) + r'[ \t]*$')
+                  else:
+                      parts.append(r'^[ \t]*$')
+              return '\n'.join(parts)
+
+          def replace_block(old: str, new: str) -> None:
+              global text
+              pattern = block_pattern(old)
+              matches = list(re.finditer(pattern, text, flags=re.MULTILINE))
+              if len(matches) != 1:
+                  raise SystemExit(
+                      f'Expected exactly one semantic block, found {len(matches)}: {old.splitlines()[0]!r}'
+                  )
+              text = re.sub(
+                  pattern,
+                  lambda _match: new,
+                  text,
+                  count=1,
+                  flags=re.MULTILINE,
+              )
 
           replacements = [
               (
@@ -36,8 +63,8 @@ jobs:
                   "\t\t\tconversationList,\n\t\t\tconversationDetail,\n\t\t\tproviderId,",
               ),
               (
-                  "\tlet currentConversationList: ConversationListResponse | undefined;\n\tlet currentProviderCredential:",
-                  "\tlet currentConversationList: ConversationListResponse | undefined;\n\tlet currentConversationDetail: ConversationDetail | undefined;\n\tlet loadedConversationDetailId: string | undefined;\n\tlet currentProviderCredential:",
+                  "\tlet currentConversationList: ConversationListResponse | undefined;\n\tlet currentProviderCredential: ProviderCredentialState | undefined;",
+                  "\tlet currentConversationList: ConversationListResponse | undefined;\n\tlet currentConversationDetail: ConversationDetail | undefined;\n\tlet loadedConversationDetailId: string | undefined;\n\tlet currentProviderCredential: ProviderCredentialState | undefined;",
               ),
               (
                   "\t\tconst selectedKnowledgeDocumentKey =\n\t\t\tresolveSelectedKnowledgeDocumentKey( currentHash() );\n\t\trenderAdminShell(",
@@ -48,8 +75,8 @@ jobs:
                   "\t\t\tresolveAdminScreen( currentHash() ) === 'conversations' &&\n\t\t\t\tconversationRoute.selectedConversationId === undefined\n\t\t\t\t? currentConversationList\n\t\t\t\t: undefined,\n\t\t\tresolveAdminScreen( currentHash() ) === 'conversations' &&\n\t\t\t\tconversationRoute.selectedConversationId !== undefined &&\n\t\t\t\tconversationRoute.selectedConversationId === loadedConversationDetailId\n\t\t\t\t? currentConversationDetail\n\t\t\t\t: undefined,\n\t\t\tproviderId,",
               ),
               (
-                  "\tconst refreshConversationList = async (\n\t\tpage = resolveConversationRouteState( currentHash() ).page\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadList( { page }, ( response ) => {\n\t\t\tcurrentConversationList = response;\n\t\t} );\n\t};\n\tconst playgroundRuntime",
-                  "\tconst refreshConversationList = async (\n\t\tpage = resolveConversationRouteState( currentHash() ).page\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadList( { page }, ( response ) => {\n\t\t\tcurrentConversationList = response;\n\t\t} );\n\t};\n\tconst refreshConversationDetail = async (\n\t\tconversationId: string\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadDetail( conversationId, ( detail ) => {\n\t\t\tcurrentConversationDetail = detail;\n\t\t\tloadedConversationDetailId = conversationId;\n\t\t} );\n\t};\n\tconst playgroundRuntime",
+                  "\tconst refreshConversationList = async (\n\t\tpage = resolveConversationRouteState( currentHash() ).page\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadList( { page }, ( response ) => {\n\t\t\tcurrentConversationList = response;\n\t\t} );\n\t};\n\tconst playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {",
+                  "\tconst refreshConversationList = async (\n\t\tpage = resolveConversationRouteState( currentHash() ).page\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadList( { page }, ( response ) => {\n\t\t\tcurrentConversationList = response;\n\t\t} );\n\t};\n\tconst refreshConversationDetail = async (\n\t\tconversationId: string\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadDetail( conversationId, ( detail ) => {\n\t\t\tcurrentConversationDetail = detail;\n\t\t\tloadedConversationDetailId = conversationId;\n\t\t} );\n\t};\n\tconst playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {",
               ),
               (
                   "\t\tif ( screen !== 'conversations' ) {\n\t\t\tcurrentConversationList = undefined;\n\t\t}",
@@ -64,18 +91,21 @@ jobs:
                   "\t\t) {\n\t\t\tcurrentConversationDetail = undefined;\n\t\t\tloadedConversationDetailId = undefined;\n\t\t\tcurrentConversationList = undefined;\n\t\t\tvoid refreshConversationList( conversationRoute.page )",
               ),
               (
-                  "\t\t\t\tif ( conversationRoute.selectedConversationId === undefined ) {\n\t\t\t\t\tawait refreshConversationList( conversationRoute.page );\n\t\t\t\t}\n",
-                  "\t\t\t\tif ( conversationRoute.selectedConversationId === undefined ) {\n\t\t\t\t\tawait refreshConversationList( conversationRoute.page );\n\t\t\t\t} else {\n\t\t\t\t\tawait refreshConversationDetail(\n\t\t\t\t\t\tconversationRoute.selectedConversationId\n\t\t\t\t\t);\n\t\t\t\t}\n",
+                  "\t\t\t\tif ( conversationRoute.selectedConversationId === undefined ) {\n\t\t\t\t\tawait refreshConversationList( conversationRoute.page );\n\t\t\t\t}",
+                  "\t\t\t\tif ( conversationRoute.selectedConversationId === undefined ) {\n\t\t\t\t\tawait refreshConversationList( conversationRoute.page );\n\t\t\t\t} else {\n\t\t\t\t\tawait refreshConversationDetail(\n\t\t\t\t\t\tconversationRoute.selectedConversationId\n\t\t\t\t\t);\n\t\t\t\t}",
               ),
           ]
 
           for old, new in replacements:
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'Expected exactly one match, found {count}: {old[:80]!r}')
-              text = text.replace(old, new, 1)
+              replace_block(old, new)
 
           path.write_text(text)
+
+      - name: Verify focused JavaScript gates
+        run: |
+          npm ci
+          npx prettier --check src-js/index.ts src-js/conversation-admin-bootstrap.test.ts
+          npm test -- --runInBand src-js/conversation-admin-bootstrap.test.ts
 
       - name: Commit patch and remove helper
         run: |
