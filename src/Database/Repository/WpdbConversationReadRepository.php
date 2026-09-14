@@ -188,7 +188,7 @@ final class WpdbConversationReadRepository implements ConversationReadRepository
 				'SELECT m.role, m.content, m.created_at
 				FROM %i AS m
 				WHERE m.conversation_id = %s AND m.owner_scope = %s
-				ORDER BY m.id ASC
+				ORDER BY m.created_at ASC, m.id ASC
 				LIMIT %d',
 				$this->tables->messages(),
 				$persisted_id,
