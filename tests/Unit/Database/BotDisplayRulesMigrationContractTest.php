@@ -15,7 +15,7 @@ use WpRagAiChatbot\Database\Migrations\V013AddBotDisplayRules;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Tests\Support\Database\RecordingConnection;
 
-/** Defines schema version thirteen for persisted bot display rules. */
+/** Defines the persisted bot display-rules contract introduced in schema version thirteen. */
 final class BotDisplayRulesMigrationContractTest extends TestCase {
 	/** V013 adds display-rule storage without dropping prior bot configuration fields. */
 	public function test_bot_display_rules_are_part_of_schema_version_thirteen(): void {
@@ -23,7 +23,7 @@ final class BotDisplayRulesMigrationContractTest extends TestCase {
 			class_exists( V013AddBotDisplayRules::class ),
 			'M15 Task 2B requires V013AddBotDisplayRules.'
 		);
-		self::assertSame( 13, DatabaseSchema::VERSION );
+		self::assertGreaterThanOrEqual( 13, DatabaseSchema::VERSION );
 
 		$connection = new RecordingConnection();
 		$migration  = new V013AddBotDisplayRules( new TableNames( 'wp_' ) );
