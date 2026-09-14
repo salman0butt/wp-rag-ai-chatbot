@@ -39,18 +39,52 @@ final class WpdbConversationReadRepository implements ConversationReadRepository
 	 */
 	public function list( ConversationListQuery $query ): array {
 		$offset = ( $query->page - 1 ) * $query->page_size;
-		$sql    = $this->connection->prepare(
-			'SELECT c.conversation_id, c.bot_id, c.created_at AS started_at, MAX(m.created_at) AS latest_message_at, COUNT(m.id) AS message_count
-			FROM %i AS c
-			LEFT JOIN %i AS m ON m.conversation_id = c.conversation_id AND m.owner_scope = c.owner_scope
-			GROUP BY c.id, c.conversation_id, c.bot_id, c.created_at
-			ORDER BY COALESCE(MAX(m.created_at), c.created_at) DESC, c.id DESC
-			LIMIT %d OFFSET %d',
+
+		/** @var literal-string $where */
+		$where = '';
+		$args  = array(
 			$this->tables->conversations(),
 			$this->tables->messages(),
-			$query->page_size,
-			$offset
 		);
+
+		if ( null !== $query->bot_id ) {
+			$where  = 'WHERE c.bot_id = %s';
+			$args[] = $query->bot_id;
+		} elseif ( $query->unassigned_only ) {
+			$where = 'WHERE c.bot_id IS NULL';
+		}
+
+		if ( null !== $query->date_from ) {
+			$where  .= '' === $where ? 'WHERE c.created_at >= %s' : ' AND c.created_at >= %s';
+			$args[]  = $query->date_from;
+		}
+
+		if ( null !== $query->date_to ) {
+			$where  .= '' === $where ? 'WHERE c.created_at <= %s' : ' AND c.created_at <= %s';
+			$args[]  = $query->date_to;
+		}
+
+		if ( null !== $query->search ) {
+			$where .= '' === $where
+				? 'WHERE EXISTS (SELECT 1 FROM %i AS sm WHERE sm.conversation_id = c.conversation_id AND sm.owner_scope = c.owner_scope AND sm.content LIKE %s)'
+				: ' AND EXISTS (SELECT 1 FROM %i AS sm WHERE sm.conversation_id = c.conversation_id AND sm.owner_scope = c.owner_scope AND sm.content LIKE %s)';
+			$args[] = $this->tables->messages();
+			$args[] = '%' . addcslashes( $query->search, '\\%_' ) . '%';
+		}
+
+		$args[] = $query->page_size;
+		$args[] = $offset;
+
+		/** @var literal-string $sql_template */
+		$sql_template = 'SELECT c.conversation_id, c.bot_id, c.created_at AS started_at, MAX(m.created_at) AS latest_message_at, COUNT(m.id) AS message_count
+			FROM %i AS c
+			LEFT JOIN %i AS m ON m.conversation_id = c.conversation_id AND m.owner_scope = c.owner_scope
+			' . $where . '
+			GROUP BY c.id, c.conversation_id, c.bot_id, c.created_at
+			ORDER BY COALESCE(MAX(m.created_at), c.created_at) DESC, c.id DESC
+			LIMIT %d OFFSET %d';
+
+		$sql = $this->connection->prepare( $sql_template, ...$args );
 
 		$summaries = array();
 		foreach ( $this->connection->get_results( $sql ) as $row ) {
