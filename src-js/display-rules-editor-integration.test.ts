@@ -2,6 +2,15 @@ import { normalizeDisplayRules } from './display-rules';
 import { bootstrapAdminApp } from './index';
 
 type TestElementProps = Record< string, unknown > | null;
+type TestFetchResponse = {
+	ok: boolean;
+	status: number;
+	json: () => Promise< unknown >;
+};
+type TestFetch = (
+	input: RequestInfo | URL,
+	init?: RequestInit
+) => Promise< TestFetchResponse >;
 
 const createTestElement = (
 	tagName: string,
@@ -119,7 +128,7 @@ const bot = {
 	updated_at: '2026-09-08T01:00:00+00:00',
 };
 
-const installAdmin = ( fetcher: typeof fetch ): HTMLElement => {
+const installAdmin = ( fetcher: TestFetch ): HTMLElement => {
 	const render = jest.fn( ( element: Node, root: Element ) => {
 		root.replaceChildren( element );
 	} );
@@ -151,7 +160,7 @@ const installAdmin = ( fetcher: typeof fetch ): HTMLElement => {
 	return root;
 };
 
-const successResponse = ( payload: unknown ) => ( {
+const successResponse = ( payload: unknown ): TestFetchResponse => ( {
 	ok: true,
 	status: 200,
 	json: async () => payload,
@@ -198,7 +207,7 @@ describe( 'display rules editor persistence integration', () => {
 				}
 				throw new Error( `Unexpected fetch: ${ url }` );
 			}
-		) as typeof fetch;
+		);
 		const root = installAdmin( fetcher );
 
 		expect( bootstrapAdminApp( '#/bots/bot-existing?page=1' ) ).toBe(
@@ -305,7 +314,7 @@ describe( 'display rules editor persistence integration', () => {
 				}
 				throw new Error( `Unexpected fetch: ${ url }` );
 			}
-		) as typeof fetch;
+		);
 		const root = installAdmin( fetcher );
 
 		expect( bootstrapAdminApp( '#/bots/bot-existing?page=1' ) ).toBe(
