@@ -6,9 +6,7 @@ export interface ConversationRequestGeneration {
 }
 
 export interface ConversationRequestGenerationGuard {
-	begin: (
-		scope: ConversationRequestScope
-	) => ConversationRequestGeneration;
+	begin: ( scope: ConversationRequestScope ) => ConversationRequestGeneration;
 	invalidate: ( scope: ConversationRequestScope ) => void;
 	isCurrent: ( request: ConversationRequestGeneration ) => boolean;
 }
