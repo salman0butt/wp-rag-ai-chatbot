@@ -5,9 +5,10 @@ import {
 	ProviderSettingsScreen,
 } from './provider-settings';
 import { AppearanceCustomizer } from './appearance-customizer';
-import type {
-	ConversationDetail,
-	ConversationListResponse,
+import {
+	createConversationAdminLoader,
+	type ConversationDetail,
+	type ConversationListResponse,
 } from './conversation-admin-loader';
 import { ConversationDetailScreen } from './conversation-detail-screen';
 import { ConversationInboxScreen } from './conversation-inbox-screen';
@@ -1484,6 +1485,7 @@ const renderAdminShell = (
 	) => Promise< void >,
 	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
+	conversationList?: ConversationListResponse,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
@@ -1524,6 +1526,7 @@ const renderAdminShell = (
 			onEnqueueKnowledgeJob,
 			onCancelKnowledgeJob,
 			onRetryKnowledgeJob,
+			conversationList,
 			providerId,
 			providerCredential,
 			providerModels,
@@ -1581,6 +1584,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let loadedKnowledgeDocumentKey: string | undefined;
 	let knowledgePageGeneration = 0;
 	let knowledgeSelectionGeneration = 0;
+	let currentConversationList: ConversationListResponse | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let currentProviderIssue: ProviderSettingsIssue | undefined;
@@ -1668,6 +1672,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			enqueueKnowledgeJob,
 			cancelKnowledgeJob,
 			retryKnowledgeJob,
+			resolveAdminScreen( currentHash() ) === 'conversations'
+				? currentConversationList
+				: undefined,
 			providerId,
 			providerId === loadedProviderId
 				? currentProviderCredential
@@ -1709,6 +1716,14 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		nonce: config.nonce,
 		fetcher: fetcher.bind( window ),
 	} );
+	const conversationLoader = createConversationAdminLoader( client );
+	const refreshConversationList = async (
+		page = resolveConversationRouteState( currentHash() ).page
+	): Promise< void > => {
+		await conversationLoader.loadList( { page }, ( response ) => {
+			currentConversationList = response;
+		} );
+	};
 	const playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {
 		currentPlaygroundState = state;
 		renderState( stateFromReadiness() );
@@ -2144,6 +2159,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			loadedKnowledgeDocumentKey = undefined;
 		}
 
+		if ( screen !== 'conversations' ) {
+			currentConversationList = undefined;
+		}
+
 		if ( screen !== 'playground' ) {
 			currentPlaygroundState = { status: 'idle' };
 		}
@@ -2288,6 +2307,20 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 					.catch( () => renderState( 'error' ) );
 				return;
 			}
+		}
+
+		const conversationRoute = resolveConversationRouteState( currentHash() );
+		if (
+			screen === 'conversations' &&
+			conversationRoute.selectedConversationId === undefined &&
+			( currentConversationList === undefined ||
+				currentConversationList.page !== conversationRoute.page )
+		) {
+			currentConversationList = undefined;
+			void refreshConversationList( conversationRoute.page )
+				.then( () => renderState( stateFromReadiness() ) )
+				.catch( () => renderState( 'error' ) );
+			return;
 		}
 
 		const providerId = resolveSelectedProviderId( currentHash() );
@@ -2466,6 +2499,15 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 				if ( sourceId !== undefined ) {
 					await refreshKnowledgeSelection( sourceId );
+				}
+			}
+
+			if ( screen === 'conversations' ) {
+				const conversationRoute = resolveConversationRouteState(
+					currentHash()
+				);
+				if ( conversationRoute.selectedConversationId === undefined ) {
+					await refreshConversationList( conversationRoute.page );
 				}
 			}
 
