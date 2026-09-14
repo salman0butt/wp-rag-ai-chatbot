@@ -11,7 +11,6 @@ namespace WpRagAiChatbot\Admin\Rest;
 
 use WP_REST_Request;
 use WpRagAiChatbot\Admin\AdminCapability;
-use WpRagAiChatbot\Conversations\ConversationListQuery;
 use WpRagAiChatbot\Database\Repository\WpdbBotAppearanceRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotDisplayRulesRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
@@ -624,13 +623,12 @@ final class AdminRestBootstrap {
 	 * @return array<string,mixed>
 	 */
 	public static function list_conversations( WP_REST_Request $request ): array {
-		$page     = self::request_positive_int( $request->get_param( 'page' ), 1 );
-		$per_page = self::request_positive_int( $request->get_param( 'per_page' ), 25 );
-		if ( null === $page || null === $per_page || $per_page > 100 ) {
+		$query = ConversationListRequest::from_array( $request->get_query_params() );
+		if ( null === $query ) {
 			return self::invalid_request();
 		}
 
-		return self::conversations()->list( new ConversationListQuery( $page, $per_page ) );
+		return self::conversations()->list( $query );
 	}
 
 	/**
