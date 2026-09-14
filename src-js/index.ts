@@ -116,7 +116,8 @@ export type AdminScreen =
 	| 'bots'
 	| 'providers'
 	| 'knowledge'
-	| 'playground';
+	| 'playground'
+	| 'conversations';
 type KnowledgeJobMutationError = 'invalid_transition' | 'admin_request_failed';
 export type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
 export type OnboardingIssue =
@@ -375,6 +376,7 @@ const ADMIN_SCREENS: ReadonlyArray< {
 	{ screen: 'providers', label: 'Providers' },
 	{ screen: 'knowledge', label: 'Knowledge' },
 	{ screen: 'playground', label: 'Playground' },
+	{ screen: 'conversations', label: 'Conversations' },
 ];
 
 const ONBOARDING_HEADINGS: Readonly< Record< OnboardingStep, string > > = {
