@@ -5,6 +5,12 @@ import {
 	ProviderSettingsScreen,
 } from './provider-settings';
 import { AppearanceCustomizer } from './appearance-customizer';
+import type {
+	ConversationDetail,
+	ConversationListResponse,
+} from './conversation-admin-loader';
+import { ConversationDetailScreen } from './conversation-detail-screen';
+import { ConversationInboxScreen } from './conversation-inbox-screen';
 import { DisplayRulesEditor } from './display-rules-editor';
 import {
 	normalizeDisplayRules,
@@ -162,6 +168,12 @@ export interface AdminShellProps {
 	) => Promise< void >;
 	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
+	conversationList?: ConversationListResponse;
+	conversationDetail?: ConversationDetail;
+	conversationDeleteConfirmationOpen?: boolean;
+	onRequestConversationDelete?: () => void;
+	onCancelConversationDelete?: () => void;
+	onConfirmConversationDelete?: () => void;
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
 	providerModels?: ReadonlyArray< ProviderModelChoice >;
@@ -1227,6 +1239,12 @@ export const AdminShell = ( {
 	onEnqueueKnowledgeJob,
 	onCancelKnowledgeJob,
 	onRetryKnowledgeJob,
+	conversationList,
+	conversationDetail,
+	conversationDeleteConfirmationOpen = false,
+	onRequestConversationDelete,
+	onCancelConversationDelete,
+	onConfirmConversationDelete,
 	providerId,
 	providerCredential,
 	providerModels,
@@ -1360,6 +1378,32 @@ export const AdminShell = ( {
 				onEnqueueJob: onEnqueueKnowledgeJob,
 				onCancelJob: onCancelKnowledgeJob,
 				onRetryJob: onRetryKnowledgeJob,
+			} )
+		);
+	} else if ( screen === 'conversations' && conversationDetail !== undefined ) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			ConversationDetailScreen( {
+				conversation: conversationDetail,
+				deleteConfirmationOpen: conversationDeleteConfirmationOpen,
+				onRequestDelete: onRequestConversationDelete ?? ( () => undefined ),
+				onCancelDelete: onCancelConversationDelete ?? ( () => undefined ),
+				onConfirmDelete: onConfirmConversationDelete ?? ( () => undefined ),
+			} )
+		);
+	} else if ( screen === 'conversations' && conversationList !== undefined ) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			ConversationInboxScreen( {
+				items: conversationList.items,
+				page: conversationList.page,
+				perPage: conversationList.per_page,
+				hasNextPage:
+					conversationList.items.length === conversationList.per_page,
 			} )
 		);
 	} else if (
