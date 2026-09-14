@@ -25,8 +25,9 @@ interface ConversationRepository {
 	/**
 	 * Create one conversation belonging to the supplied owner scope.
 	 *
-	 * @param string $owner_scope Trusted owner scope.
+	 * @param string      $owner_scope Trusted owner scope.
+	 * @param string|null $bot_id Explicit bot association, or null for non-bot/historical-compatible callers.
 	 */
-	public function create_for_owner( string $owner_scope ): Conversation;
+	public function create_for_owner( string $owner_scope, ?string $bot_id = null ): Conversation;
 }
 // phpcs:enable WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid
