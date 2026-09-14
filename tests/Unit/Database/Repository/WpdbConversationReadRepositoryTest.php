@@ -78,4 +78,76 @@ final class WpdbConversationReadRepositoryTest extends TestCase {
 		self::assertNull( $rows[1]->latest_message_at );
 		self::assertSame( 0, $rows[1]->message_count );
 	}
+
+	/** Bot/date/transcript filters use prepared values without narrowing the aggregate message join. */
+	public function test_applies_prepared_bot_date_and_transcript_filters(): void {
+		$connection = $this->createMock( Connection::class );
+		$connection->expects( self::once() )
+			->method( 'prepare' )
+			->with(
+				self::callback(
+					static fn ( string $sql ): bool => str_contains( $sql, 'WHERE c.bot_id = %s' )
+						&& str_contains( $sql, 'c.created_at >= %s' )
+						&& str_contains( $sql, 'c.created_at <= %s' )
+						&& str_contains( $sql, 'EXISTS (' )
+						&& str_contains( $sql, 'FROM %i AS sm' )
+						&& str_contains( $sql, 'sm.conversation_id = c.conversation_id' )
+						&& str_contains( $sql, 'sm.owner_scope = c.owner_scope' )
+						&& str_contains( $sql, 'sm.content LIKE %s' )
+				),
+				'wp_rag_ai_conversations',
+				'wp_rag_ai_messages',
+				'bot-1',
+				'2026-09-01 00:00:00',
+				'2026-09-14 23:59:59',
+				'wp_rag_ai_messages',
+				'%50\\%\\_match%',
+				25,
+				0
+			)
+			->willReturn( 'filtered' );
+		$connection->expects( self::once() )
+			->method( 'get_results' )
+			->with( 'filtered' )
+			->willReturn( array() );
+
+		$repository = new WpdbConversationReadRepository( $connection, new TableNames( 'wp_' ) );
+		$query      = new ConversationListQuery(
+			1,
+			25,
+			'bot-1',
+			false,
+			'2026-09-01 00:00:00',
+			'2026-09-14 23:59:59',
+			'50%_match'
+		);
+
+		self::assertSame( array(), $repository->list( $query ) );
+	}
+
+	/** Historical conversations are filtered with an explicit SQL NULL bucket, never a guessed bot identity. */
+	public function test_applies_explicit_unassigned_filter(): void {
+		$connection = $this->createMock( Connection::class );
+		$connection->expects( self::once() )
+			->method( 'prepare' )
+			->with(
+				self::callback(
+					static fn ( string $sql ): bool => str_contains( $sql, 'WHERE c.bot_id IS NULL' )
+						&& ! str_contains( $sql, 'c.bot_id = %s' )
+				),
+				'wp_rag_ai_conversations',
+				'wp_rag_ai_messages',
+				25,
+				0
+			)
+			->willReturn( 'unassigned' );
+		$connection->expects( self::once() )
+			->method( 'get_results' )
+			->with( 'unassigned' )
+			->willReturn( array() );
+
+		$repository = new WpdbConversationReadRepository( $connection, new TableNames( 'wp_' ) );
+
+		self::assertSame( array(), $repository->list( new ConversationListQuery( 1, 25, null, true ) ) );
+	}
 }
