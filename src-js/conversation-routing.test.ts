@@ -6,7 +6,9 @@ describe( 'M16 conversation admin routing', () => {
 			'conversations'
 		);
 		expect(
-			String( resolveAdminScreen( '#/conversations/conversation-1?page=2' ) )
+			String(
+				resolveAdminScreen( '#/conversations/conversation-1?page=2' )
+			)
 		).toBe( 'conversations' );
 	} );
 } );
