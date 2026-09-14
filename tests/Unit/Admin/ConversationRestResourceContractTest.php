@@ -106,6 +106,23 @@ final class ConversationRestResourceContractTest extends TestCase {
 		self::assertSame( 'conversation_not_found', $missing['error']['code'] );
 	}
 
+	/** Invalid delete identifiers fail closed without exposing repository exception details. */
+	public function test_delete_maps_invalid_identifier_to_bounded_error(): void {
+		$admin = $this->createMock( ConversationAdminRepository::class );
+		$admin->expects( self::once() )
+			->method( 'delete' )
+			->with( '' )
+			->willThrowException( new \InvalidArgumentException( 'Sensitive repository validation detail.' ) );
+		$resource = $this->resource( $this->createMock( ConversationReadRepository::class ), $admin );
+
+		$response = $this->invoke( $resource, 'delete', '' );
+
+		self::assertIsArray( $response );
+		self::assertSame( 'invalid_conversation_id', $response['error']['code'] );
+		self::assertSame( 'Conversation identifier is invalid.', $response['error']['message'] );
+		self::assertStringNotContainsString( 'Sensitive', $response['error']['message'] );
+	}
+
 	/**
 	 * Instantiate the evolving production resource without making the test-only checkpoint fail static analysis.
 	 *
