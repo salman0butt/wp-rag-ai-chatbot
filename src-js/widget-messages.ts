@@ -71,7 +71,11 @@ const readLocale = ( locale: string | undefined ): WidgetLocale => {
 		return 'en';
 	}
 
-	const primary = locale.trim().toLowerCase().replace( '_', '-' ).split( '-' )[ 0 ];
+	const primary = locale
+		.trim()
+		.toLowerCase()
+		.replace( '_', '-' )
+		.split( '-' )[ 0 ];
 	return primary === 'ur' ? 'ur' : 'en';
 };
 
