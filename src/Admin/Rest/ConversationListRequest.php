@@ -107,7 +107,7 @@ final class ConversationListRequest {
 			return false;
 		}
 
-		if ( 1 === $value || '1' === $value || 'true' === strtolower( trim( (string) $value ) ) {
+		if ( 1 === $value || '1' === $value || 'true' === strtolower( trim( (string) $value ) ) ) {
 			return true;
 		}
 
@@ -129,7 +129,11 @@ final class ConversationListRequest {
 		return '' === $value ? null : $value;
 	}
 
-	/** Verify a date boundary uses the canonical persisted timestamp format and a real calendar value. */
+	/**
+	 * Verify a date boundary uses the canonical persisted timestamp format and a real calendar value.
+	 *
+	 * @param string $value Normalized date boundary.
+	 */
 	private static function is_database_datetime( string $value ): bool {
 		$date = DateTimeImmutable::createFromFormat( '!' . self::DATE_FORMAT, $value );
 
