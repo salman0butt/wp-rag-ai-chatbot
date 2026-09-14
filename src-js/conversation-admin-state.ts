@@ -9,10 +9,14 @@ export interface ConversationListState {
 
 const CONVERSATION_PAGE_SIZE = 25;
 
-const normalizedOptionalValue = ( value: string | undefined ): string | undefined => {
+const normalizedOptionalValue = (
+	value: string | undefined
+): string | undefined => {
 	const normalized = value?.trim();
 
-	return normalized === undefined || normalized === '' ? undefined : normalized;
+	return normalized === undefined || normalized === ''
+		? undefined
+		: normalized;
 };
 
 export const buildConversationListPath = (
