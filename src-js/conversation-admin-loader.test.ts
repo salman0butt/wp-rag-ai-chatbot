@@ -11,8 +11,16 @@ const deferred = < T >() => {
 
 describe( 'createConversationAdminLoader', () => {
 	it( 'applies only the newest list response', async () => {
-		const first = deferred< { items: []; page: number; per_page: number } >();
-		const second = deferred< { items: []; page: number; per_page: number } >();
+		const first = deferred< {
+			items: [];
+			page: number;
+			per_page: number;
+		} >();
+		const second = deferred< {
+			items: [];
+			page: number;
+			per_page: number;
+		} >();
 		const request = jest
 			.fn()
 			.mockReturnValueOnce( first.promise )
