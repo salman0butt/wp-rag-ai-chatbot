@@ -70,7 +70,10 @@ const createTestElement = (
 		}
 	}
 
-	if ( deferredSelectValue !== undefined && element instanceof HTMLSelectElement ) {
+	if (
+		deferredSelectValue !== undefined &&
+		element instanceof HTMLSelectElement
+	) {
 		element.value = deferredSelectValue;
 	}
 
