@@ -25,7 +25,7 @@ final class WpdbConversationAdminRepositoryTest extends TestCase {
 			return;
 		}
 
-		$connection = $this->createMock( Connection::class );
+		$connection  = $this->createMock( Connection::class );
 		$query_index = 0;
 		$connection->expects( self::exactly( 2 ) )
 			->method( 'query' )
@@ -97,7 +97,7 @@ final class WpdbConversationAdminRepositoryTest extends TestCase {
 			self::markTestSkipped( 'Deletion repository is specified by the preceding RED assertion.' );
 		}
 
-		$connection = $this->createMock( Connection::class );
+		$connection  = $this->createMock( Connection::class );
 		$query_index = 0;
 		$connection->expects( self::exactly( 2 ) )
 			->method( 'query' )
