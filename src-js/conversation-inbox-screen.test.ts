@@ -44,9 +44,11 @@ const createTestElement = (
 	}
 
 	for ( const child of children ) {
-		if ( child !== undefined ) {
-			element.append( String( child ) );
+		if ( child === undefined ) {
+			continue;
 		}
+
+		element.append( typeof child === 'number' ? String( child ) : child );
 	}
 
 	return element;
