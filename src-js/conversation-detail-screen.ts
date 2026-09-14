@@ -41,52 +41,51 @@ export const ConversationDetailScreen = (
 		)
 	);
 
-	const deleteControl = props.deleteConfirmationOpen
-		? createElement(
-				'div',
-				{
-					role: 'alertdialog',
-					'aria-modal': true,
-					'aria-labelledby': 'conversation-delete-title',
-				},
-				createElement(
-					'h3',
-					{ id: 'conversation-delete-title' },
-					'Delete conversation?'
-				),
-				createElement(
-					'p',
-					null,
-					'This action cannot be undone.'
-				),
-				createElement(
-					'button',
-					{
-						type: 'button',
-						'data-cancel-delete': true,
-						onClick: props.onCancelDelete,
-					},
-					'Cancel'
-				),
-				createElement(
-					'button',
-					{
-						type: 'button',
-						'data-confirm-delete': true,
-						onClick: props.onConfirmDelete,
-					},
-					'Delete conversation'
-				)
-			  )
-		: createElement(
+	let deleteControl: unknown;
+	if ( props.deleteConfirmationOpen ) {
+		deleteControl = createElement(
+			'div',
+			{
+				role: 'alertdialog',
+				'aria-modal': true,
+				'aria-labelledby': 'conversation-delete-title',
+			},
+			createElement(
+				'h3',
+				{ id: 'conversation-delete-title' },
+				'Delete conversation?'
+			),
+			createElement( 'p', null, 'This action cannot be undone.' ),
+			createElement(
 				'button',
 				{
 					type: 'button',
-					'data-request-delete': true,
-					onClick: props.onRequestDelete,
+					'data-cancel-delete': true,
+					onClick: props.onCancelDelete,
+				},
+				'Cancel'
+			),
+			createElement(
+				'button',
+				{
+					type: 'button',
+					'data-confirm-delete': true,
+					onClick: props.onConfirmDelete,
 				},
 				'Delete conversation'
-			  );
+			)
+		);
+	} else {
+		deleteControl = createElement(
+			'button',
+			{
+				type: 'button',
+				'data-request-delete': true,
+				onClick: props.onRequestDelete,
+			},
+			'Delete conversation'
+		);
+	}
 
 	return createElement(
 		'section',
@@ -94,7 +93,11 @@ export const ConversationDetailScreen = (
 			'data-conversation-detail': true,
 			'data-conversation-id': conversation.conversation_id,
 		},
-		createElement( 'h2', null, `Conversation ${ conversation.conversation_id }` ),
+		createElement(
+			'h2',
+			null,
+			`Conversation ${ conversation.conversation_id }`
+		),
 		createElement(
 			'p',
 			null,
