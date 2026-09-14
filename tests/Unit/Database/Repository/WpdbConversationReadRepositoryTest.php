@@ -47,14 +47,14 @@ final class WpdbConversationReadRepositoryTest extends TestCase {
 			->willReturn(
 				array(
 					array(
-						'conversation_id'  => 'conversation-2',
+						'conversation_id'   => 'conversation-2',
 						'bot_id'            => 'bot-2',
 						'started_at'        => '2026-09-14 02:00:00',
 						'latest_message_at' => '2026-09-14 02:05:00',
 						'message_count'     => '3',
 					),
 					array(
-						'conversation_id'  => 'conversation-legacy',
+						'conversation_id'   => 'conversation-legacy',
 						'bot_id'            => null,
 						'started_at'        => '2026-09-13 22:00:00',
 						'latest_message_at' => null,
