@@ -1,0 +1,102 @@
+name: M16 detail bootstrap patch helper v3
+
+on:
+  push:
+    branches:
+      - feat/m16-conversations-leads-feedback-forms
+    paths:
+      - .github/workflows/m16-detail-bootstrap-patch-v3.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply exact conversation detail bootstrap patch
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src-js/index.ts')
+          text = path.read_text()
+
+          def replace_exact(old: str, new: str) -> None:
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(
+                      f'Expected exactly one match, found {count}: {old.splitlines()[0]!r}'
+                  )
+              text = text.replace(old, new, 1)
+
+          replacements = [
+              (
+                  "\tconversationList?: ConversationListResponse,\n\tproviderId?: string,",
+                  "\tconversationList?: ConversationListResponse,\n\tconversationDetail?: ConversationDetail,\n\tproviderId?: string,",
+              ),
+              (
+                  "\t\t\tconversationList,\n\t\t\tproviderId,",
+                  "\t\t\tconversationList,\n\t\t\tconversationDetail,\n\t\t\tproviderId,",
+              ),
+              (
+                  "\tlet currentConversationList: ConversationListResponse | undefined;\n\tlet currentProviderCredential: ProviderCredentialState | undefined;",
+                  "\tlet currentConversationList: ConversationListResponse | undefined;\n\tlet currentConversationDetail: ConversationDetail | undefined;\n\tlet loadedConversationDetailId: string | undefined;\n\tlet currentProviderCredential: ProviderCredentialState | undefined;",
+              ),
+              (
+                  "\t\tconst selectedKnowledgeDocumentKey =\n\t\t\tresolveSelectedKnowledgeDocumentKey( currentHash() );\n\t\trenderAdminShell(",
+                  "\t\tconst selectedKnowledgeDocumentKey =\n\t\t\tresolveSelectedKnowledgeDocumentKey( currentHash() );\n\t\tconst conversationRoute = resolveConversationRouteState(\n\t\t\tcurrentHash()\n\t\t);\n\t\trenderAdminShell(",
+              ),
+              (
+                  "\t\t\tresolveAdminScreen( currentHash() ) === 'conversations'\n\t\t\t\t? currentConversationList\n\t\t\t\t: undefined,\n\t\t\tproviderId,",
+                  "\t\t\tresolveAdminScreen( currentHash() ) === 'conversations' &&\n\t\t\t\tconversationRoute.selectedConversationId === undefined\n\t\t\t\t? currentConversationList\n\t\t\t\t: undefined,\n\t\t\tresolveAdminScreen( currentHash() ) === 'conversations' &&\n\t\t\t\tconversationRoute.selectedConversationId !== undefined &&\n\t\t\t\tconversationRoute.selectedConversationId === loadedConversationDetailId\n\t\t\t\t? currentConversationDetail\n\t\t\t\t: undefined,\n\t\t\tproviderId,",
+              ),
+              (
+                  "\tconst refreshConversationList = async (\n\t\tpage = resolveConversationRouteState( currentHash() ).page\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadList( { page }, ( response ) => {\n\t\t\tcurrentConversationList = response;\n\t\t} );\n\t};\n\tconst playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {",
+                  "\tconst refreshConversationList = async (\n\t\tpage = resolveConversationRouteState( currentHash() ).page\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadList( { page }, ( response ) => {\n\t\t\tcurrentConversationList = response;\n\t\t} );\n\t};\n\tconst refreshConversationDetail = async (\n\t\tconversationId: string\n\t): Promise< void > => {\n\t\tawait conversationLoader.loadDetail( conversationId, ( detail ) => {\n\t\t\tcurrentConversationDetail = detail;\n\t\t\tloadedConversationDetailId = conversationId;\n\t\t} );\n\t};\n\tconst playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {",
+              ),
+              (
+                  "\t\tif ( screen !== 'conversations' ) {\n\t\t\tcurrentConversationList = undefined;\n\t\t}",
+                  "\t\tif ( screen !== 'conversations' ) {\n\t\t\tcurrentConversationList = undefined;\n\t\t\tcurrentConversationDetail = undefined;\n\t\t\tloadedConversationDetailId = undefined;\n\t\t}",
+              ),
+              (
+                  "\t\tconst conversationRoute = resolveConversationRouteState(\n\t\t\tcurrentHash()\n\t\t);\n\t\tif (\n\t\t\tscreen === 'conversations' &&\n\t\t\tconversationRoute.selectedConversationId === undefined &&",
+                  "\t\tconst conversationRoute = resolveConversationRouteState(\n\t\t\tcurrentHash()\n\t\t);\n\t\tif (\n\t\t\tscreen === 'conversations' &&\n\t\t\tconversationRoute.selectedConversationId !== undefined &&\n\t\t\tconversationRoute.selectedConversationId !== loadedConversationDetailId\n\t\t) {\n\t\t\tcurrentConversationList = undefined;\n\t\t\tcurrentConversationDetail = undefined;\n\t\t\tloadedConversationDetailId = undefined;\n\t\t\tvoid refreshConversationDetail(\n\t\t\t\tconversationRoute.selectedConversationId\n\t\t\t)\n\t\t\t\t.then( () => renderState( stateFromReadiness() ) )\n\t\t\t\t.catch( () => renderState( 'error' ) );\n\t\t\treturn;\n\t\t}\n\n\t\tif (\n\t\t\tscreen === 'conversations' &&\n\t\t\tconversationRoute.selectedConversationId === undefined &&",
+              ),
+              (
+                  "\t\t) {\n\t\t\tcurrentConversationList = undefined;\n\t\t\tvoid refreshConversationList( conversationRoute.page )",
+                  "\t\t) {\n\t\t\tcurrentConversationDetail = undefined;\n\t\t\tloadedConversationDetailId = undefined;\n\t\t\tcurrentConversationList = undefined;\n\t\t\tvoid refreshConversationList( conversationRoute.page )",
+              ),
+              (
+                  "\t\t\t\tif ( conversationRoute.selectedConversationId === undefined ) {\n\t\t\t\t\tawait refreshConversationList( conversationRoute.page );\n\t\t\t\t}\n",
+                  "\t\t\t\tif ( conversationRoute.selectedConversationId === undefined ) {\n\t\t\t\t\tawait refreshConversationList( conversationRoute.page );\n\t\t\t\t} else {\n\t\t\t\t\tawait refreshConversationDetail(\n\t\t\t\t\t\tconversationRoute.selectedConversationId\n\t\t\t\t\t);\n\t\t\t\t}\n",
+              ),
+          ]
+
+          for old, new in replacements:
+              replace_exact(old, new)
+
+          path.write_text(text)
+
+      - name: Verify focused JavaScript gates
+        run: |
+          npm ci
+          npx prettier --check src-js/index.ts src-js/conversation-admin-bootstrap.test.ts
+          npm test -- --runInBand src-js/conversation-admin-bootstrap.test.ts
+
+      - name: Commit patch and remove helpers
+        run: |
+          git config user.name "Salman Butt"
+          git config user.email "47062638+salman0butt@users.noreply.github.com"
+          git rm .github/workflows/m16-detail-bootstrap-patch.yml
+          git rm .github/workflows/m16-detail-bootstrap-patch-v2.yml
+          git rm .github/workflows/m16-detail-bootstrap-patch-v3.yml
+          git add src-js/index.ts
+          git diff --cached --check
+          git commit -m "feat: load conversation detail during admin bootstrap"
+          git push origin HEAD:feat/m16-conversations-leads-feedback-forms
