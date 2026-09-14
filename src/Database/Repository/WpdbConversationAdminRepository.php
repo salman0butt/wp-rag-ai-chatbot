@@ -36,7 +36,6 @@ final class WpdbConversationAdminRepository implements ConversationAdminReposito
 	 * Delete one canonical conversation and dependent canonical messages atomically.
 	 *
 	 * @param string $conversation_id Stable conversation identifier.
-	 * @throws InvalidArgumentException When the identifier is blank or oversized.
 	 * @throws DatabaseException When a persistence or transaction operation fails.
 	 */
 	public function delete( string $conversation_id ): bool {
