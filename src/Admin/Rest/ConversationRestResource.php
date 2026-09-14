@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Admin\Rest;
 
+use InvalidArgumentException;
 use WpRagAiChatbot\Conversations\ConversationAdminRepository;
 use WpRagAiChatbot\Conversations\ConversationDetail;
 use WpRagAiChatbot\Conversations\ConversationDetailMessage;
@@ -70,7 +71,13 @@ final class ConversationRestResource {
 	 * @return array{deleted:true}|array{error:array{code:string,message:string}}
 	 */
 	public function delete( string $conversation_id ): array {
-		if ( ! $this->admin->delete( $conversation_id ) ) {
+		try {
+			$deleted = $this->admin->delete( $conversation_id );
+		} catch ( InvalidArgumentException ) {
+			return self::invalid_identifier();
+		}
+
+		if ( ! $deleted ) {
 			return self::not_found();
 		}
 
@@ -132,6 +139,20 @@ final class ConversationRestResource {
 			'error' => array(
 				'code'    => 'conversation_not_found',
 				'message' => 'Conversation was not found.',
+			),
+		);
+	}
+
+	/**
+	 * Return the bounded invalid-identifier public error.
+	 *
+	 * @return array{error:array{code:string,message:string}}
+	 */
+	private static function invalid_identifier(): array {
+		return array(
+			'error' => array(
+				'code'    => 'invalid_conversation_id',
+				'message' => 'Conversation identifier is invalid.',
 			),
 		);
 	}
