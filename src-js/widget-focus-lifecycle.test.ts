@@ -31,9 +31,8 @@ describe( 'M15 widget focus lifecycle', () => {
 	} );
 
 	it( 'opens proactively without stealing page focus', () => {
-		const pageAction = document.querySelector< HTMLButtonElement >(
-			'#page-action'
-		);
+		const pageAction =
+			document.querySelector< HTMLButtonElement >( '#page-action' );
 		pageAction?.focus();
 
 		expect( mountWidgets( document, [ config ] ) ).toBe( 1 );
@@ -44,7 +43,7 @@ describe( 'M15 widget focus lifecycle', () => {
 				'[data-wp-rag-ai-chatbot-panel]'
 			)?.hidden
 		).toBe( false );
-		expect( document.activeElement ).toBe( pageAction );
+		expect( pageAction?.ownerDocument.activeElement ).toBe( pageAction );
 	} );
 
 	it( 'moves focus on manual open and returns it to the launcher on Escape', () => {
@@ -60,14 +59,14 @@ describe( 'M15 widget focus lifecycle', () => {
 		);
 
 		launcher?.click();
-		expect( document.activeElement ).toBe( close );
+		expect( close?.ownerDocument.activeElement ).toBe( close );
 
 		panel?.dispatchEvent(
 			new KeyboardEvent( 'keydown', { key: 'Escape', bubbles: true } )
 		);
 		expect( panel?.hidden ).toBe( true );
 		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'false' );
-		expect( document.activeElement ).toBe( launcher );
+		expect( launcher?.ownerDocument.activeElement ).toBe( launcher );
 
 		jest.advanceTimersByTime( 100 );
 		expect( panel?.hidden ).toBe( true );
