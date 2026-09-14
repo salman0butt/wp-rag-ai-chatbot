@@ -29,7 +29,9 @@ describe( 'localized widget runtime labels', () => {
 	} );
 
 	it( 'renders Urdu control and accessible labels from the shared display-rule locale decision', () => {
-		expect( mountWidgets( document, [ localizedConfig( 'ur-pk' ) ] ) ).toBe( 1 );
+		expect(
+			mountWidgets( document, [ localizedConfig( 'ur-pk' ) ] )
+		).toBe( 1 );
 
 		const launcher = document.querySelector< HTMLButtonElement >(
 			'[data-wp-rag-ai-chatbot-launcher]'
@@ -51,10 +53,14 @@ describe( 'localized widget runtime labels', () => {
 		);
 
 		expect( launcher?.textContent ).toBe( 'چیٹ' );
-		expect( launcher?.getAttribute( 'aria-label' ) ).toBe( 'مدد چیٹ کھولیں' );
+		expect( launcher?.getAttribute( 'aria-label' ) ).toBe(
+			'مدد چیٹ کھولیں'
+		);
 		expect( panel?.getAttribute( 'aria-label' ) ).toBe( 'مدد چیٹ' );
 		expect( close?.textContent ).toBe( 'بند کریں' );
-		expect( close?.getAttribute( 'aria-label' ) ).toBe( 'مدد چیٹ بند کریں' );
+		expect( close?.getAttribute( 'aria-label' ) ).toBe(
+			'مدد چیٹ بند کریں'
+		);
 		expect( question?.getAttribute( 'aria-label' ) ).toBe( 'پیغام' );
 		expect( send?.textContent ).toBe( 'بھیجیں' );
 		expect( send?.getAttribute( 'aria-label' ) ).toBe( 'پیغام بھیجیں' );
@@ -62,7 +68,9 @@ describe( 'localized widget runtime labels', () => {
 	} );
 
 	it( 'keeps unsupported runtime locales on the English fallback', () => {
-		expect( mountWidgets( document, [ localizedConfig( 'fr-fr' ) ] ) ).toBe( 1 );
+		expect(
+			mountWidgets( document, [ localizedConfig( 'fr-fr' ) ] )
+		).toBe( 1 );
 
 		expect(
 			document.querySelector< HTMLButtonElement >(
