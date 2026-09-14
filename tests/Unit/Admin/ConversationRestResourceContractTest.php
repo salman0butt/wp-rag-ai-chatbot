@@ -118,8 +118,14 @@ final class ConversationRestResourceContractTest extends TestCase {
 		return $reflection->newInstance( $read, $admin );
 	}
 
-	/** Invoke one evolving resource method through reflection so behavioral RED reaches PHPUnit. */
-	private function invoke( object $resource, string $method, mixed ...$arguments ): mixed {
-		return ( new ReflectionMethod( $resource, $method ) )->invoke( $resource, ...$arguments );
+	/**
+	 * Invoke one evolving resource method through reflection so behavioral RED reaches PHPUnit.
+	 *
+	 * @param object $subject Evolving REST resource instance.
+	 * @param string $method Resource method name.
+	 * @param mixed  ...$arguments Resource method arguments.
+	 */
+	private function invoke( object $subject, string $method, mixed ...$arguments ): mixed {
+		return ( new ReflectionMethod( $subject, $method ) )->invoke( $subject, ...$arguments );
 	}
 }
