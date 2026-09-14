@@ -79,20 +79,16 @@ final class WpdbConversationReadRepository implements ConversationReadRepository
 		$args[] = $query->page_size;
 		$args[] = $offset;
 
-		/**
-		 * Literal SQL template composed only from repository-controlled fragments.
-		 *
-		 * @var literal-string $sql_template
-		 */
-		$sql_template = 'SELECT c.conversation_id, c.bot_id, c.created_at AS started_at, MAX(m.created_at) AS latest_message_at, COUNT(m.id) AS message_count
+		$sql = $this->connection->prepare(
+			'SELECT c.conversation_id, c.bot_id, c.created_at AS started_at, MAX(m.created_at) AS latest_message_at, COUNT(m.id) AS message_count
 			FROM %i AS c
 			LEFT JOIN %i AS m ON m.conversation_id = c.conversation_id AND m.owner_scope = c.owner_scope
 			' . $where . '
 			GROUP BY c.id, c.conversation_id, c.bot_id, c.created_at
 			ORDER BY COALESCE(MAX(m.created_at), c.created_at) DESC, c.id DESC
-			LIMIT %d OFFSET %d';
-
-		$sql = $this->connection->prepare( $sql_template, ...$args );
+			LIMIT %d OFFSET %d',
+			...$args
+		);
 
 		$summaries = array();
 		foreach ( $this->connection->get_results( $sql ) as $row ) {
