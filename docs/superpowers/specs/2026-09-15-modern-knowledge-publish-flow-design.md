@@ -1,6 +1,6 @@
 # Modern Knowledge and Publish Flow Design
 
-**Status:** READY FOR USER REVIEW
+**Status:** APPROVED IN CHAT
 
 **Date:** 2026-09-15
 
@@ -63,7 +63,7 @@ The Knowledge screen receives an “Add knowledge” primary action and a modal 
 3. **FAQ** — repeatable question/answer rows with at least one complete item.
 4. **WooCommerce catalog** — all public products or an explicit product-ID selection when WooCommerce is available.
 
-Each successful source creation immediately creates an indexing job through the existing queue seam. The source card shows `queued`, `running`, `complete`, or `failed`, progress, retry, and last-safe-error text. The owner can open bounded documents/chunks for inspection.
+Each successful source creation immediately creates a source-sync job through the existing queue seam. That job reuses the existing source normalizers and enqueues one `index.document` job per normalized document. The source card shows `queued`, `running`, `complete`, or `failed`, progress, retry, and last-safe-error text. The owner can open bounded documents/chunks for inspection.
 
 File ingestion is available through a dedicated upload step. The browser sends the file as multipart form data; the server stores it in a plugin-owned subdirectory under the WordPress uploads directory and records the server-owned path. The browser never supplies a filesystem path.
 
@@ -104,7 +104,7 @@ The create resource owns:
 - WordPress upload validation and plugin-owned upload storage for file sources;
 - safe title/URL normalization;
 - persisted `active` status;
-- immediate enqueue of the existing `index.document` job for the source's first document generation.
+- immediate enqueue of a bounded source-sync job that reuses the existing normalizers and `index.document` queue handler.
 
 The response projects only the bounded source DTO and job DTO. It never returns credentials, raw file paths, arbitrary source config, or raw exceptions.
 
@@ -135,8 +135,8 @@ No secret or provider error body crosses this boundary.
 
 1. Provider credential is stored through the existing encrypted credential store.
 2. Admin selects an allow-listed model returned by the existing model-readiness route.
-3. Source creation persists a typed source record and enqueues the existing document-index job.
-4. The queue normalizes documents, chunks them, creates embeddings, and updates the existing lexical/vector projections.
+3. Source creation persists a typed source record and enqueues the existing queue through a source-sync orchestration job.
+4. The source-sync job normalizes documents; the existing document-index handler chunks them, creates embeddings, and updates the existing lexical/vector projections.
 5. Bot retrieval save persists the source ID and validated collection ID.
 6. The Publish/Test screen reads bounded readiness and emits existing public-safe mount instructions.
 7. Frontend chat continues through the existing public REST request and production RAG pipeline.
