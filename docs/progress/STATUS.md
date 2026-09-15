@@ -4,8 +4,8 @@
 - Latest completed milestone on `main`: **M15 — Display Rules, Proactive Triggers, Multilingual/RTL & Accessibility**.
 - M15 PR: **#20 — MERGED** at merge SHA `dc889a6664ae29dadcad6a2775d65d229d43a191`.
 - M15 post-merge `main` CI: **`34796323781` — GREEN** at merge SHA `dc889a6664ae29dadcad6a2775d65d229d43a191`.
-- Current maintenance track: **provider-first admin UX plus direct Google Gemini and Groq provider support**.
-- Next roadmap milestone after this bounded maintenance integration remains **M16**.
+- Post-M15 provider-first admin/Gemini/Groq maintenance: **COMPLETE** via PR **#22**, merge SHA `087be885daedb0285c9d10f958770d4b5abdf8db`; post-merge `main` CI **`34953994434` — GREEN**.
+- Next roadmap milestone: **M16**.
 
 This file is the concise recovery index. Detailed RED/GREEN chronology, invalid checkpoints, reviews, security/accessibility/performance findings, implementation notes, and CI evidence remain in milestone ledgers and `docs/progress/MXX-*` evidence files.
 
@@ -53,7 +53,7 @@ M15 durable references:
 - `docs/superpowers/specs/2026-09-13-m15-display-rules-rtl-accessibility-design.md`
 - `docs/superpowers/plans/2026-09-13-m15-display-rules-rtl-accessibility.md`
 
-## Post-M15 maintenance — Provider-first admin UX and direct providers
+## Post-M15 maintenance — Provider-first admin UX and direct providers — COMPLETE
 
 This bounded maintenance track simplifies the WordPress admin around a provider-first setup flow and extends the existing provider architecture without creating a parallel generation authority.
 
@@ -70,7 +70,9 @@ Delivered behavior:
 TDD / verification evidence:
 - provider-panel RED: `c6a489ec63d08043b69d0a7bf99ff1cdd0fa4435`, CI `34952988439` — the new Gemini panel regression failed for the intended generic-heading reason after lint/typecheck passed;
 - provider-panel GREEN implementation: `6d2c867ce6afb205c127e59504d5935461b5c0ee`, CI `34953102787` — `php-quality`, `js-quality`, `wordpress-smoke`, and `package` all GREEN;
-- the WordPress provider smoke in the GREEN run validates activation/runtime integration and the five-provider bootstrap registry without requiring live paid-provider calls.
+- exact-final PR head `fd35ab861267d7c97a2c9e3b39b65465d61e8656`: push CI `34953470397` and PR CI `34953605190` — all four jobs GREEN;
+- PR #22 merged with expected-head protection at `087be885daedb0285c9d10f958770d4b5abdf8db`;
+- post-merge `main` CI `34953994434` at that merge SHA — all four jobs GREEN, including the complete WordPress smoke suite and five-provider runtime registry check.
 
 Security/review boundary:
 - provider endpoints remain fixed in the composition root;
@@ -79,4 +81,4 @@ Security/review boundary:
 - bootstrap/configuration remains local-only and does not issue outbound provider requests;
 - live-provider calls remain opt-in through the existing credential-gated smoke path.
 
-No unresolved Critical or Important findings are known in this maintenance scope. Final integration still requires exact-final-head CI, mergeability/review checks, merge, and fresh post-merge `main` CI before the maintenance track is considered integrated.
+Final scoped review: **0 unresolved Critical / 0 unresolved Important**. PR #22 had no unresolved review threads, remained mergeable against an unchanged `main`, and was integrated only after exact-final-head push and PR CI were green. The maintenance track is complete; the next unfinished roadmap work is **M16**.
