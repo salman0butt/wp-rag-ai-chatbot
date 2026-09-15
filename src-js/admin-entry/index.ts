@@ -90,9 +90,7 @@ const selectedProviderIdFromHash = ( hash: string ): string | undefined => {
 		: decodeURIComponent( match[ 1 ] );
 };
 
-export const screenFromHash = (
-	hash: string
-): AdminShellProps[ 'screen' ] => {
+export const screenFromHash = ( hash: string ): AdminShellProps[ 'screen' ] => {
 	const path = hash.replace( /^#\/?/, '' ).split( /[/?#]/, 1 )[ 0 ];
 
 	if (
