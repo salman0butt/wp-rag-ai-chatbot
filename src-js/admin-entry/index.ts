@@ -138,7 +138,10 @@ const simplifyNavigation = ( root: Element ): void => {
 
 	for ( const link of remaining ) {
 		const href = link.getAttribute( 'href' ) ?? '';
-		link.textContent = labels[ href ];
+		const label = labels[ href ];
+		if ( link.textContent !== label ) {
+			link.textContent = label;
+		}
 		link.classList.add( 'nav-tab' );
 		link.classList.toggle(
 			'nav-tab-active',
