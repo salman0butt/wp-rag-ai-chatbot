@@ -199,7 +199,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 			$display_name = isset( $item['name'] ) && is_string( $item['name'] ) && '' !== trim( $item['name'] )
 				? $item['name']
 				: $item['id'];
-			$models[] = new ModelInfo(
+			$models[]     = new ModelInfo(
 				$this->provider_id,
 				$item['id'],
 				$display_name
