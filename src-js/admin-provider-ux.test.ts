@@ -148,8 +148,8 @@ describe( 'provider-first admin UX', () => {
 
 		enhanceAdminDom( root );
 
-		expect( links.map( ( link ) => link.firstChild ) ).toEqual(
-			firstTextNodes
-		);
+		links.forEach( ( link, index ) => {
+			expect( link.firstChild ).toBe( firstTextNodes[ index ] );
+		} );
 	} );
 } );
