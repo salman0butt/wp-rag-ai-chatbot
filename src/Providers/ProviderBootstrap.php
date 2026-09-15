@@ -64,8 +64,8 @@ final class ProviderBootstrap {
 		$credentials = new CredentialResolver( new RuntimeCredentialSourceReader(), $store );
 		$cache       = new WordPressTransientModelCatalogCache();
 
-		$openai = new OpenAiProvider( $credentials, $http, $redactor );
-		$gemini = new OpenAiCompatibleChatProvider(
+		$openai     = new OpenAiProvider( $credentials, $http, $redactor );
+		$gemini     = new OpenAiCompatibleChatProvider(
 			ProviderIds::GEMINI_DIRECT,
 			self::GEMINI_GENERATION_URL,
 			self::GEMINI_MODELS_URL,
@@ -73,7 +73,7 @@ final class ProviderBootstrap {
 			$http,
 			$redactor
 		);
-		$groq = new OpenAiCompatibleChatProvider(
+		$groq       = new OpenAiCompatibleChatProvider(
 			ProviderIds::GROQ_DIRECT,
 			self::GROQ_GENERATION_URL,
 			self::GROQ_MODELS_URL,
