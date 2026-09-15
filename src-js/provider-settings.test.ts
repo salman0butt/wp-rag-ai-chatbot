@@ -99,7 +99,9 @@ describe( 'ProviderSettingsScreen', () => {
 			{ configured: false, source: 'none' },
 			'gemini_direct'
 		);
-		const panel = root.querySelector( '[data-provider-settings="gemini_direct"]' );
+		const panel = root.querySelector(
+			'[data-provider-settings="gemini_direct"]'
+		);
 		const input = root.querySelector< HTMLInputElement >(
 			'input[name="credential"]'
 		);
@@ -110,7 +112,9 @@ describe( 'ProviderSettingsScreen', () => {
 			'a[href="#/providers"]'
 		);
 
-		expect( panel?.querySelector( 'h2' )?.textContent ).toBe( 'Google Gemini' );
+		expect( panel?.querySelector( 'h2' )?.textContent ).toBe(
+			'Google Gemini'
+		);
 		expect( panel?.textContent ).toContain(
 			'Add an API key, then choose a model.'
 		);
