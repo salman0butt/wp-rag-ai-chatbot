@@ -25,6 +25,11 @@ const createTestElement = (
 			continue;
 		}
 
+		if ( key === 'className' ) {
+			element.className = String( value );
+			continue;
+		}
+
 		if ( key === 'htmlFor' ) {
 			element.setAttribute( 'for', String( value ) );
 			continue;
@@ -54,14 +59,15 @@ const installElementFactory = (): void => {
 };
 
 const renderProviderSettings = (
-	credential: ProviderCredentialState
+	credential: ProviderCredentialState,
+	providerId = 'openai_direct'
 ): HTMLElement => {
 	installElementFactory();
 
 	const root = document.createElement( 'div' );
 	root.append(
 		ProviderSettingsScreen( {
-			providerId: 'openai_direct',
+			providerId,
 			credential,
 		} ) as Node
 	);
@@ -86,6 +92,32 @@ describe( 'ProviderSettingsScreen', () => {
 		expect( credentialInput?.value ).toBe( '' );
 		expect( credentialInput?.getAttribute( 'value' ) ).toBeNull();
 		expect( root.innerHTML ).not.toContain( 'sk-' );
+	} );
+
+	it( 'renders a simple provider-specific configuration panel with WordPress controls', () => {
+		const root = renderProviderSettings(
+			{ configured: false, source: 'none' },
+			'gemini_direct'
+		);
+		const panel = root.querySelector( '[data-provider-settings="gemini_direct"]' );
+		const input = root.querySelector< HTMLInputElement >(
+			'input[name="credential"]'
+		);
+		const submit = root.querySelector< HTMLButtonElement >(
+			'form[data-provider-credential-form] button[type="submit"]'
+		);
+		const backLink = root.querySelector< HTMLAnchorElement >(
+			'a[href="#/providers"]'
+		);
+
+		expect( panel?.querySelector( 'h2' )?.textContent ).toBe( 'Google Gemini' );
+		expect( panel?.textContent ).toContain(
+			'Add an API key, then choose a model.'
+		);
+		expect( backLink?.textContent ).toContain( 'Providers' );
+		expect( input?.classList.contains( 'regular-text' ) ).toBe( true );
+		expect( submit?.classList.contains( 'button' ) ).toBe( true );
+		expect( submit?.classList.contains( 'button-primary' ) ).toBe( true );
 	} );
 
 	it( 'submits only the newly entered replacement credential and clears it after success', async () => {
