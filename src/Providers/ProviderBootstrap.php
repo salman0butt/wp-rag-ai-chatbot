@@ -20,6 +20,7 @@ use WpRagAiChatbot\Providers\Credentials\WordPressCredentialStore;
 use WpRagAiChatbot\Providers\Http\ProviderHttpClient;
 use WpRagAiChatbot\Providers\Http\WordPressHttpTransport;
 use WpRagAiChatbot\Providers\OpenAI\OpenAiProvider;
+use WpRagAiChatbot\Providers\OpenAiCompatible\OpenAiCompatibleChatProvider;
 use WpRagAiChatbot\Providers\OpenRouter\OpenRouterProvider;
 use WpRagAiChatbot\Providers\Security\SecretRedactor;
 use WpRagAiChatbot\Providers\WordPressAi\WordPressAiClientProvider;
@@ -28,6 +29,11 @@ use WpRagAiChatbot\Providers\WordPressAi\WordPressAiClientProvider;
  * Builds provider services without issuing provider requests.
  */
 final class ProviderBootstrap {
+	private const GEMINI_GENERATION_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+	private const GEMINI_MODELS_URL     = 'https://generativelanguage.googleapis.com/v1beta/openai/models';
+	private const GROQ_GENERATION_URL   = 'https://api.groq.com/openai/v1/chat/completions';
+	private const GROQ_MODELS_URL       = 'https://api.groq.com/openai/v1/models';
+
 	/**
 	 * Composed provider registry.
 	 *
@@ -59,6 +65,22 @@ final class ProviderBootstrap {
 		$cache       = new WordPressTransientModelCatalogCache();
 
 		$openai     = new OpenAiProvider( $credentials, $http, $redactor );
+		$gemini     = new OpenAiCompatibleChatProvider(
+			ProviderIds::GEMINI_DIRECT,
+			self::GEMINI_GENERATION_URL,
+			self::GEMINI_MODELS_URL,
+			$credentials,
+			$http,
+			$redactor
+		);
+		$groq       = new OpenAiCompatibleChatProvider(
+			ProviderIds::GROQ_DIRECT,
+			self::GROQ_GENERATION_URL,
+			self::GROQ_MODELS_URL,
+			$credentials,
+			$http,
+			$redactor
+		);
 		$openrouter = new OpenRouterProvider( $credentials, $http, $redactor );
 		$core       = new WordPressAiClientProvider( $redactor );
 
@@ -68,6 +90,16 @@ final class ProviderBootstrap {
 			$openai,
 			new CachedModelCatalogProvider( $openai, $cache ),
 			$openai
+		);
+		$registry->register(
+			ProviderIds::GEMINI_DIRECT,
+			$gemini,
+			new CachedModelCatalogProvider( $gemini, $cache )
+		);
+		$registry->register(
+			ProviderIds::GROQ_DIRECT,
+			$groq,
+			new CachedModelCatalogProvider( $groq, $cache )
 		);
 		$registry->register(
 			ProviderIds::OPENROUTER_DIRECT,

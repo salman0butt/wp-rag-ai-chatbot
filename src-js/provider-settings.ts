@@ -27,8 +27,16 @@ type ElementFactory = (
 	...children: unknown[]
 ) => unknown;
 
+const PROVIDER_LABELS: Readonly< Record< string, string > > = {
+	openai_direct: 'OpenAI',
+	gemini_direct: 'Google Gemini',
+	groq_direct: 'Groq',
+	openrouter_direct: 'OpenRouter',
+	wordpress_ai_client: 'WordPress AI Client',
+};
+
 const SOURCE_LABELS: Readonly< Record< string, string > > = {
-	managed: 'Managed by this plugin',
+	option: 'Managed by this plugin',
 	environment: 'Provided by the server environment',
 	constant: 'Provided by WordPress configuration',
 	none: 'Not configured',
@@ -52,6 +60,7 @@ export const ProviderSettingsScreen = ( {
 }: ProviderSettingsScreenProps ): unknown => {
 	const createElement = window.wp.element
 		.createElement as unknown as ElementFactory;
+	const providerLabel = PROVIDER_LABELS[ providerId ] ?? providerId;
 	const sourceLabel =
 		SOURCE_LABELS[ credential.source ] ?? 'Configured externally';
 	const credentialId = `provider-${ providerId }-credential`;
@@ -81,7 +90,11 @@ export const ProviderSettingsScreen = ( {
 					createElement( 'label', { htmlFor: modelId }, 'Model' ),
 					createElement(
 						'select',
-						{ id: modelId, name: 'model_id' },
+						{
+							className: 'regular-text',
+							id: modelId,
+							name: 'model_id',
+						},
 						...modelOptions
 					)
 			  );
@@ -89,7 +102,9 @@ export const ProviderSettingsScreen = ( {
 	return createElement(
 		'section',
 		{ 'data-provider-settings': providerId },
-		createElement( 'h2', null, 'Provider credential' ),
+		createElement( 'a', { href: '#/providers' }, '← Providers' ),
+		createElement( 'h2', null, providerLabel ),
+		createElement( 'p', null, 'Add an API key, then choose a model.' ),
 		createElement(
 			'p',
 			{ role: 'status', 'aria-live': 'polite' },
@@ -126,18 +141,19 @@ export const ProviderSettingsScreen = ( {
 			createElement(
 				'label',
 				{ htmlFor: credentialId },
-				credential.configured ? 'Replace credential' : 'Credential'
+				credential.configured ? 'Replace credential' : 'API key'
 			),
 			createElement( 'input', {
 				autoComplete: 'new-password',
+				className: 'regular-text',
 				id: credentialId,
 				name: 'credential',
 				type: 'password',
 			} ),
 			createElement(
 				'button',
-				{ type: 'submit' },
-				credential.configured ? 'Replace credential' : 'Save credential'
+				{ className: 'button button-primary', type: 'submit' },
+				credential.configured ? 'Replace credential' : 'Save API key'
 			)
 		),
 		modelSelector
