@@ -48,7 +48,7 @@ const installElementFactory = (): void => {
 };
 
 describe( 'provider-first admin UX', () => {
-	it( 'uses a compact WordPress tab navigation without a separate onboarding tab', () => {
+	it( 'uses compact WordPress tabs without restoring a separate onboarding tab', () => {
 		installElementFactory();
 		const AdminShell = ( plugin as unknown as Record< string, unknown > )
 			.AdminShell as ( props: Record< string, unknown > ) => Node;
@@ -60,6 +60,7 @@ describe( 'provider-first admin UX', () => {
 		const links = Array.from( nav?.querySelectorAll( 'a' ) ?? [] );
 		expect( nav?.classList.contains( 'nav-tab-wrapper' ) ).toBe( true );
 		expect( links.map( ( link ) => link.textContent ) ).toEqual( [
+			'Conversations',
 			'Providers',
 			'Chatbots',
 			'Knowledge',
