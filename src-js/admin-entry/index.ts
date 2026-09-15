@@ -70,14 +70,17 @@ const providerStatusLabel = ( provider: ProviderCatalogItem ): string => {
 
 const providerDescription = ( providerId: string ): string => {
 	return (
-		{
-			openai_direct: 'Use your OpenAI API key.',
-			gemini_direct: 'Use your Google Gemini API key.',
-			groq_direct: 'Use your Groq API key for fast inference.',
-			openrouter_direct: 'Use one key to access OpenRouter models.',
-			wordpress_ai_client: 'Use the AI provider configured by WordPress.',
-		} as Record< string, string >
-	)[ providerId ] ?? 'Connect this AI provider.';
+		(
+			{
+				openai_direct: 'Use your OpenAI API key.',
+				gemini_direct: 'Use your Google Gemini API key.',
+				groq_direct: 'Use your Groq API key for fast inference.',
+				openrouter_direct: 'Use one key to access OpenRouter models.',
+				wordpress_ai_client:
+					'Use the AI provider configured by WordPress.',
+			} as Record< string, string >
+		)[ providerId ] ?? 'Connect this AI provider.'
+	);
 };
 
 const selectedProviderIdFromHash = ( hash: string ): string | undefined => {
@@ -107,7 +110,9 @@ const simplifyNavigation = ( root: Element ): void => {
 	}
 
 	nav.classList.add( 'nav-tab-wrapper', 'wp-rag-ai-chatbot-tabs' );
-	const links = Array.from( nav.querySelectorAll< HTMLAnchorElement >( 'a' ) );
+	const links = Array.from(
+		nav.querySelectorAll< HTMLAnchorElement >( 'a' )
+	);
 	const onboarding = links.find(
 		( link ) => link.getAttribute( 'href' ) === '#/onboarding'
 	);
@@ -127,7 +132,9 @@ const simplifyNavigation = ( root: Element ): void => {
 	];
 	const remaining = Array.from(
 		nav.querySelectorAll< HTMLAnchorElement >( 'a' )
-	).filter( ( link ) => labels[ link.getAttribute( 'href' ) ?? '' ] !== undefined );
+	).filter(
+		( link ) => labels[ link.getAttribute( 'href' ) ?? '' ] !== undefined
+	);
 
 	for ( const link of remaining ) {
 		const href = link.getAttribute( 'href' ) ?? '';
@@ -139,7 +146,9 @@ const simplifyNavigation = ( root: Element ): void => {
 		);
 	}
 
-	const currentOrder = remaining.map( ( link ) => link.getAttribute( 'href' ) );
+	const currentOrder = remaining.map( ( link ) =>
+		link.getAttribute( 'href' )
+	);
 	if ( currentOrder.join( '|' ) !== desiredOrder.join( '|' ) ) {
 		for ( const href of desiredOrder ) {
 			const link = remaining.find(
@@ -157,7 +166,10 @@ const renderProviderCatalog = (
 	providers: ReadonlyArray< ProviderCatalogItem >
 ): void => {
 	const main = root.querySelector( 'main' );
-	if ( main === null || main.querySelector( '[data-provider-catalog]' ) !== null ) {
+	if (
+		main === null ||
+		main.querySelector( '[data-provider-catalog]' ) !== null
+	) {
 		return;
 	}
 
@@ -195,7 +207,9 @@ const renderProviderCatalog = (
 		if ( provider.provider_id !== 'wordpress_ai_client' ) {
 			const action = documentRef.createElement( 'a' );
 			action.className = 'button button-primary';
-			action.href = `#/providers/${ encodeURIComponent( provider.provider_id ) }`;
+			action.href = `#/providers/${ encodeURIComponent(
+				provider.provider_id
+			) }`;
 			action.textContent =
 				provider.status === 'configured' ? 'Manage' : 'Configure';
 			card.append( action );
@@ -255,7 +269,7 @@ const bootstrapAdminEnhancements = (): void => {
 		return;
 	}
 
-	let providers = DEFAULT_PROVIDERS.map( ( provider ) => ( { ...provider } ) );
+	let providers: ReadonlyArray< ProviderCatalogItem > = [ ...DEFAULT_PROVIDERS ];
 	const apply = (): void => {
 		const hash = window.location.hash;
 		if ( hash === '' || hash === '#/onboarding' ) {
@@ -294,7 +308,7 @@ const bootstrapAdminEnhancements = (): void => {
 			try {
 				const state = await client.request< {
 					configured?: boolean;
-				source?: string;
+					source?: string;
 				} >(
 					`/admin/providers/${ encodeURIComponent(
 						provider.provider_id
@@ -302,12 +316,20 @@ const bootstrapAdminEnhancements = (): void => {
 				);
 				return {
 					...provider,
-					status: state.configured === true ? 'configured' : 'unconfigured',
+					status:
+						state.configured === true
+							? 'configured'
+							: 'unconfigured',
 					credential_source:
-						typeof state.source === 'string' ? state.source : 'none',
+						typeof state.source === 'string'
+							? state.source
+							: 'none',
 				} as ProviderCatalogItem;
 			} catch {
-				return { ...provider, status: 'unavailable' } as ProviderCatalogItem;
+				return {
+					...provider,
+					status: 'unavailable',
+				} as ProviderCatalogItem;
 			}
 		} )
 	).then( ( resolved ) => {
