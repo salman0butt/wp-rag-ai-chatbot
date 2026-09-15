@@ -1,12 +1,11 @@
 # Global Status
 
-- Completed milestones on `main`: **M00-M14**.
-- Latest completed milestone on `main`: **M14 — Frontend Chatbot / Customizer**.
-- M14 PR: **#19 — MERGED** at merge SHA `937ee81d55b0007147a6c764ce29d5d5fba9459b`.
-- M14 exact-final PR-head CI: **`34748534203` — GREEN** at `2e8c15ba8a09ecc6a6355b8057a61e28741ed7e8`.
-- M14 post-merge `main` CI: **`34750216460` — GREEN** at merge SHA `937ee81d55b0007147a6c764ce29d5d5fba9459b`.
-- Current milestone: **M15 — Display Rules, Proactive Triggers, Multilingual/RTL & Accessibility**.
-- M15 implementation/review/permanent smoke: **COMPLETE on feature branch; PR / merge / post-merge verification pending**.
+- Completed milestones on `main`: **M00-M15**.
+- Latest completed milestone on `main`: **M15 — Display Rules, Proactive Triggers, Multilingual/RTL & Accessibility**.
+- M15 PR: **#20 — MERGED** at merge SHA `dc889a6664ae29dadcad6a2775d65d229d43a191`.
+- M15 post-merge `main` CI: **`34796323781` — GREEN** at merge SHA `dc889a6664ae29dadcad6a2775d65d229d43a191`.
+- Current maintenance track: **provider-first admin UX plus direct Google Gemini and Groq provider support**.
+- Next roadmap milestone after this bounded maintenance integration remains **M16**.
 
 This file is the concise recovery index. Detailed RED/GREEN chronology, invalid checkpoints, reviews, security/accessibility/performance findings, implementation notes, and CI evidence remain in milestone ledgers and `docs/progress/MXX-*` evidence files.
 
@@ -24,7 +23,7 @@ Durable M14 references:
 - `docs/superpowers/specs/2026-09-12-m14-frontend-chatbot-customizer-design.md`
 - PR #19 — merged.
 
-## M15 — IMPLEMENTATION COMPLETE / MERGE PENDING
+## M15 — COMPLETE
 
 M15 adds deterministic bot-scoped display rules and presentation facts, bounded proactive triggers, page-aware starter suggestions, protected admin configuration/preview, bounded English/Urdu localization, widget-local RTL semantics, logical CSS, reduced-motion behavior, and focus/lifecycle hardening without introducing parallel widget/RAG/config authorities.
 
@@ -39,6 +38,7 @@ Key exact-head evidence:
 - Task 8 reduced motion: `fe69aacaf5aee32341e682d2daf1c55bb3bcc888`, CI `34795234377` — GREEN.
 - Task 8 focus/lifecycle: `4431d09f1cc3d3ca3fac5c639b50b1054b4c0424`, CI `34795395647` — GREEN.
 - Task 9 real WordPress integration: `8bd5af09a435bafb3f000f42ae7cce91d86dacfb`, CI `34795728393` — GREEN.
+- PR #20 merged to `main` at `dc889a6664ae29dadcad6a2775d65d229d43a191`; post-merge CI `34796323781` — GREEN.
 
 M15 durable references:
 - `docs/milestones/M15-display-rules-rtl-accessibility.md`
@@ -53,4 +53,30 @@ M15 durable references:
 - `docs/superpowers/specs/2026-09-13-m15-display-rules-rtl-accessibility-design.md`
 - `docs/superpowers/plans/2026-09-13-m15-display-rules-rtl-accessibility.md`
 
-Current unfinished work: verify exact closeout-documentation branch-head CI, create/recover the single M15 PR, recheck mergeability/reviews/concurrency, merge with expected-head protection, verify fresh post-merge `main` CI, then recover M16 and continue if safe.
+## Post-M15 maintenance — Provider-first admin UX and direct providers
+
+This bounded maintenance track simplifies the WordPress admin around a provider-first setup flow and extends the existing provider architecture without creating a parallel generation authority.
+
+Delivered behavior:
+- compact WordPress-style navigation: Providers, Chatbots, Knowledge, Test Chat;
+- provider catalog cards with safe local connection state and provider-specific configuration screens;
+- direct provider IDs and credential configuration for Google Gemini and Groq alongside OpenAI and OpenRouter;
+- a shared fixed-endpoint OpenAI-compatible generation/model-catalog adapter for Gemini and Groq;
+- safe credential-source labeling (`option` is shown as plugin-managed) without rehydrating stored secrets;
+- provider-specific API-key configuration controls using native WordPress classes;
+- idempotent admin DOM enhancement under the MutationObserver path;
+- real WordPress provider smoke updated to require all five runtime provider IDs.
+
+TDD / verification evidence:
+- provider-panel RED: `c6a489ec63d08043b69d0a7bf99ff1cdd0fa4435`, CI `34952988439` — the new Gemini panel regression failed for the intended generic-heading reason after lint/typecheck passed;
+- provider-panel GREEN implementation: `6d2c867ce6afb205c127e59504d5935461b5c0ee`, CI `34953102787` — `php-quality`, `js-quality`, `wordpress-smoke`, and `package` all GREEN;
+- the WordPress provider smoke in the GREEN run validates activation/runtime integration and the five-provider bootstrap registry without requiring live paid-provider calls.
+
+Security/review boundary:
+- provider endpoints remain fixed in the composition root;
+- credentials continue through the existing resolver/encrypted store/`Secret::with_value()` boundary;
+- provider error bodies/request IDs pass through existing secret redaction before diagnostic propagation;
+- bootstrap/configuration remains local-only and does not issue outbound provider requests;
+- live-provider calls remain opt-in through the existing credential-gated smoke path.
+
+No unresolved Critical or Important findings are known in this maintenance scope. Final integration still requires exact-final-head CI, mergeability/review checks, merge, and fresh post-merge `main` CI before the maintenance track is considered integrated.
