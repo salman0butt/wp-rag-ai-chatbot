@@ -14,6 +14,8 @@ namespace WpRagAiChatbot\Providers;
  */
 final class ProviderIds {
 	public const OPENAI_DIRECT       = 'openai_direct';
+	public const GEMINI_DIRECT       = 'gemini_direct';
+	public const GROQ_DIRECT         = 'groq_direct';
 	public const OPENROUTER_DIRECT   = 'openrouter_direct';
 	public const WORDPRESS_AI_CLIENT = 'wordpress_ai_client';
 
