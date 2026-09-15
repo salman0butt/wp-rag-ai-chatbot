@@ -79,7 +79,7 @@ const providerDescription = ( providerId: string ): string => {
 				wordpress_ai_client:
 					'Use the AI provider configured by WordPress.',
 			} as Record< string, string >
-		) [ providerId ] ?? 'Connect this AI provider.'
+		 )[ providerId ] ?? 'Connect this AI provider.'
 	);
 };
 
