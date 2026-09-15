@@ -75,7 +75,7 @@ describe( 'conversation admin bootstrap', () => {
 							items: [],
 							page: 2,
 							per_page: 25,
-						}
+					  }
 			)
 		);
 		const render = setupAdmin( fetcher );
@@ -102,7 +102,7 @@ describe( 'conversation admin bootstrap', () => {
 								started_at: '2026-09-14 10:00:00',
 								messages: [],
 							},
-						}
+					  }
 			)
 		);
 		const render = setupAdmin( fetcher );
