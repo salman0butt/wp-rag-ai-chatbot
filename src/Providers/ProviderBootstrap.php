@@ -31,6 +31,7 @@ use WpRagAiChatbot\Providers\WordPressAi\WordPressAiClientProvider;
 final class ProviderBootstrap {
 	private const GEMINI_GENERATION_URL = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 	private const GEMINI_MODELS_URL     = 'https://generativelanguage.googleapis.com/v1beta/openai/models';
+	private const GEMINI_EMBEDDING_URL  = 'https://generativelanguage.googleapis.com/v1beta/openai/embeddings';
 	private const GROQ_GENERATION_URL   = 'https://api.groq.com/openai/v1/chat/completions';
 	private const GROQ_MODELS_URL       = 'https://api.groq.com/openai/v1/models';
 
@@ -71,7 +72,8 @@ final class ProviderBootstrap {
 			self::GEMINI_MODELS_URL,
 			$credentials,
 			$http,
-			$redactor
+			$redactor,
+			self::GEMINI_EMBEDDING_URL
 		);
 		$groq       = new OpenAiCompatibleChatProvider(
 			ProviderIds::GROQ_DIRECT,
@@ -94,7 +96,8 @@ final class ProviderBootstrap {
 		$registry->register(
 			ProviderIds::GEMINI_DIRECT,
 			$gemini,
-			new CachedModelCatalogProvider( $gemini, $cache )
+			new CachedModelCatalogProvider( $gemini, $cache ),
+			$gemini
 		);
 		$registry->register(
 			ProviderIds::GROQ_DIRECT,

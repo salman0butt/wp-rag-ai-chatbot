@@ -18,6 +18,7 @@ use WpRagAiChatbot\Providers\Credentials\CredentialResolver;
 use WpRagAiChatbot\Providers\Credentials\CredentialSource;
 use WpRagAiChatbot\Providers\Credentials\CredentialSourceReader;
 use WpRagAiChatbot\Providers\Credentials\CredentialStore;
+use WpRagAiChatbot\Providers\EmbeddingProvider;
 use WpRagAiChatbot\Providers\GenerationProvider;
 use WpRagAiChatbot\Providers\ModelCatalogProvider;
 use WpRagAiChatbot\Providers\ProviderBootstrap;
@@ -165,6 +166,7 @@ final class ProviderInfrastructureTest extends TestCase {
 		$this->require_infrastructure();
 
 		Functions\expect( 'wp_remote_request' )->never();
+		Functions\expect( 'get_option' )->andReturn( null );
 		ProviderBootstrap::register();
 
 		self::assertSame(
@@ -178,6 +180,9 @@ final class ProviderInfrastructureTest extends TestCase {
 			ProviderBootstrap::registry()->ids()
 		);
 		self::assertInstanceOf( ProviderConfigurationService::class, ProviderBootstrap::configuration() );
+		self::assertInstanceOf( EmbeddingProvider::class, ProviderBootstrap::registry()->embedding( ProviderIds::GEMINI_DIRECT ) );
+		self::assertNull( ProviderBootstrap::registry()->embedding( ProviderIds::GROQ_DIRECT ) );
+		self::assertSame( array( 'generation', 'model_catalog' ), ProviderBootstrap::configuration()->describe( ProviderIds::GEMINI_DIRECT )->capabilities );
 	}
 
 	/**

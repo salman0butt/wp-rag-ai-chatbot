@@ -10,8 +10,14 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Providers\OpenAiCompatible;
 
 use JsonException;
+use InvalidArgumentException;
 use WpRagAiChatbot\Providers\Credentials\CredentialResolver;
 use WpRagAiChatbot\Providers\Credentials\ResolvedCredential;
+use WpRagAiChatbot\Providers\EmbeddingProvider;
+use WpRagAiChatbot\Providers\EmbeddingRequest;
+use WpRagAiChatbot\Providers\EmbeddingResult;
+use WpRagAiChatbot\Providers\EmbeddingUsage;
+use WpRagAiChatbot\Providers\EmbeddingVector;
 use WpRagAiChatbot\Providers\GenerationProvider;
 use WpRagAiChatbot\Providers\GenerationRequest;
 use WpRagAiChatbot\Providers\GenerationResult;
@@ -33,7 +39,7 @@ use WpRagAiChatbot\Providers\Usage;
 /**
  * Implements fixed-endpoint chat generation and model discovery for compatible APIs.
  */
-final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCatalogProvider {
+final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCatalogProvider, EmbeddingProvider {
 	/**
 	 * Create an OpenAI-compatible provider around fixed endpoints.
 	 *
@@ -43,6 +49,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 	 * @param CredentialResolver $credentials Direct-provider credential resolver.
 	 * @param ProviderHttpClient $http Provider HTTP policy client.
 	 * @param SecretRedactor     $redactor Provider diagnostic redactor.
+	 * @param string|null        $embedding_url Optional fixed embedding endpoint.
 	 */
 	public function __construct(
 		private readonly string $provider_id,
@@ -50,7 +57,8 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		private readonly string $models_url,
 		private readonly CredentialResolver $credentials,
 		private readonly ProviderHttpClient $http,
-		private readonly SecretRedactor $redactor
+		private readonly SecretRedactor $redactor,
+		private readonly ?string $embedding_url = null
 	) {
 	}
 
@@ -210,6 +218,68 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 	}
 
 	/**
+	 * Embed one normalized batch through the optional compatible embedding endpoint.
+	 *
+	 * @param EmbeddingRequest $request Normalized embedding request.
+	 * @throws ProviderException When embeddings are unsupported or the request/response is invalid.
+	 */
+	public function embed( EmbeddingRequest $request ): EmbeddingResult {
+		if ( null === $this->embedding_url ) {
+			throw new ProviderException(
+				ProviderErrorCode::UNSUPPORTED_CAPABILITY,
+				$this->provider_id,
+				'Embedding is not supported by this provider.'
+			);
+		}
+
+		$credential = $this->required_credential();
+		$body       = array(
+			'model' => $request->model,
+			'input' => $request->inputs,
+		);
+		if ( null !== $request->dimensions ) {
+			$body['dimensions'] = $request->dimensions;
+		}
+
+		list( $authorization, $known_secrets ) = $this->credential_material( $credential );
+		$http_request                          = new HttpRequest(
+			$this->provider_id,
+			'POST',
+			$this->embedding_url,
+			array(
+				'Authorization' => $authorization,
+				'Content-Type'  => 'application/json',
+			),
+			$body,
+			45,
+			0
+		);
+
+		try {
+			$response = $this->http->generation( $http_request );
+		} catch ( HttpTransportException $exception ) {
+			throw new ProviderException(
+				$exception->error_code,
+				$this->provider_id,
+				$exception->getMessage()
+			);
+		}
+
+		$this->assert_success_status( $response, $known_secrets );
+		$data     = $this->decode_success_payload( $response->body );
+		$model_id = isset( $data['model'] ) && is_string( $data['model'] ) && '' !== trim( $data['model'] )
+			? $data['model']
+			: $request->model;
+
+		return new EmbeddingResult(
+			$this->provider_id,
+			$model_id,
+			$this->embedding_vectors( $data['data'] ?? null ),
+			$this->embedding_usage( $data['usage'] ?? null )
+		);
+	}
+
+	/**
 	 * Require a configured direct-provider credential.
 	 *
 	 * @throws ProviderException When the configured provider has no credential.
@@ -350,6 +420,55 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 			$this->non_negative_integer( $usage['completion_tokens'] ?? null ),
 			$this->non_negative_integer( $usage['total_tokens'] ?? null )
 		);
+	}
+
+	/**
+	 * Normalize an embedding vector list while preserving provider order.
+	 *
+	 * @param mixed $data Provider embedding data.
+	 * @return EmbeddingVector[]
+	 * @throws ProviderException When vector data is malformed.
+	 */
+	private function embedding_vectors( mixed $data ): array {
+		if ( ! is_array( $data ) || array() === $data ) {
+			throw $this->malformed_response();
+		}
+
+		$vectors = array();
+		foreach ( $data as $item ) {
+			if (
+				! is_array( $item )
+				|| ! isset( $item['index'], $item['embedding'] )
+				|| ! is_int( $item['index'] )
+				|| ! is_array( $item['embedding'] )
+			) {
+				throw $this->malformed_response();
+			}
+
+			try {
+				$vectors[] = new EmbeddingVector( $item['index'], $item['embedding'] );
+			} catch ( InvalidArgumentException ) {
+				throw $this->malformed_response();
+			}
+		}
+
+		return $vectors;
+	}
+
+	/**
+	 * Normalize explicit input-token usage.
+	 *
+	 * @param mixed $usage Provider usage payload.
+	 */
+	private function embedding_usage( mixed $usage ): EmbeddingUsage {
+		if ( ! is_array( $usage ) ) {
+			return EmbeddingUsage::unknown();
+		}
+
+		$tokens = $usage['prompt_tokens'] ?? $usage['input_tokens'] ?? null;
+		return is_int( $tokens ) && $tokens >= 0
+			? EmbeddingUsage::input_tokens( $tokens )
+			: EmbeddingUsage::unknown();
 	}
 
 	/**
