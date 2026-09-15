@@ -65,13 +65,13 @@ describe( 'provider-first admin UX', () => {
 			'Knowledge',
 			'Test Chat',
 		] );
-		expect( links.every( ( link ) => link.classList.contains( 'nav-tab' ) ) ).toBe(
-			true
-		);
 		expect(
-			nav?.querySelector( 'a[aria-current="page"]' )?.classList.contains(
-				'nav-tab-active'
-			)
+			links.every( ( link ) => link.classList.contains( 'nav-tab' ) )
+		).toBe( true );
+		expect(
+			nav
+				?.querySelector( 'a[aria-current="page"]' )
+				?.classList.contains( 'nav-tab-active' )
 		).toBe( true );
 	} );
 
