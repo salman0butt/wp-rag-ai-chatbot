@@ -83,8 +83,10 @@ final class ProviderConfigurationService {
 	 */
 	private function display_name( string $provider_id ): string {
 		return match ( $provider_id ) {
-			ProviderIds::OPENAI_DIRECT => 'OpenAI Direct',
-			ProviderIds::OPENROUTER_DIRECT => 'OpenRouter Direct',
+			ProviderIds::OPENAI_DIRECT => 'OpenAI',
+			ProviderIds::GEMINI_DIRECT => 'Google Gemini',
+			ProviderIds::GROQ_DIRECT => 'Groq',
+			ProviderIds::OPENROUTER_DIRECT => 'OpenRouter',
 			default => $provider_id,
 		};
 	}
