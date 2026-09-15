@@ -5,6 +5,13 @@ import {
 	ProviderSettingsScreen,
 } from './provider-settings';
 import { AppearanceCustomizer } from './appearance-customizer';
+import {
+	createConversationAdminLoader,
+	type ConversationDetail,
+	type ConversationListResponse,
+} from './conversation-admin-loader';
+import { ConversationDetailScreen } from './conversation-detail-screen';
+import { ConversationInboxScreen } from './conversation-inbox-screen';
 import { DisplayRulesEditor } from './display-rules-editor';
 import {
 	normalizeDisplayRules,
@@ -116,7 +123,8 @@ export type AdminScreen =
 	| 'bots'
 	| 'providers'
 	| 'knowledge'
-	| 'playground';
+	| 'playground'
+	| 'conversations';
 type KnowledgeJobMutationError = 'invalid_transition' | 'admin_request_failed';
 export type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
 export type OnboardingIssue =
@@ -161,6 +169,12 @@ export interface AdminShellProps {
 	) => Promise< void >;
 	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
+	conversationList?: ConversationListResponse;
+	conversationDetail?: ConversationDetail;
+	conversationDeleteConfirmationOpen?: boolean;
+	onRequestConversationDelete?: () => void;
+	onCancelConversationDelete?: () => void;
+	onConfirmConversationDelete?: () => void;
 	providerId?: string;
 	providerCredential?: ProviderCredentialState;
 	providerModels?: ReadonlyArray< ProviderModelChoice >;
@@ -375,6 +389,7 @@ const ADMIN_SCREENS: ReadonlyArray< {
 	{ screen: 'providers', label: 'Providers' },
 	{ screen: 'knowledge', label: 'Knowledge' },
 	{ screen: 'playground', label: 'Playground' },
+	{ screen: 'conversations', label: 'Conversations' },
 ];
 
 const ONBOARDING_HEADINGS: Readonly< Record< OnboardingStep, string > > = {
@@ -454,6 +469,34 @@ const resolvePage = ( hash: string ): number => {
 	const page = pageValue === null ? 1 : Number( pageValue );
 
 	return Number.isSafeInteger( page ) && page >= 1 ? page : 1;
+};
+
+export interface ConversationRouteState {
+	page: number;
+	selectedConversationId?: string;
+}
+
+export const resolveConversationRouteState = (
+	hash: string
+): ConversationRouteState => {
+	const state: ConversationRouteState = { page: resolvePage( hash ) };
+	const segments = resolveHashPath( hash ).split( '/' );
+
+	if ( segments[ 0 ] !== 'conversations' || ! segments[ 1 ] ) {
+		return state;
+	}
+
+	try {
+		const selectedConversationId = decodeURIComponent( segments[ 1 ] );
+
+		if ( selectedConversationId !== '' ) {
+			state.selectedConversationId = selectedConversationId;
+		}
+	} catch {
+		return state;
+	}
+
+	return state;
 };
 
 const resolveBotPage = ( hash: string ): number => resolvePage( hash );
@@ -1197,6 +1240,12 @@ export const AdminShell = ( {
 	onEnqueueKnowledgeJob,
 	onCancelKnowledgeJob,
 	onRetryKnowledgeJob,
+	conversationList,
+	conversationDetail,
+	conversationDeleteConfirmationOpen = false,
+	onRequestConversationDelete,
+	onCancelConversationDelete,
+	onConfirmConversationDelete,
 	providerId,
 	providerCredential,
 	providerModels,
@@ -1333,6 +1382,38 @@ export const AdminShell = ( {
 			} )
 		);
 	} else if (
+		screen === 'conversations' &&
+		conversationDetail !== undefined
+	) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			ConversationDetailScreen( {
+				conversation: conversationDetail,
+				deleteConfirmationOpen: conversationDeleteConfirmationOpen,
+				onRequestDelete:
+					onRequestConversationDelete ?? ( () => undefined ),
+				onCancelDelete:
+					onCancelConversationDelete ?? ( () => undefined ),
+				onConfirmDelete:
+					onConfirmConversationDelete ?? ( () => undefined ),
+			} )
+		);
+	} else if ( screen === 'conversations' && conversationList !== undefined ) {
+		screenContent = createElement(
+			'div',
+			null,
+			createElement( 'h1', null, selectedLabel ),
+			ConversationInboxScreen( {
+				items: conversationList.items,
+				page: conversationList.page,
+				perPage: conversationList.per_page,
+				hasNextPage:
+					conversationList.items.length === conversationList.per_page,
+			} )
+		);
+	} else if (
 		screen === 'providers' &&
 		providerId !== undefined &&
 		providerCredential !== undefined
@@ -1404,6 +1485,8 @@ const renderAdminShell = (
 	) => Promise< void >,
 	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
+	conversationList?: ConversationListResponse,
+	conversationDetail?: ConversationDetail,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
@@ -1444,6 +1527,8 @@ const renderAdminShell = (
 			onEnqueueKnowledgeJob,
 			onCancelKnowledgeJob,
 			onRetryKnowledgeJob,
+			conversationList,
+			conversationDetail,
 			providerId,
 			providerCredential,
 			providerModels,
@@ -1501,6 +1586,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let loadedKnowledgeDocumentKey: string | undefined;
 	let knowledgePageGeneration = 0;
 	let knowledgeSelectionGeneration = 0;
+	let currentConversationList: ConversationListResponse | undefined;
+	let currentConversationDetail: ConversationDetail | undefined;
+	let loadedConversationDetailId: string | undefined;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let currentProviderIssue: ProviderSettingsIssue | undefined;
@@ -1540,6 +1628,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			resolveSelectedPersistedKnowledgeSourceId( currentHash() );
 		const selectedKnowledgeDocumentKey =
 			resolveSelectedKnowledgeDocumentKey( currentHash() );
+		const conversationRoute = resolveConversationRouteState(
+			currentHash()
+		);
 		renderAdminShell(
 			root,
 			state,
@@ -1588,6 +1679,16 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			enqueueKnowledgeJob,
 			cancelKnowledgeJob,
 			retryKnowledgeJob,
+			resolveAdminScreen( currentHash() ) === 'conversations' &&
+				conversationRoute.selectedConversationId === undefined
+				? currentConversationList
+				: undefined,
+			resolveAdminScreen( currentHash() ) === 'conversations' &&
+				conversationRoute.selectedConversationId !== undefined &&
+				conversationRoute.selectedConversationId ===
+					loadedConversationDetailId
+				? currentConversationDetail
+				: undefined,
 			providerId,
 			providerId === loadedProviderId
 				? currentProviderCredential
@@ -1629,6 +1730,22 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		nonce: config.nonce,
 		fetcher: fetcher.bind( window ),
 	} );
+	const conversationLoader = createConversationAdminLoader( client );
+	const refreshConversationList = async (
+		page = resolveConversationRouteState( currentHash() ).page
+	): Promise< void > => {
+		await conversationLoader.loadList( { page }, ( response ) => {
+			currentConversationList = response;
+		} );
+	};
+	const refreshConversationDetail = async (
+		conversationId: string
+	): Promise< void > => {
+		await conversationLoader.loadDetail( conversationId, ( detail ) => {
+			currentConversationDetail = detail;
+			loadedConversationDetailId = conversationId;
+		} );
+	};
 	const playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {
 		currentPlaygroundState = state;
 		renderState( stateFromReadiness() );
@@ -2064,6 +2181,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			loadedKnowledgeDocumentKey = undefined;
 		}
 
+		if ( screen !== 'conversations' ) {
+			currentConversationList = undefined;
+			currentConversationDetail = undefined;
+			loadedConversationDetailId = undefined;
+		}
+
 		if ( screen !== 'playground' ) {
 			currentPlaygroundState = { status: 'idle' };
 		}
@@ -2208,6 +2331,41 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 					.catch( () => renderState( 'error' ) );
 				return;
 			}
+		}
+
+		const conversationRoute = resolveConversationRouteState(
+			currentHash()
+		);
+		if (
+			screen === 'conversations' &&
+			conversationRoute.selectedConversationId !== undefined &&
+			conversationRoute.selectedConversationId !==
+				loadedConversationDetailId
+		) {
+			currentConversationList = undefined;
+			currentConversationDetail = undefined;
+			loadedConversationDetailId = undefined;
+			void refreshConversationDetail(
+				conversationRoute.selectedConversationId
+			)
+				.then( () => renderState( stateFromReadiness() ) )
+				.catch( () => renderState( 'error' ) );
+			return;
+		}
+
+		if (
+			screen === 'conversations' &&
+			conversationRoute.selectedConversationId === undefined &&
+			( currentConversationList === undefined ||
+				currentConversationList.page !== conversationRoute.page )
+		) {
+			currentConversationDetail = undefined;
+			loadedConversationDetailId = undefined;
+			currentConversationList = undefined;
+			void refreshConversationList( conversationRoute.page )
+				.then( () => renderState( stateFromReadiness() ) )
+				.catch( () => renderState( 'error' ) );
+			return;
 		}
 
 		const providerId = resolveSelectedProviderId( currentHash() );
@@ -2386,6 +2544,19 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 				if ( sourceId !== undefined ) {
 					await refreshKnowledgeSelection( sourceId );
+				}
+			}
+
+			if ( screen === 'conversations' ) {
+				const conversationRoute = resolveConversationRouteState(
+					currentHash()
+				);
+				if ( conversationRoute.selectedConversationId === undefined ) {
+					await refreshConversationList( conversationRoute.page );
+				} else {
+					await refreshConversationDetail(
+						conversationRoute.selectedConversationId
+					);
 				}
 			}
 

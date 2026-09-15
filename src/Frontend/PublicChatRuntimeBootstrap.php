@@ -20,6 +20,7 @@ use WpRagAiChatbot\Chat\ChatRequestPolicy;
 use WpRagAiChatbot\Chat\ProductionChatResponderFactory;
 use WpRagAiChatbot\Citations\CitationValidator;
 use WpRagAiChatbot\Database\Connection;
+use WpRagAiChatbot\Database\Repository\WpdbConversationRepository;
 use WpRagAiChatbot\Database\Repository\WpdbKnowledgeSourceRepository;
 use WpRagAiChatbot\Database\Repository\WpdbMessageRepository;
 use WpRagAiChatbot\Database\TableNames;
@@ -96,7 +97,8 @@ final class PublicChatRuntimeBootstrap {
 
 		return new PublicChatProductionExecutorResolver(
 			static fn ( PublicChatRuntime $runtime ) => $resolver->resolve( $runtime ),
-			new PublicChatAccessContextResolver( $chunks )
+			new PublicChatAccessContextResolver( $chunks ),
+			new WpdbConversationRepository( $connection, $tables )
 		);
 	}
 }

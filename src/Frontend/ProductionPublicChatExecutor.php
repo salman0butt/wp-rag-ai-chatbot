@@ -13,6 +13,7 @@ use InvalidArgumentException;
 use WpRagAiChatbot\Chat\ChatAccessContext;
 use WpRagAiChatbot\Chat\ChatRequest;
 use WpRagAiChatbot\Chat\ChatResponder;
+use WpRagAiChatbot\Conversations\ConversationRepository;
 use WpRagAiChatbot\RAG\GroundingMode;
 
 /**
@@ -22,15 +23,17 @@ final readonly class ProductionPublicChatExecutor {
 	/**
 	 * Create one request-local public executor.
 	 *
-	 * @param ChatResponder     $responder Existing production M11 responder boundary.
-	 * @param ChatAccessContext $access Trusted persisted owner/retrieval scope.
-	 * @param string            $model_id Persisted server-owned generation model identifier.
+	 * @param ChatResponder               $responder Existing production M11 responder boundary.
+	 * @param ChatAccessContext           $access Trusted persisted owner/retrieval scope.
+	 * @param string                      $model_id Persisted server-owned generation model identifier.
+	 * @param ConversationRepository|null $conversation_repository Optional owner-scoped conversation persistence authority.
 	 * @throws InvalidArgumentException When the persisted model identifier is blank.
 	 */
 	public function __construct(
 		private ChatResponder $responder,
 		private ChatAccessContext $access,
-		private string $model_id
+		private string $model_id,
+		private ?ConversationRepository $conversation_repository = null
 	) {
 		if ( '' === trim( $model_id ) ) {
 			throw new InvalidArgumentException( 'Public chat model identifier must not be blank.' );
@@ -43,12 +46,18 @@ final readonly class ProductionPublicChatExecutor {
 	 * @param PublicChatRequest $request Validated public interaction request.
 	 */
 	public function execute( PublicChatRequest $request ): PublicChatResponse {
+		$conversation_id = $request->conversation_id;
+		if ( null === $conversation_id && null !== $this->conversation_repository ) {
+			$conversation    = $this->conversation_repository->create_for_owner( $this->access->owner_scope, $request->bot_id );
+			$conversation_id = $conversation->conversation_id;
+		}
+
 		$result = $this->responder->respond(
 			new ChatRequest(
 				$request->question,
 				$this->model_id,
 				GroundingMode::STRICT,
-				$request->conversation_id
+				$conversation_id
 			),
 			$this->access
 		);

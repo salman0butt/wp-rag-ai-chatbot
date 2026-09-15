@@ -48,7 +48,7 @@ const installElementFactory = (): void => {
 };
 
 describe( 'provider-first admin UX', () => {
-	it( 'uses a compact WordPress tab navigation without a separate onboarding tab', () => {
+	it( 'uses compact WordPress tabs without restoring a separate onboarding tab', () => {
 		installElementFactory();
 		const AdminShell = ( plugin as unknown as Record< string, unknown > )
 			.AdminShell as ( props: Record< string, unknown > ) => Node;
@@ -60,6 +60,7 @@ describe( 'provider-first admin UX', () => {
 		const links = Array.from( nav?.querySelectorAll( 'a' ) ?? [] );
 		expect( nav?.classList.contains( 'nav-tab-wrapper' ) ).toBe( true );
 		expect( links.map( ( link ) => link.textContent ) ).toEqual( [
+			'Conversations',
 			'Providers',
 			'Chatbots',
 			'Knowledge',
@@ -73,6 +74,17 @@ describe( 'provider-first admin UX', () => {
 				?.querySelector( 'a[aria-current="page"]' )
 				?.classList.contains( 'nav-tab-active' )
 		).toBe( true );
+	} );
+
+	it( 'classifies the conversations hash as a conversations screen', () => {
+		const pluginExports = plugin as unknown as Record< string, unknown >;
+		const screenFromHash = pluginExports.screenFromHash as (
+			hash: string
+		) => string;
+
+		expect( screenFromHash( '#/conversations?page=2' ) ).toBe(
+			'conversations'
+		);
 	} );
 
 	it( 'shows the provider choices on the providers root instead of an empty heading', () => {

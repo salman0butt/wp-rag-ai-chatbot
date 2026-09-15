@@ -51,7 +51,7 @@ final class KnowledgeJobRoutesTest extends TestCase {
 					),
 				)
 			);
-		Functions\expect( 'register_rest_route' )->times( 14 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 16 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}
@@ -70,7 +70,7 @@ final class KnowledgeJobRoutesTest extends TestCase {
 					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 				)
 			);
-		Functions\expect( 'register_rest_route' )->times( 14 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 16 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}

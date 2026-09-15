@@ -4,8 +4,13 @@
 - Latest completed milestone on `main`: **M15 — Display Rules, Proactive Triggers, Multilingual/RTL & Accessibility**.
 - M15 PR: **#20 — MERGED** at merge SHA `dc889a6664ae29dadcad6a2775d65d229d43a191`.
 - M15 post-merge `main` CI: **`34796323781` — GREEN** at merge SHA `dc889a6664ae29dadcad6a2775d65d229d43a191`.
-- Post-M15 provider-first admin/Gemini/Groq maintenance: **COMPLETE** via PR **#22**, merge SHA `087be885daedb0285c9d10f958770d4b5abdf8db`; post-merge `main` CI **`34953994434` — GREEN**.
-- Next roadmap milestone: **M16**.
+- Current milestone: **M16 — Conversations, Leads, Feedback & Conversational Forms**.
+- Active M16 branch: `feat/m16-conversations-leads-feedback-forms`.
+- M16 Task 1A explicit bot association: **COMPLETE**.
+- M16 Task 1B bounded admin conversation query/read model: **COMPLETE**.
+- M16 Task 1C detail projection and explicit admin delete semantics: **COMPLETE**. Final chronology GREEN `b45225eda3b01931a907821a42fda77330c53b76`, CI `34811065345`.
+- M16 Task 2 protected administrator conversation REST: **COMPLETE**. Final implementation GREEN `302c77e4c0ae7fea49c5007cbee4c3b4d66d937a`, CI `34825392498`.
+- Current unfinished unit: **M16 Task 3 — administrator inbox/detail UI**.
 
 This file is the concise recovery index. Detailed RED/GREEN chronology, invalid checkpoints, reviews, security/accessibility/performance findings, implementation notes, and CI evidence remain in milestone ledgers and `docs/progress/MXX-*` evidence files.
 
@@ -25,22 +30,13 @@ Durable M14 references:
 
 ## M15 — COMPLETE
 
-M15 adds deterministic bot-scoped display rules and presentation facts, bounded proactive triggers, page-aware starter suggestions, protected admin configuration/preview, bounded English/Urdu localization, widget-local RTL semantics, logical CSS, reduced-motion behavior, and focus/lifecycle hardening without introducing parallel widget/RAG/config authorities.
+M15 added deterministic bot-scoped display rules and presentation facts, bounded proactive triggers, page-aware starter suggestions, protected admin configuration/preview, bounded English/Urdu localization, widget-local RTL semantics, logical CSS, reduced-motion behavior, and focus/lifecycle hardening without introducing parallel widget/RAG/config authorities.
 
 Final scoped fallback review: **0 unresolved Critical / 0 unresolved Important** across correctness, security/privacy, performance/lifecycle, accessibility/mobile/RTL, and architecture/duplication. Independent reviewer transport was unavailable and that limitation is recorded durably.
 
-Key exact-head evidence:
-- Task 1 domain: `e9d4adbd076333142e000a38332cfdc8fd9e8853`, CI `34755743017` — GREEN.
-- Task 7 integration/stale-save: `38cadbef21fd8387fb5e4bf6733cc33930536148`, CI `34793226261` — GREEN.
-- Task 8 localized runtime: `a875299414e709a182d7e361e328b07c9c80bc7e`, CI `34794272117` — GREEN.
-- Task 8 widget-local direction: `29bbe3b34ba7616d08b23c2aabfc276c61073944`, CI `34794699995` — GREEN.
-- Task 8 logical RTL CSS: `b05ec97078c790b50a7cdbdfa647234bb174fa9f`, CI `34794973838` — GREEN.
-- Task 8 reduced motion: `fe69aacaf5aee32341e682d2daf1c55bb3bcc888`, CI `34795234377` — GREEN.
-- Task 8 focus/lifecycle: `4431d09f1cc3d3ca3fac5c639b50b1054b4c0424`, CI `34795395647` — GREEN.
-- Task 9 real WordPress integration: `8bd5af09a435bafb3f000f42ae7cce91d86dacfb`, CI `34795728393` — GREEN.
-- PR #20 merged to `main` at `dc889a6664ae29dadcad6a2775d65d229d43a191`; post-merge CI `34796323781` — GREEN.
+M15 PR #20 merged to `main` at `dc889a6664ae29dadcad6a2775d65d229d43a191`; fresh post-merge CI `34796323781` is GREEN on that exact SHA.
 
-M15 durable references:
+Durable M15 references:
 - `docs/milestones/M15-display-rules-rtl-accessibility.md`
 - `docs/progress/M15-TASK1-DISPLAY-RULES.md`
 - `docs/progress/M15-TASK3-SERVER-CONTEXT.md`
@@ -53,32 +49,31 @@ M15 durable references:
 - `docs/superpowers/specs/2026-09-13-m15-display-rules-rtl-accessibility-design.md`
 - `docs/superpowers/plans/2026-09-13-m15-display-rules-rtl-accessibility.md`
 
-## Post-M15 maintenance — Provider-first admin UX and direct providers — COMPLETE
+## M16 — IN PROGRESS
 
-This bounded maintenance track simplifies the WordPress admin around a provider-first setup flow and extends the existing provider architecture without creating a parallel generation authority.
+M16 reuses the canonical M11 conversation/message authorities and adds administration, lead capture, feedback, focused forms, visitor integration, and safe export incrementally. Bot identity remains explicit; historical unassigned conversations stay valid; `owner_scope` is never parsed to guess a bot.
 
-Delivered behavior:
-- compact WordPress-style navigation: Providers, Chatbots, Knowledge, Test Chat;
-- provider catalog cards with safe local connection state and provider-specific configuration screens;
-- direct provider IDs and credential configuration for Google Gemini and Groq alongside OpenAI and OpenRouter;
-- a shared fixed-endpoint OpenAI-compatible generation/model-catalog adapter for Gemini and Groq;
-- safe credential-source labeling (`option` is shown as plugin-managed) without rehydrating stored secrets;
-- provider-specific API-key configuration controls using native WordPress classes;
-- idempotent admin DOM enhancement under the MutationObserver path;
-- real WordPress provider smoke updated to require all five runtime provider IDs.
+Completed current slices:
+- Task 1A — explicit bot association and public creation path: COMPLETE. Final GREEN `7be973f5d97b043af5d962cb1e00f0833ecea403`, CI `34801027067`.
+- Task 1B pagination authority: GREEN `1ce2c82609af07f7b29fc685dadfb79304679014`, CI `34802027933`.
+- Task 1B immutable summary projection: GREEN `c2d2d5725b5a67f38c6c307e9e83fc2100d4f932`, CI `34802423148`.
+- Task 1B canonical admin read repository: GREEN `ae185b5f55c954140f230a72c12e19185392d5a1`, CI `34802886455`.
+- Task 1B bounded bot/date/transcript query authority: GREEN `060f5614e995ddd23b97c717beaba43ddfd16c7b`, CI `34803852942`.
+- Task 1B prepared repository filters/search: GREEN `2d826482d45ec47c1c2b3edfb1d9b3c034774066`, CI `34804366360`.
+- Task 1C bounded conversation detail plus explicit administrator deletion: COMPLETE. Final chronology acceptance GREEN `b45225eda3b01931a907821a42fda77330c53b76`, CI `34811065345`. Detailed evidence: `docs/progress/M16-TASK1-CONVERSATION-ADMIN.md`.
+- Task 2 protected administrator conversation REST: COMPLETE. Protected list/detail/delete reuse the canonical conversation authorities and `AdminCapability::can_manage`, list/detail inputs stay bounded, and malformed deletes map to a stable non-leaking public error. Final implementation GREEN `302c77e4c0ae7fea49c5007cbee4c3b4d66d937a`, CI `34825392498`. Detailed evidence: `docs/progress/M16-TASK2-CONVERSATION-REST.md`.
 
-TDD / verification evidence:
-- provider-panel RED: `c6a489ec63d08043b69d0a7bf99ff1cdd0fa4435`, CI `34952988439` — the new Gemini panel regression failed for the intended generic-heading reason after lint/typecheck passed;
-- provider-panel GREEN implementation: `6d2c867ce6afb205c127e59504d5935461b5c0ee`, CI `34953102787` — `php-quality`, `js-quality`, `wordpress-smoke`, and `package` all GREEN;
-- exact-final PR head `fd35ab861267d7c97a2c9e3b39b65465d61e8656`: push CI `34953470397` and PR CI `34953605190` — all four jobs GREEN;
-- PR #22 merged with expected-head protection at `087be885daedb0285c9d10f958770d4b5abdf8db`;
-- post-merge `main` CI `34953994434` at that merge SHA — all four jobs GREEN, including the complete WordPress smoke suite and five-provider runtime registry check.
+Task 1B fallback scoped review: **0 Critical / 0 Important**. Filter values are prepared, table identifiers remain repository-owned, transcript search is bounded and correlated by conversation plus owner scope, wildcard characters are escaped, and the outer aggregate still counts/ranks the complete transcript rather than only matching messages. Independent reviewer transport was unavailable; no independent review is claimed.
 
-Security/review boundary:
-- provider endpoints remain fixed in the composition root;
-- credentials continue through the existing resolver/encrypted store/`Secret::with_value()` boundary;
-- provider error bodies/request IDs pass through existing secret redaction before diagnostic propagation;
-- bootstrap/configuration remains local-only and does not issue outbound provider requests;
-- live-provider calls remain opt-in through the existing credential-gated smoke path.
+Task 1C fallback scoped review: **0 Critical / 0 Important** after repairing stable transcript chronology to `created_at ASC, id ASC`. Owner scope remains internal, detail reads stay capped at 100 messages, deletion stays on a separate explicit admin mutation boundary, and dependent message cleanup remains transactional. Independent reviewer transport was unavailable; no independent review is claimed.
 
-Final scoped review: **0 unresolved Critical / 0 unresolved Important**. PR #22 had no unresolved review threads, remained mergeable against an unchanged `main`, and was integrated only after exact-final-head push and PR CI were green. The maintenance track is complete; the next unfinished roadmap work is **M16**.
+Task 2 fallback scoped review: **0 Critical / 0 Important** across correctness, security/privacy, performance and architecture/duplication. Every route is capability protected, bounded request parsing feeds the existing read authority, detail remains capped, malformed inputs fail closed, and delete validation errors are projected without exception/PII leakage. Independent reviewer transport was unavailable; no independent review is claimed.
+
+Current unfinished work: Task 3 — administrator inbox/detail UI over the protected conversation REST surface. Start test-first with route/state parsing, pagination/search/filter behavior, empty/error states and bounded transcript rendering; then add stale-response generation guards, explicit delete confirmation and focus restoration.
+
+Durable M16 references:
+- `docs/milestones/M16-conversations-leads-feedback-forms.md`
+- `docs/progress/M16-TASK1-CONVERSATION-ADMIN.md`
+- `docs/progress/M16-TASK2-CONVERSATION-REST.md`
+- `docs/superpowers/specs/2026-09-14-m16-conversations-leads-feedback-forms-design.md`
+- `docs/superpowers/plans/2026-09-14-m16-conversations-leads-feedback-forms.md`

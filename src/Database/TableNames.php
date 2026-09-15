@@ -71,6 +71,11 @@ final class TableNames {
 		return $this->prefix . 'rag_ai_bots';
 	}
 
+	/** Persisted lead/contact captures table. */
+	public function leads(): string {
+		return $this->prefix . 'rag_ai_leads';
+	}
+
 	/**
 	 * All plugin tables in safe deletion order.
 	 *
@@ -78,6 +83,7 @@ final class TableNames {
 	 */
 	public function all(): array {
 		return array(
+			$this->leads(),
 			$this->message_citations(),
 			$this->messages(),
 			$this->conversations(),

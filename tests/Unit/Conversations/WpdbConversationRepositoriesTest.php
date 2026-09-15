@@ -95,6 +95,20 @@ final class WpdbConversationRepositoriesTest extends TestCase {
 		$repository->create_for_owner( str_repeat( 'o', 192 ) );
 	}
 
+	/** New conversations persist bot identity as a separate explicit association. */
+	public function test_conversation_creation_persists_explicit_bot_association(): void {
+		$connection = new RecordingConnection();
+		$repository = new WpdbConversationRepository( $connection, new TableNames( 'wp_' ) );
+
+		call_user_func_array(
+			array( $repository, 'create_for_owner' ),
+			array( 'owner-a', 'bot-1' )
+		);
+
+		self::assertSame( 'owner-a', $connection->insert_calls[0]['data']['owner_scope'] );
+		self::assertSame( 'bot-1', $connection->insert_calls[0]['data']['bot_id'] );
+	}
+
 	/** Message append is one atomic prepared insert-select scoped by conversation and owner. */
 	public function test_message_append_is_atomic_prepared_and_owner_scoped(): void {
 		$connection               = new RecordingConnection();

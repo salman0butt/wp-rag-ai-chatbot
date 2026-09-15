@@ -14,6 +14,8 @@ use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Database\Repository\WpdbBotAppearanceRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotDisplayRulesRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
+use WpRagAiChatbot\Database\Repository\WpdbConversationAdminRepository;
+use WpRagAiChatbot\Database\Repository\WpdbConversationReadRepository;
 use WpRagAiChatbot\Database\Repository\WpdbDocumentRepository;
 use WpRagAiChatbot\Database\Repository\WpdbJobReadRepository;
 use WpRagAiChatbot\Database\Repository\WpdbJobRepository;
@@ -230,6 +232,33 @@ final class AdminRestBootstrap {
 				'methods'             => 'POST',
 				'callback'            => array( self::class, 'mutate_knowledge_job' ),
 				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/conversations',
+			array(
+				'methods'             => 'GET',
+				'callback'            => array( self::class, 'list_conversations' ),
+				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/conversations/(?P<id>[^/]+)',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( self::class, 'get_conversation' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => array( self::class, 'delete_conversation' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
 			)
 		);
 
@@ -588,6 +617,41 @@ final class AdminRestBootstrap {
 	}
 
 	/**
+	 * Return one bounded page of canonical conversation summaries.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function list_conversations( WP_REST_Request $request ): array {
+		$query = ConversationListRequest::from_array( $request->get_query_params() );
+		if ( null === $query ) {
+			return self::invalid_request();
+		}
+
+		return self::conversations()->list( $query );
+	}
+
+	/**
+	 * Return one bounded canonical conversation detail projection.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function get_conversation( WP_REST_Request $request ): array {
+		return self::conversations()->read( (string) $request->get_param( 'id' ) );
+	}
+
+	/**
+	 * Delete exactly one canonical conversation through the explicit administrator authority.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function delete_conversation( WP_REST_Request $request ): array {
+		return self::conversations()->delete( (string) $request->get_param( 'id' ) );
+	}
+
+	/**
 	 * Build the repository-backed bot resource from WordPress services.
 	 */
 	private static function bots(): BotRestResource {
@@ -709,6 +773,21 @@ final class AdminRestBootstrap {
 			new WpdbJobReadRepository( $connection, $tables ),
 			new WpdbJobRepository( $connection, $tables ),
 			new SystemClock()
+		);
+	}
+
+	/**
+	 * Build the M16 conversation administration resource over canonical repositories.
+	 */
+	private static function conversations(): ConversationRestResource {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+
+		return new ConversationRestResource(
+			new WpdbConversationReadRepository( $connection, $tables ),
+			new WpdbConversationAdminRepository( $connection, $tables )
 		);
 	}
 

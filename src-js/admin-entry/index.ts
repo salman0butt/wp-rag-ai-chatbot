@@ -90,10 +90,15 @@ const selectedProviderIdFromHash = ( hash: string ): string | undefined => {
 		: decodeURIComponent( match[ 1 ] );
 };
 
-const screenFromHash = ( hash: string ): AdminShellProps[ 'screen' ] => {
+export const screenFromHash = ( hash: string ): AdminShellProps[ 'screen' ] => {
 	const path = hash.replace( /^#\/?/, '' ).split( /[/?#]/, 1 )[ 0 ];
 
-	if ( path === 'bots' || path === 'knowledge' || path === 'playground' ) {
+	if (
+		path === 'bots' ||
+		path === 'knowledge' ||
+		path === 'playground' ||
+		path === 'conversations'
+	) {
 		return path;
 	}
 
@@ -119,12 +124,14 @@ const simplifyNavigation = ( root: Element ): void => {
 	onboarding?.remove();
 
 	const labels: Record< string, string > = {
+		'#/conversations': 'Conversations',
 		'#/providers': 'Providers',
 		'#/bots': 'Chatbots',
 		'#/knowledge': 'Knowledge',
 		'#/playground': 'Test Chat',
 	};
 	const desiredOrder = [
+		'#/conversations',
 		'#/providers',
 		'#/bots',
 		'#/knowledge',
