@@ -14,10 +14,15 @@ use Brain\Monkey\Functions;
 use DateTimeImmutable;
 use LogicException;
 use PHPUnit\Framework\TestCase;
+use WpRagAiChatbot\Core\PagedResult;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Documents\DocumentHasher;
 use WpRagAiChatbot\Documents\DocumentRecord;
 use WpRagAiChatbot\Documents\DocumentRepository;
+use WpRagAiChatbot\Embeddings\DistanceMetric;
+use WpRagAiChatbot\Embeddings\EmbeddingProfile;
+use WpRagAiChatbot\Embeddings\NormalizationMode;
+use WpRagAiChatbot\Embeddings\VectorIndexProfile;
 use WpRagAiChatbot\Jobs\JobExecutionException;
 use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobPayload;
 use WpRagAiChatbot\Jobs\Sync\SearchProjectionDocumentIndexDependencies;
@@ -33,10 +38,15 @@ use WpRagAiChatbot\Providers\GenerationProvider;
 use WpRagAiChatbot\Providers\GenerationRequest;
 use WpRagAiChatbot\Providers\GenerationResult;
 use WpRagAiChatbot\Providers\ProviderRegistry;
+use WpRagAiChatbot\Retrieval\Lexical\ChunkInspectionStore;
+use WpRagAiChatbot\Retrieval\Lexical\ChunkSearchRecord;
 use WpRagAiChatbot\Retrieval\Lexical\WpdbChunkSearchStore;
+use WpRagAiChatbot\Tests\Support\VectorStore\InMemoryVectorStore;
 use WpRagAiChatbot\Tests\Support\VectorStore\ScriptedLocalVectorConnection;
 use WpRagAiChatbot\VectorStore\Local\LocalVectorStore;
 use WpRagAiChatbot\VectorStore\Local\LocalVectorStoreConfig;
+use WpRagAiChatbot\VectorStore\VectorCollection;
+use WpRagAiChatbot\VectorStore\VectorSearchRequest;
 use WpRagAiChatbot\VectorStore\VectorStoreRegistry;
 
 // phpcs:disable WordPress.NamingConventions -- Assertions use the approved domain DTO properties.
@@ -83,9 +93,10 @@ final class WordPressDocumentIndexDependenciesTest extends TestCase {
 		$stores->register( new LocalVectorStore( $connection, $tables, new LocalVectorStoreConfig( 100, 20 ) ) );
 		$connection->row_results = array( null, null );
 
+		$chunks       = new WpdbChunkSearchStore( $connection, $tables );
 		$dependencies = new SearchProjectionDocumentIndexDependencies(
-			new WordPressDocumentIndexDependencies( $sources, $documents, $providers, $stores ),
-			new WpdbChunkSearchStore( $connection, $tables )
+			new WordPressDocumentIndexDependencies( $sources, $documents, $providers, $stores, $chunks ),
+			$chunks
 		);
 		$payload      = new DocumentIndexJobPayload(
 			'manual:owner-guide',
@@ -132,7 +143,13 @@ final class WordPressDocumentIndexDependenciesTest extends TestCase {
 		$providers->register( 'gemini_direct', $provider, null, $provider );
 		$stores->register( new LocalVectorStore( $connection, new TableNames( 'wp_' ), new LocalVectorStoreConfig( 100, 20 ) ) );
 
-		$dependencies = new WordPressDocumentIndexDependencies( $sources, $documents, $providers, $stores );
+		$dependencies = new WordPressDocumentIndexDependencies(
+			$sources,
+			$documents,
+			$providers,
+			$stores,
+			new WpdbChunkSearchStore( $connection, new TableNames( 'wp_' ) )
+		);
 
 		try {
 			$dependencies->plan(
@@ -150,6 +167,89 @@ final class WordPressDocumentIndexDependenciesTest extends TestCase {
 			self::assertFalse( $error->retryable() );
 			self::assertCount( 0, $provider->requests );
 		}
+	}
+
+	/** Re-indexing a smaller document removes vector rows for chunks no longer present. */
+	public function test_shrinking_document_removes_stale_vectors(): void {
+		$now       = new DateTimeImmutable( '2026-09-15T10:00:00+00:00' );
+		$source    = $this->source( $now );
+		$document  = $this->document( $now, implode( ' ', array_fill( 0, 700, 'large' ) ) );
+		$prior     = array();
+		$sources   = $this->createMock( KnowledgeSourceRepository::class );
+		$documents = $this->createMock( DocumentRepository::class );
+		$chunks    = $this->createMock( ChunkInspectionStore::class );
+		$providers = new ProviderRegistry();
+		$stores    = new VectorStoreRegistry();
+		$vectors   = new InMemoryVectorStore( 'local-wordpress' );
+		$provider  = $this->provider();
+		$payload   = new DocumentIndexJobPayload(
+			'manual:owner-guide',
+			7,
+			'wp-rag-default',
+			'gemini-embedding-001-3072-cosine-v1',
+			'generation-1'
+		);
+
+		$sources->method( 'findById' )->willReturn( $source );
+		$documents->method( 'findByKey' )->willReturnCallback(
+			static function () use ( &$document ): DocumentRecord {
+				return $document;
+			}
+		);
+		$chunks->method( 'paginate_document_chunks' )->willReturnCallback(
+			static function ( string $document_key, int $page, int $per_page ) use ( &$prior ): PagedResult {
+				return new PagedResult(
+					'manual:owner-guide' === $document_key && 1 === $page ? $prior : array(),
+					count( $prior ),
+					$page,
+					$per_page
+				);
+			}
+		);
+		$providers->register( 'gemini_direct', $provider, null, $provider );
+		$stores->register( $vectors );
+		$dependencies = new WordPressDocumentIndexDependencies( $sources, $documents, $providers, $stores, $chunks );
+
+		$first = $dependencies->plan( $payload );
+		self::assertGreaterThan( 1, count( $first->upsert ) );
+		$dependencies->execute( $payload, $first );
+		$prior    = array_map(
+			static fn ( $chunk ): ChunkSearchRecord => new ChunkSearchRecord(
+				$chunk->chunkKey,
+				$chunk->documentKey,
+				$chunk->sourceId,
+				$chunk->documentType,
+				$chunk->title,
+				$chunk->canonicalUrl,
+				$chunk->content,
+				$chunk->contentHash,
+				$chunk->language,
+				$chunk->visibility,
+				$chunk->sequence,
+				$chunk->sourceMetadata
+			),
+			$first->upsert
+		);
+		$document = $this->document( $now, 'Short current guidance.' );
+		$second   = $dependencies->plan( $payload );
+		self::assertNotEmpty( $second->deleteKeys );
+		$dependencies->execute( $payload, $second );
+
+		$profile      = new VectorIndexProfile(
+			new EmbeddingProfile( 'gemini_direct', 'gemini-embedding-001', 3072, NormalizationMode::NONE ),
+			DistanceMetric::COSINE
+		);
+		$result       = $vectors->search(
+			new VectorSearchRequest(
+				new VectorCollection( 'wp-rag-default', $profile ),
+				array_fill( 0, 3072, 0.125 ),
+				100,
+				$profile->fingerprint()
+			)
+		);
+		$current_keys = array_column( $result->matches, 'id' );
+		self::assertCount( 1, $current_keys );
+		self::assertEmpty( array_intersect( $second->deleteKeys, $current_keys ) );
 	}
 
 	/**
@@ -190,8 +290,11 @@ final class WordPressDocumentIndexDependenciesTest extends TestCase {
 	 * Build one saved manual document.
 	 *
 	 * @param DateTimeImmutable $now Fixture time.
+	 * @param string|null       $content Optional document content.
 	 */
-	private function document( DateTimeImmutable $now ): DocumentRecord {
+	private function document( DateTimeImmutable $now, ?string $content = null ): DocumentRecord {
+		$content ??= '# Owner guide' . "\n\n" . 'Production owner guidance for the approved knowledge flow.';
+
 		return new DocumentRecord(
 			11,
 			'manual:owner-guide',
@@ -200,10 +303,10 @@ final class WordPressDocumentIndexDependenciesTest extends TestCase {
 			'manual_text',
 			'Owner guide',
 			null,
-			'# Owner guide' . "\n\n" . 'Production owner guidance for the approved knowledge flow.',
+			$content,
 			array( 'source_type' => 'manual_text' ),
 			'generation-1',
-			DocumentHasher::hash( array( 'content' => 'production-owner-guidance' ) ),
+			DocumentHasher::hash( array( 'content' => $content ) ),
 			'en',
 			'public',
 			$now,
@@ -253,10 +356,16 @@ final class WordPressDocumentIndexDependenciesTest extends TestCase {
 			 */
 			public function embed( EmbeddingRequest $request ): EmbeddingResult {
 				$this->requests[] = $request;
+				$vectors          = array();
+				foreach ( $request->inputs as $index => $input ) {
+					unset( $input );
+					$vectors[] = new EmbeddingVector( $index, array_fill( 0, 3072, 0.125 ) );
+				}
+
 				return new EmbeddingResult(
 					'gemini_direct',
 					'gemini-embedding-001',
-					array( new EmbeddingVector( 0, array_fill( 0, 3072, 0.125 ) ) ),
+					$vectors,
 					EmbeddingUsage::input_tokens( 8 )
 				);
 			}

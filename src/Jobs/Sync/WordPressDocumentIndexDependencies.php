@@ -19,6 +19,7 @@ use WpRagAiChatbot\Embeddings\IndexEmbeddingExecutor;
 use WpRagAiChatbot\Embeddings\NormalizationMode;
 use WpRagAiChatbot\Embeddings\VectorIndexProfile;
 use WpRagAiChatbot\Indexing\Chunking\ChunkingConfig;
+use WpRagAiChatbot\Indexing\Chunking\ChunkRecord;
 use WpRagAiChatbot\Indexing\Chunking\LexicalTokenCounter;
 use WpRagAiChatbot\Indexing\Chunking\StructureAwareChunker;
 use WpRagAiChatbot\Indexing\Dedup\ChunkDeduplicator;
@@ -30,6 +31,8 @@ use WpRagAiChatbot\Jobs\JobExecutionException;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 use WpRagAiChatbot\Providers\ProviderRegistry;
+use WpRagAiChatbot\Retrieval\Lexical\ChunkInspectionStore;
+use WpRagAiChatbot\Retrieval\Lexical\ChunkSearchRecord;
 use WpRagAiChatbot\VectorStore\VectorCollection;
 use WpRagAiChatbot\VectorStore\VectorStoreRegistry;
 
@@ -63,13 +66,15 @@ final class WordPressDocumentIndexDependencies implements DocumentIndexDependenc
 	 * @param DocumentRepository        $documents Persisted document repository.
 	 * @param ProviderRegistry          $providers Registered provider authority.
 	 * @param VectorStoreRegistry       $stores Registered vector-store authority.
+	 * @param ChunkInspectionStore      $chunks Persisted document chunk projection.
 	 * @throws LogicException When Gemini embedding support is unavailable.
 	 */
 	public function __construct(
 		private readonly KnowledgeSourceRepository $sources,
 		private readonly DocumentRepository $documents,
 		ProviderRegistry $providers,
-		VectorStoreRegistry $stores
+		VectorStoreRegistry $stores,
+		private readonly ChunkInspectionStore $chunks
 	) {
 		$profile  = self::profile();
 		$provider = $providers->embedding( self::EMBEDDING_PROVIDER_ID );
@@ -172,7 +177,7 @@ final class WordPressDocumentIndexDependencies implements DocumentIndexDependenc
 			throw new JobExecutionException( 'index_document_mismatch', 'Document indexing lineage is invalid.', false );
 		}
 
-		return $this->pipeline->plan( $document )->indexPlan;
+		return $this->pipeline->plan( $document, $this->previous_chunks( $payload ) )->indexPlan;
 	}
 
 	/**
@@ -197,6 +202,68 @@ final class WordPressDocumentIndexDependencies implements DocumentIndexDependenc
 			),
 			DistanceMetric::COSINE
 		);
+	}
+
+	/**
+	 * Rehydrate the bounded prior document projection for the existing incremental planner.
+	 *
+	 * Projection rows intentionally force current chunks through the planner's upsert path because
+	 * the lexical projection does not persist every embedding compatibility field. The planner still
+	 * remains the sole authority for document-scoped stale-key deletion.
+	 *
+	 * @param DocumentIndexJobPayload $payload Queued document identity.
+	 * @return ChunkRecord[]
+	 * @throws JobExecutionException When persisted prior state is invalid or exceeds execution bounds.
+	 */
+	private function previous_chunks( DocumentIndexJobPayload $payload ): array {
+		$previous = array();
+		$page     = 1;
+		$total    = 0;
+		$loaded   = 0;
+
+		do {
+			$result = $this->chunks->paginate_document_chunks( $payload->document_key, $page, 100 );
+			$total  = $result->total;
+			if ( $total > 1000 ) {
+				throw new JobExecutionException( 'index_previous_chunks_unbounded', 'Document indexing state exceeds the supported chunk limit.', false );
+			}
+			$loaded = count( $previous );
+			if ( array() === $result->items && $loaded < $total ) {
+				throw new JobExecutionException( 'index_previous_chunks_invalid', 'Document indexing state could not be reconstructed.', false );
+			}
+
+			foreach ( $result->items as $record ) {
+				if ( ! $record instanceof ChunkSearchRecord || $record->document_key !== $payload->document_key || $record->source_id !== $payload->source_id ) {
+					throw new JobExecutionException( 'index_previous_chunks_invalid', 'Document indexing state could not be reconstructed.', false );
+				}
+				$previous[] = new ChunkRecord(
+					$record->chunk_key,
+					$record->document_key,
+					$record->source_id,
+					$record->document_type,
+					$record->title,
+					$record->canonical_url,
+					$record->content,
+					$record->content_hash,
+					null,
+					$record->content_hash,
+					$record->language,
+					$record->visibility,
+					$record->sequence,
+					null,
+					array(),
+					( new LexicalTokenCounter() )->count( $record->content ),
+					'm07-v1',
+					'lexical-projection-rehydration',
+					null,
+					$record->metadata
+				);
+			}
+			$loaded = count( $previous );
+			++$page;
+		} while ( $loaded < $total );
+
+		return $previous;
 	}
 }
 // phpcs:enable WordPress.NamingConventions

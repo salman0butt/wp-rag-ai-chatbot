@@ -234,8 +234,8 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 		}
 	}
 
-	/** Successful admin enqueue persists first, then schedules the existing worker hook once. */
-	public function test_source_enqueue_schedules_existing_job_hook_after_persistence(): void {
+	/** A standing no-argument hourly event cannot suppress the uniquely addressed immediate wake-up. */
+	public function test_source_enqueue_schedules_unique_existing_job_hook_after_persistence(): void {
 		if ( ! class_exists( KnowledgeSourceSyncJobEnqueuer::class ) ) {
 			self::fail( 'KnowledgeSourceSyncJobEnqueuer does not exist yet.' );
 		}
@@ -258,9 +258,42 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 				$now
 			)
 			->willReturn( $expected );
-		Functions\expect( 'wp_schedule_single_event' )->once()->with( $now->getTimestamp(), WordPressJobCron::HOOK );
+		Functions\when( 'wp_next_scheduled' )->alias(
+			static function ( string $hook, array $args = array() ) use ( $expected ): int|false {
+				self::assertSame( WordPressJobCron::HOOK, $hook );
+				if ( array() === $args ) {
+					return 1234567890;
+				}
+				self::assertSame( array( $expected->job_key ), $args );
+				return false;
+			}
+		);
+		Functions\expect( 'wp_schedule_single_event' )
+			->once()
+			->with( $now->getTimestamp(), WordPressJobCron::HOOK, array( $expected->job_key ), true )
+			->andReturn( true );
 
+		self::assertSame( 1234567890, wp_next_scheduled( WordPressJobCron::HOOK ) );
 		self::assertSame( $expected, ( new KnowledgeSourceSyncJobEnqueuer( $repository, $clock ) )->enqueue( $payload ) );
+	}
+
+	/** An unscheduled immediate worker wake-up fails explicitly after durable persistence. */
+	public function test_source_enqueue_reports_worker_schedule_failure(): void {
+		$now        = new DateTimeImmutable( '2026-09-15T10:00:00+00:00' );
+		$payload    = $this->payload();
+		$expected   = $this->job( $now, 'sync.source', $payload->to_array() );
+		$repository = $this->createMock( JobRepository::class );
+		$clock      = $this->createMock( Clock::class );
+
+		$clock->method( 'now' )->willReturn( $now );
+		$repository->method( 'enqueue' )->willReturn( $expected );
+		Functions\expect( 'wp_next_scheduled' )->once()->with( WordPressJobCron::HOOK, array( $expected->job_key ) )->andReturn( false );
+		Functions\expect( 'wp_schedule_single_event' )->once()->andReturn( false );
+
+		$this->expectException( JobQueueException::class );
+		$this->expectExceptionMessage( 'Could not schedule the source synchronization worker.' );
+
+		( new KnowledgeSourceSyncJobEnqueuer( $repository, $clock ) )->enqueue( $payload );
 	}
 
 	/**

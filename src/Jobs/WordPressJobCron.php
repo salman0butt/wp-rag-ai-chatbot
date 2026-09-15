@@ -35,8 +35,11 @@ final class WordPressJobCron {
 
 	/**
 	 * Execute the shared worker with the default bounded configuration.
+	 *
+	 * @param string|null $wake_token Optional unique immediate-event token.
 	 */
-	public function run(): void {
+	public function run( ?string $wake_token = null ): void {
+		unset( $wake_token );
 		$this->runner->run( new WorkerConfig() );
 	}
 

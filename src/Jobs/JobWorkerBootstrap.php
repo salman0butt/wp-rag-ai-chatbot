@@ -19,6 +19,7 @@ use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobEnqueuer;
 use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobHandler;
 use WpRagAiChatbot\Jobs\Sync\KnowledgeSourceSyncJobHandler;
 use WpRagAiChatbot\Jobs\Sync\SearchProjectionDocumentIndexDependencies;
+use WpRagAiChatbot\Jobs\Sync\UnavailableDocumentIndexDependencies;
 use WpRagAiChatbot\Jobs\Sync\WordPressDocumentIndexDependencies;
 use WpRagAiChatbot\Knowledge\KnowledgeBootstrap;
 use WpRagAiChatbot\Providers\ProviderBootstrap;
@@ -58,7 +59,8 @@ final class JobWorkerBootstrap {
 				$sources,
 				$documents,
 				ProviderBootstrap::registry(),
-				VectorStoreBootstrap::registry()
+				VectorStoreBootstrap::registry(),
+				$chunks
 			),
 			$chunks
 		);
@@ -83,14 +85,15 @@ final class JobWorkerBootstrap {
 	/**
 	 * Build the explicit allowlisted handler registry used by production workers.
 	 *
-	 * @param DocumentIndexDependencies          $document_index_dependencies Reconstructed document-index dependencies.
+	 * @param DocumentIndexDependencies|null     $document_index_dependencies Reconstructed document-index dependencies.
 	 * @param KnowledgeSourceSyncJobHandler|null $source_sync_handler Optional source-sync handler.
 	 */
 	public static function handler_registry(
-		DocumentIndexDependencies $document_index_dependencies,
+		?DocumentIndexDependencies $document_index_dependencies = null,
 		?KnowledgeSourceSyncJobHandler $source_sync_handler = null
 	): JobHandlerRegistry {
-		$registry = new JobHandlerRegistry();
+		$document_index_dependencies ??= new UnavailableDocumentIndexDependencies();
+		$registry                      = new JobHandlerRegistry();
 		$registry->register( new DocumentIndexJobHandler( $document_index_dependencies ) );
 		if ( null !== $source_sync_handler ) {
 			$registry->register( $source_sync_handler );
