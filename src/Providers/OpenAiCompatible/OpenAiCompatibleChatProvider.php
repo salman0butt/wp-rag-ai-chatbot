@@ -109,7 +109,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		}
 
 		list( $authorization, $known_secrets ) = $this->credential_material( $credential );
-		$http_request = new HttpRequest(
+		$http_request                          = new HttpRequest(
 			$this->provider_id,
 			'POST',
 			$this->generation_url,
@@ -163,7 +163,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		$credential = $this->required_credential();
 		list( $authorization, $known_secrets ) = $this->credential_material( $credential );
 
-		$request = new HttpRequest(
+		$request                              = new HttpRequest(
 			$this->provider_id,
 			'GET',
 			$this->models_url,
@@ -189,7 +189,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 			throw $this->malformed_response();
 		}
 
-		$models = array();
+		$models     = array();
 		foreach ( $data['data'] as $item ) {
 			if ( ! is_array( $item ) || ! isset( $item['id'] ) || ! is_string( $item['id'] ) || '' === trim( $item['id'] ) ) {
 				throw $this->malformed_response();
@@ -198,7 +198,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 			$display_name = isset( $item['name'] ) && is_string( $item['name'] ) && '' !== trim( $item['name'] )
 				? $item['name']
 				: $item['id'];
-			$models[] = new ModelInfo(
+			$models[]     = new ModelInfo(
 				$this->provider_id,
 				$item['id'],
 				$display_name
@@ -210,6 +210,8 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 
 	/**
 	 * Require a configured direct-provider credential.
+	 *
+	 * @throws ProviderException When the configured provider has no credential.
 	 */
 	private function required_credential(): ResolvedCredential {
 		$credential = $this->credentials->resolve( $this->provider_id );
@@ -248,6 +250,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 	 *
 	 * @param HttpResponse $response Provider HTTP response.
 	 * @param string[]     $known_secrets Plaintext values that must be redacted.
+	 * @throws ProviderException When the provider returns a non-success HTTP status.
 	 */
 	private function assert_success_status( HttpResponse $response, array $known_secrets ): void {
 		if ( $response->status >= 200 && $response->status < 300 ) {
@@ -278,7 +281,9 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 	/**
 	 * Decode one successful provider JSON object.
 	 *
+	 * @param string $body Raw provider response body.
 	 * @return array<string, mixed>
+	 * @throws ProviderException When the response body is not a JSON object.
 	 */
 	private function decode_success_payload( string $body ): array {
 		try {
@@ -318,6 +323,8 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 
 	/**
 	 * Normalize explicit chat-completions finish reasons.
+	 *
+	 * @param mixed $finish_reason Provider finish reason.
 	 */
 	private function generation_status( mixed $finish_reason ): GenerationStatus {
 		return match ( $finish_reason ) {
@@ -329,6 +336,8 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 
 	/**
 	 * Normalize explicit integer token counts.
+	 *
+	 * @param mixed $usage Provider usage payload.
 	 */
 	private function usage( mixed $usage ): Usage {
 		if ( ! is_array( $usage ) ) {
@@ -344,6 +353,8 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 
 	/**
 	 * Return only non-negative integer token values.
+	 *
+	 * @param mixed $value Provider token value.
 	 */
 	private function non_negative_integer( mixed $value ): ?int {
 		return is_int( $value ) && $value >= 0 ? $value : null;
