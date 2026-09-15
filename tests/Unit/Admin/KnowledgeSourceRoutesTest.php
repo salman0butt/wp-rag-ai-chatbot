@@ -41,9 +41,16 @@ final class KnowledgeSourceRoutesTest extends TestCase {
 				'wp-rag-ai-chatbot/v1',
 				'/admin/knowledge/sources',
 				array(
-					'methods'             => 'GET',
-					'callback'            => array( AdminRestBootstrap::class, 'list_knowledge_sources' ),
-					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					array(
+						'methods'             => 'GET',
+						'callback'            => array( AdminRestBootstrap::class, 'list_knowledge_sources' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+					array(
+						'methods'             => 'POST',
+						'callback'            => array( AdminRestBootstrap::class, 'create_knowledge_source' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
 				)
 			);
 		Functions\expect( 'register_rest_route' )->times( 14 )->withAnyArgs();

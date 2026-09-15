@@ -53,7 +53,7 @@ final class KnowledgeSourceRestResource {
 	 * @param KnowledgeSourceRecord $record Persisted source.
 	 * @return array{id:int|null,source_key:string,source_type:string,external_id:string|null,title:string,canonical_url:string|null,status:string,last_synced_at:string|null,updated_at:string}
 	 */
-	private static function project( KnowledgeSourceRecord $record ): array {
+	public static function project( KnowledgeSourceRecord $record ): array {
 		return array(
 			'id'             => $record->id,
 			'source_key'     => $record->sourceKey,

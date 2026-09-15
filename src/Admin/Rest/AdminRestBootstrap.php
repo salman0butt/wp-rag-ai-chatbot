@@ -170,9 +170,16 @@ final class AdminRestBootstrap {
 			self::REST_NAMESPACE,
 			'/admin/knowledge/sources',
 			array(
-				'methods'             => 'GET',
-				'callback'            => array( self::class, 'list_knowledge_sources' ),
-				'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( self::class, 'list_knowledge_sources' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'POST',
+					'callback'            => array( self::class, 'create_knowledge_source' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
 			)
 		);
 
@@ -481,6 +488,20 @@ final class AdminRestBootstrap {
 	}
 
 	/**
+	 * Create one validated knowledge source from JSON or multipart form data.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function create_knowledge_source( WP_REST_Request $request ): array {
+		$payload = $request->get_params();
+		$files   = $request->get_file_params();
+		$file    = isset( $files['file'] ) ? $files['file'] : null;
+
+		return self::knowledge_source_create()->create( $payload, $file );
+	}
+
+	/**
 	 * Return one safe knowledge source detail.
 	 *
 	 * @param WP_REST_Request $request REST request.
@@ -677,6 +698,22 @@ final class AdminRestBootstrap {
 				$connection,
 				new TableNames( $connection->prefix() )
 			)
+		);
+	}
+
+	/**
+	 * Build the validated knowledge-source creation resource.
+	 */
+	private static function knowledge_source_create(): KnowledgeSourceCreateResource {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+
+		return new KnowledgeSourceCreateResource(
+			new WpdbKnowledgeSourceRepository( $connection, $tables ),
+			new WpdbJobRepository( $connection, $tables ),
+			new SystemClock()
 		);
 	}
 
