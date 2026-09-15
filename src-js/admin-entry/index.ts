@@ -119,12 +119,14 @@ const simplifyNavigation = ( root: Element ): void => {
 	onboarding?.remove();
 
 	const labels: Record< string, string > = {
+		'#/conversations': 'Conversations',
 		'#/providers': 'Providers',
 		'#/bots': 'Chatbots',
 		'#/knowledge': 'Knowledge',
 		'#/playground': 'Test Chat',
 	};
 	const desiredOrder = [
+		'#/conversations',
 		'#/providers',
 		'#/bots',
 		'#/knowledge',
