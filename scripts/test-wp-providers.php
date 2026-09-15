@@ -107,7 +107,14 @@ putenv( 'OPENAI_API_KEY' );
 
 ProviderBootstrap::register();
 $registry = ProviderBootstrap::registry();
-if ( array( ProviderIds::OPENAI_DIRECT, ProviderIds::OPENROUTER_DIRECT, ProviderIds::WORDPRESS_AI_CLIENT ) !== $registry->ids() ) {
+$expected_provider_ids = array(
+	ProviderIds::OPENAI_DIRECT,
+	ProviderIds::GEMINI_DIRECT,
+	ProviderIds::GROQ_DIRECT,
+	ProviderIds::OPENROUTER_DIRECT,
+	ProviderIds::WORDPRESS_AI_CLIENT,
+);
+if ( $expected_provider_ids !== $registry->ids() ) {
 	$fail( 'Provider bootstrap registry does not contain the expected stable IDs.' );
 }
 
