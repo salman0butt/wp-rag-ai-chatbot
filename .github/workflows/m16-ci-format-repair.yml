@@ -6,6 +6,7 @@ on:
       - feat/m16-conversations-leads-feedback-forms
     paths:
       - .github/workflows/m16-ci-format-repair.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
