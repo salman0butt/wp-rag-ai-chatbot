@@ -161,9 +161,10 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 	 */
 	public function models(): array {
 		$credential = $this->required_credential();
+
 		list( $authorization, $known_secrets ) = $this->credential_material( $credential );
 
-		$request                              = new HttpRequest(
+		$request = new HttpRequest(
 			$this->provider_id,
 			'GET',
 			$this->models_url,
@@ -189,7 +190,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 			throw $this->malformed_response();
 		}
 
-		$models     = array();
+		$models = array();
 		foreach ( $data['data'] as $item ) {
 			if ( ! is_array( $item ) || ! isset( $item['id'] ) || ! is_string( $item['id'] ) || '' === trim( $item['id'] ) ) {
 				throw $this->malformed_response();
@@ -198,7 +199,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 			$display_name = isset( $item['name'] ) && is_string( $item['name'] ) && '' !== trim( $item['name'] )
 				? $item['name']
 				: $item['id'];
-			$models[]     = new ModelInfo(
+			$models[] = new ModelInfo(
 				$this->provider_id,
 				$item['id'],
 				$display_name
