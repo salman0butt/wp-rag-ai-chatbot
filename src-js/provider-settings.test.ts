@@ -61,7 +61,7 @@ const renderProviderSettings = (
 	const root = document.createElement( 'div' );
 	root.append(
 		ProviderSettingsScreen( {
-			providerId: 'openai-direct',
+			providerId: 'openai_direct',
 			credential,
 		} ) as Node
 	);
@@ -70,10 +70,10 @@ const renderProviderSettings = (
 };
 
 describe( 'ProviderSettingsScreen', () => {
-	it( 'renders configured credential state without rehydrating any secret value', () => {
+	it( 'renders configured option credential state without rehydrating any secret value', () => {
 		const root = renderProviderSettings( {
 			configured: true,
-			source: 'managed',
+			source: 'option',
 		} );
 		const credentialInput = root.querySelector< HTMLInputElement >(
 			'input[name="credential"]'
@@ -99,8 +99,8 @@ describe( 'ProviderSettingsScreen', () => {
 		} ) => Node;
 		root.append(
 			render( {
-				providerId: 'openai-direct',
-				credential: { configured: true, source: 'managed' },
+				providerId: 'openai_direct',
+				credential: { configured: true, source: 'option' },
 				onReplace,
 			} )
 		);
