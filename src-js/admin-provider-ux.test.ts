@@ -129,11 +129,13 @@ describe( 'provider-first admin UX', () => {
 
 	it( 'does not replace navigation text nodes when enhancement runs again', () => {
 		installElementFactory();
-		const AdminShell = ( plugin as unknown as Record< string, unknown > )
-			.AdminShell as ( props: Record< string, unknown > ) => Node;
-		const enhanceAdminDom = (
-			plugin as unknown as Record< string, unknown >
-		).enhanceAdminDom as ( root: Element ) => void;
+		const pluginExports = plugin as unknown as Record< string, unknown >;
+		const AdminShell = pluginExports.AdminShell as (
+			props: Record< string, unknown >
+		) => Node;
+		const enhanceAdminDom = pluginExports.enhanceAdminDom as (
+			root: Element
+		) => void;
 		const root = document.createElement( 'div' );
 
 		root.append( AdminShell( { state: 'ready', screen: 'providers' } ) );
