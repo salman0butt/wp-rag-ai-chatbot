@@ -79,7 +79,7 @@ const providerDescription = ( providerId: string ): string => {
 				wordpress_ai_client:
 					'Use the AI provider configured by WordPress.',
 			} as Record< string, string >
-		)[ providerId ] ?? 'Connect this AI provider.'
+		) [ providerId ] ?? 'Connect this AI provider.'
 	);
 };
 
@@ -269,7 +269,9 @@ const bootstrapAdminEnhancements = (): void => {
 		return;
 	}
 
-	let providers: ReadonlyArray< ProviderCatalogItem > = [ ...DEFAULT_PROVIDERS ];
+	let providers: ReadonlyArray< ProviderCatalogItem > = [
+		...DEFAULT_PROVIDERS,
+	];
 	const apply = (): void => {
 		const hash = window.location.hash;
 		if ( hash === '' || hash === '#/onboarding' ) {
