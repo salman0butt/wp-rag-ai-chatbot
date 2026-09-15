@@ -46,6 +46,18 @@ final readonly class DirectProviderCredentialConfig {
 				'OPENAI_API_KEY',
 				'wp_rag_ai_openai_api_key'
 			),
+			ProviderIds::GEMINI_DIRECT => new self(
+				ProviderIds::GEMINI_DIRECT,
+				'GEMINI_API_KEY',
+				'GEMINI_API_KEY',
+				'wp_rag_ai_gemini_api_key'
+			),
+			ProviderIds::GROQ_DIRECT => new self(
+				ProviderIds::GROQ_DIRECT,
+				'GROQ_API_KEY',
+				'GROQ_API_KEY',
+				'wp_rag_ai_groq_api_key'
+			),
 			ProviderIds::OPENROUTER_DIRECT => new self(
 				ProviderIds::OPENROUTER_DIRECT,
 				'OPENROUTER_API_KEY',

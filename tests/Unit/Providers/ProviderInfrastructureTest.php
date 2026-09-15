@@ -168,7 +168,13 @@ final class ProviderInfrastructureTest extends TestCase {
 		ProviderBootstrap::register();
 
 		self::assertSame(
-			array( ProviderIds::OPENAI_DIRECT, ProviderIds::OPENROUTER_DIRECT, ProviderIds::WORDPRESS_AI_CLIENT ),
+			array(
+				ProviderIds::OPENAI_DIRECT,
+				ProviderIds::GEMINI_DIRECT,
+				ProviderIds::GROQ_DIRECT,
+				ProviderIds::OPENROUTER_DIRECT,
+				ProviderIds::WORDPRESS_AI_CLIENT,
+			),
 			ProviderBootstrap::registry()->ids()
 		);
 		self::assertInstanceOf( ProviderConfigurationService::class, ProviderBootstrap::configuration() );
