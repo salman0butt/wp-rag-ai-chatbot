@@ -126,4 +126,28 @@ describe( 'provider-first admin UX', () => {
 			catalog?.querySelector( 'a[href="#/providers/groq_direct"]' )
 		).not.toBeNull();
 	} );
+
+	it( 'does not replace navigation text nodes when enhancement runs again', () => {
+		installElementFactory();
+		const AdminShell = ( plugin as unknown as Record< string, unknown > )
+			.AdminShell as ( props: Record< string, unknown > ) => Node;
+		const enhanceAdminDom = (
+			plugin as unknown as Record< string, unknown >
+		).enhanceAdminDom as ( root: Element ) => void;
+		const root = document.createElement( 'div' );
+
+		root.append( AdminShell( { state: 'ready', screen: 'providers' } ) );
+		const links = Array.from(
+			root.querySelectorAll< HTMLAnchorElement >(
+				'nav[aria-label="Administration"] a'
+			)
+		);
+		const firstTextNodes = links.map( ( link ) => link.firstChild );
+
+		enhanceAdminDom( root );
+
+		expect( links.map( ( link ) => link.firstChild ) ).toEqual(
+			firstTextNodes
+		);
+	} );
 } );
