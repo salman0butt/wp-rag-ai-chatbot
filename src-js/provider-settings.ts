@@ -28,7 +28,7 @@ type ElementFactory = (
 ) => unknown;
 
 const SOURCE_LABELS: Readonly< Record< string, string > > = {
-	managed: 'Managed by this plugin',
+	option: 'Managed by this plugin',
 	environment: 'Provided by the server environment',
 	constant: 'Provided by WordPress configuration',
 	none: 'Not configured',
