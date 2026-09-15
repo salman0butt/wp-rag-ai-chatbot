@@ -1,4 +1,4 @@
-import * as plugin from './index';
+import * as plugin from './admin-entry/index';
 
 type TestElementProps = Record< string, unknown > | null;
 
