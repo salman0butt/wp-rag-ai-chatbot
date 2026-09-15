@@ -76,6 +76,17 @@ describe( 'provider-first admin UX', () => {
 		).toBe( true );
 	} );
 
+	it( 'classifies the conversations hash as a conversations screen', () => {
+		const pluginExports = plugin as unknown as Record< string, unknown >;
+		const screenFromHash = pluginExports.screenFromHash as (
+			hash: string
+		) => string;
+
+		expect( screenFromHash( '#/conversations?page=2' ) ).toBe(
+			'conversations'
+		);
+	} );
+
 	it( 'shows the provider choices on the providers root instead of an empty heading', () => {
 		installElementFactory();
 		const AdminShell = ( plugin as unknown as Record< string, unknown > )
