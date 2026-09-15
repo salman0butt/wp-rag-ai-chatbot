@@ -23,6 +23,7 @@ use WpRagAiChatbot\Database\Migrations\V011AddBotAppearance;
 use WpRagAiChatbot\Database\Migrations\V012AddBotRetrievalBinding;
 use WpRagAiChatbot\Database\Migrations\V013AddBotDisplayRules;
 use WpRagAiChatbot\Database\Migrations\V014AddConversationBotAssociation;
+use WpRagAiChatbot\Database\Migrations\V015CreateLeadsTable;
 
 /**
  * Composes and executes database migrations at WordPress lifecycle boundaries.
@@ -83,6 +84,7 @@ final class DatabaseBootstrap {
 				new V012AddBotRetrievalBinding( $tables ),
 				new V013AddBotDisplayRules( $tables ),
 				new V014AddConversationBotAssociation( $tables ),
+				new V015CreateLeadsTable( $tables ),
 			)
 		);
 	}
