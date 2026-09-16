@@ -8,7 +8,7 @@ The smoke uses the existing WordPress job hook and production runtime compositio
 
 ## Verification status
 
-Status: implementation added; live WordPress/package evidence is pending until the worktree environment is available.
+Status: package verified; live WordPress application smoke is blocked by the local Docker/wp-env environment.
 
 The wrapper reports `ENVIRONMENT_STARTUP_FAILURE` with exit code 2 when Docker/wp-env is unavailable, and `APPLICATION_ASSERTION_FAILURE` with exit code 1 when the application assertions fail.
 
@@ -25,7 +25,20 @@ bash scripts/assert-package.sh
 unzip -t wp-rag-ai-chatbot.zip
 ```
 
-No command above is recorded as passing until it is run from this worktree and its output is available. The final package path, SHA-256, test counts, commit, and frontend publishing instructions should be filled in only after fresh verification.
+Fresh verification from commit `c89993ca8bb09205af5c24b7cca0f2d0614f71b7`:
+
+- `composer test` — 927 tests, 3,829 assertions passed.
+- `composer lint:php` — passed.
+- `vendor/bin/phpstan analyse --memory-limit=2G` — passed with no errors.
+- PHP syntax scan — passed; the repository's pre-existing non-fatal `use` warnings remain in older smoke scripts.
+- `npm run verify:js` — 73 suites, 210 tests passed; lint, typecheck, build, and vector-store gating passed.
+- `bash scripts/test-wp-modern-setup.sh` — classified `ENVIRONMENT_STARTUP_FAILURE` (Docker unavailable or not initialized); application assertions were not run.
+- `npm run plugin-zip` — passed.
+- `bash scripts/assert-package.sh` — passed.
+- `unzip -t wp-rag-ai-chatbot.zip` — passed.
+- Package: `wp-rag-ai-chatbot.zip`; SHA-256: `8ae78afc7c72fd482a0808ffe80b43cff9d1ed81aeb029a481f49e76834dca3b`.
+
+The runtime-only package is ready for WordPress upload. Live WordPress update and smoke remain a separate handoff.
 
 ## Frontend publishing
 
