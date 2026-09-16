@@ -208,6 +208,32 @@ final class AdminSurfaceTest extends TestCase {
 		AdminRestBootstrap::register_routes();
 	}
 
+	/** Knowledge source creation is exposed as a capability-protected POST beside the existing list route. */
+	#[DoesNotPerformAssertions]
+	public function test_register_routes_adds_capability_protected_knowledge_source_create_resource(): void {
+		Functions\expect( 'register_rest_route' )
+			->once()
+			->with(
+				'wp-rag-ai-chatbot/v1',
+				'/admin/knowledge/sources',
+				array(
+					array(
+						'methods'             => 'GET',
+						'callback'            => array( AdminRestBootstrap::class, 'list_knowledge_sources' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+					array(
+						'methods'             => 'POST',
+						'callback'            => array( AdminRestBootstrap::class, 'create_knowledge_source' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+				)
+			);
+		Functions\expect( 'register_rest_route' )->times( 14 )->withAnyArgs();
+
+		AdminRestBootstrap::register_routes();
+	}
+
 	/**
 	 * Provider credentials are exposed only through one capability-protected write-only-secret route.
 	 */

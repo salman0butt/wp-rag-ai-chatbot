@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Admin\Rest;
 
-use DateTimeImmutable;
 use JsonException;
 use WpRagAiChatbot\Database\DatabaseException;
 use WpRagAiChatbot\Jobs\Clock;
@@ -20,6 +19,8 @@ use WpRagAiChatbot\Jobs\Sync\KnowledgeSourceSyncJobEnqueuer;
 use WpRagAiChatbot\Jobs\Sync\KnowledgeSourceSyncJobPayload;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
+use WpRagAiChatbot\Knowledge\WordPress\WordPressContentGateway;
+use WpRagAiChatbot\WooCommerce\Catalog\WooCommerceCatalogGateway;
 
 // phpcs:disable WordPress.NamingConventions -- DTO keys and repository APIs follow the approved domain contract.
 // phpcs:disable Squiz.Commenting.FunctionComment, Squiz.Commenting.FunctionCommentThrowTag
@@ -31,6 +32,7 @@ final class KnowledgeSourceCreateResource {
 	private const MAX_TEXT_BYTES  = 100000;
 	private const MAX_FAQ_ITEMS   = 500;
 	private const MAX_UPLOAD_SIZE = 10485760;
+	private const MAX_PRODUCT_IDS = 100;
 
 	/** The only source types exposed by the first setup flow. */
 	private const SOURCE_TYPES = array( 'wordpress_posts', 'manual_text', 'faq', 'woocommerce_product', 'file' );
@@ -53,11 +55,15 @@ final class KnowledgeSourceCreateResource {
 	 * @param KnowledgeSourceRepository $sources Source repository.
 	 * @param JobRepository             $jobs Durable queue repository.
 	 * @param Clock                     $clock UTC clock.
+	 * @param WordPressContentGateway  $wordpress WordPress content authority.
+	 * @param WooCommerceCatalogGateway $woocommerce WooCommerce catalog authority.
 	 */
 	public function __construct(
 		private readonly KnowledgeSourceRepository $sources,
 		private readonly JobRepository $jobs,
-		private readonly Clock $clock
+		private readonly Clock $clock,
+		private readonly WordPressContentGateway $wordpress,
+		private readonly WooCommerceCatalogGateway $woocommerce
 	) {
 	}
 
@@ -69,14 +75,23 @@ final class KnowledgeSourceCreateResource {
 	 * @return array<string,mixed>
 	 */
 	public function create( array $payload, ?array $file = null ): array {
+		$uploaded_path = null;
+		$allowed_root  = null;
 		try {
-			$normalized = $this->normalize( $payload, $file );
+			$normalized = $this->normalize( $payload, $file, $uploaded_path, $allowed_root );
 		} catch ( SourceValidationException ) {
+			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
 			return self::error( 'validation_error', 'The knowledge source details are invalid.' );
 		}
 
-		$existing = $this->sources->findByKey( $normalized['source_key'] );
+		try {
+			$existing = $this->sources->findByKey( $normalized['source_key'] );
+		} catch ( DatabaseException ) {
+			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+			return self::error( 'database_error', 'The knowledge source could not be saved.' );
+		}
 		if ( null !== $existing ) {
+			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
 			return self::error( 'conflict', 'A knowledge source with these details already exists.' );
 		}
 
@@ -96,6 +111,7 @@ final class KnowledgeSourceCreateResource {
 			$now
 		);
 
+		$saved = null;
 		try {
 			$saved = $this->sources->save( $record );
 			$job   = ( new KnowledgeSourceSyncJobEnqueuer( $this->jobs, $this->clock ) )->enqueue(
@@ -107,8 +123,36 @@ final class KnowledgeSourceCreateResource {
 				)
 			);
 		} catch ( DatabaseException ) {
+			if ( null !== $saved && null !== $saved->id ) {
+				try {
+					$this->sources->delete( $saved->id );
+				} catch ( DatabaseException $exception ) {
+					unset( $exception );
+					// Preserve the original stable error when compensation itself fails.
+				}
+			} else {
+				try {
+					$raced = $this->sources->findByKey( $normalized['source_key'] );
+				} catch ( DatabaseException ) {
+					$raced = null;
+				}
+				if ( null !== $raced ) {
+					self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+					return self::error( 'conflict', 'A knowledge source with these details already exists.' );
+				}
+			}
+			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
 			return self::error( 'database_error', 'The knowledge source could not be saved.' );
 		} catch ( JobQueueException ) {
+			if ( null !== $saved->id ) {
+				try {
+					$this->sources->delete( $saved->id );
+				} catch ( DatabaseException $exception ) {
+					unset( $exception );
+					// Preserve the queue error when compensation itself fails.
+				}
+			}
+			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
 			return self::error( 'queue_error', 'The knowledge source was saved but could not be queued.' );
 		}
 
@@ -123,10 +167,12 @@ final class KnowledgeSourceCreateResource {
 	 *
 	 * @param array<string,mixed>      $payload Raw request payload.
 	 * @param array<string,mixed>|null $file Raw upload field.
+	 * @param-out string|null          $uploaded_path Newly moved file path.
+	 * @param-out string|null          $allowed_root Owned upload root.
 	 * @return array{source_key:string,source_type:string,external_id:string|null,title:string,canonical_url:string|null,config:array<string,mixed>,generation:string}
 	 * @throws SourceValidationException When the request is outside the allow-list.
 	 */
-	private function normalize( array $payload, ?array $file ): array {
+	private function normalize( array $payload, ?array $file, ?string &$uploaded_path, ?string &$allowed_root ): array {
 		$allowed = array( 'source_type', 'type', 'title', 'config' );
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( $key, $allowed, true ) ) {
@@ -145,13 +191,15 @@ final class KnowledgeSourceCreateResource {
 			'manual_text'         => $this->manual_config( $config ),
 			'faq'                 => $this->faq_config( $config ),
 			'woocommerce_product' => $this->woocommerce_config( $config ),
-			'file'                => $this->file_config( $config, $file ),
+			'file'                => $this->file_config( $config, $file, $uploaded_path, $allowed_root ),
 			default               => throw new SourceValidationException(),
 		};
 
 		$title = $this->title( $payload['title'] ?? null );
-		if ( 'file' === $source_type && null === $title ) {
-			$title = $normalized_config['title'];
+		if ( 'file' === $source_type ) {
+			if ( null === $title ) {
+				$title = $normalized_config['title'];
+			}
 			unset( $normalized_config['title'] );
 		}
 		if ( null === $title ) {
@@ -162,10 +210,14 @@ final class KnowledgeSourceCreateResource {
 			};
 		}
 
+		$identity_config = $normalized_config;
+		if ( 'file' === $source_type ) {
+			unset( $identity_config['path'], $identity_config['allowed_root'] );
+		}
 		$identity = array(
 			'source_type' => $source_type,
 			'title'       => $title,
-			'config'      => $this->canonicalize( $normalized_config ),
+			'config'      => $this->canonicalize( $identity_config ),
 		);
 		try {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- This canonical hash is independent of WordPress escaping behavior.
@@ -295,6 +347,9 @@ final class KnowledgeSourceCreateResource {
 	 */
 	private function woocommerce_config( array $config ): array {
 		$this->allow_keys( $config, array( 'product_ids', 'catalog', 'page_size' ) );
+		if ( ! $this->woocommerce->isAvailable() ) {
+			throw new SourceValidationException();
+		}
 		$has_ids     = array_key_exists( 'product_ids', $config );
 		$has_catalog = array_key_exists( 'catalog', $config );
 		if ( $has_ids === $has_catalog ) {
@@ -302,12 +357,15 @@ final class KnowledgeSourceCreateResource {
 		}
 
 		if ( $has_ids ) {
-			if ( array_key_exists( 'page_size', $config ) || ! is_array( $config['product_ids'] ) || ! array_is_list( $config['product_ids'] ) || array() === $config['product_ids'] ) {
+			if ( array_key_exists( 'page_size', $config ) || ! is_array( $config['product_ids'] ) || ! array_is_list( $config['product_ids'] ) || array() === $config['product_ids'] || count( $config['product_ids'] ) > self::MAX_PRODUCT_IDS ) {
 				throw new SourceValidationException();
 			}
 			$ids = array();
 			foreach ( $config['product_ids'] as $id ) {
 				if ( ! is_int( $id ) || $id < 1 ) {
+					throw new SourceValidationException();
+				}
+				if ( null === $this->woocommerce->product( $id ) ) {
 					throw new SourceValidationException();
 				}
 				$ids[] = $id;
@@ -332,10 +390,12 @@ final class KnowledgeSourceCreateResource {
 	 *
 	 * @param array<string,mixed>      $config Raw source configuration.
 	 * @param array<string,mixed>|null $file Raw uploaded file.
+	 * @param-out string               $uploaded_path Newly moved file path.
+	 * @param-out string               $allowed_root_reference Owned upload root.
 	 * @return array<string,mixed> Server-owned file configuration.
 	 * @throws SourceValidationException When the upload is invalid.
 	 */
-	private function file_config( array $config, ?array $file ): array {
+	private function file_config( array $config, ?array $file, ?string &$uploaded_path, ?string &$allowed_root_reference ): array {
 		if ( array() !== $config || null === $file ) {
 			throw new SourceValidationException();
 		}
@@ -401,6 +461,12 @@ final class KnowledgeSourceCreateResource {
 		if ( false === $path || false === $root || ! is_file( $path ) || ! str_starts_with( $path, rtrim( $root, '/\\' ) . DIRECTORY_SEPARATOR ) ) {
 			throw new SourceValidationException();
 		}
+		$uploaded_path          = $path;
+		$allowed_root_reference = $root;
+		$fingerprint            = hash_file( 'sha256', $path );
+		if ( false === $fingerprint ) {
+			throw new SourceValidationException();
+		}
 
 		$file_name = $file['name'] ?? null;
 		if ( ! is_string( $file_name ) ) {
@@ -410,6 +476,7 @@ final class KnowledgeSourceCreateResource {
 		return array(
 			'path'         => $path,
 			'allowed_root' => $root,
+			'fingerprint'  => $fingerprint,
 			'title'        => $this->file_title( $file_name ),
 		);
 	}
@@ -464,6 +531,9 @@ final class KnowledgeSourceCreateResource {
 		$normalized = array();
 		foreach ( $post_types as $post_type ) {
 			if ( ! is_string( $post_type ) || 1 !== preg_match( '/^[a-z0-9][a-z0-9_-]{0,19}$/', $post_type ) ) {
+				throw new SourceValidationException();
+			}
+			if ( ! in_array( $post_type, $this->wordpress->publicPostTypes(), true ) ) {
 				throw new SourceValidationException();
 			}
 			$normalized[] = $post_type;
@@ -543,6 +613,20 @@ final class KnowledgeSourceCreateResource {
 			$value[ $key ] = $this->canonicalize( $item );
 		}
 		return $value;
+	}
+
+	/** Remove a newly moved file only when it remains inside its server-owned root. */
+	private static function cleanup_uploaded_file( ?string $path, ?string $allowed_root ): void {
+		if ( null === $path || null === $allowed_root ) {
+			return;
+		}
+		$real_path = realpath( $path );
+		$real_root = realpath( $allowed_root );
+		if ( false === $real_path || false === $real_root || ! is_file( $real_path ) || ! str_starts_with( $real_path, rtrim( $real_root, '/\\' ) . DIRECTORY_SEPARATOR ) ) {
+			return;
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- The path was just verified inside the plugin-owned upload root.
+		unlink( $real_path );
 	}
 
 	/**

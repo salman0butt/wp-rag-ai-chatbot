@@ -277,8 +277,8 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 		self::assertSame( $expected, ( new KnowledgeSourceSyncJobEnqueuer( $repository, $clock ) )->enqueue( $payload ) );
 	}
 
-	/** An unscheduled immediate worker wake-up fails explicitly after durable persistence. */
-	public function test_source_enqueue_reports_worker_schedule_failure(): void {
+	/** A durable source job remains usable when the best-effort immediate wake-up fails. */
+	public function test_source_enqueue_returns_durable_job_when_worker_wake_up_fails(): void {
 		$now        = new DateTimeImmutable( '2026-09-15T10:00:00+00:00' );
 		$payload    = $this->payload();
 		$expected   = $this->job( $now, 'sync.source', $payload->to_array() );
@@ -290,10 +290,7 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 		Functions\expect( 'wp_next_scheduled' )->once()->with( WordPressJobCron::HOOK, array( $expected->job_key ) )->andReturn( false );
 		Functions\expect( 'wp_schedule_single_event' )->once()->andReturn( false );
 
-		$this->expectException( JobQueueException::class );
-		$this->expectExceptionMessage( 'Could not schedule the source synchronization worker.' );
-
-		( new KnowledgeSourceSyncJobEnqueuer( $repository, $clock ) )->enqueue( $payload );
+		self::assertSame( $expected, ( new KnowledgeSourceSyncJobEnqueuer( $repository, $clock ) )->enqueue( $payload ) );
 	}
 
 	/**

@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Jobs\Sync;
 
 use WpRagAiChatbot\Jobs\Clock;
-use WpRagAiChatbot\Jobs\JobQueueException;
 use WpRagAiChatbot\Jobs\JobRecord;
 use WpRagAiChatbot\Jobs\JobRepository;
 use WpRagAiChatbot\Jobs\JobRequest;
@@ -36,7 +35,6 @@ final class KnowledgeSourceSyncJobEnqueuer {
 	 * Enqueue one source generation without performing source or provider work.
 	 *
 	 * @param KnowledgeSourceSyncJobPayload $payload Validated source identifiers.
-	 * @throws JobQueueException When the durable job cannot be scheduled for immediate processing.
 	 */
 	public function enqueue( KnowledgeSourceSyncJobPayload $payload ): JobRecord {
 		$now      = $this->clock->now();
@@ -62,9 +60,8 @@ final class KnowledgeSourceSyncJobEnqueuer {
 		$wake_args = array( $record->job_key );
 		if ( false === wp_next_scheduled( WordPressJobCron::HOOK, $wake_args ) ) {
 			$scheduled = wp_schedule_single_event( $now->getTimestamp(), WordPressJobCron::HOOK, $wake_args, true );
-			if ( true !== $scheduled ) {
-				throw new JobQueueException( 'Could not schedule the source synchronization worker.' );
-			}
+			// The durable queue row is authoritative; the existing cron sweep can wake it later.
+			unset( $scheduled );
 		}
 
 		return $record;

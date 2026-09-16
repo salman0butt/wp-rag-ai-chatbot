@@ -21,12 +21,14 @@ use WpRagAiChatbot\Database\Repository\WpdbKnowledgeSourceRepository;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbConnection;
 use WpRagAiChatbot\Jobs\SystemClock;
+use WpRagAiChatbot\Knowledge\WordPress\NativeWordPressContentGateway;
 use WpRagAiChatbot\Providers\Credentials\AuthenticatedCredentialCipher;
 use WpRagAiChatbot\Providers\Credentials\RuntimeCredentialSourceReader;
 use WpRagAiChatbot\Providers\Credentials\RuntimeCryptoCapabilities;
 use WpRagAiChatbot\Providers\Credentials\WordPressCredentialStore;
 use WpRagAiChatbot\Providers\ProviderBootstrap;
 use WpRagAiChatbot\Retrieval\Lexical\WpdbChunkSearchStore;
+use WpRagAiChatbot\WooCommerce\Catalog\NativeWooCommerceCatalogGateway;
 
 /**
  * Registers the plugin administration REST resources.
@@ -713,7 +715,9 @@ final class AdminRestBootstrap {
 		return new KnowledgeSourceCreateResource(
 			new WpdbKnowledgeSourceRepository( $connection, $tables ),
 			new WpdbJobRepository( $connection, $tables ),
-			new SystemClock()
+			new SystemClock(),
+			new NativeWordPressContentGateway(),
+			new NativeWooCommerceCatalogGateway()
 		);
 	}
 
