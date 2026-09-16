@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Jobs\Sync;
 
+use InvalidArgumentException;
 use WpRagAiChatbot\Database\DatabaseException;
+use WpRagAiChatbot\Indexing\Chunking\ChunkingException;
 use WpRagAiChatbot\Jobs\JobCancelledException;
 use WpRagAiChatbot\Jobs\JobExecutionContext;
 use WpRagAiChatbot\Jobs\JobExecutionException;
@@ -45,7 +47,6 @@ final class DocumentIndexJobHandler implements JobHandler {
 	 *
 	 * @param JobRecord           $job Current persisted running job.
 	 * @param JobExecutionContext $context Current lease execution context.
-	 * @throws JobCancelledException When cooperative cancellation is requested.
 	 * @throws JobExecutionException When a normalized dependency failure must be persisted safely.
 	 */
 	public function handle( JobRecord $job, JobExecutionContext $context ): void {
@@ -54,12 +55,20 @@ final class DocumentIndexJobHandler implements JobHandler {
 		try {
 			$this->throw_if_cancelled( $context );
 			$context->update_progress( new JobProgress( 0, 2, 'Planning index changes' ) );
-			$plan = $this->dependencies->plan( $payload );
+			try {
+				$plan = $this->dependencies->plan( $payload );
+			} catch ( ChunkingException | InvalidArgumentException ) {
+				throw new JobExecutionException( 'index_plan_invalid', 'Document content could not be prepared for indexing.', false );
+			}
 
 			$context->heartbeat();
 			$this->throw_if_cancelled( $context );
 			$context->update_progress( new JobProgress( 1, 2, 'Applying index changes' ) );
-			$this->dependencies->execute( $payload, $plan );
+			try {
+				$this->dependencies->execute( $payload, $plan );
+			} catch ( InvalidArgumentException ) {
+				throw new JobExecutionException( 'index_execution_invalid', 'Document content could not be indexed safely.', false );
+			}
 			$context->update_progress( new JobProgress( 2, 2, 'Index synchronization complete' ) );
 		} catch ( ProviderException $error ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Internal queue exception contains only constant sanitized text plus a fixed enum-derived code.

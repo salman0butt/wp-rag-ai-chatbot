@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Tests\Unit\Jobs\Sync;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Indexing\Planning\IndexPlan;
 use WpRagAiChatbot\Jobs\Clock;
@@ -154,6 +155,23 @@ final class DocumentIndexJobHandlerTest extends TestCase {
 			self::assertSame( 'index_vector_incompatible_profile', $error->safe_code() );
 			self::assertSame( 'Document indexing vector configuration is invalid.', $error->safe_message() );
 			self::assertFalse( $error->retryable() );
+		}
+	}
+
+	/** Invalid plan data becomes a safe terminal indexing failure. */
+	public function test_invalid_plan_data_is_translated_without_leaking_detail(): void {
+		$fixture      = $this->fixture();
+		$dependencies = $this->createMock( DocumentIndexDependencies::class );
+		$dependencies->method( 'plan' )->willThrowException( new InvalidArgumentException( 'private plan detail' ) );
+
+		try {
+			( new DocumentIndexJobHandler( $dependencies ) )->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Invalid plan data was not translated to a safe queue failure.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'index_plan_invalid', $error->safe_code() );
+			self::assertSame( 'Document content could not be prepared for indexing.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+			self::assertStringNotContainsString( 'private plan', $error->safe_message() );
 		}
 	}
 
