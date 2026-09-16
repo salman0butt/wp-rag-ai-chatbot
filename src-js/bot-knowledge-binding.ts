@@ -25,9 +25,13 @@ export type BotKnowledgeBindingStatus =
 	| 'ready'
 	| 'error';
 
+export type BotKnowledgeSourcesStatus = 'loading' | 'ready' | 'error';
+
 export interface BotKnowledgeBindingProps {
 	botId: string;
 	sources: ReadonlyArray< KnowledgeSourceChoice >;
+	sourcesStatus?: BotKnowledgeSourcesStatus;
+	sourcesError?: string;
 	retrieval: BotRetrievalProjection;
 	status?: BotKnowledgeBindingStatus;
 	error?: string;
@@ -77,6 +81,7 @@ export const BotKnowledgeBinding = (
 	const createElement = window.wp.element.createElement as ElementFactory;
 	const selectedSourceId = props.retrieval.source_id?.toString() ?? '';
 	const busy = props.status === 'loading' || props.status === 'saving';
+	const sourcesStatus = props.sourcesStatus ?? 'ready';
 	const sources = props.sources.flatMap( ( source ) => {
 		const id = positiveSourceId( source );
 		return id === null
@@ -90,23 +95,38 @@ export const BotKnowledgeBinding = (
 			  ];
 	} );
 	const statusText = (): string => {
+		const messages: string[] = [];
 		if ( props.status === 'loading' ) {
-			return 'Loading knowledge connection…';
+			messages.push( 'Loading knowledge connection…' );
+		} else if ( props.status === 'saving' ) {
+			messages.push( 'Saving knowledge connection…' );
+		} else if ( props.error !== undefined ) {
+			messages.push( props.error );
+		} else if ( ! props.retrieval.configured ) {
+			messages.push( 'Not connected' );
+		} else {
+			messages.push(
+				props.retrieval.collection_ready
+					? 'Connected and indexed'
+					: 'Connected; indexing is not ready'
+			);
 		}
-		if ( props.status === 'saving' ) {
-			return 'Saving knowledge connection…';
-		}
-		if ( props.error !== undefined ) {
-			return props.error;
-		}
-		if ( ! props.retrieval.configured ) {
-			return 'Not connected';
+		if ( sourcesStatus === 'loading' ) {
+			messages.push( 'Loading saved sources…' );
+		} else if ( props.sourcesError !== undefined ) {
+			messages.push( props.sourcesError );
 		}
 
-		return props.retrieval.collection_ready
-			? 'Connected and indexed'
-			: 'Connected; indexing is not ready';
+		return messages.join( ' ' );
 	};
+	let sourcePrompt = 'Choose a saved source';
+	if ( sourcesStatus === 'loading' ) {
+		sourcePrompt = 'Loading saved sources…';
+	} else if ( props.sourcesError !== undefined ) {
+		sourcePrompt = 'Saved sources unavailable';
+	} else if ( sources.length === 0 ) {
+		sourcePrompt = 'No saved sources yet';
+	}
 
 	const currentSource = props.retrieval.configured
 		? createElement(
@@ -146,7 +166,11 @@ export const BotKnowledgeBinding = (
 				'aria-live': 'polite',
 				'aria-atomic': 'true',
 				'data-bot-knowledge-status': true,
-				role: props.error === undefined ? 'status' : 'alert',
+				role:
+					props.error === undefined &&
+					props.sourcesError === undefined
+						? 'status'
+						: 'alert',
 			},
 			statusText()
 		),
@@ -178,23 +202,23 @@ export const BotKnowledgeBinding = (
 				'select',
 				{
 					defaultValue: selectedSourceId,
-					disabled: busy || sources.length === 0 ? true : undefined,
+					disabled:
+						busy ||
+						sourcesStatus !== 'ready' ||
+						sources.length === 0,
 					id: `bot-${ props.botId }-source`,
 					name: 'source_id',
 				},
-				createElement(
-					'option',
-					{ value: '' },
-					sources.length === 0
-						? 'No saved sources yet'
-						: 'Choose a saved source'
-				),
+				createElement( 'option', { value: '' }, sourcePrompt ),
 				...sources
 			),
 			createElement(
 				'button',
 				{
-					disabled: busy || sources.length === 0 ? true : undefined,
+					disabled:
+						busy ||
+						sourcesStatus !== 'ready' ||
+						sources.length === 0,
 					type: 'submit',
 				},
 				props.status === 'saving' ? 'Saving…' : 'Save connection'

@@ -153,6 +153,7 @@ describe( 'publish/test screen', () => {
 			PublishTestScreen( {
 				readiness: { ...readiness, next_step: 'publish' },
 				botId: 'bot-123',
+				botPublishable: true,
 			} ) as Node
 		);
 
@@ -189,6 +190,7 @@ describe( 'publish/test screen', () => {
 					publishable_bot_present: true,
 				},
 				botId: 'bot-123',
+				botPublishable: true,
 			} ) as Node
 		);
 

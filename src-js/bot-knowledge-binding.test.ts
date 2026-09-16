@@ -170,6 +170,42 @@ describe( 'bot knowledge binding', () => {
 		expect( onDisconnect ).toHaveBeenCalledTimes( 1 );
 	} );
 
+	it( 'surfaces retrieval and source loading separately from an empty source list', () => {
+		const root = document.createElement( 'div' );
+		root.append(
+			BotKnowledgeBinding( {
+				botId: 'bot-1',
+				sources: [],
+				sourcesStatus: 'loading',
+				retrieval: emptyRetrieval,
+				status: 'loading',
+			} ) as Node
+		);
+
+		expect(
+			root.querySelector( '[data-bot-knowledge-status]' )?.textContent
+		).toContain( 'Loading knowledge connection' );
+		expect( root.textContent ).toContain( 'Loading saved sources' );
+		expect( root.textContent ).not.toContain( 'No saved sources yet' );
+		expect( root.querySelector( '[role="status"]' ) ).not.toBeNull();
+
+		root.replaceChildren(
+			BotKnowledgeBinding( {
+				botId: 'bot-1',
+				sources: [],
+				sourcesStatus: 'error',
+				sourcesError:
+					'Knowledge sources could not be loaded. Try again.',
+				retrieval: emptyRetrieval,
+				status: 'ready',
+			} ) as Node
+		);
+
+		expect( root.querySelector( '[role="alert"]' )?.textContent ).toContain(
+			'Knowledge sources could not be loaded'
+		);
+	} );
+
 	it( 'sends only the selected source ID or no body to the retrieval routes', async () => {
 		const request = jest.fn().mockResolvedValue( {} );
 		const client = { request };
@@ -202,6 +238,7 @@ describe( 'publish readiness gating', () => {
 			PublishTestScreen( {
 				readiness: readiness( { completed_index_present: false } ),
 				botId: 'bot-1',
+				botPublishable: false,
 			} ) as Node
 		);
 
@@ -221,6 +258,7 @@ describe( 'publish readiness gating', () => {
 			PublishTestScreen( {
 				readiness: readiness(),
 				botId: 'bot-1',
+				botPublishable: true,
 			} ) as Node
 		);
 		expect(
@@ -229,6 +267,43 @@ describe( 'publish readiness gating', () => {
 					'[data-copy-publish]'
 				)
 			).every( ( button ) => ! button.disabled )
+		).toBe( true );
+	} );
+
+	it( 'never renders a fallback publish identifier without a verified bot', () => {
+		const root = document.createElement( 'div' );
+		root.append(
+			PublishTestScreen( {
+				readiness: readiness(),
+				botPublishable: false,
+			} ) as Node
+		);
+
+		expect( root.textContent ).not.toContain( 'BOT_ID' );
+		expect( root.querySelectorAll( '[data-publish-card]' ) ).toHaveLength(
+			0
+		);
+		expect( root.querySelector( '[data-publish-warning]' ) ).not.toBeNull();
+	} );
+
+	it( 'keeps Publish/Test disabled for a selected bot that the server marks unpublishable', () => {
+		const root = document.createElement( 'div' );
+		root.append(
+			PublishTestScreen( {
+				readiness: readiness(),
+				botId: 'bot-disabled',
+				botPublishable: false,
+			} ) as Node
+		);
+
+		expect( root.textContent ).toContain( 'bot-disabled' );
+		expect( root.querySelector( '[data-publish-warning]' ) ).not.toBeNull();
+		expect(
+			Array.from(
+				root.querySelectorAll< HTMLButtonElement >(
+					'[data-copy-publish]'
+				)
+			).every( ( button ) => button.disabled )
 		).toBe( true );
 	} );
 } );

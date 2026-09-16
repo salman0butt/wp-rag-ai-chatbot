@@ -22,6 +22,8 @@ import {
 	ModernAdminShell,
 	type AdminReadiness,
 	type ModernAdminScreen,
+	type PublishBotOption,
+	type PublishBotStatus,
 } from './admin-ui';
 import {
 	KnowledgeWizard,
@@ -35,6 +37,7 @@ import {
 	deleteBotKnowledgeBinding,
 	saveBotKnowledgeBinding,
 	type BotKnowledgeBindingStatus,
+	type BotKnowledgeSourcesStatus,
 	type BotRetrievalProjection,
 	type KnowledgeSourceChoice,
 } from './bot-knowledge-binding';
@@ -206,6 +209,14 @@ export interface AdminShellProps {
 	botRetrieval?: BotRetrievalProjection;
 	botRetrievalStatus?: BotKnowledgeBindingStatus;
 	botRetrievalError?: string;
+	botKnowledgeSourcesStatus?: BotKnowledgeSourcesStatus;
+	botKnowledgeSourcesError?: string;
+	publishBotId?: string;
+	publishBotOptions?: ReadonlyArray< PublishBotOption >;
+	publishBotPublishable?: boolean;
+	publishBotStatus?: PublishBotStatus;
+	publishBotError?: string;
+	onSelectPublishBot?: ( botId: string ) => void;
 	onSaveBotKnowledge?: ( sourceId: number ) => void | Promise< void >;
 	onDisconnectBotKnowledge?: () => void | Promise< void >;
 	selectedBotId?: string;
@@ -552,6 +563,20 @@ const resolveSelectedBotId = ( hash: string ): string | undefined => {
 	const segments = resolveHashPath( hash ).split( '/' );
 
 	if ( segments[ 0 ] !== 'bots' || ! segments[ 1 ] ) {
+		return undefined;
+	}
+
+	try {
+		return decodeURIComponent( segments[ 1 ] );
+	} catch {
+		return undefined;
+	}
+};
+
+const resolveSelectedPublishBotId = ( hash: string ): string | undefined => {
+	const segments = resolveHashPath( hash ).split( '/' );
+
+	if ( segments[ 0 ] !== 'publish' || ! segments[ 1 ] ) {
 		return undefined;
 	}
 
@@ -1229,6 +1254,8 @@ const renderLegacyScreenContent = (
 		botRetrieval,
 		botRetrievalStatus,
 		botRetrievalError,
+		botKnowledgeSourcesStatus,
+		botKnowledgeSourcesError,
 		onSaveBotKnowledge,
 		onDisconnectBotKnowledge,
 		selectedBotId,
@@ -1296,12 +1323,20 @@ const renderLegacyScreenContent = (
 				onUpdate: onUpdateBot,
 				onDelete: onDeleteBot,
 			} ),
-			botRetrieval === undefined
+			botPage.items.length === 0
 				? undefined
 				: BotKnowledgeBinding( {
 						botId: selectedBotId ?? botPage.items[ 0 ]?.id ?? '',
 						sources: botKnowledgeSources ?? [],
-						retrieval: botRetrieval,
+						sourcesStatus: botKnowledgeSourcesStatus,
+						sourcesError: botKnowledgeSourcesError,
+						retrieval: botRetrieval ?? {
+							configured: false,
+							source_id: null,
+							source_title: null,
+							collection_id: null,
+							collection_ready: false,
+						},
 						status: botRetrievalStatus,
 						error: botRetrievalError,
 						onSave: onSaveBotKnowledge,
@@ -1495,7 +1530,15 @@ export const AdminShell = ( props: AdminShellProps ): unknown => {
 			state: props.state,
 			screen: modernScreenFor( props.screen ?? 'onboarding' ),
 			readiness: props.readiness,
-			botId: props.selectedBotId ?? props.botPage?.items[ 0 ]?.id,
+			botId:
+				props.screen === 'publish'
+					? props.publishBotId
+					: props.selectedBotId ?? props.botPage?.items[ 0 ]?.id,
+			botPublishable: props.publishBotPublishable,
+			botOptions: props.publishBotOptions,
+			botStatus: props.publishBotStatus,
+			botError: props.publishBotError,
+			onSelectBot: props.onSelectPublishBot,
 			legacyContent: renderLegacyScreenContent( props, false ),
 		} );
 	}
@@ -1552,8 +1595,16 @@ const renderAdminShell = (
 	botRetrieval?: BotRetrievalProjection,
 	botRetrievalStatus?: BotKnowledgeBindingStatus,
 	botRetrievalError?: string,
+	botKnowledgeSourcesStatus?: BotKnowledgeSourcesStatus,
+	botKnowledgeSourcesError?: string,
 	onSaveBotKnowledge?: ( sourceId: number ) => void | Promise< void >,
-	onDisconnectBotKnowledge?: () => void | Promise< void >
+	onDisconnectBotKnowledge?: () => void | Promise< void >,
+	publishBotId?: string,
+	publishBotOptions?: ReadonlyArray< PublishBotOption >,
+	publishBotPublishable?: boolean,
+	publishBotStatus?: PublishBotStatus,
+	publishBotError?: string,
+	onSelectPublishBot?: ( botId: string ) => void
 ): void => {
 	window.wp.element.render(
 		AdminShell( {
@@ -1566,6 +1617,14 @@ const renderAdminShell = (
 			botRetrieval,
 			botRetrievalStatus,
 			botRetrievalError,
+			botKnowledgeSourcesStatus,
+			botKnowledgeSourcesError,
+			publishBotId,
+			publishBotOptions,
+			publishBotPublishable,
+			publishBotStatus,
+			publishBotError,
+			onSelectPublishBot,
 			onSaveBotKnowledge,
 			onDisconnectBotKnowledge,
 			selectedBotId,
@@ -1627,11 +1686,20 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
 	let currentBotKnowledgeSources: KnowledgeSourceChoice[] = [];
+	let currentBotKnowledgeSourcesStatus: BotKnowledgeSourcesStatus = 'loading';
+	let currentBotKnowledgeSourcesError: string | undefined;
 	let currentBotRetrieval: BotRetrievalProjection | undefined;
 	let currentBotRetrievalStatus: BotKnowledgeBindingStatus = 'loading';
 	let currentBotRetrievalError: string | undefined;
 	let loadedBotRetrievalId: string | undefined;
 	let botRetrievalGeneration = 0;
+	let botKnowledgeSourcesGeneration = 0;
+	let currentPublishBotId: string | undefined;
+	let currentPublishBotOptions: PublishBotOption[] = [];
+	let currentPublishBotPublishable = false;
+	let currentPublishBotStatus: PublishBotStatus = 'loading';
+	let currentPublishBotError: string | undefined;
+	let publishBotGeneration = 0;
 	let currentBotAppearance: WidgetAppearance | undefined;
 	let currentBotAppearanceSaving = false;
 	let currentBotAppearanceError: string | undefined;
@@ -1683,6 +1751,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let saveBotKnowledge: ( sourceId: number ) => Promise< void > = async () =>
 		undefined;
 	let disconnectBotKnowledge: () => Promise< void > = async () => undefined;
+	const selectPublishBot = ( botId: string ): void => {
+		window.location.hash = `#/publish/${ encodeURIComponent( botId ) }`;
+	};
 	let changeBotAppearance: ( next: WidgetAppearance ) => void = () =>
 		undefined;
 	let saveBotAppearance: ( next: WidgetAppearance ) => void = () => undefined;
@@ -1784,15 +1855,29 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			},
 			currentReadiness,
 			currentBotKnowledgeSources,
-			currentActiveBotId === loadedBotRetrievalId
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+				currentActiveBotId !== undefined &&
+				( currentActiveBotId === loadedBotRetrievalId ||
+					currentBotRetrievalStatus === 'loading' )
 				? currentBotRetrieval
 				: undefined,
 			currentBotRetrievalStatus,
-			currentActiveBotId === loadedBotRetrievalId
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+				currentActiveBotId !== undefined &&
+				( currentActiveBotId === loadedBotRetrievalId ||
+					currentBotRetrievalStatus === 'loading' )
 				? currentBotRetrievalError
 				: undefined,
+			currentBotKnowledgeSourcesStatus,
+			currentBotKnowledgeSourcesError,
 			saveBotKnowledge,
-			disconnectBotKnowledge
+			disconnectBotKnowledge,
+			currentPublishBotId,
+			currentPublishBotOptions,
+			currentPublishBotPublishable,
+			currentPublishBotStatus,
+			currentPublishBotError,
+			selectPublishBot
 		);
 	};
 
@@ -1891,16 +1976,38 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			collection_ready: candidate.collection_ready === true,
 		};
 	};
-	const refreshBotKnowledgeSources = async (): Promise< void > => {
+	const refreshBotKnowledgeSources = async (
+		botId: string
+	): Promise< boolean > => {
+		const requestGeneration = ++botKnowledgeSourcesGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botKnowledgeSourcesGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
+
+		currentBotKnowledgeSourcesStatus = 'loading';
+		currentBotKnowledgeSourcesError = undefined;
 		try {
 			const page = await client.request< Partial< KnowledgeSourcePage > >(
 				'/admin/knowledge/sources?page=1&per_page=100'
 			);
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
 			currentBotKnowledgeSources = Array.isArray( page.items )
 				? page.items
 				: [];
+			currentBotKnowledgeSourcesStatus = 'ready';
+			return true;
 		} catch {
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
 			currentBotKnowledgeSources = [];
+			currentBotKnowledgeSourcesStatus = 'error';
+			currentBotKnowledgeSourcesError =
+				'Knowledge sources could not be loaded. Try again.';
+			return true;
 		}
 	};
 	const refreshBotRetrieval = async ( botId: string ): Promise< boolean > => {
@@ -1912,6 +2019,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		currentBotRetrievalStatus = 'loading';
 		currentBotRetrievalError = undefined;
+		currentBotRetrieval = emptyBotRetrieval();
+		loadedBotRetrievalId = undefined;
 		try {
 			const response = await client.request< { retrieval?: unknown } >(
 				`/admin/bots/${ encodeURIComponent( botId ) }/retrieval`
@@ -1932,6 +2041,145 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentBotRetrievalStatus = 'error';
 			currentBotRetrievalError =
 				'Knowledge connection could not be loaded. Try again.';
+			return true;
+		}
+	};
+	const normalizeBot = ( value: unknown ): BotListItem | undefined => {
+		if ( typeof value !== 'object' || value === null ) {
+			return undefined;
+		}
+		const candidate = value as Record< string, unknown >;
+		if (
+			typeof candidate.id !== 'string' ||
+			typeof candidate.name !== 'string' ||
+			typeof candidate.provider_id !== 'string' ||
+			typeof candidate.model_id !== 'string' ||
+			typeof candidate.enabled !== 'boolean'
+		) {
+			return undefined;
+		}
+		return {
+			id: candidate.id,
+			name: candidate.name,
+			enabled: candidate.enabled,
+			provider_id: candidate.provider_id,
+			model_id: candidate.model_id,
+			version:
+				typeof candidate.version === 'number' ? candidate.version : 0,
+			created_at:
+				typeof candidate.created_at === 'string'
+					? candidate.created_at
+					: '',
+			updated_at:
+				typeof candidate.updated_at === 'string'
+					? candidate.updated_at
+					: '',
+		};
+	};
+	const botModelIsAvailable = (
+		value: unknown,
+		modelId: string
+	): boolean => {
+		if ( typeof value !== 'object' || value === null ) {
+			return false;
+		}
+		const models = ( value as { models?: unknown } ).models;
+		return (
+			Array.isArray( models ) &&
+			models.some(
+				( model ) =>
+					typeof model === 'object' &&
+					model !== null &&
+					( model as { model_id?: unknown } ).model_id === modelId
+			)
+		);
+	};
+	const refreshPublishState = async (): Promise< boolean > => {
+		const requestGeneration = ++publishBotGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === publishBotGeneration &&
+			resolveAdminScreen( currentHash() ) === 'publish';
+		const selectedId = resolveSelectedPublishBotId( currentHash() );
+
+		currentPublishBotStatus = 'loading';
+		currentPublishBotError = undefined;
+		currentPublishBotId = undefined;
+		currentPublishBotPublishable = false;
+
+		try {
+			let bot: BotListItem | undefined;
+			if ( selectedId !== undefined ) {
+				const result = await client.request< { bot?: unknown } >(
+					`/admin/bots/${ encodeURIComponent( selectedId ) }`
+				);
+				bot = normalizeBot( result.bot );
+				if ( bot === undefined || bot.id !== selectedId ) {
+					throw new Error( 'Selected chatbot was not found.' );
+				}
+				currentPublishBotOptions = [ { id: bot.id, name: bot.name } ];
+			} else {
+				const page = await client.request< Partial< BotPage > >(
+					'/admin/bots?page=1&per_page=20'
+				);
+				const bots = Array.isArray( page.items )
+					? page.items.flatMap( ( item ) => {
+							const normalized = normalizeBot( item );
+							return normalized === undefined
+								? []
+								: [ normalized ];
+					  } )
+					: [];
+				currentPublishBotOptions = bots.map( ( item ) => ( {
+					id: item.id,
+					name: item.name,
+				} ) );
+				bot = bots[ 0 ];
+			}
+
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+			if ( bot === undefined ) {
+				currentPublishBotStatus = 'ready';
+				return true;
+			}
+
+			currentPublishBotId = bot.id;
+			const [ retrievalResponse, modelsResponse ] = await Promise.all( [
+				client.request< { retrieval?: unknown } >(
+					`/admin/bots/${ encodeURIComponent( bot.id ) }/retrieval`
+				),
+				client.request< unknown >(
+					`/admin/models?provider_id=${ encodeURIComponent(
+						bot.provider_id
+					) }&purpose=generation`
+				),
+			] );
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+			const publishRetrieval = normalizeBotRetrieval(
+				retrievalResponse.retrieval
+			);
+			const modelAvailable = botModelIsAvailable(
+				modelsResponse,
+				bot.model_id
+			);
+			currentPublishBotPublishable =
+				bot.enabled &&
+				modelAvailable &&
+				publishRetrieval.configured &&
+				publishRetrieval.collection_ready;
+			currentPublishBotStatus = 'ready';
+			return true;
+		} catch {
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+			currentPublishBotPublishable = false;
+			currentPublishBotStatus = 'error';
+			currentPublishBotError =
+				'Selected chatbot readiness could not be loaded. Try again.';
 			return true;
 		}
 	};
@@ -2426,18 +2674,16 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		const screen = resolveAdminScreen( currentHash() );
 
-		if ( screen === 'overview' ) {
-			void refreshReadiness();
-			return;
-		}
-
 		if ( screen !== 'bots' ) {
 			botRetrievalGeneration += 1;
+			botKnowledgeSourcesGeneration += 1;
 			currentBotRetrieval = undefined;
 			currentBotRetrievalStatus = 'loading';
 			currentBotRetrievalError = undefined;
 			loadedBotRetrievalId = undefined;
 			currentBotKnowledgeSources = [];
+			currentBotKnowledgeSourcesStatus = 'loading';
+			currentBotKnowledgeSourcesError = undefined;
 			botAppearanceGeneration += 1;
 			currentBotAppearance = undefined;
 			currentBotAppearanceSaving = false;
@@ -2448,6 +2694,20 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentBotDisplayRulesSaving = false;
 			currentBotDisplayRulesError = undefined;
 			loadedBotDisplayRulesId = undefined;
+		}
+
+		if ( screen !== 'publish' ) {
+			publishBotGeneration += 1;
+			currentPublishBotId = undefined;
+			currentPublishBotOptions = [];
+			currentPublishBotPublishable = false;
+			currentPublishBotStatus = 'loading';
+			currentPublishBotError = undefined;
+		}
+
+		if ( screen === 'overview' ) {
+			void refreshReadiness();
+			return;
 		}
 
 		if ( screen !== 'knowledge' ) {
@@ -2484,7 +2744,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 						await Promise.all( [
 							refreshBotAppearance( botId ),
 							refreshBotDisplayRules( botId ),
-							refreshBotKnowledgeSources(),
+							refreshBotKnowledgeSources( botId ),
 							refreshBotRetrieval( botId ),
 						] );
 					}
@@ -2494,13 +2754,25 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			return;
 		}
 
+		if ( screen === 'publish' ) {
+			void refreshPublishState().then( ( isCurrent ) => {
+				if ( isCurrent ) {
+					renderState( stateFromReadiness() );
+				}
+			} );
+			renderState( stateFromReadiness() );
+			return;
+		}
+
 		const currentActiveBotId = activeBotId();
 
 		if (
 			screen === 'bots' &&
 			currentActiveBotId !== undefined &&
 			( currentActiveBotId !== loadedBotAppearanceId ||
-				currentActiveBotId !== loadedBotDisplayRulesId )
+				currentActiveBotId !== loadedBotDisplayRulesId ||
+				currentBotRetrievalStatus !== 'ready' ||
+				currentBotKnowledgeSourcesStatus !== 'ready' )
 		) {
 			currentBotAppearance = undefined;
 			currentBotAppearanceSaving = false;
@@ -2512,11 +2784,13 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentBotRetrievalStatus = 'loading';
 			currentBotRetrievalError = undefined;
 			loadedBotRetrievalId = undefined;
+			currentBotKnowledgeSourcesStatus = 'loading';
+			currentBotKnowledgeSourcesError = undefined;
 			renderState( currentState );
 			void Promise.all( [
 				refreshBotAppearance( currentActiveBotId ),
 				refreshBotDisplayRules( currentActiveBotId ),
-				refreshBotKnowledgeSources(),
+				refreshBotKnowledgeSources( currentActiveBotId ),
 				refreshBotRetrieval( currentActiveBotId ),
 			] ).then( ( results ) => {
 				if ( results.some( Boolean ) ) {
@@ -2873,10 +3147,16 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				await Promise.all( [
 					refreshBotAppearance( botId ),
 					refreshBotDisplayRules( botId ),
-					refreshBotKnowledgeSources(),
+					refreshBotKnowledgeSources( botId ),
 					refreshBotRetrieval( botId ),
 				] );
 			}
+		}
+
+		if ( screen === 'publish' ) {
+			await refreshPublishState();
+			renderState( stateFromReadiness() );
+			return;
 		}
 
 		if ( screen === 'knowledge' ) {

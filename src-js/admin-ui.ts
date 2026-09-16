@@ -15,7 +15,10 @@ export interface AdminReadiness {
 	issue?: string;
 }
 
-export const isPublishReady = ( readiness: AdminReadiness ): boolean =>
+export const isPublishReady = (
+	readiness: AdminReadiness,
+	botPublishable = readiness.publishable_bot_present
+): boolean =>
 	readiness.configured_generation_provider === true &&
 	readiness.configured_gemini_embedding === true &&
 	readiness.model_available === true &&
@@ -24,7 +27,7 @@ export const isPublishReady = ( readiness: AdminReadiness ): boolean =>
 	safeCount( readiness.enabled_bot_count ) > 0 &&
 	readiness.bound_bot_present === true &&
 	readiness.collection_ready !== false &&
-	readiness.publishable_bot_present === true;
+	botPublishable === true;
 
 export type ModernAdminScreen =
 	| 'overview'
@@ -33,6 +36,13 @@ export type ModernAdminScreen =
 	| 'publish'
 	| 'providers'
 	| 'playground';
+
+export interface PublishBotOption {
+	id: string;
+	name: string;
+}
+
+export type PublishBotStatus = 'loading' | 'ready' | 'error';
 
 type ElementFactory = (
 	type: string,
@@ -290,15 +300,36 @@ const publishCards = ( botId: string ): PublishCard[] => [
 
 export const PublishTestScreen = ( {
 	readiness,
-	botId = 'BOT_ID',
+	botId,
+	botPublishable,
+	botOptions = [],
+	botStatus = 'ready',
+	botError,
+	onSelectBot,
 }: {
 	readiness: AdminReadiness;
 	botId?: string;
+	botPublishable?: boolean;
+	botOptions?: ReadonlyArray< PublishBotOption >;
+	botStatus?: PublishBotStatus;
+	botError?: string;
+	onSelectBot?: ( botId: string ) => void;
 } ): unknown => {
 	const createElement = create();
 	let copyMessage = '';
-	const cards = publishCards( botId );
-	const publishReady = isPublishReady( readiness );
+	const cards = botId === undefined ? [] : publishCards( botId );
+	const publishReady = isPublishReady( readiness, botPublishable === true );
+	let statusMessage =
+		'Publishing is disabled until the selected chatbot, provider, model, source, completed index, and knowledge connection are ready.';
+	if ( botError !== undefined ) {
+		statusMessage = botError;
+	} else if ( botStatus === 'loading' ) {
+		statusMessage = 'Loading a verified chatbot…';
+	} else if ( botId === undefined ) {
+		statusMessage = 'Select a verified chatbot before publishing.';
+	} else if ( publishReady ) {
+		statusMessage = 'This chatbot is ready to publish.';
+	}
 	const announce = ( message: string, source?: Element ): void => {
 		copyMessage = message;
 		const status =
@@ -317,15 +348,47 @@ export const PublishTestScreen = ( {
 		createElement(
 			'p',
 			{
-				role: 'status',
+				role: botError === undefined ? 'status' : 'alert',
 				'aria-live': 'polite',
 				className: 'wp-rag-ai-admin-status',
 				'data-publish-warning': publishReady ? undefined : true,
 			},
-			publishReady
-				? 'This chatbot is ready to publish.'
-				: 'Publishing is disabled until the provider, model, source, completed index, enabled bot, and knowledge connection are ready.'
+			statusMessage
 		),
+		botOptions.length === 0
+			? undefined
+			: createElement(
+					'label',
+					{ htmlFor: 'wp-rag-ai-publish-bot' },
+					'Chatbot',
+					createElement(
+						'select',
+						{
+							id: 'wp-rag-ai-publish-bot',
+							value: botId ?? '',
+							onChange: ( event: Event ) => {
+								const selected = (
+									event.currentTarget as HTMLSelectElement
+								 ).value;
+								if ( selected !== '' ) {
+									onSelectBot?.( selected );
+								}
+							},
+						},
+						createElement(
+							'option',
+							{ value: '' },
+							'Choose a chatbot'
+						),
+						...botOptions.map( ( option ) =>
+							createElement(
+								'option',
+								{ key: option.id, value: option.id },
+								option.name
+							)
+						)
+					)
+			  ),
 		createElement(
 			'div',
 			{
@@ -403,6 +466,11 @@ export interface ModernAdminShellProps {
 	screen: ModernAdminScreen;
 	readiness?: AdminReadiness;
 	botId?: string;
+	botPublishable?: boolean;
+	botOptions?: ReadonlyArray< PublishBotOption >;
+	botStatus?: PublishBotStatus;
+	botError?: string;
+	onSelectBot?: ( botId: string ) => void;
 	legacyContent?: unknown;
 }
 
@@ -473,7 +541,15 @@ export const ModernAdminShell = ( props: ModernAdminShellProps ): unknown => {
 	if ( props.screen === 'overview' && readiness !== undefined ) {
 		content = ReadinessOverview( { readiness } );
 	} else if ( props.screen === 'publish' && readiness !== undefined ) {
-		content = PublishTestScreen( { readiness, botId: props.botId } );
+		content = PublishTestScreen( {
+			readiness,
+			botId: props.botId,
+			botPublishable: props.botPublishable,
+			botOptions: props.botOptions,
+			botStatus: props.botStatus,
+			botError: props.botError,
+			onSelectBot: props.onSelectBot,
+		} );
 	}
 
 	return createElement(
