@@ -431,6 +431,112 @@
   min-width: 0;
 }
 
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-wizard {
+	margin-bottom: 24px;
+	padding: 20px;
+	border: 1px solid #dfe5eb;
+	border-radius: 12px;
+	background: #fff;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-wizard form,
+#wp-rag-ai-chatbot-admin [data-knowledge-source-types],
+#wp-rag-ai-chatbot-admin [data-knowledge-source-panel],
+#wp-rag-ai-chatbot-admin [data-knowledge-faq-row] {
+	display: grid;
+	gap: 10px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-wizard form {
+	grid-template-columns: minmax(0, 1fr);
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-types] {
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	margin: 8px 0;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-type] {
+	display: grid;
+	gap: 6px;
+	min-height: 92px;
+	padding: 12px;
+	border: 1px solid #dfe5eb;
+	border-radius: 8px;
+	background: #f8fafc;
+	cursor: pointer;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-type]:has(input:checked) {
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px #2271b1;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-type][aria-disabled='true'] {
+	opacity: .55;
+	cursor: not-allowed;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-panel][hidden] {
+	display: none;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-panel] textarea,
+#wp-rag-ai-chatbot-admin [data-knowledge-source-panel] input,
+#wp-rag-ai-chatbot-admin [data-knowledge-source-panel] select,
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-form] > input {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-panel] textarea {
+	min-height: 120px;
+	resize: vertical;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-faq-row] {
+	padding: 12px;
+	border: 1px solid #e1e6eb;
+	border-radius: 8px;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-submit-status],
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-error],
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-request-error] {
+	margin: 0;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-error],
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-request-error] {
+	color: #b32d2e;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-cards],
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-jobs] {
+	display: grid;
+	gap: 10px;
+	margin-top: 20px;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-source-card],
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-job] {
+	padding: 12px;
+	border: 1px solid #e1e6eb;
+	border-radius: 8px;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-job] {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+}
+
+#wp-rag-ai-chatbot-admin [data-knowledge-wizard-job] p {
+	flex-basis: 100%;
+}
+
 #wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management > *,
 #wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management ul,
 #wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-knowledge-management li,
@@ -596,6 +702,10 @@
   }
 
   #wp-rag-ai-chatbot-admin [data-knowledge-job-enqueue="true"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wp-rag-ai-chatbot-admin [data-knowledge-source-types] {
     grid-template-columns: minmax(0, 1fr);
   }
 

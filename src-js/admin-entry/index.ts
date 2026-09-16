@@ -129,12 +129,14 @@ const simplifyNavigation = ( root: Element ): void => {
 		'#/bots': 'Chatbots',
 		'#/knowledge': 'Knowledge',
 		'#/playground': 'Test Chat',
+		'#/publish': 'Publish/Test',
 	};
 	const desiredOrder = [
 		'#/providers',
 		'#/bots',
 		'#/knowledge',
 		'#/playground',
+		'#/publish',
 	];
 	const remaining = Array.from(
 		nav.querySelectorAll< HTMLAnchorElement >( 'a' )

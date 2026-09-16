@@ -23,6 +23,13 @@ import {
 	type AdminReadiness,
 	type ModernAdminScreen,
 } from './admin-ui';
+import {
+	KnowledgeWizard,
+	buildKnowledgeSourceRequest,
+	type KnowledgeSourceDraft,
+	type KnowledgeWizardJob,
+	type KnowledgeWizardSource,
+} from './knowledge-wizard';
 
 export const pluginIdentity = Object.freeze( {
 	slug: 'wp-rag-ai-chatbot',
@@ -45,6 +52,7 @@ export interface AdminApiClient {
 		path: string,
 		options?: AdminApiRequestOptions
 	) => Promise< T >;
+	requestFormData: < T >( path: string, body: FormData ) => Promise< T >;
 }
 
 export class AdminApiError extends Error {
@@ -112,6 +120,34 @@ export const createAdminApiClient = (
 
 			return payload as T;
 		},
+		async requestFormData< T >(
+			path: string,
+			body: FormData
+		): Promise< T > {
+			const normalizedPath = path.startsWith( '/' ) ? path : `/${ path }`;
+			const response = await config.fetcher(
+				`${ baseUrl }${ normalizedPath }`,
+				{
+					credentials: 'same-origin',
+					headers: {
+						Accept: 'application/json',
+						'X-WP-Nonce': config.nonce,
+					},
+					method: 'POST',
+					body,
+				}
+			);
+			const payload = ( await response.json() ) as unknown;
+
+			if ( ! response.ok ) {
+				throw new AdminApiError(
+					response.status,
+					getErrorCode( payload )
+				);
+			}
+
+			return payload as T;
+		},
 	};
 };
 
@@ -164,6 +200,12 @@ export interface AdminShellProps {
 	knowledgeChunks?: KnowledgeChunkPage;
 	knowledgeJobs?: KnowledgeJobPage;
 	knowledgeJobMutationError?: KnowledgeJobMutationError;
+	knowledgeWizardError?: string;
+	knowledgeSourceSubmitting?: boolean;
+	woocommerceAvailable?: boolean;
+	onCreateKnowledgeSource?: (
+		draft: KnowledgeSourceDraft
+	) => Promise< void >;
 	onEnqueueKnowledgeJob?: (
 		draft: KnowledgeJobEnqueueDraft
 	) => Promise< void >;
@@ -314,6 +356,12 @@ interface KnowledgeManagementScreenProps {
 	chunks?: KnowledgeChunkPage;
 	jobs?: KnowledgeJobPage;
 	mutationError?: KnowledgeJobMutationError;
+	knowledgeWizardError?: string;
+	knowledgeSourceSubmitting?: boolean;
+	woocommerceAvailable?: boolean;
+	onCreateKnowledgeSource?: (
+		draft: KnowledgeSourceDraft
+	) => Promise< void >;
 	onEnqueueJob?: ( draft: KnowledgeJobEnqueueDraft ) => Promise< void >;
 	onCancelJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	onRetryJob?: ( job: KnowledgeJobItem ) => Promise< void >;
@@ -422,6 +470,21 @@ const knowledgeJobMutationErrorFromError = (
 	error instanceof AdminApiError && error.code === 'invalid_transition'
 		? 'invalid_transition'
 		: 'admin_request_failed';
+
+const knowledgeSourceErrorMessage = ( error: unknown ): string => {
+	if ( error instanceof AdminApiError ) {
+		switch ( error.code ) {
+			case 'validation_error':
+				return 'Check the source details and try again.';
+			case 'conflict':
+				return 'A source with these details already exists.';
+			case 'queue_error':
+				return 'The source could not be queued. Try again.';
+		}
+	}
+
+	return 'The source could not be saved. Try again.';
+};
 
 const providerSettingsIssueFromError = (
 	error: unknown
@@ -822,6 +885,10 @@ export const KnowledgeManagementScreen = ( {
 	chunks,
 	jobs,
 	mutationError,
+	knowledgeWizardError,
+	knowledgeSourceSubmitting,
+	woocommerceAvailable,
+	onCreateKnowledgeSource,
 	onEnqueueJob,
 	onCancelJob,
 	onRetryJob,
@@ -1012,6 +1079,32 @@ export const KnowledgeManagementScreen = ( {
 				'data-knowledge-management': 'empty',
 			},
 			createElement( 'p', null, 'No knowledge sources found.' ),
+			KnowledgeWizard( {
+				sources: [],
+				jobs: ( jobs?.items ??
+					[] ) as ReadonlyArray< KnowledgeWizardJob >,
+				woocommerceAvailable,
+				submitting: knowledgeSourceSubmitting,
+				onCreate: onCreateKnowledgeSource,
+				onCancelJob:
+					onCancelJob === undefined
+						? undefined
+						: ( job ) => onCancelJob( job as KnowledgeJobItem ),
+				onRetryJob:
+					onRetryJob === undefined
+						? undefined
+						: ( job ) => onRetryJob( job as KnowledgeJobItem ),
+			} ),
+			knowledgeWizardError === undefined
+				? undefined
+				: createElement(
+						'p',
+						{
+							role: 'alert',
+							'data-knowledge-wizard-request-error': '',
+						},
+						knowledgeWizardError
+				  ),
 			jobContent
 		);
 	}
@@ -1166,6 +1259,31 @@ export const KnowledgeManagementScreen = ( {
 			className: 'wp-rag-ai-chatbot-knowledge-management',
 			'data-knowledge-management': 'list',
 		},
+		KnowledgeWizard( {
+			sources: page.items as ReadonlyArray< KnowledgeWizardSource >,
+			jobs: ( jobs?.items ?? [] ) as ReadonlyArray< KnowledgeWizardJob >,
+			woocommerceAvailable,
+			submitting: knowledgeSourceSubmitting,
+			onCreate: onCreateKnowledgeSource,
+			onCancelJob:
+				onCancelJob === undefined
+					? undefined
+					: ( job ) => onCancelJob( job as KnowledgeJobItem ),
+			onRetryJob:
+				onRetryJob === undefined
+					? undefined
+					: ( job ) => onRetryJob( job as KnowledgeJobItem ),
+		} ),
+		knowledgeWizardError === undefined
+			? undefined
+			: createElement(
+					'p',
+					{
+						role: 'alert',
+						'data-knowledge-wizard-request-error': '',
+					},
+					knowledgeWizardError
+			  ),
 		createElement( 'ul', null, ...rows ),
 		selectedSummary,
 		documentContent,
@@ -1207,6 +1325,10 @@ const renderLegacyScreenContent = (
 		knowledgeChunks,
 		knowledgeJobs,
 		knowledgeJobMutationError,
+		knowledgeWizardError,
+		knowledgeSourceSubmitting,
+		woocommerceAvailable,
+		onCreateKnowledgeSource,
 		onEnqueueKnowledgeJob,
 		onCancelKnowledgeJob,
 		onRetryKnowledgeJob,
@@ -1284,6 +1406,10 @@ const renderLegacyScreenContent = (
 				chunks: knowledgeChunks,
 				jobs: knowledgeJobs,
 				mutationError: knowledgeJobMutationError,
+				knowledgeWizardError,
+				knowledgeSourceSubmitting,
+				woocommerceAvailable,
+				onCreateKnowledgeSource,
 				onEnqueueJob: onEnqueueKnowledgeJob,
 				onCancelJob: onCancelKnowledgeJob,
 				onRetryJob: onRetryKnowledgeJob,
@@ -1453,6 +1579,12 @@ const renderAdminShell = (
 	knowledgeChunks?: KnowledgeChunkPage,
 	knowledgeJobs?: KnowledgeJobPage,
 	knowledgeJobMutationError?: KnowledgeJobMutationError,
+	knowledgeWizardError?: string,
+	knowledgeSourceSubmitting?: boolean,
+	woocommerceAvailable?: boolean,
+	onCreateKnowledgeSource?: (
+		draft: KnowledgeSourceDraft
+	) => Promise< void >,
 	onEnqueueKnowledgeJob?: (
 		draft: KnowledgeJobEnqueueDraft
 	) => Promise< void >,
@@ -1496,6 +1628,10 @@ const renderAdminShell = (
 			knowledgeChunks,
 			knowledgeJobs,
 			knowledgeJobMutationError,
+			knowledgeWizardError,
+			knowledgeSourceSubmitting,
+			woocommerceAvailable,
+			onCreateKnowledgeSource,
 			onEnqueueKnowledgeJob,
 			onCancelKnowledgeJob,
 			onRetryKnowledgeJob,
@@ -1548,6 +1684,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentKnowledgeChunks: KnowledgeChunkPage | undefined;
 	let currentKnowledgeJobs: KnowledgeJobPage | undefined;
 	let currentKnowledgeJobMutationError: KnowledgeJobMutationError | undefined;
+	let currentKnowledgeWizardError: string | undefined;
+	let currentKnowledgeSourceSubmitting = false;
+	let createKnowledgeSource: (
+		draft: KnowledgeSourceDraft
+	) => Promise< void > = async () => undefined;
 	let enqueueKnowledgeJob: (
 		draft: KnowledgeJobEnqueueDraft
 	) => Promise< void > = async () => undefined;
@@ -1561,6 +1702,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let loadedKnowledgeDocumentKey: string | undefined;
 	let knowledgePageGeneration = 0;
 	let knowledgeSelectionGeneration = 0;
+	let knowledgeSourceMutationGeneration = 0;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let currentProviderIssue: ProviderSettingsIssue | undefined;
@@ -1645,6 +1787,14 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			resolveHashPath( currentHash() ) === 'knowledge'
 				? currentKnowledgeJobMutationError
 				: undefined,
+			resolveHashPath( currentHash() ) === 'knowledge'
+				? currentKnowledgeWizardError
+				: undefined,
+			resolveHashPath( currentHash() ) === 'knowledge'
+				? currentKnowledgeSourceSubmitting
+				: false,
+			undefined,
+			createKnowledgeSource,
 			enqueueKnowledgeJob,
 			cancelKnowledgeJob,
 			retryKnowledgeJob,
@@ -2046,6 +2196,76 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			throw error;
 		}
 	};
+	createKnowledgeSource = async (
+		draft: KnowledgeSourceDraft
+	): Promise< void > => {
+		if ( currentKnowledgeSourceSubmitting ) {
+			return;
+		}
+
+		const requestGeneration = ++knowledgeSourceMutationGeneration;
+		currentKnowledgeSourceSubmitting = true;
+		currentKnowledgeWizardError = undefined;
+		renderState( stateFromReadiness() );
+
+		try {
+			const sourceRequest = buildKnowledgeSourceRequest( draft );
+			let response: { error?: { code?: unknown } };
+			if ( sourceRequest.kind === 'formData' ) {
+				response = await client.requestFormData< {
+					source: unknown;
+					job: unknown;
+					error?: { code?: unknown };
+				} >( '/admin/knowledge/sources', sourceRequest.body );
+			} else {
+				response = await client.request< {
+					source: unknown;
+					job: unknown;
+					error?: { code?: unknown };
+				} >( '/admin/knowledge/sources', {
+					method: 'POST',
+					body: sourceRequest.body,
+				} );
+			}
+			if (
+				typeof response.error?.code === 'string' &&
+				response.error.code !== ''
+			) {
+				throw new AdminApiError( 400, response.error.code );
+			}
+
+			if (
+				requestGeneration !== knowledgeSourceMutationGeneration ||
+				resolveAdminScreen( currentHash() ) !== 'knowledge'
+			) {
+				return;
+			}
+
+			const refreshed = await refreshKnowledgePage(
+				resolveKnowledgePage( currentHash() )
+			);
+			if (
+				! refreshed ||
+				requestGeneration !== knowledgeSourceMutationGeneration
+			) {
+				return;
+			}
+			await refreshKnowledgeJobs();
+			if ( requestGeneration === knowledgeSourceMutationGeneration ) {
+				currentKnowledgeWizardError = undefined;
+			}
+		} catch ( error ) {
+			if ( requestGeneration === knowledgeSourceMutationGeneration ) {
+				currentKnowledgeWizardError =
+					knowledgeSourceErrorMessage( error );
+			}
+		} finally {
+			if ( requestGeneration === knowledgeSourceMutationGeneration ) {
+				currentKnowledgeSourceSubmitting = false;
+				renderState( stateFromReadiness() );
+			}
+		}
+	};
 	const refreshProviderCredential = async (
 		providerId: string
 	): Promise< void > => {
@@ -2149,12 +2369,15 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		if ( screen !== 'knowledge' ) {
 			knowledgePageGeneration += 1;
 			knowledgeSelectionGeneration += 1;
+			knowledgeSourceMutationGeneration += 1;
 			currentKnowledgePage = undefined;
 			currentKnowledgeDetail = undefined;
 			currentKnowledgeDocuments = undefined;
 			currentKnowledgeChunks = undefined;
 			currentKnowledgeJobs = undefined;
 			currentKnowledgeJobMutationError = undefined;
+			currentKnowledgeWizardError = undefined;
+			currentKnowledgeSourceSubmitting = false;
 			loadedKnowledgeSourceId = undefined;
 			loadedKnowledgeDocumentKey = undefined;
 		}
