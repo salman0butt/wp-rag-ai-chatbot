@@ -50,4 +50,4 @@ Modified:
 
 The Task 9 `scripts/test-wp-modern-setup.sh` smoke script is not present in this worktree, so no live WordPress smoke was claimed or run for Task 4. Existing ledger evidence records the earlier knowledge smoke as blocked before application assertions because `wp-env` was not initialized.
 
-Commit: pending.
+Implementation commit: `2c6e7e2` (`Add bot retrieval binding admin resource`).
