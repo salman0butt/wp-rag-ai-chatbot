@@ -203,7 +203,7 @@ final class AdminSurfaceTest extends TestCase {
 					),
 				)
 			);
-		Functions\expect( 'register_rest_route' )->times( 13 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 14 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}
@@ -229,7 +229,7 @@ final class AdminSurfaceTest extends TestCase {
 					),
 				)
 			);
-		Functions\expect( 'register_rest_route' )->times( 14 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 15 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}
@@ -262,7 +262,7 @@ final class AdminSurfaceTest extends TestCase {
 					),
 				)
 			);
-		Functions\expect( 'register_rest_route' )->times( 14 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 15 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}

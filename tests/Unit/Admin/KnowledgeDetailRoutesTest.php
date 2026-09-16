@@ -52,7 +52,7 @@ final class KnowledgeDetailRoutesTest extends TestCase {
 					)
 				);
 		}
-		Functions\expect( 'register_rest_route' )->times( 12 )->withAnyArgs();
+		Functions\expect( 'register_rest_route' )->times( 13 )->withAnyArgs();
 
 		AdminRestBootstrap::register_routes();
 	}

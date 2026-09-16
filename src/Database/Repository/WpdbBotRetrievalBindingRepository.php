@@ -94,4 +94,27 @@ final class WpdbBotRetrievalBindingRepository implements BotRetrievalBindingRepo
 			throw new RuntimeException( 'Bot retrieval binding target is missing or could not be updated.' );
 		}
 	}
+
+	/**
+	 * Clear only the retrieval binding columns on one existing bot row.
+	 *
+	 * @param BotId $bot_id Stable bot identifier.
+	 * @throws RuntimeException When the database update fails.
+	 */
+	public function clear( BotId $bot_id ): void {
+		$result = $this->connection->update(
+			$this->tables->bots(),
+			array(
+				'retrieval_source_id'     => null,
+				'retrieval_collection_id' => null,
+			),
+			array( 'bot_id' => $bot_id->value ),
+			array( '%d', '%s' ),
+			array( '%s' )
+		);
+
+		if ( false === $result ) {
+			throw new RuntimeException( 'Bot retrieval binding could not be cleared.' );
+		}
+	}
 }

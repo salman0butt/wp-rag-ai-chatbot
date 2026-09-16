@@ -14,6 +14,7 @@ use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Database\Repository\WpdbBotAppearanceRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotDisplayRulesRepository;
 use WpRagAiChatbot\Database\Repository\WpdbBotRepository;
+use WpRagAiChatbot\Database\Repository\WpdbBotRetrievalBindingRepository;
 use WpRagAiChatbot\Database\Repository\WpdbDocumentRepository;
 use WpRagAiChatbot\Database\Repository\WpdbJobReadRepository;
 use WpRagAiChatbot\Database\Repository\WpdbJobRepository;
@@ -104,6 +105,28 @@ final class AdminRestBootstrap {
 				array(
 					'methods'             => 'PUT',
 					'callback'            => array( self::class, 'put_bot_appearance' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::REST_NAMESPACE,
+			'/admin/bots/(?P<id>[^/]+)/retrieval',
+			array(
+				array(
+					'methods'             => 'GET',
+					'callback'            => array( self::class, 'get_bot_retrieval' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'PUT',
+					'callback'            => array( self::class, 'put_bot_retrieval' ),
+					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+				),
+				array(
+					'methods'             => 'DELETE',
+					'callback'            => array( self::class, 'delete_bot_retrieval' ),
 					'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 				),
 			)
@@ -349,6 +372,37 @@ final class AdminRestBootstrap {
 	 */
 	public static function delete_bot( WP_REST_Request $request ): array {
 		return self::bots()->delete( (string) $request->get_param( 'id' ) );
+	}
+
+	/**
+	 * Read one bot's safe retrieval binding projection.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function get_bot_retrieval( WP_REST_Request $request ): array {
+		return self::bot_retrieval()->read( (string) $request->get_param( 'id' ) );
+	}
+
+	/**
+	 * Persist one bot's source-only retrieval binding request.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function put_bot_retrieval( WP_REST_Request $request ): array {
+		$payload = $request->get_json_params();
+		return self::bot_retrieval()->write( (string) $request->get_param( 'id' ), $payload );
+	}
+
+	/**
+	 * Clear one bot's retrieval binding only.
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return array<string,mixed>
+	 */
+	public static function delete_bot_retrieval( WP_REST_Request $request ): array {
+		return self::bot_retrieval()->delete( (string) $request->get_param( 'id' ) );
 	}
 
 	/**
@@ -623,6 +677,20 @@ final class AdminRestBootstrap {
 				$connection,
 				new TableNames( $connection->prefix() )
 			)
+		);
+	}
+
+	/** Build the bot retrieval binding resource from the existing persistence seams. */
+	private static function bot_retrieval(): BotRetrievalResource {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+
+		return new BotRetrievalResource(
+			new WpdbBotRetrievalBindingRepository( $connection, $tables ),
+			new WpdbKnowledgeSourceRepository( $connection, $tables ),
+			$connection
 		);
 	}
 

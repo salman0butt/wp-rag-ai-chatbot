@@ -1,6 +1,6 @@
 <?php
 /**
- * M14 administrator appearance route tests.
+ * Bot retrieval administration route tests.
  *
  * @package WpRagAiChatbot
  */
@@ -16,8 +16,8 @@ use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Admin\Rest\AdminRestBootstrap;
 
-/** Verifies bot appearance REST transport stays administrator-only and bounded. */
-final class AppearanceRoutesTest extends TestCase {
+/** Verifies the bot retrieval binding route is administrator-only. */
+final class BotRetrievalRoutesTest extends TestCase {
 	/** Start Brain Monkey before each test. */
 	protected function setUp(): void {
 		parent::setUp();
@@ -30,23 +30,28 @@ final class AppearanceRoutesTest extends TestCase {
 		parent::tearDown();
 	}
 
-	/** Appearance read/save share one protected bot-scoped route. */
+	/** Retrieval read/save/clear share one protected bot-scoped route. */
 	#[DoesNotPerformAssertions]
-	public function test_register_routes_adds_protected_appearance_contracts(): void {
+	public function test_register_routes_adds_protected_retrieval_contract(): void {
 		Functions\expect( 'register_rest_route' )
 			->once()
 			->with(
 				'wp-rag-ai-chatbot/v1',
-				'/admin/bots/(?P<id>[^/]+)/appearance',
+				'/admin/bots/(?P<id>[^/]+)/retrieval',
 				array(
 					array(
 						'methods'             => 'GET',
-						'callback'            => array( AdminRestBootstrap::class, 'get_bot_appearance' ),
+						'callback'            => array( AdminRestBootstrap::class, 'get_bot_retrieval' ),
 						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 					),
 					array(
 						'methods'             => 'PUT',
-						'callback'            => array( AdminRestBootstrap::class, 'put_bot_appearance' ),
+						'callback'            => array( AdminRestBootstrap::class, 'put_bot_retrieval' ),
+						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
+					),
+					array(
+						'methods'             => 'DELETE',
+						'callback'            => array( AdminRestBootstrap::class, 'delete_bot_retrieval' ),
 						'permission_callback' => array( AdminCapability::class, 'can_manage' ),
 					),
 				)

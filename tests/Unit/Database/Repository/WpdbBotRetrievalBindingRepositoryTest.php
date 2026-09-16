@@ -86,6 +86,30 @@ final class WpdbBotRetrievalBindingRepositoryTest extends TestCase {
 		);
 	}
 
+	/** Clearing a binding nulls only the two retrieval columns on the bot row. */
+	public function test_clears_only_retrieval_binding_columns(): void {
+		self::assertTrue( class_exists( WpdbBotRetrievalBindingRepository::class ), 'WpdbBotRetrievalBindingRepository is missing.' );
+
+		$connection = $this->createMock( Connection::class );
+		$connection->expects( self::once() )
+			->method( 'update' )
+			->with(
+				'wp_rag_ai_bots',
+				array(
+					'retrieval_source_id'     => null,
+					'retrieval_collection_id' => null,
+				),
+				array( 'bot_id' => '0123456789abcdef0123456789abcdef' ),
+				array( '%d', '%s' ),
+				array( '%s' )
+			)
+			->willReturn( 1 );
+
+		( new WpdbBotRetrievalBindingRepository( $connection, new TableNames( 'wp_' ) ) )->clear(
+			new BotId( '0123456789abcdef0123456789abcdef' )
+		);
+	}
+
 	/** Invalid persisted values fail closed rather than creating an unsafe runtime scope. */
 	public function test_invalid_persisted_binding_fails_closed(): void {
 		self::assertTrue( class_exists( WpdbBotRetrievalBindingRepository::class ), 'WpdbBotRetrievalBindingRepository is missing.' );

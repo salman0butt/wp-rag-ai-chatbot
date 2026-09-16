@@ -29,4 +29,11 @@ interface BotRetrievalBindingRepository {
 	 * @param BotRetrievalBinding $binding Trusted retrieval selection.
 	 */
 	public function save( BotId $bot_id, BotRetrievalBinding $binding ): void;
+
+	/**
+	 * Clear only the persisted retrieval binding for one bot.
+	 *
+	 * @param BotId $bot_id Stable bot identifier.
+	 */
+	public function clear( BotId $bot_id ): void;
 }
