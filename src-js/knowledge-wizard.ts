@@ -130,7 +130,7 @@ export const createKnowledgeDraft = (
 
 export const validateKnowledgeDraft = (
 	draft: KnowledgeSourceDraft,
-	woocommerceAvailable = true
+	woocommerceAvailable = false
 ): KnowledgeDraftErrors => {
 	const errors: KnowledgeDraftErrors = {};
 
@@ -333,7 +333,7 @@ export const KnowledgeWizard = (
 	props: KnowledgeWizardProps = {}
 ): unknown => {
 	const createElement = window.wp.element.createElement;
-	const woocommerceAvailable = props.woocommerceAvailable !== false;
+	const woocommerceAvailable = props.woocommerceAvailable === true;
 	let inFlight = props.submitting === true;
 
 	const error = createElement(
@@ -535,6 +535,13 @@ export const KnowledgeWizard = (
 					invalidField?.focus();
 					return;
 				}
+				( error as HTMLElement ).textContent = '';
+				( error as HTMLElement ).setAttribute( 'aria-hidden', 'true' );
+				formElement
+					.querySelectorAll< HTMLElement >( '[aria-invalid="true"]' )
+					.forEach( ( field ) =>
+						field.removeAttribute( 'aria-invalid' )
+					);
 				inFlight = true;
 				const submit = formElement.querySelector< HTMLButtonElement >(
 					'[data-knowledge-submit]'

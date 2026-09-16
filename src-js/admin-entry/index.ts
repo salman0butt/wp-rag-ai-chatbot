@@ -268,6 +268,7 @@ export const AdminShell = ( props: AdminEntryShellProps ): unknown => {
 interface RuntimeAdminConfig {
 	restBase: string;
 	nonce: string;
+	woocommerceAvailable?: boolean;
 }
 
 type RuntimeWindow = typeof window & {

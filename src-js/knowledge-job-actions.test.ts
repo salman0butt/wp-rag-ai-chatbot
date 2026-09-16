@@ -234,4 +234,80 @@ describe( 'knowledge job lifecycle actions', () => {
 			root.querySelector( '[data-knowledge-job-key="job-retry"]' )
 		).not.toBeNull();
 	} );
+
+	it( 'does not let an older lifecycle action overwrite the latest job refresh', async () => {
+		const queued = job( 'job-queued', 'queued' );
+		const latest = job( 'job-latest', 'queued' );
+		const stale = job( 'job-stale', 'failed' );
+		let resolveOldAction: (
+			value: ReturnType< typeof okJson >
+		) => void = () => undefined;
+		const oldAction = new Promise< ReturnType< typeof okJson > >(
+			( resolve ) => {
+				resolveOldAction = resolve;
+			}
+		);
+		let cancelCalls = 0;
+		let jobsCalls = 0;
+		const fetcher = jest.fn( ( input: RequestInfo | URL ) => {
+			const url = String( input );
+			if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+				return Promise.resolve(
+					okJson( { ready: true, next_step: 'complete' } )
+				);
+			}
+			if (
+				url.endsWith( '/admin/knowledge/sources?page=1&per_page=20' )
+			) {
+				return Promise.resolve(
+					okJson( { items: [], total: 0, page: 1, per_page: 20 } )
+				);
+			}
+			if ( url.endsWith( '/admin/knowledge/jobs?page=1&per_page=20' ) ) {
+				jobsCalls += 1;
+				if ( jobsCalls === 1 ) {
+					return Promise.resolve( okJson( jobPage( [ queued ] ) ) );
+				}
+				return Promise.resolve(
+					okJson( jobPage( [ jobsCalls === 2 ? latest : stale ] ) )
+				);
+			}
+			if ( url.endsWith( '/admin/knowledge/jobs/job-queued/cancel' ) ) {
+				cancelCalls += 1;
+				return cancelCalls === 1
+					? oldAction
+					: Promise.resolve( okJson( latest ) );
+			}
+			throw new Error( `Unexpected request: ${ url }` );
+		} );
+		const root = configureAdminRuntime( fetcher );
+
+		window.location.hash = '#/knowledge';
+		expect( bootstrapAdminApp() ).toBe( true );
+		await tick();
+		await tick();
+
+		const cancel = root.querySelector< HTMLButtonElement >(
+			'button[data-knowledge-job-action="cancel"][data-knowledge-job-key="job-queued"]'
+		);
+		expect( cancel ).not.toBeNull();
+		cancel!.click();
+		cancel!.click();
+		await tick();
+		await tick();
+
+		expect(
+			root.querySelector( '[data-knowledge-wizard-job="job-latest"]' )
+		).not.toBeNull();
+		resolveOldAction( okJson( queued ) );
+		await tick();
+		await tick();
+
+		expect(
+			root.querySelector( '[data-knowledge-wizard-job="job-latest"]' )
+		).not.toBeNull();
+		expect(
+			root.querySelector( '[data-knowledge-wizard-job="job-stale"]' )
+		).toBeNull();
+	} );
 } );

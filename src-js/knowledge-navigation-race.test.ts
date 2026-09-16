@@ -89,6 +89,33 @@ const jobsPage = okJson( {
 	per_page: 20,
 } );
 
+const jobPage = ( jobKey: string ) =>
+	okJson( {
+		items: [
+			{
+				job_key: jobKey,
+				type: 'sync.source',
+				status: 'queued',
+				attempts: 0,
+				max_attempts: 3,
+				available_at: '2026-09-09T12:00:00+00:00',
+				cancel_requested_at: null,
+				progress_current: 0,
+				progress_total: 1,
+				progress_message: null,
+				last_error_code: null,
+				last_error_message: null,
+				started_at: null,
+				completed_at: null,
+				created_at: '2026-09-09T12:00:00+00:00',
+				updated_at: '2026-09-09T12:00:00+00:00',
+			},
+		],
+		total: 1,
+		page: 1,
+		per_page: 20,
+	} );
+
 const detail = ( id: number ) =>
 	okJson( {
 		id,
@@ -257,6 +284,148 @@ describe( 'knowledge navigation request ordering', () => {
 		).not.toBeNull();
 		expect(
 			root.querySelector( '[data-knowledge-document-key="doc-17"]' )
+		).toBeNull();
+	} );
+
+	it( 'keeps the newest job inventory authoritative after navigation', async () => {
+		let resolveOldJobs: (
+			value: ReturnType< typeof jobPage >
+		) => void = () => undefined;
+		const oldJobs = new Promise< ReturnType< typeof jobPage > >(
+			( resolve ) => {
+				resolveOldJobs = resolve;
+			}
+		);
+		let jobsRequestCount = 0;
+		const fetcher = jest.fn( ( input: RequestInfo | URL ) => {
+			const url = String( input );
+			if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+				return Promise.resolve(
+					okJson( { ready: true, next_step: 'complete' } )
+				);
+			}
+			if (
+				url.endsWith( '/admin/knowledge/sources?page=1&per_page=20' )
+			) {
+				return Promise.resolve( sourcePage );
+			}
+			if ( url.endsWith( '/admin/knowledge/jobs?page=1&per_page=20' ) ) {
+				jobsRequestCount += 1;
+				return jobsRequestCount === 1
+					? oldJobs
+					: Promise.resolve( jobPage( 'job-new' ) );
+			}
+			throw new Error( `Unexpected request: ${ url }` );
+		} );
+		const render = jest.fn( ( element: Node, root: Element ) => {
+			root.replaceChildren( element );
+		} );
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			value: { element: { createElement: createTestElement, render } },
+		} );
+		Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+			configurable: true,
+			value: {
+				plugin: 'wp-rag-ai-chatbot',
+				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+				nonce: 'rest-nonce',
+			},
+		} );
+		Object.defineProperty( window, 'fetch', {
+			configurable: true,
+			value: fetcher,
+		} );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+
+		window.history.replaceState( null, '', '#/knowledge' );
+		expect( bootstrapAdminApp() ).toBe( true );
+		await flush();
+		navigate( '#/onboarding' );
+		navigate( '#/knowledge' );
+		await flush();
+
+		expect(
+			root.querySelector( '[data-knowledge-wizard-job="job-new"]' )
+		).not.toBeNull();
+		resolveOldJobs( jobPage( 'job-old' ) );
+		await flush();
+
+		expect(
+			root.querySelector( '[data-knowledge-wizard-job="job-new"]' )
+		).not.toBeNull();
+		expect(
+			root.querySelector( '[data-knowledge-wizard-job="job-old"]' )
+		).toBeNull();
+	} );
+
+	it( 'ignores stale job refresh failures after navigation', async () => {
+		let rejectOldJobs: ( reason?: unknown ) => void = () => undefined;
+		const oldJobs = new Promise< ReturnType< typeof jobPage > >(
+			( _resolve, reject ) => {
+				rejectOldJobs = reject;
+			}
+		);
+		let jobsRequestCount = 0;
+		const fetcher = jest.fn( ( input: RequestInfo | URL ) => {
+			const url = String( input );
+			if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+				return Promise.resolve(
+					okJson( { ready: true, next_step: 'complete' } )
+				);
+			}
+			if (
+				url.endsWith( '/admin/knowledge/sources?page=1&per_page=20' )
+			) {
+				return Promise.resolve( sourcePage );
+			}
+			if ( url.endsWith( '/admin/knowledge/jobs?page=1&per_page=20' ) ) {
+				jobsRequestCount += 1;
+				return jobsRequestCount === 1
+					? oldJobs
+					: Promise.resolve( jobPage( 'job-new' ) );
+			}
+			throw new Error( `Unexpected request: ${ url }` );
+		} );
+		const render = jest.fn( ( element: Node, root: Element ) => {
+			root.replaceChildren( element );
+		} );
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			value: { element: { createElement: createTestElement, render } },
+		} );
+		Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+			configurable: true,
+			value: {
+				plugin: 'wp-rag-ai-chatbot',
+				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+				nonce: 'rest-nonce',
+			},
+		} );
+		Object.defineProperty( window, 'fetch', {
+			configurable: true,
+			value: fetcher,
+		} );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+
+		window.history.replaceState( null, '', '#/knowledge' );
+		expect( bootstrapAdminApp() ).toBe( true );
+		await flush();
+		navigate( '#/onboarding' );
+		navigate( '#/knowledge' );
+		await flush();
+		rejectOldJobs( new Error( 'stale network failure' ) );
+		await flush();
+
+		expect(
+			root.querySelector( '[data-knowledge-wizard-job="job-new"]' )
+		).not.toBeNull();
+		expect(
+			root.querySelector( '[data-knowledge-state="error"]' )
 		).toBeNull();
 	} );
 } );

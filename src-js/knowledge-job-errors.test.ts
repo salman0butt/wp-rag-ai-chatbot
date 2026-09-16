@@ -215,4 +215,55 @@ describe( 'knowledge job mutation errors', () => {
 		);
 		expect( root.textContent ).not.toContain( secretBackendDetail );
 	} );
+
+	it( 'treats a successful response with a nested error envelope as a failure', async () => {
+		const secretBackendDetail = 'raw-provider-error=should-never-render';
+		const fetcher = jest
+			.fn()
+			.mockResolvedValueOnce(
+				okJson( { ready: true, next_step: 'complete' } )
+			)
+			.mockResolvedValueOnce(
+				okJson( { items: [], total: 0, page: 1, per_page: 20 } )
+			)
+			.mockResolvedValueOnce(
+				okJson( {
+					items: [ queuedJob ],
+					total: 1,
+					page: 1,
+					per_page: 20,
+				} )
+			)
+			.mockResolvedValueOnce(
+				okJson( {
+					error: {
+						code: 'invalid_transition',
+						message: secretBackendDetail,
+					},
+				} )
+			);
+		const root = configureAdminRuntime( fetcher );
+
+		window.location.hash = '#/knowledge';
+		expect( bootstrapAdminApp() ).toBe( true );
+		await tick();
+		await tick();
+
+		root
+			.querySelector< HTMLButtonElement >(
+				'button[data-knowledge-job-action="cancel"][data-knowledge-job-key="job-queued"]'
+			)
+			?.click();
+		await tick();
+		await tick();
+
+		const alert = root.querySelector< HTMLElement >(
+			'[role="alert"][data-knowledge-job-error="invalid_transition"]'
+		);
+		expect( alert ).not.toBeNull();
+		expect( alert!.textContent ).toContain(
+			'The job state changed. Refresh and try the action again.'
+		);
+		expect( root.textContent ).not.toContain( secretBackendDetail );
+	} );
 } );

@@ -163,6 +163,10 @@ describe( 'knowledge source request shaping', () => {
 				config: { product_ids: [ 12, 19 ] },
 			},
 		} );
+
+		expect( validateKnowledgeDraft( catalog ).woocommerce ).toBe(
+			'WooCommerce is not available on this site.'
+		);
 	} );
 
 	it( 'builds multipart file requests without a browser-supplied path', () => {
@@ -250,6 +254,47 @@ describe( 'knowledge wizard', () => {
 		).toContain( 'Saving' );
 		resolveCreate();
 		await Promise.resolve();
+	} );
+
+	it( 'disables WooCommerce by default and clears a corrected validation alert', async () => {
+		const create = jest.fn().mockResolvedValue( undefined );
+		const root = document.createElement( 'div' );
+		root.append( KnowledgeWizard( { onCreate: create } ) as Node );
+
+		const wooCard = root.querySelector< HTMLElement >(
+			'[data-knowledge-source-type="woocommerce_product"]'
+		);
+		expect( wooCard?.getAttribute( 'aria-disabled' ) ).toBe( 'true' );
+		expect(
+			wooCard?.querySelector< HTMLInputElement >( 'input' )?.disabled
+		).toBe( true );
+
+		const sourceType = root.querySelector< HTMLInputElement >(
+			'input[name="source_type"][value="manual_text"]'
+		);
+		sourceType?.click();
+		const form = root.querySelector( 'form' ) as HTMLFormElement;
+		const title = form.elements.namedItem( 'title' ) as HTMLInputElement;
+		const text = form.elements.namedItem( 'text' ) as HTMLTextAreaElement;
+		title.value = 'Guide';
+		form.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
+
+		const error = root.querySelector< HTMLElement >(
+			'[data-knowledge-wizard-error]'
+		);
+		expect( error?.getAttribute( 'aria-hidden' ) ).toBeNull();
+		expect( error?.textContent ).toContain( 'Enter some text' );
+
+		text.value = 'Corrected content';
+		form.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
+		expect( error?.getAttribute( 'aria-hidden' ) ).toBe( 'true' );
+		expect( error?.textContent ).toBe( '' );
+		await Promise.resolve();
+		expect( create ).toHaveBeenCalledTimes( 1 );
 	} );
 } );
 

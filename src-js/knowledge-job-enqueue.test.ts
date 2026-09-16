@@ -105,14 +105,6 @@ const configureAdminRuntime = ( fetcher: jest.Mock ): HTMLElement => {
 	return root;
 };
 
-const setInput = ( root: HTMLElement, name: string, value: string ): void => {
-	const input = root.querySelector< HTMLInputElement >(
-		`input[name="${ name }"]`
-	);
-	expect( input ).not.toBeNull();
-	input!.value = value;
-};
-
 describe( 'knowledge job enqueue action', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
@@ -121,7 +113,7 @@ describe( 'knowledge job enqueue action', () => {
 		Reflect.deleteProperty( window, 'fetch' );
 	} );
 
-	it( 'posts the identifier-only payload and refreshes bounded inventory', async () => {
+	it( 'does not expose a browser-controlled legacy enqueue form or profile fields', async () => {
 		const fetcher = jest
 			.fn()
 			.mockResolvedValueOnce(
@@ -130,10 +122,6 @@ describe( 'knowledge job enqueue action', () => {
 			.mockResolvedValueOnce(
 				okJson( { items: [], total: 0, page: 1, per_page: 20 } )
 			)
-			.mockResolvedValueOnce(
-				okJson( { items: [], total: 0, page: 1, per_page: 20 } )
-			)
-			.mockResolvedValueOnce( okJson( queuedJob ) )
 			.mockResolvedValueOnce(
 				okJson( {
 					items: [ queuedJob ],
@@ -149,46 +137,17 @@ describe( 'knowledge job enqueue action', () => {
 		await tick();
 		await tick();
 
-		setInput( root, 'document_key', 'doc-support' );
-		setInput( root, 'source_id', '17' );
-		setInput( root, 'collection_id', 'support' );
-		setInput( root, 'configuration_id', 'default-index' );
-		setInput( root, 'generation', 'v2' );
-
-		const form = root.querySelector< HTMLFormElement >(
-			'form[data-knowledge-job-enqueue="true"]'
-		);
-		expect( form ).not.toBeNull();
-		form!.dispatchEvent(
-			new Event( 'submit', { bubbles: true, cancelable: true } )
-		);
-		await tick();
-		await tick();
-
-		expect( fetcher ).toHaveBeenNthCalledWith(
-			4,
-			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/jobs',
-			expect.objectContaining( {
-				method: 'POST',
-				headers: expect.objectContaining( {
-					'X-WP-Nonce': 'rest-nonce',
-				} ),
-				body: JSON.stringify( {
-					document_key: 'doc-support',
-					source_id: 17,
-					collection_id: 'support',
-					configuration_id: 'default-index',
-					generation: 'v2',
-				} ),
-			} )
-		);
-		expect( fetcher ).toHaveBeenNthCalledWith(
-			5,
-			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/knowledge/jobs?page=1&per_page=20',
-			expect.any( Object )
-		);
+		expect(
+			root.querySelector( 'form[data-knowledge-job-enqueue="true"]' )
+		).toBeNull();
+		expect(
+			root.querySelector(
+				'input[name="collection_id"], input[name="configuration_id"], input[name="generation"]'
+			)
+		).toBeNull();
 		expect(
 			root.querySelector( '[data-knowledge-job-key="job-enqueued"]' )
 		).not.toBeNull();
+		expect( fetcher ).toHaveBeenCalledTimes( 3 );
 	} );
 } );

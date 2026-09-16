@@ -76,9 +76,10 @@ final class AdminBootstrap {
 
 		$handle = 'wp-rag-ai-chatbot-admin';
 		$config = array(
-			'plugin'   => self::PAGE_SLUG,
-			'restBase' => untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) ),
-			'nonce'    => wp_create_nonce( 'wp_rest' ),
+			'plugin'               => self::PAGE_SLUG,
+			'restBase'             => untrailingslashit( rest_url( 'wp-rag-ai-chatbot/v1/' ) ),
+			'nonce'                => wp_create_nonce( 'wp_rest' ),
+			'woocommerceAvailable' => function_exists( 'wc_get_products' ) && function_exists( 'wc_get_product' ),
 		);
 
 		wp_enqueue_style(

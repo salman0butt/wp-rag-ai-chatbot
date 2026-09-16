@@ -102,12 +102,13 @@ final class AdminSurfaceTest extends TestCase {
 			->once()
 			->with(
 				array(
-					'plugin'   => 'wp-rag-ai-chatbot',
-					'restBase' => 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
-					'nonce'    => 'rest-nonce',
+					'plugin'               => 'wp-rag-ai-chatbot',
+					'restBase'             => 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+					'nonce'                => 'rest-nonce',
+					'woocommerceAvailable' => false,
 				)
 			)
-			->andReturn( '{"plugin":"wp-rag-ai-chatbot","restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1","nonce":"rest-nonce"}' );
+			->andReturn( '{"plugin":"wp-rag-ai-chatbot","restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1","nonce":"rest-nonce","woocommerceAvailable":false}' );
 
 		Functions\expect( 'wp_enqueue_style' )
 			->once()
@@ -130,7 +131,7 @@ final class AdminSurfaceTest extends TestCase {
 			->once()
 			->with(
 				'wp-rag-ai-chatbot-admin',
-				'window.wpRagAiChatbotAdminConfig = {"plugin":"wp-rag-ai-chatbot","restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1","nonce":"rest-nonce"};',
+				'window.wpRagAiChatbotAdminConfig = {"plugin":"wp-rag-ai-chatbot","restBase":"https:\/\/example.test\/wp-json\/wp-rag-ai-chatbot\/v1","nonce":"rest-nonce","woocommerceAvailable":false};',
 				'before'
 			);
 

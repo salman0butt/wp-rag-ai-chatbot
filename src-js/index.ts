@@ -67,7 +67,7 @@ export class AdminApiError extends Error {
 	}
 }
 
-const getErrorCode = ( payload: unknown ): string => {
+const getAdminErrorCode = ( payload: unknown ): string | undefined => {
 	if (
 		typeof payload === 'object' &&
 		payload !== null &&
@@ -76,8 +76,19 @@ const getErrorCode = ( payload: unknown ): string => {
 	) {
 		return payload.code;
 	}
+	if (
+		typeof payload === 'object' &&
+		payload !== null &&
+		'error' in payload &&
+		typeof payload.error === 'object' &&
+		payload.error !== null &&
+		'code' in payload.error &&
+		typeof payload.error.code === 'string'
+	) {
+		return payload.error.code;
+	}
 
-	return 'admin_request_failed';
+	return undefined;
 };
 
 export const createAdminApiClient = (
@@ -111,10 +122,11 @@ export const createAdminApiClient = (
 			);
 			const payload = ( await response.json() ) as unknown;
 
-			if ( ! response.ok ) {
+			const errorCode = getAdminErrorCode( payload );
+			if ( ! response.ok || errorCode !== undefined ) {
 				throw new AdminApiError(
 					response.status,
-					getErrorCode( payload )
+					errorCode ?? 'admin_request_failed'
 				);
 			}
 
@@ -139,10 +151,11 @@ export const createAdminApiClient = (
 			);
 			const payload = ( await response.json() ) as unknown;
 
-			if ( ! response.ok ) {
+			const errorCode = getAdminErrorCode( payload );
+			if ( ! response.ok || errorCode !== undefined ) {
 				throw new AdminApiError(
 					response.status,
-					getErrorCode( payload )
+					errorCode ?? 'admin_request_failed'
 				);
 			}
 
@@ -205,9 +218,6 @@ export interface AdminShellProps {
 	woocommerceAvailable?: boolean;
 	onCreateKnowledgeSource?: (
 		draft: KnowledgeSourceDraft
-	) => Promise< void >;
-	onEnqueueKnowledgeJob?: (
-		draft: KnowledgeJobEnqueueDraft
 	) => Promise< void >;
 	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >;
@@ -339,14 +349,6 @@ interface KnowledgeJobPage {
 	per_page: number;
 }
 
-interface KnowledgeJobEnqueueDraft {
-	document_key: string;
-	source_id: number;
-	collection_id: string;
-	configuration_id: string;
-	generation: string;
-}
-
 interface KnowledgeManagementScreenProps {
 	page: KnowledgeSourcePage;
 	selectedSourceId?: string;
@@ -362,7 +364,6 @@ interface KnowledgeManagementScreenProps {
 	onCreateKnowledgeSource?: (
 		draft: KnowledgeSourceDraft
 	) => Promise< void >;
-	onEnqueueJob?: ( draft: KnowledgeJobEnqueueDraft ) => Promise< void >;
 	onCancelJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 	onRetryJob?: ( job: KnowledgeJobItem ) => Promise< void >;
 }
@@ -393,6 +394,7 @@ interface AdminBootConfig {
 	plugin: string;
 	restBase: string;
 	nonce: string;
+	woocommerceAvailable?: boolean;
 }
 
 interface AdminOnboardingReadiness extends AdminReadiness {
@@ -889,7 +891,6 @@ export const KnowledgeManagementScreen = ( {
 	knowledgeSourceSubmitting,
 	woocommerceAvailable,
 	onCreateKnowledgeSource,
-	onEnqueueJob,
 	onCancelJob,
 	onRetryJob,
 }: KnowledgeManagementScreenProps ): unknown => {
@@ -962,101 +963,6 @@ export const KnowledgeManagementScreen = ( {
 					: undefined
 			);
 		} ) ?? [];
-	const enqueueForm = createElement(
-		'form',
-		{
-			'data-knowledge-job-enqueue': 'true',
-			onSubmit: ( event: Event ) => {
-				event.preventDefault();
-
-				if ( onEnqueueJob === undefined ) {
-					return;
-				}
-
-				const form = event.currentTarget as HTMLFormElement;
-				const documentKey = form.elements.namedItem(
-					'document_key'
-				) as HTMLInputElement;
-				const sourceId = form.elements.namedItem(
-					'source_id'
-				) as HTMLInputElement;
-				const collectionId = form.elements.namedItem(
-					'collection_id'
-				) as HTMLInputElement;
-				const configurationId = form.elements.namedItem(
-					'configuration_id'
-				) as HTMLInputElement;
-				const generation = form.elements.namedItem(
-					'generation'
-				) as HTMLInputElement;
-
-				void onEnqueueJob( {
-					document_key: documentKey.value.trim(),
-					source_id: Number.parseInt( sourceId.value, 10 ),
-					collection_id: collectionId.value.trim(),
-					configuration_id: configurationId.value.trim(),
-					generation: generation.value.trim(),
-				} );
-			},
-		},
-		createElement(
-			'label',
-			{ htmlFor: 'knowledge-job-document-key' },
-			'Document key'
-		),
-		createElement( 'input', {
-			id: 'knowledge-job-document-key',
-			name: 'document_key',
-			required: true,
-			type: 'text',
-		} ),
-		createElement(
-			'label',
-			{ htmlFor: 'knowledge-job-source-id' },
-			'Source ID'
-		),
-		createElement( 'input', {
-			id: 'knowledge-job-source-id',
-			min: 1,
-			name: 'source_id',
-			required: true,
-			type: 'number',
-		} ),
-		createElement(
-			'label',
-			{ htmlFor: 'knowledge-job-collection-id' },
-			'Collection ID'
-		),
-		createElement( 'input', {
-			id: 'knowledge-job-collection-id',
-			name: 'collection_id',
-			required: true,
-			type: 'text',
-		} ),
-		createElement(
-			'label',
-			{ htmlFor: 'knowledge-job-configuration-id' },
-			'Configuration ID'
-		),
-		createElement( 'input', {
-			id: 'knowledge-job-configuration-id',
-			name: 'configuration_id',
-			required: true,
-			type: 'text',
-		} ),
-		createElement(
-			'label',
-			{ htmlFor: 'knowledge-job-generation' },
-			'Generation'
-		),
-		createElement( 'input', {
-			id: 'knowledge-job-generation',
-			name: 'generation',
-			required: true,
-			type: 'text',
-		} ),
-		createElement( 'button', { type: 'submit' }, 'Enqueue indexing job' )
-	);
 	const jobContent =
 		jobs === undefined
 			? undefined
@@ -1065,7 +971,6 @@ export const KnowledgeManagementScreen = ( {
 					{ 'data-knowledge-jobs': 'list' },
 					createElement( 'h2', null, 'Indexing jobs' ),
 					mutationErrorContent,
-					enqueueForm,
 					jobRows.length === 0
 						? createElement( 'p', null, 'No indexing jobs found.' )
 						: createElement( 'ul', null, ...jobRows )
@@ -1329,7 +1234,6 @@ const renderLegacyScreenContent = (
 		knowledgeSourceSubmitting,
 		woocommerceAvailable,
 		onCreateKnowledgeSource,
-		onEnqueueKnowledgeJob,
 		onCancelKnowledgeJob,
 		onRetryKnowledgeJob,
 		providerId,
@@ -1410,7 +1314,6 @@ const renderLegacyScreenContent = (
 				knowledgeSourceSubmitting,
 				woocommerceAvailable,
 				onCreateKnowledgeSource,
-				onEnqueueJob: onEnqueueKnowledgeJob,
 				onCancelJob: onCancelKnowledgeJob,
 				onRetryJob: onRetryKnowledgeJob,
 			} )
@@ -1585,9 +1488,6 @@ const renderAdminShell = (
 	onCreateKnowledgeSource?: (
 		draft: KnowledgeSourceDraft
 	) => Promise< void >,
-	onEnqueueKnowledgeJob?: (
-		draft: KnowledgeJobEnqueueDraft
-	) => Promise< void >,
 	onCancelKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
 	providerId?: string,
@@ -1632,7 +1532,6 @@ const renderAdminShell = (
 			knowledgeSourceSubmitting,
 			woocommerceAvailable,
 			onCreateKnowledgeSource,
-			onEnqueueKnowledgeJob,
 			onCancelKnowledgeJob,
 			onRetryKnowledgeJob,
 			providerId,
@@ -1686,11 +1585,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentKnowledgeJobMutationError: KnowledgeJobMutationError | undefined;
 	let currentKnowledgeWizardError: string | undefined;
 	let currentKnowledgeSourceSubmitting = false;
+	let currentWooCommerceAvailable = false;
 	let createKnowledgeSource: (
 		draft: KnowledgeSourceDraft
-	) => Promise< void > = async () => undefined;
-	let enqueueKnowledgeJob: (
-		draft: KnowledgeJobEnqueueDraft
 	) => Promise< void > = async () => undefined;
 	let cancelKnowledgeJob: (
 		job: KnowledgeJobItem
@@ -1702,6 +1599,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let loadedKnowledgeDocumentKey: string | undefined;
 	let knowledgePageGeneration = 0;
 	let knowledgeSelectionGeneration = 0;
+	let knowledgeJobsGeneration = 0;
+	let knowledgeJobMutationGeneration = 0;
 	let knowledgeSourceMutationGeneration = 0;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
@@ -1793,9 +1692,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			resolveHashPath( currentHash() ) === 'knowledge'
 				? currentKnowledgeSourceSubmitting
 				: false,
-			undefined,
+			currentWooCommerceAvailable,
 			createKnowledgeSource,
-			enqueueKnowledgeJob,
 			cancelKnowledgeJob,
 			retryKnowledgeJob,
 			providerId,
@@ -1827,6 +1725,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		renderState( 'error' );
 		return true;
 	}
+	currentWooCommerceAvailable = config.woocommerceAvailable === true;
 
 	if ( typeof fetcher !== 'function' ) {
 		renderState( 'error' );
@@ -2105,10 +2004,30 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			throw error;
 		}
 	};
-	const refreshKnowledgeJobs = async (): Promise< void > => {
-		currentKnowledgeJobs = await client.request< KnowledgeJobPage >(
-			'/admin/knowledge/jobs?page=1&per_page=20'
-		);
+	const refreshKnowledgeJobs = async (): Promise< boolean > => {
+		const requestGeneration = ++knowledgeJobsGeneration;
+		const requestHash = currentHash();
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === knowledgeJobsGeneration &&
+			currentHash() === requestHash &&
+			resolveAdminScreen( currentHash() ) === 'knowledge' &&
+			resolveHashPath( currentHash() ) === 'knowledge';
+
+		try {
+			const jobs = await client.request< KnowledgeJobPage >(
+				'/admin/knowledge/jobs?page=1&per_page=20'
+			);
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+			currentKnowledgeJobs = jobs;
+			return true;
+		} catch ( error ) {
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+			throw error;
+		}
 	};
 	const refreshKnowledgeDetail = async (
 		sourceId: string
@@ -2203,6 +2122,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			return;
 		}
 
+		knowledgeJobMutationGeneration += 1;
 		const requestGeneration = ++knowledgeSourceMutationGeneration;
 		currentKnowledgeSourceSubmitting = true;
 		currentKnowledgeWizardError = undefined;
@@ -2250,7 +2170,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			) {
 				return;
 			}
-			await refreshKnowledgeJobs();
+			if ( ! ( await refreshKnowledgeJobs() ) ) {
+				return;
+			}
 			if ( requestGeneration === knowledgeSourceMutationGeneration ) {
 				currentKnowledgeWizardError = undefined;
 			}
@@ -2345,6 +2267,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		if ( ! root.isConnected ) {
 			return;
 		}
+		knowledgeJobsGeneration += 1;
+		knowledgeJobMutationGeneration += 1;
 
 		const screen = resolveAdminScreen( currentHash() );
 
@@ -2457,7 +2381,10 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 						return false;
 					}
 					if ( resolveHashPath( currentHash() ) === 'knowledge' ) {
-						await refreshKnowledgeJobs();
+						const isCurrentJobs = await refreshKnowledgeJobs();
+						if ( ! isCurrentJobs ) {
+							return false;
+						}
 					}
 					if ( selectedKnowledgeSourceId !== undefined ) {
 						await refreshKnowledgeSelection(
@@ -2482,7 +2409,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentKnowledgeJobs === undefined
 		) {
 			void refreshKnowledgeJobs()
-				.then( () => renderState( stateFromReadiness() ) )
+				.then( ( isCurrentJobs ) => {
+					if ( isCurrentJobs ) {
+						renderState( stateFromReadiness() );
+					}
+				} )
 				.catch( () => renderState( 'error' ) );
 			return;
 		}
@@ -2586,30 +2517,17 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			renderState( 'error' );
 		}
 	};
-	enqueueKnowledgeJob = async (
-		draft: KnowledgeJobEnqueueDraft
-	): Promise< void > => {
-		currentKnowledgeJobMutationError = undefined;
-		renderState( stateFromReadiness() );
-		try {
-			await client.request< KnowledgeJobItem >( '/admin/knowledge/jobs', {
-				method: 'POST',
-				body: draft,
-			} );
-			await refreshKnowledgeJobs();
-			if ( ( await refreshReadiness() ) === 'failed' ) {
-				renderState( stateFromReadiness() );
-			}
-		} catch ( error ) {
-			currentKnowledgeJobMutationError =
-				knowledgeJobMutationErrorFromError( error );
-			renderState( stateFromReadiness() );
-		}
-	};
 	const mutateKnowledgeJob = async (
 		job: KnowledgeJobItem,
 		action: 'cancel' | 'retry'
 	): Promise< void > => {
+		const mutationGeneration = ++knowledgeJobMutationGeneration;
+		const mutationHash = currentHash();
+		const isCurrentMutation = (): boolean =>
+			mutationGeneration === knowledgeJobMutationGeneration &&
+			currentHash() === mutationHash &&
+			resolveAdminScreen( currentHash() ) === 'knowledge' &&
+			resolveHashPath( currentHash() ) === 'knowledge';
 		currentKnowledgeJobMutationError = undefined;
 		renderState( stateFromReadiness() );
 		try {
@@ -2619,11 +2537,22 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				) }/${ action }`,
 				{ method: 'POST' }
 			);
-			await refreshKnowledgeJobs();
+			if ( ! isCurrentMutation() ) {
+				return;
+			}
+			if ( ! ( await refreshKnowledgeJobs() ) ) {
+				return;
+			}
+			if ( ! isCurrentMutation() ) {
+				return;
+			}
 			if ( ( await refreshReadiness() ) === 'failed' ) {
 				renderState( stateFromReadiness() );
 			}
 		} catch ( error ) {
+			if ( ! isCurrentMutation() ) {
+				return;
+			}
 			currentKnowledgeJobMutationError =
 				knowledgeJobMutationErrorFromError( error );
 			renderState( stateFromReadiness() );
@@ -2711,7 +2640,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				return;
 			}
 			if ( resolveHashPath( currentHash() ) === 'knowledge' ) {
-				await refreshKnowledgeJobs();
+				if ( ! ( await refreshKnowledgeJobs() ) ) {
+					return;
+				}
 			}
 			const sourceId = resolveSelectedPersistedKnowledgeSourceId(
 				currentHash()
