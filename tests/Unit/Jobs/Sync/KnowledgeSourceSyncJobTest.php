@@ -266,6 +266,55 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 		}
 	}
 
+	/** Invalid normalized document identifiers fail before entering the child-job queue. */
+	public function test_invalid_document_queue_payload_uses_document_queue_failure_code(): void {
+		$now     = new DateTimeImmutable( '2026-09-15T10:00:00+00:00' );
+		$source  = $this->source( $now );
+		$fixture = $this->handler_fixture( $source );
+		$sources = $this->createMock( KnowledgeSourceRepository::class );
+		$sources->expects( self::once() )->method( 'findById' )->with( 7 )->willReturn( $source );
+		$document = new DocumentRecord(
+			null,
+			'bad document key',
+			7,
+			'bad-document',
+			'manual_text',
+			'Invalid document',
+			null,
+			'Invalid document content',
+			array(),
+			'generation-1',
+			hash( 'sha256', 'Invalid document content' ),
+			null,
+			'public',
+			$now,
+			$now
+		);
+		$fixture['documents']->expects( self::once() )->method( 'findByKey' )->with( 'bad document key' )->willReturn( null );
+		$fixture['documents']->expects( self::once() )->method( 'save' )->with( $document )->willReturn( $document->withId( 21 ) );
+		$registry       = new KnowledgeSourceRegistry();
+		$source_adapter = $this->createMock( KnowledgeSource::class );
+		$source_adapter->method( 'type' )->willReturn( 'manual_text' );
+		$source_adapter->method( 'documents' )->willReturn( array( $document ) );
+		$registry->register( $source_adapter );
+		$handler = new KnowledgeSourceSyncJobHandler(
+			$sources,
+			$registry,
+			$fixture['documents'],
+			new DocumentIndexJobEnqueuer( $fixture['jobs'] ),
+			$this->createMock( Clock::class )
+		);
+
+		try {
+			$handler->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Invalid document queue payload did not fail closed.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'source_sync_document_queue_invalid', $error->safe_code() );
+			self::assertSame( 'WordPress content produced an invalid document queue payload.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+		}
+	}
+
 	/** A standing no-argument hourly event cannot suppress the uniquely addressed immediate wake-up. */
 	public function test_source_enqueue_schedules_unique_existing_job_hook_after_persistence(): void {
 		if ( ! class_exists( KnowledgeSourceSyncJobEnqueuer::class ) ) {
