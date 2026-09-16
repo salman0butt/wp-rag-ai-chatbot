@@ -42,10 +42,20 @@ FAIL — nested modern-shell heading count expected 1, received 2
 
 The fix-round focused tests then passed 20/20.
 
+For review round 2, RED was observed before the fix:
+
+```text
+npx wp-scripts test-unit-js src-js/index.test.ts --runInBand
+FAIL — initial-first response order observed the generic administration error after the stale initial completion
+FAIL — Overview-first response order ended without the ready Overview shell after the stale initial completion
+```
+
+The stale-result guard now returns a typed `success`/`stale`/`failed` result. The initial completion handler renders the error state only for `failed`; superseded results are ignored, while mutation fallbacks also distinguish genuine failure from a newer refresh. Both deferred response-order tests pass.
+
 ## Verification
 
-- Focused Jest: 2 suites, 20 tests passed (`src-js/admin-ui.test.ts` and `src-js/index.test.ts`).
-- Full JS suite: 70 suites, 182 tests passed.
+- Focused Jest: 2 suites, 22 tests passed (`src-js/admin-ui.test.ts` and `src-js/index.test.ts`).
+- Full JS suite: 70 suites, 184 tests passed.
 - `npm run lint:js`: passed.
 - `npm run typecheck`: passed.
 - `npm run build`: passed; admin, widget, and Gutenberg bundles compiled.

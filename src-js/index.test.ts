@@ -478,6 +478,7 @@ describe( 'resolveAdminScreen', () => {
 describe( 'bootstrapAdminApp', () => {
 	afterEach( () => {
 		document.body.innerHTML = '';
+		window.history.replaceState( null, '', '' );
 		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
 		Reflect.deleteProperty( window, 'fetch' );
 	} );
@@ -539,6 +540,139 @@ describe( 'bootstrapAdminApp', () => {
 			'Providers'
 		);
 	} );
+
+	it.each( [
+		[ 'initial request resolves first', 'initial-first' ],
+		[ 'Overview request resolves first', 'overview-first' ],
+	] as const )(
+		'ignores stale initial readiness errors during the automatic onboarding-to-Overview transition when %s',
+		async ( _label, responseOrder ) => {
+			await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+			const render = jest.fn( ( element: Node, root: Element ) => {
+				root.replaceChildren( element );
+			} );
+			configureTestElementRuntime( render );
+			const root = document.createElement( 'div' );
+			root.id = 'wp-rag-ai-chatbot-admin';
+			document.body.append( root );
+			Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+				configurable: true,
+				value: {
+					plugin: 'wp-rag-ai-chatbot',
+					restBase:
+						'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+					nonce: 'rest-nonce',
+				},
+			} );
+
+			const readiness = {
+				ready: true,
+				next_step: 'complete',
+				configured_generation_provider: true,
+				configured_gemini_embedding: true,
+				model_available: true,
+				source_count: 1,
+				completed_index_present: true,
+				enabled_bot_count: 1,
+				bound_bot_present: true,
+				publishable_bot_present: true,
+			};
+			type DeferredResponse = {
+				promise: Promise< {
+					ok: true;
+					status: 200;
+					json: () => Promise< typeof readiness >;
+				} >;
+				resolve: ( value: {
+					ok: true;
+					status: 200;
+					json: () => Promise< typeof readiness >;
+				} ) => void;
+			};
+			const deferredResponse = (): DeferredResponse => {
+				let resolve: DeferredResponse[ 'resolve' ] = () => undefined;
+				const promise = new Promise<
+					Awaited< DeferredResponse[ 'promise' ] >
+				>( ( promiseResolve ) => {
+					resolve = promiseResolve;
+				} );
+				return { promise, resolve };
+			};
+			const readinessRequests: Array< DeferredResponse > = [];
+			const fetcher = jest.fn().mockImplementation( ( url: string ) => {
+				if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+					const request = deferredResponse();
+					readinessRequests.push( request );
+					return request.promise;
+				}
+
+				return Promise.resolve( {
+					ok: true,
+					status: 200,
+					json: async () => ( {} ),
+				} );
+			} );
+			Object.defineProperty( window, 'fetch', {
+				configurable: true,
+				value: fetcher,
+			} );
+
+			window.history.replaceState( null, '', '#/onboarding' );
+			const exports = plugin as unknown as Record< string, unknown >;
+			const bootstrapAdminApp = exports.bootstrapAdminApp as
+				| ( ( hash?: string ) => boolean )
+				| undefined;
+
+			expect( bootstrapAdminApp?.() ).toBe( true );
+			window.history.replaceState( null, '', '#/overview' );
+			window.dispatchEvent( new HashChangeEvent( 'hashchange' ) );
+			await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+			expect( readinessRequests ).toHaveLength( 2 );
+
+			const initialRequest = readinessRequests[ 0 ];
+			const overviewRequest = readinessRequests[ 1 ];
+			if (
+				initialRequest === undefined ||
+				overviewRequest === undefined
+			) {
+				return;
+			}
+
+			const initialResponse = {
+				ok: true as const,
+				status: 200 as const,
+				json: async () => readiness,
+			};
+			const overviewResponse = {
+				ok: true as const,
+				status: 200 as const,
+				json: async () => readiness,
+			};
+			let alertAfterFirstResponse: Element | null = null;
+
+			if ( responseOrder === 'initial-first' ) {
+				initialRequest.resolve( initialResponse );
+				await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+				alertAfterFirstResponse =
+					root.querySelector( '[role="alert"]' );
+				overviewRequest.resolve( overviewResponse );
+			} else {
+				overviewRequest.resolve( overviewResponse );
+				await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+				alertAfterFirstResponse =
+					root.querySelector( '[role="alert"]' );
+				initialRequest.resolve( initialResponse );
+			}
+
+			await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+			await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+			expect( alertAfterFirstResponse ).toBeNull();
+			expect(
+				root.querySelector( '[data-admin-ui-state="ready"]' )
+			).not.toBeNull();
+			expect( root.querySelector( '[role="alert"]' ) ).toBeNull();
+		}
+	);
 
 	it( 'mounts automatically when the admin bundle loads on the plugin screen', () => {
 		const render = jest.fn( ( element: Node, root: Element ) => {

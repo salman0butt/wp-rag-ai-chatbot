@@ -1517,6 +1517,8 @@ const renderAdminShell = (
 
 const stateFromReadiness = (): AdminShellState => 'ready';
 
+type ReadinessRefreshResult = 'success' | 'stale' | 'failed';
+
 export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	const root = document.getElementById( 'wp-rag-ai-chatbot-admin' );
 
@@ -1688,7 +1690,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		nonce: config.nonce,
 		fetcher: fetcher.bind( window ),
 	} );
-	const refreshReadiness = async ( render = true ): Promise< boolean > => {
+	const refreshReadiness = async (
+		render = true
+	): Promise< ReadinessRefreshResult > => {
 		const requestGeneration = ++readinessGeneration;
 
 		try {
@@ -1697,7 +1701,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			);
 
 			if ( requestGeneration !== readinessGeneration ) {
-				return false;
+				return 'stale';
 			}
 
 			currentReadiness = readiness;
@@ -1707,9 +1711,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				renderState( stateFromReadiness() );
 			}
 
-			return true;
+			return 'success';
 		} catch {
-			return false;
+			return 'failed';
 		}
 	};
 	const playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {
@@ -2326,7 +2330,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				body: draft,
 			} );
 			await refreshBotPage( 1 );
-			if ( ! ( await refreshReadiness() ) ) {
+			if ( ( await refreshReadiness() ) === 'failed' ) {
 				renderState( stateFromReadiness() );
 			}
 		} catch {
@@ -2349,7 +2353,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				}
 			);
 			await refreshBotPage( 1 );
-			if ( ! ( await refreshReadiness() ) ) {
+			if ( ( await refreshReadiness() ) === 'failed' ) {
 				renderState( stateFromReadiness() );
 			}
 		} catch {
@@ -2367,7 +2371,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				body: draft,
 			} );
 			await refreshKnowledgeJobs();
-			if ( ! ( await refreshReadiness() ) ) {
+			if ( ( await refreshReadiness() ) === 'failed' ) {
 				renderState( stateFromReadiness() );
 			}
 		} catch ( error ) {
@@ -2390,7 +2394,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				{ method: 'POST' }
 			);
 			await refreshKnowledgeJobs();
-			if ( ! ( await refreshReadiness() ) ) {
+			if ( ( await refreshReadiness() ) === 'failed' ) {
 				renderState( stateFromReadiness() );
 			}
 		} catch ( error ) {
@@ -2411,7 +2415,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				{ method: 'DELETE' }
 			);
 			await refreshBotPage( 1 );
-			if ( ! ( await refreshReadiness() ) ) {
+			if ( ( await refreshReadiness() ) === 'failed' ) {
 				renderState( stateFromReadiness() );
 			}
 		} catch {
@@ -2445,7 +2449,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				await refreshProviderModelsState( providerId );
 			}
 
-			if ( ! ( await refreshReadiness() ) ) {
+			if ( ( await refreshReadiness() ) === 'failed' ) {
 				renderState( stateFromReadiness() );
 			}
 		} catch {
@@ -2453,9 +2457,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		}
 	};
 
-	void refreshReadiness( false ).then( async ( readinessLoaded ) => {
-		if ( ! readinessLoaded ) {
+	void refreshReadiness( false ).then( async ( readinessResult ) => {
+		if ( readinessResult === 'failed' ) {
 			renderState( 'error' );
+			return;
+		}
+		if ( readinessResult === 'stale' ) {
 			return;
 		}
 		const screen = resolveAdminScreen( currentHash() );
