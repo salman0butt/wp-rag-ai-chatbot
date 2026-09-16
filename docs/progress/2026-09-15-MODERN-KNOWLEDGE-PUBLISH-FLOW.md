@@ -8,7 +8,7 @@ The smoke uses the existing WordPress job hook and production runtime compositio
 
 ## Verification status
 
-Status: package verified; live WordPress application smoke is blocked by the local Docker/wp-env environment.
+Status: package verified and uploaded to the requested WordPress site; the local Docker/wp-env application smoke is blocked by the environment.
 
 The wrapper reports `ENVIRONMENT_STARTUP_FAILURE` with exit code 2 when Docker/wp-env is unavailable, and `APPLICATION_ASSERTION_FAILURE` with exit code 1 when the application assertions fail.
 
@@ -25,20 +25,20 @@ bash scripts/assert-package.sh
 unzip -t wp-rag-ai-chatbot.zip
 ```
 
-Fresh verification from commit `c89993ca8bb09205af5c24b7cca0f2d0614f71b7`:
+Final verification from commit `a3c3eb5e001e12641234713e5e022f3e8df6d565`:
 
 - `composer test` — 927 tests, 3,829 assertions passed.
 - `composer lint:php` — passed.
 - `vendor/bin/phpstan analyse --memory-limit=2G` — passed with no errors.
 - PHP syntax scan — passed; the repository's pre-existing non-fatal `use` warnings remain in older smoke scripts.
-- `npm run verify:js` — 73 suites, 210 tests passed; lint, typecheck, build, and vector-store gating passed.
+- `npm run verify:js` — 73 suites, 212 tests passed; lint, typecheck, build, and vector-store gating passed.
 - `bash scripts/test-wp-modern-setup.sh` — classified `ENVIRONMENT_STARTUP_FAILURE` (Docker unavailable or not initialized); application assertions were not run.
 - `npm run plugin-zip` — passed.
 - `bash scripts/assert-package.sh` — passed.
 - `unzip -t wp-rag-ai-chatbot.zip` — passed.
-- Package: `wp-rag-ai-chatbot.zip`; SHA-256: `8ae78afc7c72fd482a0808ffe80b43cff9d1ed81aeb029a481f49e76834dca3b`.
+- Package: `wp-rag-ai-chatbot.zip`; SHA-256: `d9b2764bf317d50b54540d93a97de42f6c29dc79c7dd7715f332cbf5d7dbd2e7`.
 
-The runtime-only package is ready for WordPress upload. Live WordPress update and smoke remain a separate handoff.
+The runtime-only package is ready for WordPress upload. The package was uploaded and replaced on `digitalmx.no/update`; the modern Overview and Provider screens load successfully, the saved Gemini credential remains connected, and a fresh admin load produced no browser console errors.
 
 ## Frontend publishing
 
@@ -50,4 +50,4 @@ After package verification, install the runtime-only `wp-rag-ai-chatbot.zip`, co
 [wp_rag_ai_chatbot_fullscreen bot="BOT_ID"]
 ```
 
-The Gutenberg block is `wp-rag-ai-chatbot/chatbot`; select the published bot in its `bot` attribute. Keep the live WordPress update as a separate handoff after package verification.
+The Gutenberg block is `wp-rag-ai-chatbot/chatbot`; select the published bot in its `bot` attribute.
