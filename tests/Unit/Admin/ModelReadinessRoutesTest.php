@@ -11,10 +11,10 @@ namespace WpRagAiChatbot\Tests\Unit\Admin;
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
-use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Admin\AdminCapability;
 use WpRagAiChatbot\Admin\Rest\AdminRestBootstrap;
+use WpRagAiChatbot\Admin\Rest\SetupReadinessRestResource;
 
 /**
  * Verifies Task 5 routes share the centralized admin capability.
@@ -37,10 +37,11 @@ final class ModelReadinessRoutesTest extends TestCase {
 	}
 
 	/**
-	 * Model and onboarding resources must be versioned and capability-protected.
+	 * Model and setup-readiness resources must be versioned and capability-protected.
 	 */
-	#[DoesNotPerformAssertions]
 	public function test_register_routes_adds_protected_model_and_readiness_resources(): void {
+		self::assertTrue( class_exists( SetupReadinessRestResource::class ) );
+
 		Functions\expect( 'register_rest_route' )
 			->once()
 			->with(

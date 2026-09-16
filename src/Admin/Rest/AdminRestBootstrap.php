@@ -523,7 +523,7 @@ final class AdminRestBootstrap {
 	 * @return array{ready:bool,next_step:string}
 	 */
 	public static function get_onboarding_readiness(): array {
-		return self::model_readiness()->readiness();
+		return self::setup_readiness()->readiness();
 	}
 
 	/**
@@ -752,6 +752,23 @@ final class AdminRestBootstrap {
 				$connection,
 				new TableNames( $connection->prefix() )
 			)
+		);
+	}
+
+	/** Build the bounded setup readiness resource from persisted local services. */
+	private static function setup_readiness(): SetupReadinessRestResource {
+		global $wpdb;
+
+		$connection = new WpdbConnection( $wpdb );
+		$tables     = new TableNames( $connection->prefix() );
+
+		return new SetupReadinessRestResource(
+			ProviderBootstrap::registry(),
+			ProviderBootstrap::configuration(),
+			new WpdbKnowledgeSourceRepository( $connection, $tables ),
+			new WpdbBotRepository( $connection, $tables ),
+			new WpdbBotRetrievalBindingRepository( $connection, $tables ),
+			$connection
 		);
 	}
 
