@@ -32,6 +32,8 @@ use WpRagAiChatbot\Jobs\Sync\KnowledgeSourceSyncJobPayload;
 use WpRagAiChatbot\Jobs\WordPressJobCron;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
+use WpRagAiChatbot\Knowledge\Sources\KnowledgeSource;
+use WpRagAiChatbot\Knowledge\Sources\KnowledgeSourceException;
 use WpRagAiChatbot\Knowledge\Sources\KnowledgeSourceRegistry;
 use WpRagAiChatbot\Knowledge\Sources\ManualTextSource;
 
@@ -230,6 +232,36 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 			self::fail( 'Mismatched source profile was accepted.' );
 		} catch ( JobExecutionException $error ) {
 			self::assertSame( 'source_sync_configuration_mismatch', $error->safe_code() );
+			self::assertFalse( $error->retryable() );
+		}
+	}
+
+	/** A source-normalization failure remains safe while identifying the failed boundary. */
+	public function test_source_normalization_failure_uses_content_failure_code(): void {
+		$now     = new DateTimeImmutable( '2026-09-15T10:00:00+00:00' );
+		$source  = $this->source( $now );
+		$fixture = $this->handler_fixture( $source );
+		$sources = $this->createMock( KnowledgeSourceRepository::class );
+		$sources->expects( self::once() )->method( 'findById' )->with( 7 )->willReturn( $source );
+		$registry       = new KnowledgeSourceRegistry();
+		$source_adapter = $this->createMock( KnowledgeSource::class );
+		$source_adapter->method( 'type' )->willReturn( 'manual_text' );
+		$source_adapter->method( 'documents' )->willThrowException( new KnowledgeSourceException( 'private source detail' ) );
+		$registry->register( $source_adapter );
+		$handler = new KnowledgeSourceSyncJobHandler(
+			$sources,
+			$registry,
+			$fixture['documents'],
+			new DocumentIndexJobEnqueuer( $fixture['jobs'] ),
+			$this->createMock( Clock::class )
+		);
+
+		try {
+			$handler->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Source-normalization failure did not fail closed.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'source_sync_content_invalid', $error->safe_code() );
+			self::assertSame( 'WordPress content could not be normalized safely.', $error->safe_message() );
 			self::assertFalse( $error->retryable() );
 		}
 	}

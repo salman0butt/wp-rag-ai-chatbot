@@ -20,6 +20,8 @@ use WpRagAiChatbot\Jobs\JobRepository;
 use WpRagAiChatbot\Jobs\JobStatus;
 use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobEnqueuer;
 use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobPayload;
+use WpRagAiChatbot\Jobs\Sync\KnowledgeSourceSyncJobEnqueuer;
+use WpRagAiChatbot\Jobs\Sync\KnowledgeSourceSyncJobPayload;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 
 // phpcs:disable WordPress.NamingConventions -- DTO keys and repository API follow the approved domain contract.
@@ -104,23 +106,33 @@ final class KnowledgeJobRestResource {
 	}
 
 	/**
-	 * Retry one failed document-index job as a fresh M09 generation.
+	 * Retry one failed knowledge job as a fresh queue generation.
 	 *
 	 * @param string $job_key Stable job identity.
 	 * @return array<string,mixed>
+	 * @throws DatabaseException|JobQueueException When persisted job state cannot be retried.
 	 */
 	public function retry( string $job_key ): array {
 		$record = $this->reader->findByKey( $job_key );
 		if ( null === $record ) {
 			return self::error( 'not_found', 'Job was not found.' );
 		}
-		if ( JobStatus::FAILED !== $record->status || 'index.document' !== $record->type ) {
+		if ( JobStatus::FAILED !== $record->status || ! in_array( $record->type, array( 'index.document', 'sync.source' ), true ) ) {
 			return self::error( 'invalid_transition', 'The requested job transition is not allowed.' );
 		}
 
 		try {
-			$payload = $this->server_owned_payload( $this->persisted_identifiers( $record->payload ) );
-			$retry   = ( new DocumentIndexJobEnqueuer( $this->repository ) )->enqueue( $payload, $this->clock->now() );
+			if ( 'sync.source' === $record->type ) {
+				$payload = KnowledgeSourceSyncJobPayload::from_array( $record->payload );
+				$source  = $this->sources->findById( $payload->source_id );
+				if ( null === $source || ! WordPressDocumentIndexDependencies::matches_source_configuration( $source, $payload ) ) {
+					throw new JobQueueException( 'Source synchronization lineage is invalid.' );
+				}
+				$retry = ( new KnowledgeSourceSyncJobEnqueuer( $this->repository, $this->clock ) )->enqueue( $payload );
+			} else {
+				$payload = $this->server_owned_payload( $this->persisted_identifiers( $record->payload ) );
+				$retry   = ( new DocumentIndexJobEnqueuer( $this->repository ) )->enqueue( $payload, $this->clock->now() );
+			}
 		} catch ( DatabaseException | JobQueueException ) {
 			return self::error( 'invalid_transition', 'The requested job transition is not allowed.' );
 		}

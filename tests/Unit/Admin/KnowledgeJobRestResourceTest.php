@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Admin;
 
+use Brain\Monkey;
+use Brain\Monkey\Functions;
 use DateTimeImmutable;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -20,6 +22,7 @@ use WpRagAiChatbot\Jobs\JobRecord;
 use WpRagAiChatbot\Jobs\JobRepository;
 use WpRagAiChatbot\Jobs\JobRequest;
 use WpRagAiChatbot\Jobs\JobStatus;
+use WpRagAiChatbot\Jobs\Sync\KnowledgeSourceSyncJobPayload;
 use WpRagAiChatbot\Jobs\Sync\WordPressDocumentIndexDependencies;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
@@ -28,6 +31,18 @@ use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
  * Verifies bounded safe job projections and lifecycle guards.
  */
 final class KnowledgeJobRestResourceTest extends TestCase {
+	/** Start WordPress function isolation. */
+	protected function setUp(): void {
+		parent::setUp();
+		Monkey\setUp();
+	}
+
+	/** Stop WordPress function isolation. */
+	protected function tearDown(): void {
+		Monkey\tearDown();
+		parent::tearDown();
+	}
+
 	/** Job lists expose only bounded safe status fields. */
 	public function test_list_projects_safe_fields_without_payload_or_lease_data(): void {
 		$resource_class = $this->resource_class();
@@ -103,6 +118,41 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock( $now ), $sources, $documents ), 'retry', array( 'job-123' ) );
 
 		self::assertSame( 'job-retry', $response['job_key'] );
+		self::assertSame( 'queued', $response['status'] );
+	}
+
+	/** Failed source-sync jobs retry through the source-sync queue contract. */
+	public function test_retry_failed_source_sync_job_enqueues_new_generation(): void {
+		$resource_class = $this->resource_class();
+		$failed         = $this->source_job( JobStatus::FAILED );
+		$reader         = $this->reader();
+		$reader->expects( self::once() )->method( 'findByKey' )->with( 'sync-source-job' )->willReturn( $failed );
+		$sources = $this->sources();
+		$sources->expects( self::once() )->method( 'findById' )->with( 7 )->willReturn( $this->source() );
+		$repository = $this->repository();
+		$now        = new DateTimeImmutable( '2026-09-08T18:45:00+00:00' );
+		$repository->expects( self::once() )
+			->method( 'enqueue' )
+			->with(
+				self::callback(
+					static fn ( JobRequest $request ): bool => 'sync.source' === $request->type
+						&& KnowledgeSourceSyncJobPayload::from_array( $request->payload )->to_array() === array(
+							'source_id'        => 7,
+							'collection_id'    => WordPressDocumentIndexDependencies::COLLECTION_ID,
+							'configuration_id' => WordPressDocumentIndexDependencies::configuration_id(),
+							'generation'       => 'source-generation-v1',
+						)
+						&& 3 === $request->max_attempts
+				),
+				$now
+			)
+			->willReturn( $this->source_job( JobStatus::QUEUED, 'sync-source-retry' ) );
+		Functions\when( 'wp_next_scheduled' )->justReturn( false );
+		Functions\when( 'wp_schedule_single_event' )->justReturn( true );
+
+		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock( $now ), $sources, $this->documents() ), 'retry', array( 'sync-source-job' ) );
+
+		self::assertSame( 'sync-source-retry', $response['job_key'] );
 		self::assertSame( 'queued', $response['status'] );
 	}
 
@@ -234,6 +284,45 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 			'Indexing 3 of 10',
 			'provider_unavailable',
 			'Indexing provider is temporarily unavailable.',
+			$now->modify( '-1 minute' ),
+			$status->terminal() ? $now : null,
+			$now->modify( '-5 minutes' ),
+			$now
+		);
+	}
+
+	/**
+	 * Build one persisted source-sync job fixture.
+	 *
+	 * @param JobStatus $status Job status.
+	 * @param string    $job_key Stable job identity.
+	 */
+	private function source_job( JobStatus $status, string $job_key = 'sync-source-job' ): JobRecord {
+		$now = new DateTimeImmutable( '2026-09-08T18:40:00+00:00' );
+
+		return new JobRecord(
+			2,
+			$job_key,
+			'sync.source',
+			$status,
+			'SOURCE-IDEMPOTENCY-SECRET',
+			array(
+				'source_id'        => 7,
+				'collection_id'    => WordPressDocumentIndexDependencies::COLLECTION_ID,
+				'configuration_id' => WordPressDocumentIndexDependencies::configuration_id(),
+				'generation'       => 'source-generation-v1',
+			),
+			1,
+			3,
+			$now,
+			'SOURCE-LEASE-SECRET',
+			$now->modify( '+2 minutes' ),
+			null,
+			3,
+			1,
+			'Normalizing knowledge source',
+			'source_sync_invalid',
+			'Knowledge source could not be synchronized safely.',
 			$now->modify( '-1 minute' ),
 			$status->terminal() ? $now : null,
 			$now->modify( '-5 minutes' ),

@@ -112,8 +112,12 @@ final class KnowledgeSourceSyncJobHandler implements JobHandler {
 			}
 		} catch ( DatabaseException ) {
 			throw new JobExecutionException( 'source_sync_unavailable', 'Knowledge source persistence is temporarily unavailable.', true );
-		} catch ( KnowledgeSourceException | InvalidArgumentException | JobQueueException ) {
-			throw new JobExecutionException( 'source_sync_invalid', 'Knowledge source could not be synchronized safely.', false );
+		} catch ( KnowledgeSourceException ) {
+			throw new JobExecutionException( 'source_sync_content_invalid', 'WordPress content could not be normalized safely.', false );
+		} catch ( JobQueueException ) {
+			throw new JobExecutionException( 'source_sync_queue_invalid', 'WordPress content could not be queued for indexing.', false );
+		} catch ( InvalidArgumentException ) {
+			throw new JobExecutionException( 'source_sync_document_invalid', 'WordPress content produced an invalid document.', false );
 		}
 	}
 
