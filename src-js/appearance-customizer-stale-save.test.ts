@@ -144,42 +144,91 @@ describe( 'appearance customizer stale save protection', () => {
 			status: 200,
 			json: async () => ( { display_rules: {} } ),
 		};
-		const fetcher = jest
-			.fn()
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( { ready: true, next_step: 'complete' } ),
-			} )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( {
-					items: [ botA, botB ],
-					total: 2,
-					page: 1,
-					per_page: 20,
-				} ),
-			} )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( { appearance: appearance( '#2563eb' ) } ),
-			} )
-			.mockResolvedValueOnce( displayRulesResponse )
-			.mockImplementationOnce( () => staleSave.promise )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( { appearance: appearance( '#7c3aed' ) } ),
-			} )
-			.mockResolvedValueOnce( displayRulesResponse )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( { appearance: appearance( '#16a34a' ) } ),
-			} )
-			.mockResolvedValueOnce( displayRulesResponse );
+		let appearanceGets = 0;
+		const fetcher = jest.fn(
+			( input: RequestInfo | URL, init?: RequestInit ) => {
+				const url = String( input );
+				const method = init?.method ?? 'GET';
+
+				if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							ready: true,
+							next_step: 'complete',
+						} ),
+					} );
+				}
+
+				if ( url.includes( '/admin/bots?' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							items: [ botA, botB ],
+							total: 2,
+							page: 1,
+							per_page: 20,
+						} ),
+					} );
+				}
+
+				if ( url.endsWith( '/appearance' ) ) {
+					if ( method === 'PUT' ) {
+						return staleSave.promise;
+					}
+					appearanceGets += 1;
+					const colors = [ '#2563eb', '#7c3aed', '#16a34a' ];
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							appearance: appearance(
+								colors[ appearanceGets - 1 ] ?? '#16a34a'
+							),
+						} ),
+					} );
+				}
+
+				if ( url.endsWith( '/display-rules' ) ) {
+					return Promise.resolve( displayRulesResponse );
+				}
+
+				if ( url.includes( '/admin/knowledge/sources?' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							items: [],
+							total: 0,
+							page: 1,
+							per_page: 100,
+						} ),
+					} );
+				}
+
+				if ( url.endsWith( '/retrieval' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							retrieval: {
+								configured: false,
+								source_id: null,
+								source_title: null,
+								collection_id: null,
+								collection_ready: false,
+							},
+						} ),
+					} );
+				}
+
+				return Promise.reject(
+					new Error( `Unexpected request: ${ url }` )
+				);
+			}
+		);
 		Object.defineProperty( window, 'fetch', {
 			configurable: true,
 			value: fetcher,

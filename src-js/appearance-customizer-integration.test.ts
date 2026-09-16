@@ -116,38 +116,90 @@ describe( 'appearance customizer persistence integration', () => {
 			...serverAppearance,
 			primary_color: '#dc2626',
 		};
-		const fetcher = jest
-			.fn()
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( { ready: true, next_step: 'complete' } ),
-			} )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( {
-					items: [ bot ],
-					total: 1,
-					page: 1,
-					per_page: 20,
-				} ),
-			} )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( { appearance: serverAppearance } ),
-			} )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( { display_rules: {} } ),
-			} )
-			.mockResolvedValueOnce( {
-				ok: true,
-				status: 200,
-				json: async () => ( { appearance: savedAppearance } ),
-			} );
+		const fetcher = jest.fn(
+			( input: RequestInfo | URL, init?: RequestInit ) => {
+				const url = String( input );
+				const method = init?.method ?? 'GET';
+
+				if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							ready: true,
+							next_step: 'complete',
+						} ),
+					} );
+				}
+
+				if ( url.includes( '/admin/bots?' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							items: [ bot ],
+							total: 1,
+							page: 1,
+							per_page: 20,
+						} ),
+					} );
+				}
+
+				if ( url.endsWith( '/appearance' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							appearance:
+								method === 'PUT'
+									? savedAppearance
+									: serverAppearance,
+						} ),
+					} );
+				}
+
+				if ( url.endsWith( '/display-rules' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( { display_rules: {} } ),
+					} );
+				}
+
+				if ( url.includes( '/admin/knowledge/sources?' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							items: [],
+							total: 0,
+							page: 1,
+							per_page: 100,
+						} ),
+					} );
+				}
+
+				if ( url.endsWith( '/retrieval' ) ) {
+					return Promise.resolve( {
+						ok: true,
+						status: 200,
+						json: async () => ( {
+							retrieval: {
+								configured: false,
+								source_id: null,
+								source_title: null,
+								collection_id: null,
+								collection_ready: false,
+							},
+						} ),
+					} );
+				}
+
+				return Promise.reject(
+					new Error( `Unexpected request: ${ url }` )
+				);
+			}
+		);
 		Object.defineProperty( window, 'fetch', {
 			configurable: true,
 			value: fetcher,
@@ -160,8 +212,7 @@ describe( 'appearance customizer persistence integration', () => {
 		await tick();
 		await tick();
 
-		expect( fetcher ).toHaveBeenNthCalledWith(
-			3,
+		expect( fetcher ).toHaveBeenCalledWith(
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots/bot-existing/appearance',
 			expect.objectContaining( {
 				headers: expect.objectContaining( {
@@ -194,8 +245,7 @@ describe( 'appearance customizer persistence integration', () => {
 		await tick();
 		await tick();
 
-		expect( fetcher ).toHaveBeenNthCalledWith(
-			5,
+		expect( fetcher ).toHaveBeenCalledWith(
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots/bot-existing/appearance',
 			expect.objectContaining( {
 				method: 'PUT',
