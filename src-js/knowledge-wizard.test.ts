@@ -1,5 +1,10 @@
 import { bootstrapAdminApp, createAdminApiClient } from './index';
 import {
+	createElement as reactCreateElement,
+	createRoot,
+} from '@wordpress/element';
+import { flushSync } from 'react-dom';
+import {
 	KnowledgeWizard,
 	buildKnowledgeSourceRequest,
 	createKnowledgeDraft,
@@ -295,6 +300,33 @@ describe( 'knowledge wizard', () => {
 		expect( error?.textContent ).toBe( '' );
 		await Promise.resolve();
 		expect( create ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'updates rendered feedback nodes instead of frozen element descriptors', async () => {
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			value: { element: { createElement: reactCreateElement } },
+		} );
+		const create = jest.fn().mockResolvedValue( undefined );
+		const root = document.createElement( 'div' );
+		const reactRoot = createRoot( root );
+		flushSync( () =>
+			reactRoot.render(
+				KnowledgeWizard( { onCreate: create } ) as Parameters<
+					typeof reactRoot.render
+				>[ 0 ]
+			)
+		);
+
+		const form = root.querySelector( 'form' ) as HTMLFormElement;
+		expect( () =>
+			form.dispatchEvent(
+				new Event( 'submit', { bubbles: true, cancelable: true } )
+			)
+		).not.toThrow();
+		await Promise.resolve();
+		expect( create ).toHaveBeenCalledTimes( 1 );
+		reactRoot.unmount();
 	} );
 } );
 

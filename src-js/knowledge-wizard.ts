@@ -507,6 +507,9 @@ export const KnowledgeWizard = (
 					return;
 				}
 				const formElement = event.currentTarget as HTMLFormElement;
+				const feedbackError = formElement.querySelector< HTMLElement >(
+					'[data-knowledge-wizard-error]'
+				);
 				const draft = draftFromForm( formElement );
 				const errors = validateKnowledgeDraft(
 					draft,
@@ -530,13 +533,20 @@ export const KnowledgeWizard = (
 							fieldSelector
 						);
 					invalidField?.setAttribute( 'aria-invalid', 'true' );
-					( error as HTMLElement ).textContent = firstError;
-					( error as HTMLElement ).removeAttribute( 'aria-hidden' );
+					if ( feedbackError !== null ) {
+						feedbackError.textContent = firstError;
+						feedbackError.removeAttribute( 'aria-hidden' );
+					}
 					invalidField?.focus();
 					return;
 				}
-				( error as HTMLElement ).textContent = '';
-				( error as HTMLElement ).setAttribute( 'aria-hidden', 'true' );
+				const feedbackStatus = formElement.querySelector< HTMLElement >(
+					'[data-knowledge-submit-status]'
+				);
+				if ( feedbackError !== null ) {
+					feedbackError.textContent = '';
+					feedbackError.setAttribute( 'aria-hidden', 'true' );
+				}
 				formElement
 					.querySelectorAll< HTMLElement >( '[aria-invalid="true"]' )
 					.forEach( ( field ) =>
@@ -550,15 +560,17 @@ export const KnowledgeWizard = (
 					submit.disabled = true;
 				}
 				formElement.setAttribute( 'aria-busy', 'true' );
-				( status as HTMLElement ).textContent = 'Saving source…';
+				if ( feedbackStatus !== null ) {
+					feedbackStatus.textContent = 'Saving source…';
+				}
 				void props
 					.onCreate( draft )
 					.catch( () => {
-						( error as HTMLElement ).textContent =
-							'The source could not be saved. Try again.';
-						( error as HTMLElement ).removeAttribute(
-							'aria-hidden'
-						);
+						if ( feedbackError !== null ) {
+							feedbackError.textContent =
+								'The source could not be saved. Try again.';
+							feedbackError.removeAttribute( 'aria-hidden' );
+						}
 					} )
 					.finally( () => {
 						inFlight = false;
@@ -566,8 +578,10 @@ export const KnowledgeWizard = (
 						if ( submit !== null ) {
 							submit.disabled = false;
 						}
-						( status as HTMLElement ).textContent =
-							'Source request finished. Check the server indexing status below.';
+						if ( feedbackStatus !== null ) {
+							feedbackStatus.textContent =
+								'Source request finished. Check the server indexing status below.';
+						}
 					} );
 			},
 		},
