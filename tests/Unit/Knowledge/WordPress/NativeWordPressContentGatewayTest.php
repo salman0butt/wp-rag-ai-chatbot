@@ -155,6 +155,9 @@ final class NativeWordPressContentGatewayTest extends TestCase {
 				return preg_replace( '/<[^>]+>/', '', $text ) ?? '';
 			}
 		);
+		Functions\when( 'wp_check_invalid_utf8' )->alias(
+			static fn ( string $text ): string => $text
+		);
 
 		$gateway = new NativeWordPressContentGateway();
 		$result  = $gateway->posts( array( 'post' ), false, 1, 20 );
@@ -189,5 +192,42 @@ final class NativeWordPressContentGatewayTest extends TestCase {
 			),
 			$result[0]->taxonomyLabels
 		);
+	}
+
+	/**
+	 * Invalid database bytes are removed before document hashing sees content.
+	 */
+	public function test_posts_normalizes_invalid_utf8_in_content_fields(): void {
+		self::assertTrue( class_exists( NativeWordPressContentGateway::class ), 'Native gateway must exist before UTF-8 normalization can be verified.' );
+
+		$post                    = new stdClass();
+		$post->ID                = 43;
+		$post->post_type         = 'post';
+		$post->post_status       = 'publish';
+		$post->post_title        = "Broken\xB1Title";
+		$post->post_excerpt      = '';
+		$post->post_content      = "Body\xB1";
+		$post->post_modified_gmt = '2026-09-03 00:15:00';
+		$post->post_password     = '';
+		$post->post_author       = '7';
+
+		Functions\expect( 'get_posts' )->once()->andReturn( array( $post ) );
+		Functions\expect( 'get_permalink' )->once()->with( 43 )->andReturn( 'https://example.test/broken/' );
+		Functions\expect( 'get_object_taxonomies' )->once()->with( 'post', 'names' )->andReturn( array() );
+		Functions\when( 'wp_strip_all_tags' )->alias(
+			static function ( string $text ): string {
+				return $text;
+			}
+		);
+		Functions\expect( 'wp_check_invalid_utf8' )
+			->times( 3 )
+			->andReturnUsing(
+				static fn ( string $text ): string => str_replace( "\xB1", '', $text )
+			);
+
+		$result = ( new NativeWordPressContentGateway() )->posts( array( 'post' ), false, 1, 20 );
+
+		self::assertSame( 'BrokenTitle', $result[0]->title );
+		self::assertSame( 'Body', $result[0]->content );
 	}
 }

@@ -58,6 +58,9 @@ final class NativeWordPressContentGatewayTextTest extends TestCase {
 				return preg_replace( '/<[^>]+>/', '', $text ) ?? '';
 			}
 		);
+		Functions\when( 'wp_check_invalid_utf8' )->alias(
+			static fn ( string $text ): string => $text
+		);
 
 		$result = ( new NativeWordPressContentGateway() )->posts( array( 'post' ), false, 1, 20 );
 
