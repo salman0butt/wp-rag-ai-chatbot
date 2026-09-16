@@ -72,6 +72,60 @@ final class WpdbBotRetrievalBindingRepository implements BotRetrievalBindingRepo
 	}
 
 	/**
+	 * Return valid bindings for the requested bot IDs in one query.
+	 *
+	 * @param array<int,BotId> $bot_ids Stable bot identifiers.
+	 * @return array<string,BotRetrievalBinding> Bindings keyed by bot ID.
+	 */
+	public function find_for_bot_ids( array $bot_ids ): array {
+		if ( array() === $bot_ids ) {
+			return array();
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $bot_ids ), '%s' ) );
+		$args         = array( $this->tables->bots() );
+		foreach ( $bot_ids as $bot_id ) {
+			$args[] = $bot_id->value;
+		}
+
+		$sql      = $this->connection->prepare(
+			'SELECT bot_id, retrieval_source_id, retrieval_collection_id FROM %i WHERE bot_id IN (' . $placeholders . ') AND retrieval_source_id IS NOT NULL AND retrieval_collection_id IS NOT NULL',
+			...$args
+		);
+		$bindings = array();
+		foreach ( $this->connection->get_results( $sql ) as $row ) {
+			try {
+				$bot_id        = new BotId( (string) ( $row['bot_id'] ?? '' ) );
+				$source_id     = $row['retrieval_source_id'] ?? null;
+				$collection_id = $row['retrieval_collection_id'] ?? null;
+				if ( ! is_string( $collection_id ) || ( ! is_int( $source_id ) && ! is_string( $source_id ) ) ) {
+					continue;
+				}
+				if ( is_string( $source_id ) && ( '' === $source_id || ! ctype_digit( $source_id ) ) ) {
+					continue;
+				}
+				$bindings[ $bot_id->value ] = new BotRetrievalBinding( (int) $source_id, $collection_id );
+			} catch ( InvalidArgumentException ) {
+				continue;
+			}
+		}
+
+		return $bindings;
+	}
+
+	/**
+	 * Determine whether any bot row has both binding columns populated.
+	 */
+	public function has_any(): bool {
+		$sql = $this->connection->prepare(
+			'SELECT 1 FROM %i WHERE retrieval_source_id IS NOT NULL AND retrieval_collection_id IS NOT NULL LIMIT 1',
+			$this->tables->bots()
+		);
+
+		return null !== $this->connection->get_var( $sql );
+	}
+
+	/**
 	 * Persist one trusted binding.
 	 *
 	 * @param BotId               $bot_id Stable bot identifier.

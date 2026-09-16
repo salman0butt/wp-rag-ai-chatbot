@@ -64,4 +64,9 @@ interface BotRepository {
 	 * @return array{items:array<int,Bot>,total:int,page:int,per_page:int}
 	 */
 	public function list( int $page, int $per_page ): array;
+
+	/**
+	 * Count enabled bots without materializing bot rows.
+	 */
+	public function count_enabled(): int;
 }

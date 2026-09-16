@@ -57,6 +57,15 @@ final class CachedModelCatalogProvider implements ModelCatalogProvider {
 	}
 
 	/**
+	 * Return only the locally cached catalog; never trigger upstream discovery.
+	 *
+	 * @return \WpRagAiChatbot\Providers\ModelInfo[]|null
+	 */
+	public function cached_models(): ?array {
+		return $this->cache->get( $this->provider_id );
+	}
+
+	/**
 	 * Force upstream discovery and replace cache only after success.
 	 *
 	 * @return \WpRagAiChatbot\Providers\ModelInfo[]

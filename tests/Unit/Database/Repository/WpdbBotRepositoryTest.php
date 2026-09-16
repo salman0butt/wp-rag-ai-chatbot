@@ -160,6 +160,18 @@ final class WpdbBotRepositoryTest extends TestCase {
 		self::assertSame( 10, $page['per_page'] );
 	}
 
+	/** Enabled bot counts are aggregated in the repository without loading bot rows. */
+	public function test_count_enabled_uses_an_aggregate_query(): void {
+		self::assertTrue( class_exists( WpdbBotRepository::class ), 'M12 Task 2 requires WpdbBotRepository.' );
+		$connection = $this->connection();
+		$connection->expects( self::once() )
+			->method( 'get_var' )
+			->with( 'SELECT COUNT(*) FROM wp_rag_ai_bots WHERE enabled = 1' )
+			->willReturn( 3 );
+
+		self::assertSame( 3, $this->repository( $connection )->count_enabled() );
+	}
+
 	/**
 	 * Create a connection mock.
 	 *

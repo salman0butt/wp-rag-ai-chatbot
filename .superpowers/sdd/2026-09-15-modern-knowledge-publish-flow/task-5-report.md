@@ -1,53 +1,63 @@
-# Task 5 report — bounded setup readiness
+# Task 5 report — fix round 1/5
 
-## Scope
+## Outcome
 
-Added the server-owned setup readiness resource and wired the existing
-`GET /wp-rag-ai-chatbot/v1/admin/onboarding/readiness` route to it. The route
-and capability callback remain unchanged, and `ready`/`next_step` remain in
-the response.
+Closed every finding in `task-5-review.md` while preserving the existing
+`GET /wp-rag-ai-chatbot/v1/admin/onboarding/readiness` route, namespace,
+capability callback, `ready`/`next_step` keys, and safe onboarding issue codes.
 
-The response now includes only bounded setup state:
+- I1: readiness preserves only `missing_credential`, `provider_unavailable`,
+  and `unsupported_capability`; issue recovery tests cover all three states.
+- I2: readiness reads the existing cached model catalog only and reuses the
+  model-readiness compatibility authority. Empty, stale, mismatched, and valid
+  model cases are covered. No provider discovery or network work occurs.
+- I3/M2: fixed collection/profile comparison is centralized in
+  `GuidedRetrievalReadiness` and used by both `BotRetrievalResource` and setup
+  readiness. Completion requires the `wp-rag-default` collection row, the
+  exact fixed fingerprint, dimensions 3072, and non-empty lexical/vector
+  projections.
+- I4: enabled counts use a repository aggregate, binding presence uses one
+  scalar existence query, and candidate bindings use one batch query. A
+  documented 100-bot scan ceiling fails closed for larger inventories.
+- M1: negative coverage includes empty/stale models, malformed bindings,
+  missing/wrong/partial collection state, and the bounded-inventory ceiling.
 
-- configured generation provider;
-- configured Gemini embedding capability;
-- local model capability availability;
-- persisted source count;
-- completed local lexical/vector index presence;
-- enabled bot count;
-- bound bot presence;
-- publishable bot presence.
-
-Provider readiness uses local registry/configuration state only. Index
-readiness uses the fixed server-owned Gemini profile and local WordPress
-projection tables. No credentials, paths, payloads, provider calls, or
-optimistic browser state cross the REST boundary.
+The response contains only bounded booleans, counts, and safe issue values;
+credentials, paths, raw errors, payloads, and provider responses are not
+exposed.
 
 ## TDD evidence
 
-RED was observed before implementation:
+RED was recorded before the production changes:
 
 ```text
-vendor/bin/phpunit --filter SetupReadinessRestResourceTest --testdox
-3 tests, 1 assertion, 1 intended failure and 2 class-not-found errors
-because SetupReadinessRestResource did not exist.
+vendor/bin/phpunit tests/Unit/Admin/SetupReadinessRestResourceTest.php \
+  tests/Unit/Providers/Cache/CachedModelCatalogProviderTest.php \
+  tests/Unit/Database/Repository/WpdbBotRepositoryTest.php \
+  tests/Unit/Database/Repository/WpdbBotRetrievalBindingRepositoryTest.php \
+  --no-coverage
+
+35 tests, 77 assertions, 19 errors.
+The intended failures were the absent cache-only catalog method, aggregate
+bot-count method, aggregate/batch binding methods, and the new readiness
+repository contract; the original readiness implementation also failed the
+new bounded/profile/issue coverage.
 ```
 
-GREEN after implementation:
+GREEN focused verification after implementation:
 
 ```text
-SetupReadinessRestResourceTest + existing model readiness tests:
-7 tests, 45 assertions, OK
+55 tests, 221 assertions, OK
 ```
 
-## Verification
+## Final verification
 
 ```text
 vendor/bin/phpunit --testsuite unit --no-coverage
-875 tests, 3592 assertions, OK
+892 tests, 3645 assertions, OK
 
 vendor/bin/phpunit --no-coverage
-909 tests, 3768 assertions, OK
+926 tests, 3821 assertions, OK
 
 vendor/bin/phpcs
 No errors
@@ -59,5 +69,5 @@ git diff --check
 No output
 ```
 
-WordPress/live smoke was not run for this task. It remains unverified; no
-smoke pass is claimed.
+WordPress/live smoke was not run for this fix round and remains unverified;
+no smoke pass is claimed.

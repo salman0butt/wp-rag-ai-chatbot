@@ -78,7 +78,7 @@ final class ModelReadinessRestResource {
 
 		$normalized = array();
 		foreach ( $models as $model ) {
-			if ( ! $this->supports( $model, $provider_id, $purpose, $capability ) ) {
+			if ( ! self::supports_model( $model, $provider_id, $purpose, $capability ) ) {
 				continue;
 			}
 			$normalized[] = $this->normalize( $model );
@@ -198,7 +198,7 @@ final class ModelReadinessRestResource {
 	 * @param string      $purpose Requested purpose.
 	 * @param string|null $capability Optional requested capability.
 	 */
-	private function supports( ModelInfo $model, string $provider_id, string $purpose, ?string $capability ): bool {
+	public static function supports_model( ModelInfo $model, string $provider_id, string $purpose, ?string $capability = null ): bool {
 		if ( $provider_id !== $model->provider_id ) {
 			return false;
 		}

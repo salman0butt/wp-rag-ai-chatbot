@@ -84,6 +84,8 @@ final class WordPressTransientModelCatalogCache implements ModelCatalogCache {
 	private function transient_key( string $provider_id ): string {
 		return match ( $provider_id ) {
 			ProviderIds::OPENAI_DIRECT => 'wp_rag_ai_models_openai_direct_v1',
+			ProviderIds::GEMINI_DIRECT => 'wp_rag_ai_models_gemini_direct_v1',
+			ProviderIds::GROQ_DIRECT => 'wp_rag_ai_models_groq_direct_v1',
 			ProviderIds::OPENROUTER_DIRECT => 'wp_rag_ai_models_openrouter_direct_v1',
 			default => throw new InvalidArgumentException( 'Unsupported provider ID for model catalog cache.' ),
 		};

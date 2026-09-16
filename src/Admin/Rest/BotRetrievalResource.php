@@ -13,11 +13,8 @@ use InvalidArgumentException;
 use RuntimeException;
 use WpRagAiChatbot\Bots\BotId;
 use WpRagAiChatbot\Database\Connection;
-use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Frontend\BotRetrievalBinding;
 use WpRagAiChatbot\Frontend\BotRetrievalBindingRepository;
-use WpRagAiChatbot\Jobs\Sync\WordPressDocumentIndexDependencies;
-use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 
 // phpcs:disable WordPress.NamingConventions -- DTO keys and repository APIs follow the approved domain contract.
@@ -70,7 +67,7 @@ final class BotRetrievalResource {
 			return self::error( 'source_not_found', 'The selected knowledge source was not found.' );
 		}
 
-		$collection_id = self::source_collection_id( $source );
+		$collection_id = GuidedRetrievalReadiness::source_collection_id( $source );
 		if ( null === $collection_id ) {
 			return self::error( 'source_configuration_invalid', 'The selected knowledge source is not ready for retrieval.' );
 		}
@@ -79,7 +76,7 @@ final class BotRetrievalResource {
 		}
 
 		try {
-			$ready = $this->collection_ready( $collection_id );
+			$ready = GuidedRetrievalReadiness::collection_ready( $this->connection );
 		} catch ( RuntimeException ) {
 			return self::error( 'retrieval_read_failed', 'Bot knowledge binding could not be read.' );
 		}
@@ -124,13 +121,13 @@ final class BotRetrievalResource {
 			return self::error( 'source_not_found', 'The selected knowledge source was not found.' );
 		}
 
-		$collection_id = self::source_collection_id( $source );
+		$collection_id = GuidedRetrievalReadiness::source_collection_id( $source );
 		if ( null === $collection_id ) {
 			return self::error( 'source_configuration_invalid', 'The selected knowledge source is not ready for retrieval.' );
 		}
 
 		try {
-			if ( ! $this->collection_ready( $collection_id ) ) {
+			if ( ! GuidedRetrievalReadiness::collection_ready( $this->connection ) ) {
 				return self::error( 'collection_not_ready', 'The selected knowledge source is not indexed yet.' );
 			}
 			$this->bindings->save( $bot_id, new BotRetrievalBinding( $source_id, $collection_id ) );
@@ -168,65 +165,6 @@ final class BotRetrievalResource {
 		}
 
 		return array( 'deleted' => true );
-	}
-
-	/**
-	 * Check the local collection row against the fixed vector profile.
-	 *
-	 * @param string $collection_id Server-owned collection identifier.
-	 */
-	private function collection_ready( string $collection_id ): bool {
-		$tables = new TableNames( $this->connection->prefix() );
-		if ( ! $this->connection->table_exists( $tables->vector_collections() ) || ! $this->connection->table_exists( $tables->vectors() ) ) {
-			return false;
-		}
-
-		$row = $this->connection->get_row(
-			$this->connection->prepare(
-				'SELECT fingerprint, dimensions FROM %i WHERE collection_key = %s LIMIT 1',
-				$tables->vector_collections(),
-				$collection_id
-			)
-		);
-		if ( null === $row ) {
-			return false;
-		}
-
-		return is_string( $row['fingerprint'] ?? null )
-			&& hash_equals( self::profile_fingerprint(), $row['fingerprint'] )
-			&& (int) ( $row['dimensions'] ?? 0 ) === WordPressDocumentIndexDependencies::EMBEDDING_DIMENSIONS;
-	}
-
-	/**
-	 * Return the fixed source-owned collection only when the full semantic block matches.
-	 *
-	 * @param KnowledgeSourceRecord $source Persisted source.
-	 */
-	private static function source_collection_id( KnowledgeSourceRecord $source ): ?string {
-		$expected = WordPressDocumentIndexDependencies::semantic_configuration();
-		$semantic = $source->config['semantic_retrieval'] ?? null;
-		if ( ! is_array( $semantic ) || count( $semantic ) !== count( $expected ) ) {
-			return null;
-		}
-
-		foreach ( $expected as $key => $value ) {
-			if ( ! array_key_exists( $key, $semantic ) || $semantic[ $key ] !== $value ) {
-				return null;
-			}
-		}
-
-		return WordPressDocumentIndexDependencies::COLLECTION_ID;
-	}
-
-	/** Return the exact fixed vector-profile fingerprint used by the index worker. */
-	private static function profile_fingerprint(): string {
-		return hash(
-			'sha256',
-			"v1\nprovider=" . WordPressDocumentIndexDependencies::EMBEDDING_PROVIDER_ID
-			. "\nmodel=" . WordPressDocumentIndexDependencies::EMBEDDING_MODEL_ID
-			. "\ndimensions=" . WordPressDocumentIndexDependencies::EMBEDDING_DIMENSIONS
-			. "\nnormalization=none\ndistance=cosine"
-		);
 	}
 
 	/**

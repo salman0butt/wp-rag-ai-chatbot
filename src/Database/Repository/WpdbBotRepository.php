@@ -205,6 +205,13 @@ final class WpdbBotRepository implements BotRepository {
 	}
 
 	/**
+	 * Count enabled bots without loading their configuration rows.
+	 */
+	public function count_enabled(): int {
+		return (int) $this->connection->get_var( "SELECT COUNT(*) FROM {$this->tables->bots()} WHERE enabled = 1" );
+	}
+
+	/**
 	 * Rehydrate one persisted row.
 	 *
 	 * @param array<string,mixed> $row Persisted row.

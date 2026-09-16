@@ -23,6 +23,19 @@ interface BotRetrievalBindingRepository {
 	public function find( BotId $bot_id ): ?BotRetrievalBinding;
 
 	/**
+	 * Return valid bindings for the requested bot IDs in one bounded lookup.
+	 *
+	 * @param array<int,BotId> $bot_ids Stable bot identifiers.
+	 * @return array<string,BotRetrievalBinding> Bindings keyed by bot ID.
+	 */
+	public function find_for_bot_ids( array $bot_ids ): array;
+
+	/**
+	 * Determine whether any persisted bot has a complete binding.
+	 */
+	public function has_any(): bool;
+
+	/**
 	 * Persist one trusted binding.
 	 *
 	 * @param BotId               $bot_id Stable bot identifier.

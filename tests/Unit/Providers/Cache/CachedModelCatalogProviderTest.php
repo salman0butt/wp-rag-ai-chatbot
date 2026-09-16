@@ -44,6 +44,26 @@ final class CachedModelCatalogProviderTest extends TestCase {
 		self::assertSame( $cached_models, $models );
 	}
 
+	/** Readiness can inspect the cache without triggering upstream discovery. */
+	public function test_cached_models_reads_only_the_local_cache(): void {
+		$this->require_decorator();
+		$cached_models = array( $this->model( 'cached-model' ) );
+		$cache         = $this->createMock( ModelCatalogCache::class );
+		$upstream      = $this->createMock( ModelCatalogProvider::class );
+		$cache->expects( self::once() )
+			->method( 'get' )
+			->with( ProviderIds::OPENAI_DIRECT )
+			->willReturn( $cached_models );
+		$upstream->expects( self::once() )
+			->method( 'provider_id' )
+			->willReturn( ProviderIds::OPENAI_DIRECT );
+		$upstream->expects( self::never() )->method( 'models' );
+
+		$models = ( new CachedModelCatalogProvider( $upstream, $cache ) )->cached_models();
+
+		self::assertSame( $cached_models, $models );
+	}
+
 	/**
 	 * Cache misses fetch upstream once and persist the successful catalog.
 	 */

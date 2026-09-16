@@ -16,9 +16,8 @@ use WpRagAiChatbot\Database\Connection;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Frontend\BotRetrievalBinding;
 use WpRagAiChatbot\Frontend\BotRetrievalBindingRepository;
-use WpRagAiChatbot\Jobs\Sync\WordPressDocumentIndexDependencies;
-use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
 use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
+use WpRagAiChatbot\Providers\Cache\CachedModelCatalogProvider;
 use WpRagAiChatbot\Providers\ProviderConfigurationService;
 use WpRagAiChatbot\Providers\ProviderHealthStatus;
 use WpRagAiChatbot\Providers\ProviderIds;
@@ -27,7 +26,12 @@ use WpRagAiChatbot\Providers\ProviderRegistry;
 // phpcs:disable WordPress.NamingConventions -- REST keys follow the existing snake_case contract.
 /** Projects local provider, knowledge, index, and bot state without provider work. */
 final class SetupReadinessRestResource {
-	private const PAGE_SIZE = 100;
+	private const MAX_BOT_SCAN = 100;
+
+	/**
+	 * A readiness request scans at most one existing repository page. Larger inventories fail closed
+	 * until an exact aggregate compatibility query exists; this avoids retaining all bots or binding N+1.
+	 */
 
 	/**
 	 * Create the readiness resource.
@@ -52,82 +56,141 @@ final class SetupReadinessRestResource {
 	/**
 	 * Return bounded server-derived setup state.
 	 *
-	 * @return array{ready:bool,next_step:string,configured_generation_provider:bool,configured_gemini_embedding:bool,model_available:bool,source_count:int,completed_index_present:bool,enabled_bot_count:int,bound_bot_present:bool,publishable_bot_present:bool}
+	 * @return array{ready:bool,next_step:string,configured_generation_provider:bool,configured_gemini_embedding:bool,model_available:bool,source_count:int,completed_index_present:bool,enabled_bot_count:int,bound_bot_present:bool,publishable_bot_present:bool,issue?:string}
 	 */
 	public function readiness(): array {
-		$bots                    = $this->all_bots();
-		$provider_configured     = $this->has_configured_generation_provider();
-		$model_available         = $this->has_configured_model_capability();
-		$legacy_ready            = $this->has_model_ready_bot( $bots );
-		$source_count            = $this->sources->paginate( 1, self::PAGE_SIZE )->total;
+		$model_state             = $this->model_state();
+		$bot_page                = $this->bots->list( 1, self::MAX_BOT_SCAN );
+		$scan_complete           = $bot_page['total'] <= self::MAX_BOT_SCAN;
+		$bots                    = $bot_page['items'];
+		$compatible              = $model_state['compatible'];
+		$legacy_ready            = $scan_complete && $this->has_model_ready_bot( $bots, $compatible );
+		$source_count            = $this->sources->paginate( 1, self::MAX_BOT_SCAN )->total;
 		$completed_index_present = $this->completed_index_present();
-		$enabled_bot_count       = count( array_filter( $bots, static fn ( Bot $bot ): bool => $bot->enabled ) );
-		$bound_bot_present       = false;
-		$publishable_bot_present = false;
+		$enabled_bot_count       = $this->enabled_bot_count();
+		$bound_bot_present       = $this->has_any_binding();
+		$bindings                = $scan_complete ? $this->bindings_for_bots( $bots ) : array();
+		$publishable_bot_present = $scan_complete && $this->has_publishable_bot( $bots, $bindings, $compatible, $completed_index_present );
 
-		foreach ( $bots as $bot ) {
-			$binding = $this->binding( $bot );
-			if ( null !== $binding ) {
-				$bound_bot_present = true;
-			}
-
-			if (
-				$bot->enabled
-				&& $this->bot_model_is_ready( $bot )
-				&& null !== $binding
-				&& $this->binding_is_publishable( $binding, $completed_index_present )
-			) {
-				$publishable_bot_present = true;
-			}
-		}
-
-		return array(
+		$response = array(
 			'ready'                          => $legacy_ready,
-			'next_step'                      => $this->next_step( $provider_configured, $model_available, $legacy_ready ),
-			'configured_generation_provider' => $provider_configured,
+			'next_step'                      => $this->next_step( $model_state['configured_provider'], $model_state['model_available'], $legacy_ready ),
+			'configured_generation_provider' => $model_state['configured_provider'],
 			'configured_gemini_embedding'    => $this->configured_gemini_embedding(),
-			'model_available'                => $model_available,
+			'model_available'                => $model_state['model_available'],
 			'source_count'                   => $source_count,
 			'completed_index_present'        => $completed_index_present,
 			'enabled_bot_count'              => $enabled_bot_count,
 			'bound_bot_present'              => $bound_bot_present,
 			'publishable_bot_present'        => $publishable_bot_present,
 		);
+		if ( null !== $model_state['issue'] ) {
+			$response['issue'] = $model_state['issue'];
+		}
+
+		return $response;
 	}
 
 	/**
-	 * Return all bots through the existing bounded page contract.
+	 * Build local compatible model IDs and the legacy safe issue code without model discovery.
 	 *
-	 * @return array<int,Bot> Persisted bots.
+	 * @return array{configured_provider:bool,model_available:bool,compatible:array<string,array<string,bool>>,issue:string|null}
 	 */
-	private function all_bots(): array {
-		$items  = array();
-		$page   = 1;
-		$total  = 0;
-		$loaded = 0;
+	private function model_state(): array {
+		$compatible = array();
+		$issues     = array();
+		$configured = false;
 
-		do {
-			$result = $this->bots->list( $page, self::PAGE_SIZE );
-			$total  = $result['total'];
-			$items  = array_merge( $items, $result['items'] );
-			$loaded = count( $items );
-			++$page;
-		} while ( $loaded < $total );
-
-		return $items;
-	}
-
-	/** Determine whether a generation provider is locally configured and available. */
-	private function has_configured_generation_provider(): bool {
 		foreach ( $this->providers->ids() as $provider_id ) {
 			try {
 				$provider   = $this->providers->generation( $provider_id );
 				$descriptor = $this->configuration->describe( $provider_id );
 			} catch ( Throwable ) {
+				$issues[] = 'provider_unavailable';
 				continue;
 			}
 
-			if ( $provider->available() && ProviderHealthStatus::CONFIGURED === $descriptor->health->status ) {
+			if ( ! $provider->available() || ProviderHealthStatus::UNAVAILABLE === $descriptor->health->status ) {
+				$issues[] = 'provider_unavailable';
+				continue;
+			}
+			if ( ProviderHealthStatus::UNCONFIGURED === $descriptor->health->status ) {
+				$issues[] = 'missing_credential';
+				continue;
+			}
+
+			$configured = true;
+			$catalog    = $this->providers->catalog( $provider_id );
+			if ( ! $catalog instanceof CachedModelCatalogProvider ) {
+				$issues[] = 'unsupported_capability';
+				continue;
+			}
+
+			try {
+				$models = $catalog->cached_models();
+			} catch ( Throwable ) {
+				$issues[] = 'provider_unavailable';
+				continue;
+			}
+			if ( null === $models || array() === $models ) {
+				$issues[] = 'unsupported_capability';
+				continue;
+			}
+
+			foreach ( $models as $model ) {
+				if ( ModelReadinessRestResource::supports_model( $model, $provider_id, 'generation' ) ) {
+					$compatible[ $provider_id ][ $model->model_id ] = true;
+				}
+			}
+		}
+
+		$model_available = array() !== $compatible;
+		return array(
+			'configured_provider' => $configured,
+			'model_available'     => $model_available,
+			'compatible'          => $compatible,
+			'issue'               => $model_available ? null : $this->readiness_issue( $issues ),
+		);
+	}
+
+	/**
+	 * Select the existing safe onboarding issue priority.
+	 *
+	 * @param array<int,string> $issues Observed safe issue codes.
+	 */
+	private function readiness_issue( array $issues ): ?string {
+		foreach ( array( 'missing_credential', 'provider_unavailable', 'unsupported_capability' ) as $code ) {
+			if ( in_array( $code, $issues, true ) ) {
+				return $code;
+			}
+		}
+
+		return null;
+	}
+
+	/** Determine whether the fixed Gemini embedding capability is locally configured. */
+	private function configured_gemini_embedding(): bool {
+		try {
+			$embedding  = $this->providers->embedding( ProviderIds::GEMINI_DIRECT );
+			$descriptor = $this->configuration->describe( ProviderIds::GEMINI_DIRECT );
+		} catch ( Throwable ) {
+			return false;
+		}
+
+		return null !== $embedding
+			&& $embedding->available()
+			&& ProviderHealthStatus::CONFIGURED === $descriptor->health->status;
+	}
+
+	/**
+	 * Determine whether one bounded bot page uses a compatible local model.
+	 *
+	 * @param array<int,Bot>                   $bots Persisted bot page.
+	 * @param array<string,array<string,bool>> $compatible Compatible model IDs.
+	 */
+	private function has_model_ready_bot( array $bots, array $compatible ): bool {
+		foreach ( $bots as $bot ) {
+			if ( isset( $compatible[ $bot->provider_id ][ $bot->model_id ] ) ) {
 				return true;
 			}
 		}
@@ -135,20 +198,55 @@ final class SetupReadinessRestResource {
 		return false;
 	}
 
-	/** Determine whether a configured provider has a registered local model catalog. */
-	private function has_configured_model_capability(): bool {
-		foreach ( $this->providers->ids() as $provider_id ) {
-			try {
-				$provider   = $this->providers->generation( $provider_id );
-				$descriptor = $this->configuration->describe( $provider_id );
-			} catch ( Throwable ) {
-				continue;
-			}
+	/** Return the exact aggregate enabled count without materializing bot rows. */
+	private function enabled_bot_count(): int {
+		try {
+			return $this->bots->count_enabled();
+		} catch ( Throwable ) {
+			return 0;
+		}
+	}
 
+	/** Return whether any complete binding exists without loading every bot. */
+	private function has_any_binding(): bool {
+		try {
+			return $this->bindings->has_any();
+		} catch ( Throwable ) {
+			return false;
+		}
+	}
+
+	/**
+	 * Resolve the bounded page's bindings in one repository query.
+	 *
+	 * @param array<int,Bot> $bots Persisted bot page.
+	 * @return array<string,BotRetrievalBinding> Bindings keyed by bot ID.
+	 */
+	private function bindings_for_bots( array $bots ): array {
+		try {
+			$ids = array_map( static fn ( Bot $bot ): \WpRagAiChatbot\Bots\BotId => $bot->id, $bots );
+			return $this->bindings->find_for_bot_ids( $ids );
+		} catch ( Throwable ) {
+			return array();
+		}
+	}
+
+	/**
+	 * Determine whether one bounded bot page can be published.
+	 *
+	 * @param array<int,Bot>                    $bots Persisted bot page.
+	 * @param array<string,BotRetrievalBinding> $bindings Valid bindings keyed by bot ID.
+	 * @param array<string,array<string,bool>>  $compatible Compatible model IDs.
+	 * @param bool                              $index_present Whether both projections are complete.
+	 */
+	private function has_publishable_bot( array $bots, array $bindings, array $compatible, bool $index_present ): bool {
+		foreach ( $bots as $bot ) {
+			$binding = $bindings[ $bot->id->value ] ?? null;
 			if (
-				$provider->available()
-				&& ProviderHealthStatus::CONFIGURED === $descriptor->health->status
-				&& null !== $this->providers->catalog( $provider_id )
+				$bot->enabled
+				&& isset( $compatible[ $bot->provider_id ][ $bot->model_id ] )
+				&& $binding instanceof BotRetrievalBinding
+				&& $this->binding_is_publishable( $binding, $index_present )
 			) {
 				return true;
 			}
@@ -157,64 +255,14 @@ final class SetupReadinessRestResource {
 		return false;
 	}
 
-	/** Determine whether the fixed Gemini embedding capability is locally configured. */
-	private function configured_gemini_embedding(): bool {
-		$embedding = $this->providers->embedding( ProviderIds::GEMINI_DIRECT );
-		if ( null === $embedding || ! $embedding->available() ) {
-			return false;
-		}
-
-		try {
-			$descriptor = $this->configuration->describe( ProviderIds::GEMINI_DIRECT );
-		} catch ( Throwable ) {
-			return false;
-		}
-
-		return ProviderHealthStatus::CONFIGURED === $descriptor->health->status;
-	}
-
-	/**
-	 * Determine whether at least one persisted bot uses a locally ready provider/model capability.
-	 *
-	 * @param array<int,Bot> $bots Persisted bots.
-	 */
-	private function has_model_ready_bot( array $bots ): bool {
-		foreach ( $bots as $bot ) {
-			if ( $this->bot_model_is_ready( $bot ) ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Determine whether one persisted bot's provider and model selection are locally usable.
-	 *
-	 * @param Bot $bot Persisted bot.
-	 */
-	private function bot_model_is_ready( Bot $bot ): bool {
-		try {
-			$provider   = $this->providers->generation( $bot->provider_id );
-			$descriptor = $this->configuration->describe( $bot->provider_id );
-		} catch ( Throwable ) {
-			return false;
-		}
-
-		return $provider->available()
-			&& ProviderHealthStatus::CONFIGURED === $descriptor->health->status
-			&& null !== $this->providers->catalog( $bot->provider_id )
-			&& '' !== trim( $bot->model_id );
-	}
-
 	/** Check the fixed local lexical and vector projections without touching a provider. */
 	private function completed_index_present(): bool {
+		if ( ! GuidedRetrievalReadiness::collection_ready( $this->connection ) ) {
+			return false;
+		}
+
 		$tables = new TableNames( $this->connection->prefix() );
-		if (
-			! $this->connection->table_exists( $tables->vector_collections() )
-			|| ! $this->connection->table_exists( $tables->vectors() )
-			|| ! $this->connection->table_exists( $tables->chunk_search() )
-		) {
+		if ( ! $this->connection->table_exists( $tables->chunk_search() ) ) {
 			return false;
 		}
 
@@ -222,15 +270,15 @@ final class SetupReadinessRestResource {
 			$this->connection->prepare(
 				'SELECT COUNT(*) FROM %i WHERE collection_id = %s',
 				$tables->chunk_search(),
-				WordPressDocumentIndexDependencies::COLLECTION_ID
+				GuidedRetrievalReadiness::collection_id()
 			)
 		);
 		$vector_count  = (int) $this->connection->get_var(
 			$this->connection->prepare(
 				'SELECT COUNT(*) FROM %i WHERE collection_key = %s AND fingerprint = %s',
 				$tables->vectors(),
-				WordPressDocumentIndexDependencies::COLLECTION_ID,
-				self::profile_fingerprint()
+				GuidedRetrievalReadiness::collection_id(),
+				GuidedRetrievalReadiness::profile_fingerprint()
 			)
 		);
 
@@ -238,26 +286,13 @@ final class SetupReadinessRestResource {
 	}
 
 	/**
-	 * Resolve one persisted binding without leaking malformed storage details.
-	 *
-	 * @param Bot $bot Persisted bot.
-	 */
-	private function binding( Bot $bot ): ?BotRetrievalBinding {
-		try {
-			return $this->bindings->find( $bot->id );
-		} catch ( Throwable ) {
-			return null;
-		}
-	}
-
-	/**
 	 * Confirm that a binding uses the fixed source profile and completed local projections.
 	 *
-	 * @param BotRetrievalBinding $binding Persisted bot binding.
-	 * @param bool                $index_present Whether both local projections are populated.
+	 * @param BotRetrievalBinding $binding Persisted binding.
+	 * @param bool                $index_present Whether both projections are complete.
 	 */
 	private function binding_is_publishable( BotRetrievalBinding $binding, bool $index_present ): bool {
-		if ( ! $index_present || WordPressDocumentIndexDependencies::COLLECTION_ID !== $binding->collection_id ) {
+		if ( ! $index_present || GuidedRetrievalReadiness::collection_id() !== $binding->collection_id ) {
 			return false;
 		}
 
@@ -267,35 +302,14 @@ final class SetupReadinessRestResource {
 			return false;
 		}
 
-		return null !== $source && self::source_uses_guided_profile( $source );
-	}
-
-	/**
-	 * Check the server-owned semantic configuration stored with a source.
-	 *
-	 * @param KnowledgeSourceRecord $source Persisted source.
-	 */
-	private static function source_uses_guided_profile( KnowledgeSourceRecord $source ): bool {
-		$semantic = $source->config['semantic_retrieval'] ?? null;
-		$expected = WordPressDocumentIndexDependencies::semantic_configuration();
-		if ( ! is_array( $semantic ) || count( $semantic ) !== count( $expected ) ) {
-			return false;
-		}
-
-		foreach ( $expected as $key => $value ) {
-			if ( ! array_key_exists( $key, $semantic ) || $semantic[ $key ] !== $value ) {
-				return false;
-			}
-		}
-
-		return true;
+		return null !== $source && GuidedRetrievalReadiness::collection_id() === GuidedRetrievalReadiness::source_collection_id( $source );
 	}
 
 	/**
 	 * Preserve the existing onboarding step names while adding publish readiness separately.
 	 *
 	 * @param bool $provider_configured Whether a generation provider is configured.
-	 * @param bool $model_available Whether a local model catalog is registered.
+	 * @param bool $model_available Whether a compatible local model is cached.
 	 * @param bool $ready Whether a persisted bot is model-ready.
 	 */
 	private function next_step( bool $provider_configured, bool $model_available, bool $ready ): string {
@@ -305,18 +319,8 @@ final class SetupReadinessRestResource {
 		if ( ! $model_available ) {
 			return 'model';
 		}
-		return $ready ? 'complete' : 'first_bot';
-	}
 
-	/** Calculate the fixed vector compatibility fingerprint without provider work. */
-	private static function profile_fingerprint(): string {
-		return hash(
-			'sha256',
-			"v1\nprovider=" . WordPressDocumentIndexDependencies::EMBEDDING_PROVIDER_ID
-			. "\nmodel=" . WordPressDocumentIndexDependencies::EMBEDDING_MODEL_ID
-			. "\ndimensions=" . WordPressDocumentIndexDependencies::EMBEDDING_DIMENSIONS
-			. "\nnormalization=none\ndistance=cosine"
-		);
+		return $ready ? 'complete' : 'first_bot';
 	}
 }
 // phpcs:enable WordPress.NamingConventions

@@ -192,7 +192,7 @@ final class WordPressDocumentIndexDependencies implements DocumentIndexDependenc
 	}
 
 	/** Build the exact approved Gemini vector compatibility profile. */
-	private static function profile(): VectorIndexProfile {
+	public static function profile(): VectorIndexProfile {
 		return new VectorIndexProfile(
 			new EmbeddingProfile(
 				self::EMBEDDING_PROVIDER_ID,

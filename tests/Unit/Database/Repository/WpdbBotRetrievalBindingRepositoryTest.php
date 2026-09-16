@@ -128,4 +128,56 @@ final class WpdbBotRetrievalBindingRepositoryTest extends TestCase {
 			new BotId( '0123456789abcdef0123456789abcdef' )
 		);
 	}
+
+	/** Binding existence is answered by one scalar repository query. */
+	public function test_has_any_uses_an_existence_query(): void {
+		self::assertTrue( class_exists( WpdbBotRetrievalBindingRepository::class ), 'WpdbBotRetrievalBindingRepository is missing.' );
+		$connection = $this->createMock( Connection::class );
+		$connection->expects( self::once() )->method( 'prepare' )->willReturn( 'prepared' );
+		$connection->expects( self::once() )->method( 'get_var' )->with( 'prepared' )->willReturn( 1 );
+
+		self::assertTrue( ( new WpdbBotRetrievalBindingRepository( $connection, new TableNames( 'wp_' ) ) )->has_any() );
+	}
+
+	/** Batch binding lookup returns only valid rows for the requested bot IDs. */
+	public function test_find_for_bot_ids_uses_one_bounded_query_and_skips_malformed_rows(): void {
+		self::assertTrue( class_exists( WpdbBotRetrievalBindingRepository::class ), 'WpdbBotRetrievalBindingRepository is missing.' );
+		$connection = $this->createMock( Connection::class );
+		$connection->expects( self::once() )
+			->method( 'prepare' )
+			->willReturnCallback(
+				static function ( string $query, mixed ...$args ): string {
+					self::assertStringContainsString( 'bot_id IN (%s, %s)', $query );
+					self::assertSame(
+						array( 'wp_rag_ai_bots', '0123456789abcdef0123456789abcdef', 'fedcba9876543210fedcba9876543210' ),
+						$args
+					);
+					return 'prepared';
+				}
+			);
+		$connection->expects( self::once() )->method( 'get_results' )->with( 'prepared' )->willReturn(
+			array(
+				array(
+					'bot_id'                  => '0123456789abcdef0123456789abcdef',
+					'retrieval_source_id'     => '42',
+					'retrieval_collection_id' => 'support-en-v1',
+				),
+				array(
+					'bot_id'                  => 'fedcba9876543210fedcba9876543210',
+					'retrieval_source_id'     => 'bad',
+					'retrieval_collection_id' => 'support-en-v1',
+				),
+			)
+		);
+
+		$bindings = ( new WpdbBotRetrievalBindingRepository( $connection, new TableNames( 'wp_' ) ) )->find_for_bot_ids(
+			array(
+				new BotId( '0123456789abcdef0123456789abcdef' ),
+				new BotId( 'fedcba9876543210fedcba9876543210' ),
+			)
+		);
+
+		self::assertCount( 1, $bindings );
+		self::assertSame( 42, $bindings['0123456789abcdef0123456789abcdef']->source_id );
+	}
 }
