@@ -25,6 +25,13 @@ interface JobRepository {
 	public function enqueue( JobRequest $request, DateTimeImmutable $now ): JobRecord;
 
 	/**
+	 * Delete one newly inserted queued job during create compensation.
+	 *
+	 * @param int $job_id Persisted queued job identity.
+	 */
+	public function deleteQueued( int $job_id ): void;
+
+	/**
 	 * Claim the next due or recoverable job using one opaque worker token.
 	 *
 	 * @param string            $worker_token Opaque worker-owned lease token.

@@ -80,7 +80,10 @@ final class KnowledgeSourceCreateResource {
 		try {
 			$normalized = $this->normalize( $payload, $file, $uploaded_path, $allowed_root );
 		} catch ( SourceValidationException ) {
-			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+			$cleaned = self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+			if ( ! $cleaned ) {
+				return self::error( 'database_error', 'The knowledge source could not be saved.' );
+			}
 			return self::error( 'validation_error', 'The knowledge source details are invalid.' );
 		}
 
@@ -91,7 +94,10 @@ final class KnowledgeSourceCreateResource {
 			return self::error( 'database_error', 'The knowledge source could not be saved.' );
 		}
 		if ( null !== $existing ) {
-			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+			$cleaned = self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+			if ( ! $cleaned ) {
+				return self::error( 'database_error', 'The knowledge source could not be saved.' );
+			}
 			return self::error( 'conflict', 'A knowledge source with these details already exists.' );
 		}
 
@@ -123,13 +129,9 @@ final class KnowledgeSourceCreateResource {
 				)
 			);
 		} catch ( DatabaseException ) {
+			$compensated = true;
 			if ( null !== $saved && null !== $saved->id ) {
-				try {
-					$this->sources->delete( $saved->id );
-				} catch ( DatabaseException $exception ) {
-					unset( $exception );
-					// Preserve the original stable error when compensation itself fails.
-				}
+				$compensated = $this->delete_source( $saved );
 			} else {
 				try {
 					$raced = $this->sources->findByKey( $normalized['source_key'] );
@@ -137,22 +139,25 @@ final class KnowledgeSourceCreateResource {
 					$raced = null;
 				}
 				if ( null !== $raced ) {
-					self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+					$cleaned = self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+					if ( ! $cleaned ) {
+						return self::error( 'database_error', 'The knowledge source could not be saved.' );
+					}
 					return self::error( 'conflict', 'A knowledge source with these details already exists.' );
 				}
 			}
-			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
-			return self::error( 'database_error', 'The knowledge source could not be saved.' );
-		} catch ( JobQueueException ) {
-			if ( null !== $saved->id ) {
-				try {
-					$this->sources->delete( $saved->id );
-				} catch ( DatabaseException $exception ) {
-					unset( $exception );
-					// Preserve the queue error when compensation itself fails.
-				}
+			$cleaned = self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+			if ( ! $compensated || ! $cleaned ) {
+				return self::error( 'database_error', 'The knowledge source could not be saved.' );
 			}
-			self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+			return self::error( 'database_error', 'The knowledge source could not be saved.' );
+		} catch ( JobQueueException $exception ) {
+			$job_compensated    = $this->delete_queued_job( $exception->job_id );
+			$source_compensated = $this->delete_source( $saved );
+			$cleaned            = self::cleanup_uploaded_file( $uploaded_path, $allowed_root );
+			if ( ! $job_compensated || ! $source_compensated || ! $cleaned ) {
+				return self::error( 'database_error', 'The knowledge source could not be saved.' );
+			}
 			return self::error( 'queue_error', 'The knowledge source was saved but could not be queued.' );
 		}
 
@@ -616,17 +621,46 @@ final class KnowledgeSourceCreateResource {
 	}
 
 	/** Remove a newly moved file only when it remains inside its server-owned root. */
-	private static function cleanup_uploaded_file( ?string $path, ?string $allowed_root ): void {
+	private function delete_source( ?KnowledgeSourceRecord $saved ): bool {
+		if ( null === $saved || null === $saved->id ) {
+			return true;
+		}
+		try {
+			$this->sources->delete( $saved->id );
+		} catch ( DatabaseException ) {
+			return false;
+		}
+		return true;
+	}
+
+	/** Delete a job identity exposed by a post-insert queue failure. */
+	private function delete_queued_job( ?int $job_id ): bool {
+		if ( null === $job_id ) {
+			return true;
+		}
+		try {
+			$this->jobs->deleteQueued( $job_id );
+		} catch ( DatabaseException | JobQueueException ) {
+			return false;
+		}
+		return true;
+	}
+
+	/** Remove a newly moved file only when it remains inside its server-owned root. */
+	private static function cleanup_uploaded_file( ?string $path, ?string $allowed_root ): bool {
 		if ( null === $path || null === $allowed_root ) {
-			return;
+			return true;
 		}
 		$real_path = realpath( $path );
 		$real_root = realpath( $allowed_root );
-		if ( false === $real_path || false === $real_root || ! is_file( $real_path ) || ! str_starts_with( $real_path, rtrim( $real_root, '/\\' ) . DIRECTORY_SEPARATOR ) ) {
-			return;
+		if ( false === $real_path ) {
+			return true;
+		}
+		if ( false === $real_root || ! is_file( $real_path ) || ! str_starts_with( $real_path, rtrim( $real_root, '/\\' ) . DIRECTORY_SEPARATOR ) ) {
+			return false;
 		}
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- The path was just verified inside the plugin-owned upload root.
-		unlink( $real_path );
+		return unlink( $real_path );
 	}
 
 	/**

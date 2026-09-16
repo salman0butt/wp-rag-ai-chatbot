@@ -523,6 +523,69 @@ final class KnowledgeSourceCreateResourceTest extends TestCase {
 		$this->removeDirectory( $root );
 	}
 
+	/** A post-insert queue reload failure rolls back the inserted job, source, and upload. */
+	public function test_post_insert_queue_reload_failure_rolls_back_everything(): void {
+		$root    = $this->configureUpload( 'guide.txt', 'same bytes' );
+		$sources = $this->createMock( KnowledgeSourceRepository::class );
+		$sources->method( 'findByKey' )->willReturn( null );
+		$sources->method( 'save' )->willReturn( $this->source( 34, 'file-key' ) );
+		$sources->expects( self::once() )->method( 'delete' )->with( 34 );
+		$jobs = $this->createMock( JobRepository::class );
+		$jobs->method( 'enqueue' )->willThrowException( new JobQueueException( 'reload failed', 77 ) );
+		$jobs->expects( self::once() )->method( 'deleteQueued' )->with( 77 );
+
+		$response = $this->resource( $sources, $jobs, $this->clock() )->create(
+			array( 'source_type' => 'file' ),
+			$this->upload( 'guide.txt', 10 )
+		);
+
+		self::assertSame( 'queue_error', $response['error']['code'] );
+		self::assertFileDoesNotExist( $root . '/wp-rag-ai-chatbot/guide.txt' );
+		$this->removeDirectory( $root );
+	}
+
+	/** A source rollback failure is surfaced as a stable database error instead of being swallowed. */
+	public function test_source_compensation_failure_returns_database_error(): void {
+		$root    = $this->configureUpload( 'guide.txt', 'same bytes' );
+		$sources = $this->createMock( KnowledgeSourceRepository::class );
+		$sources->method( 'findByKey' )->willReturn( null );
+		$sources->method( 'save' )->willReturn( $this->source( 35, 'file-key' ) );
+		$sources->expects( self::once() )->method( 'delete' )->with( 35 )->willThrowException( new DatabaseException( 'source rollback failed' ) );
+		$jobs = $this->createMock( JobRepository::class );
+		$jobs->method( 'enqueue' )->willThrowException( new JobQueueException( 'reload failed', 78 ) );
+		$jobs->expects( self::once() )->method( 'deleteQueued' )->with( 78 );
+
+		$response = $this->resource( $sources, $jobs, $this->clock() )->create(
+			array( 'source_type' => 'file' ),
+			$this->upload( 'guide.txt', 10 )
+		);
+
+		self::assertSame( 'database_error', $response['error']['code'] );
+		self::assertFileDoesNotExist( $root . '/wp-rag-ai-chatbot/guide.txt' );
+		$this->removeDirectory( $root );
+	}
+
+	/** A job rollback failure is surfaced as a stable database error instead of being swallowed. */
+	public function test_job_compensation_failure_returns_database_error(): void {
+		$root    = $this->configureUpload( 'guide.txt', 'same bytes' );
+		$sources = $this->createMock( KnowledgeSourceRepository::class );
+		$sources->method( 'findByKey' )->willReturn( null );
+		$sources->method( 'save' )->willReturn( $this->source( 36, 'file-key' ) );
+		$sources->expects( self::once() )->method( 'delete' )->with( 36 );
+		$jobs = $this->createMock( JobRepository::class );
+		$jobs->method( 'enqueue' )->willThrowException( new JobQueueException( 'reload failed', 79 ) );
+		$jobs->expects( self::once() )->method( 'deleteQueued' )->with( 79 )->willThrowException( new JobQueueException( 'job rollback failed' ) );
+
+		$response = $this->resource( $sources, $jobs, $this->clock() )->create(
+			array( 'source_type' => 'file' ),
+			$this->upload( 'guide.txt', 10 )
+		);
+
+		self::assertSame( 'database_error', $response['error']['code'] );
+		self::assertFileDoesNotExist( $root . '/wp-rag-ai-chatbot/guide.txt' );
+		$this->removeDirectory( $root );
+	}
+
 	/** Identical file bytes keep one identity across collision-renamed upload paths. */
 	public function test_identical_file_bytes_conflict_and_cleanup_collision_upload(): void {
 		$root      = $this->configureUpload( 'guide.txt', 'same bytes' );

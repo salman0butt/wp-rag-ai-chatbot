@@ -13,6 +13,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use JsonException;
 use WpRagAiChatbot\Database\Connection;
+use WpRagAiChatbot\Database\DatabaseException;
 use WpRagAiChatbot\Database\TableNames;
 use WpRagAiChatbot\Database\WpdbNamedJobIdempotencyLock;
 use WpRagAiChatbot\Jobs\JobLease;
@@ -76,6 +77,27 @@ final class WpdbJobRepository implements JobRepository {
 			return $this->insert_job( $request, $now );
 		} finally {
 			$lock->release();
+		}
+	}
+
+	/**
+	 * Delete one queued job created by a failed source-create operation.
+	 *
+	 * @param int $job_id Persisted queued job identity.
+	 * @throws JobQueueException When the queued row cannot be deleted.
+	 */
+	public function deleteQueued( int $job_id ): void {
+		if ( $job_id < 1 ) {
+			throw new JobQueueException( 'Queued job identity must be positive.' );
+		}
+
+		$sql = $this->connection->prepare(
+			"DELETE FROM %i WHERE id = %d AND status = 'queued'",
+			$this->tables->jobs(),
+			$job_id
+		);
+		if ( 1 !== $this->connection->query( $sql ) ) {
+			throw new JobQueueException( 'Could not roll back queued job.' );
 		}
 	}
 
@@ -407,11 +429,27 @@ final class WpdbJobRepository implements JobRepository {
 			throw new JobQueueException( 'Job enqueue insert failed.' );
 		}
 
-		$row = $this->find_row_by_id( $this->connection->insert_id() );
-		if ( null === $row ) {
-			throw new JobQueueException( 'Enqueued job could not be reloaded.' );
+		$job_id = $this->connection->insert_id();
+		if ( $job_id < 1 ) {
+			throw new JobQueueException( 'Enqueued job identity could not be determined.' );
 		}
-		return $this->hydrate( $row );
+
+		try {
+			$row = $this->find_row_by_id( $job_id );
+		} catch ( DatabaseException $exception ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- The exception is retained for diagnostics, never rendered as output.
+			throw new JobQueueException( 'Enqueued job could not be reloaded.', $job_id, $exception );
+		}
+		if ( null === $row ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- The stable queue message is not rendered as output.
+			throw new JobQueueException( 'Enqueued job could not be reloaded.', $job_id );
+		}
+		try {
+			return $this->hydrate( $row );
+		} catch ( JobQueueException $exception ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- The persisted queue message is not rendered as output.
+			throw new JobQueueException( $exception->getMessage(), $job_id, $exception );
+		}
 	}
 
 	/**

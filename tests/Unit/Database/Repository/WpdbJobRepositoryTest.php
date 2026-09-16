@@ -64,6 +64,34 @@ final class WpdbJobRepositoryTest extends TestCase {
 		self::assertSame( $inserted_jobkey, $record->job_key );
 	}
 
+	/** A reload miss after insert exposes the inserted identity for compensating rollback. */
+	public function test_enqueue_reload_failure_exposes_inserted_job_id(): void {
+		$connection = $this->connection();
+		$connection->expects( self::once() )->method( 'insert' )->willReturn( 1 );
+		$connection->method( 'insert_id' )->willReturn( 78 );
+		$connection->method( 'prepare' )->willReturn( 'job-row' );
+		$connection->expects( self::once() )->method( 'get_row' )->with( 'job-row' )->willReturn( null );
+
+		try {
+			$this->repository( $connection )->enqueue(
+				new JobRequest( 'index.document', array( 'document_id' => 42 ) ),
+				self::utc( '2026-09-05 01:00:00' )
+			);
+			self::fail( 'Expected enqueue to fail after the insert.' );
+		} catch ( JobQueueException $exception ) {
+			self::assertSame( 78, $exception->job_id );
+		}
+	}
+
+	/** Queued-job rollback deletes only the newly inserted queued identity. */
+	public function test_delete_queued_removes_one_queued_job(): void {
+		$connection = $this->connection();
+		$connection->expects( self::once() )->method( 'prepare' )->willReturn( 'delete-job' );
+		$connection->expects( self::once() )->method( 'query' )->with( 'delete-job' )->willReturn( 1 );
+
+		$this->repository( $connection )->deleteQueued( 78 );
+	}
+
 	/**
 	 * Idempotent enqueue returns the active matching job and never inserts a duplicate.
 	 */
