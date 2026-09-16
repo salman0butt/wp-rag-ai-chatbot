@@ -544,6 +544,10 @@ describe( 'bootstrapAdminApp', () => {
 	it.each( [
 		[ 'initial request resolves first', 'initial-first' ],
 		[ 'Overview request resolves first', 'overview-first' ],
+		[
+			'Overview succeeds and stale initial request rejects',
+			'stale-rejection',
+		],
 	] as const )(
 		'ignores stale initial readiness errors during the automatic onboarding-to-Overview transition when %s',
 		async ( _label, responseOrder ) => {
@@ -588,15 +592,18 @@ describe( 'bootstrapAdminApp', () => {
 					status: 200;
 					json: () => Promise< typeof readiness >;
 				} ) => void;
+				reject: ( reason?: unknown ) => void;
 			};
 			const deferredResponse = (): DeferredResponse => {
 				let resolve: DeferredResponse[ 'resolve' ] = () => undefined;
+				let reject: DeferredResponse[ 'reject' ] = () => undefined;
 				const promise = new Promise<
 					Awaited< DeferredResponse[ 'promise' ] >
-				>( ( promiseResolve ) => {
+				>( ( promiseResolve, promiseReject ) => {
 					resolve = promiseResolve;
+					reject = promiseReject;
 				} );
-				return { promise, resolve };
+				return { promise, resolve, reject };
 			};
 			const readinessRequests: Array< DeferredResponse > = [];
 			const fetcher = jest.fn().mockImplementation( ( url: string ) => {
@@ -661,7 +668,13 @@ describe( 'bootstrapAdminApp', () => {
 				await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 				alertAfterFirstResponse =
 					root.querySelector( '[role="alert"]' );
-				initialRequest.resolve( initialResponse );
+				if ( responseOrder === 'overview-first' ) {
+					initialRequest.resolve( initialResponse );
+				} else {
+					initialRequest.reject(
+						new Error( 'stale initial readiness failure' )
+					);
+				}
 			}
 
 			await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );

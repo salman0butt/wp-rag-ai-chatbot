@@ -52,10 +52,19 @@ FAIL — Overview-first response order ended without the ready Overview shell af
 
 The stale-result guard now returns a typed `success`/`stale`/`failed` result. The initial completion handler renders the error state only for `failed`; superseded results are ignored, while mutation fallbacks also distinguish genuine failure from a newer refresh. Both deferred response-order tests pass.
 
+For review round 3, the rejection-order RED case was added before implementation:
+
+```text
+npx wp-scripts test-unit-js src-js/index.test.ts --runInBand
+FAIL — Overview success followed by a rejected stale initial request rendered the generic administration error
+```
+
+The `refreshReadiness()` catch path now re-checks its request generation and returns `stale` for superseded rejections; only the current request returns `failed`. The deferred Overview-success/stale-initial-rejection regression now passes without changing the existing refresh or guided-step behavior.
+
 ## Verification
 
-- Focused Jest: 2 suites, 22 tests passed (`src-js/admin-ui.test.ts` and `src-js/index.test.ts`).
-- Full JS suite: 70 suites, 184 tests passed.
+- Focused Jest: 2 suites, 23 tests passed (`src-js/admin-ui.test.ts` and `src-js/index.test.ts`).
+- Full JS suite: 70 suites, 185 tests passed.
 - `npm run lint:js`: passed.
 - `npm run typecheck`: passed.
 - `npm run build`: passed; admin, widget, and Gutenberg bundles compiled.

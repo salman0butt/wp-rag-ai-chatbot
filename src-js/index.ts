@@ -1713,6 +1713,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 			return 'success';
 		} catch {
+			if ( requestGeneration !== readinessGeneration ) {
+				return 'stale';
+			}
 			return 'failed';
 		}
 	};
