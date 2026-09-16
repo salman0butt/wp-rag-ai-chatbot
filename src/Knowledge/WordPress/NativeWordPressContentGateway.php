@@ -109,8 +109,8 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 		foreach ( $terms as $term ) {
 			$taxonomy              = (string) $term->taxonomy;
 			$labels[ $taxonomy ][] = array(
-				'name' => (string) $term->name,
-				'slug' => (string) $term->slug,
+				'name' => wp_check_invalid_utf8( (string) $term->name ),
+				'slug' => wp_check_invalid_utf8( (string) $term->slug ),
 			);
 		}
 
