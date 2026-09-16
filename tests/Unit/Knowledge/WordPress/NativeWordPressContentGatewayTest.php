@@ -207,17 +207,17 @@ final class NativeWordPressContentGatewayTest extends TestCase {
 		$post->post_title        = "Broken\xB1Title";
 		$post->post_excerpt      = '';
 		$post->post_content      = "Body\xB1";
-		$post->post_modified_gmt = '2026-09-03 00:15:00';
+		$post->post_modified_gmt = "2026-09-03 00:15:00\xB1";
 		$post->post_password     = '';
 		$post->post_author       = '7';
 
 		$term           = new stdClass();
-		$term->taxonomy = 'category';
+		$term->taxonomy = "category\xB1";
 		$term->name     = "Broken\xB1Label";
 		$term->slug     = "broken\xB1";
 
 		Functions\expect( 'get_posts' )->once()->andReturn( array( $post ) );
-		Functions\expect( 'get_permalink' )->once()->with( 43 )->andReturn( 'https://example.test/broken/' );
+		Functions\expect( 'get_permalink' )->once()->with( 43 )->andReturn( "https://example.test/broken\xB1/" );
 		Functions\expect( 'get_object_taxonomies' )->once()->with( 'post', 'names' )->andReturn( array( 'category' ) );
 		Functions\expect( 'wp_get_object_terms' )
 			->once()
@@ -230,7 +230,7 @@ final class NativeWordPressContentGatewayTest extends TestCase {
 			}
 		);
 		Functions\expect( 'wp_check_invalid_utf8' )
-			->times( 5 )
+			->times( 8 )
 			->andReturnUsing(
 				static fn ( string $text ): string => str_replace( "\xB1", '', $text )
 			);
@@ -239,6 +239,8 @@ final class NativeWordPressContentGatewayTest extends TestCase {
 
 		self::assertSame( 'BrokenTitle', $result[0]->title );
 		self::assertSame( 'Body', $result[0]->content );
+		self::assertSame( 'https://example.test/broken/', $result[0]->url );
+		self::assertSame( '2026-09-03 00:15:00', $result[0]->modifiedGmt );
 		self::assertSame(
 			array(
 				'category' => array(

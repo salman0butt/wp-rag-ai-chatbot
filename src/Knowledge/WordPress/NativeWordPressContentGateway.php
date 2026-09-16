@@ -72,8 +72,8 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 				wp_check_invalid_utf8( wp_strip_all_tags( (string) $post->post_title ) ),
 				wp_check_invalid_utf8( wp_strip_all_tags( (string) $post->post_excerpt ) ),
 				wp_check_invalid_utf8( wp_strip_all_tags( (string) $post->post_content ) ),
-				is_string( $permalink ) ? $permalink : null,
-				(string) $post->post_modified_gmt,
+				is_string( $permalink ) ? wp_check_invalid_utf8( $permalink ) : null,
+				wp_check_invalid_utf8( (string) $post->post_modified_gmt ),
 				null,
 				'' !== (string) $post->post_password,
 				(int) $post->post_author,
@@ -107,7 +107,7 @@ final class NativeWordPressContentGateway implements WordPressContentGateway {
 
 		$labels = array();
 		foreach ( $terms as $term ) {
-			$taxonomy              = (string) $term->taxonomy;
+			$taxonomy              = wp_check_invalid_utf8( (string) $term->taxonomy );
 			$labels[ $taxonomy ][] = array(
 				'name' => wp_check_invalid_utf8( (string) $term->name ),
 				'slug' => wp_check_invalid_utf8( (string) $term->slug ),
