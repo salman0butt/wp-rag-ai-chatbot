@@ -212,6 +212,40 @@ describe( 'AdminShell', () => {
 		);
 		expect( root.querySelector( '[data-playground-form]' ) ).not.toBeNull();
 	} );
+
+	it( 'uses the modern shell when the server returns bounded setup readiness', () => {
+		configureTestElementRuntime();
+		const AdminShell = ( plugin as unknown as Record< string, unknown > )
+			.AdminShell as ( props: Record< string, unknown > ) => Node;
+		const root = document.createElement( 'div' );
+
+		root.append(
+			AdminShell( {
+				state: 'ready',
+				screen: 'overview',
+				readiness: {
+					ready: false,
+					next_step: 'knowledge',
+					configured_generation_provider: true,
+					configured_gemini_embedding: true,
+					model_available: true,
+					source_count: 1,
+					completed_index_present: false,
+					enabled_bot_count: 1,
+					bound_bot_present: false,
+					publishable_bot_present: false,
+				},
+			} )
+		);
+
+		expect(
+			root.querySelector( 'nav[aria-label="Primary"]' )
+		).not.toBeNull();
+		expect( root.querySelectorAll( '[data-readiness-card]' ) ).toHaveLength(
+			4
+		);
+		expect( root.textContent ).toContain( 'Gemini connected' );
+	} );
 } );
 
 describe( 'resolveAdminScreen', () => {
@@ -225,6 +259,7 @@ describe( 'resolveAdminScreen', () => {
 		expect( resolveAdminScreen?.( '#/bots' ) ).toBe( 'bots' );
 		expect( resolveAdminScreen?.( '#/providers' ) ).toBe( 'providers' );
 		expect( resolveAdminScreen?.( '#/playground' ) ).toBe( 'playground' );
+		expect( resolveAdminScreen?.( '#/publish' ) ).toBe( 'publish' );
 		expect( resolveAdminScreen?.( '#/unknown' ) ).toBe( 'onboarding' );
 		expect( resolveAdminScreen?.( '' ) ).toBe( 'onboarding' );
 	} );

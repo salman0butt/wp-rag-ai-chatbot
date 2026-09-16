@@ -93,7 +93,13 @@ const selectedProviderIdFromHash = ( hash: string ): string | undefined => {
 const screenFromHash = ( hash: string ): AdminShellProps[ 'screen' ] => {
 	const path = hash.replace( /^#\/?/, '' ).split( /[/?#]/, 1 )[ 0 ];
 
-	if ( path === 'bots' || path === 'knowledge' || path === 'playground' ) {
+	if (
+		path === 'overview' ||
+		path === 'bots' ||
+		path === 'knowledge' ||
+		path === 'playground' ||
+		path === 'publish'
+	) {
 		return path;
 	}
 
@@ -278,7 +284,7 @@ const bootstrapAdminEnhancements = (): void => {
 	const apply = (): void => {
 		const hash = window.location.hash;
 		if ( hash === '' || hash === '#/onboarding' ) {
-			window.location.hash = '#/providers';
+			window.location.hash = '#/overview';
 			return;
 		}
 

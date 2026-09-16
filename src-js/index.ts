@@ -18,6 +18,11 @@ import {
 	normalizeWidgetAppearance,
 	type WidgetAppearance,
 } from './widget-appearance';
+import {
+	ModernAdminShell,
+	type AdminReadiness,
+	type ModernAdminScreen,
+} from './admin-ui';
 
 export const pluginIdentity = Object.freeze( {
 	slug: 'wp-rag-ai-chatbot',
@@ -113,10 +118,12 @@ export const createAdminApiClient = (
 export type AdminShellState = 'loading' | 'empty' | 'error' | 'ready';
 export type AdminScreen =
 	| 'onboarding'
+	| 'overview'
 	| 'bots'
 	| 'providers'
 	| 'knowledge'
-	| 'playground';
+	| 'playground'
+	| 'publish';
 type KnowledgeJobMutationError = 'invalid_transition' | 'admin_request_failed';
 export type OnboardingStep = 'provider' | 'model' | 'first_bot' | 'complete';
 export type OnboardingIssue =
@@ -134,6 +141,7 @@ interface BotDraft {
 export interface AdminShellProps {
 	state: AdminShellState;
 	screen?: AdminScreen;
+	readiness?: AdminReadiness;
 	onboardingStep?: OnboardingStep;
 	onboardingIssue?: OnboardingIssue;
 	botPage?: BotPage;
@@ -339,8 +347,7 @@ interface AdminBootConfig {
 	nonce: string;
 }
 
-interface AdminOnboardingReadiness {
-	ready: boolean;
+interface AdminOnboardingReadiness extends AdminReadiness {
 	next_step: OnboardingStep;
 	issue?: OnboardingIssue;
 }
@@ -443,6 +450,9 @@ const resolveHashPath = ( hash: string ): string =>
 
 export const resolveAdminScreen = ( hash: string ): AdminScreen => {
 	const candidate = resolveHashPath( hash ).split( '/' )[ 0 ];
+	if ( candidate === 'overview' || candidate === 'publish' ) {
+		return candidate;
+	}
 	const screen = ADMIN_SCREENS.find( ( item ) => item.screen === candidate );
 
 	return screen?.screen ?? 'onboarding';
@@ -1169,106 +1179,48 @@ export const KnowledgeManagementScreen = ( {
 	);
 };
 
-export const AdminShell = ( {
-	state,
-	screen = 'onboarding',
-	onboardingStep,
-	onboardingIssue,
-	botPage,
-	selectedBotId,
-	botAppearance,
-	botAppearanceSaving = false,
-	botAppearanceError,
-	onChangeBotAppearance,
-	onSaveBotAppearance,
-	botDisplayRules,
-	botDisplayRulesSaving = false,
-	botDisplayRulesError,
-	onChangeBotDisplayRules,
-	onSaveBotDisplayRules,
-	knowledgePage,
-	selectedKnowledgeSourceId,
-	selectedKnowledgeDocumentKey,
-	knowledgeDetail,
-	knowledgeDocuments,
-	knowledgeChunks,
-	knowledgeJobs,
-	knowledgeJobMutationError,
-	onEnqueueKnowledgeJob,
-	onCancelKnowledgeJob,
-	onRetryKnowledgeJob,
-	providerId,
-	providerCredential,
-	providerModels,
-	providerIssue,
-	onCreateBot,
-	onUpdateBot,
-	onDeleteBot,
-	onReplaceProviderCredential,
-	playgroundState,
-	onSubmitPlayground,
-}: AdminShellProps ): unknown => {
+const renderLegacyScreenContent = ( props: AdminShellProps ): unknown => {
+	const {
+		screen = 'onboarding',
+		onboardingStep,
+		onboardingIssue,
+		botPage,
+		selectedBotId,
+		botAppearance,
+		botAppearanceSaving = false,
+		botAppearanceError,
+		onChangeBotAppearance,
+		onSaveBotAppearance,
+		botDisplayRules,
+		botDisplayRulesSaving = false,
+		botDisplayRulesError,
+		onChangeBotDisplayRules,
+		onSaveBotDisplayRules,
+		knowledgePage,
+		selectedKnowledgeSourceId,
+		selectedKnowledgeDocumentKey,
+		knowledgeDetail,
+		knowledgeDocuments,
+		knowledgeChunks,
+		knowledgeJobs,
+		knowledgeJobMutationError,
+		onEnqueueKnowledgeJob,
+		onCancelKnowledgeJob,
+		onRetryKnowledgeJob,
+		providerId,
+		providerCredential,
+		providerModels,
+		providerIssue,
+		onCreateBot,
+		onUpdateBot,
+		onDeleteBot,
+		onReplaceProviderCredential,
+		playgroundState,
+		onSubmitPlayground,
+	} = props;
 	const createElement = window.wp.element.createElement;
-
-	if ( state === 'loading' ) {
-		if ( screen === 'knowledge' ) {
-			return createElement(
-				'div',
-				{
-					role: 'status',
-					'aria-live': 'polite',
-					'data-knowledge-state': 'loading',
-				},
-				'Loading knowledge data…'
-			);
-		}
-
-		return createElement(
-			'div',
-			{ role: 'status', 'aria-live': 'polite' },
-			'Loading administration data…'
-		);
-	}
-
-	if ( state === 'error' ) {
-		if ( screen === 'knowledge' ) {
-			return createElement(
-				'div',
-				{ role: 'alert', 'data-knowledge-state': 'error' },
-				'Knowledge data could not be loaded.'
-			);
-		}
-
-		return createElement(
-			'div',
-			{ role: 'alert' },
-			'Administration data could not be loaded.'
-		);
-	}
-
-	if ( state === 'empty' ) {
-		return createElement(
-			'section',
-			{ 'data-admin-state': 'empty' },
-			createElement( 'h2', null, 'Bots' ),
-			createElement( 'p', null, 'No bots configured yet.' )
-		);
-	}
-
 	const selected = ADMIN_SCREENS.find( ( item ) => item.screen === screen );
 	const selectedLabel = selected?.label ?? 'Onboarding';
-	const navigation = ADMIN_SCREENS.map( ( item ) => {
-		const props: Record< string, unknown > = {
-			href: `#/${ item.screen }`,
-			key: item.screen,
-		};
-
-		if ( item.screen === screen ) {
-			props[ 'aria-current' ] = 'page';
-		}
-
-		return createElement( 'a', props, item.label );
-	} );
 	let screenContent: unknown = createElement( 'h1', null, selectedLabel );
 
 	if ( screen === 'onboarding' && onboardingStep !== undefined ) {
@@ -1361,6 +1313,71 @@ export const AdminShell = ( {
 		);
 	}
 
+	return screenContent;
+};
+
+const renderLegacyAdminShell = ( props: AdminShellProps ): unknown => {
+	const { state, screen = 'onboarding' } = props;
+	const createElement = window.wp.element.createElement;
+
+	if ( state === 'loading' ) {
+		if ( screen === 'knowledge' ) {
+			return createElement(
+				'div',
+				{
+					role: 'status',
+					'aria-live': 'polite',
+					'data-knowledge-state': 'loading',
+				},
+				'Loading knowledge data…'
+			);
+		}
+
+		return createElement(
+			'div',
+			{ role: 'status', 'aria-live': 'polite' },
+			'Loading administration data…'
+		);
+	}
+
+	if ( state === 'error' ) {
+		if ( screen === 'knowledge' ) {
+			return createElement(
+				'div',
+				{ role: 'alert', 'data-knowledge-state': 'error' },
+				'Knowledge data could not be loaded.'
+			);
+		}
+
+		return createElement(
+			'div',
+			{ role: 'alert' },
+			'Administration data could not be loaded.'
+		);
+	}
+
+	if ( state === 'empty' ) {
+		return createElement(
+			'section',
+			{ 'data-admin-state': 'empty' },
+			createElement( 'h2', null, 'Bots' ),
+			createElement( 'p', null, 'No bots configured yet.' )
+		);
+	}
+
+	const navigation = ADMIN_SCREENS.map( ( item ) => {
+		const linkProps: Record< string, unknown > = {
+			href: `#/${ item.screen }`,
+			key: item.screen,
+		};
+
+		if ( item.screen === screen ) {
+			linkProps[ 'aria-current' ] = 'page';
+		}
+
+		return createElement( 'a', linkProps, item.label );
+	} );
+
 	return createElement(
 		'div',
 		{ 'data-admin-state': 'ready' },
@@ -1369,8 +1386,40 @@ export const AdminShell = ( {
 			{ 'aria-label': 'Administration' },
 			...navigation
 		),
-		createElement( 'main', null, screenContent )
+		createElement( 'main', null, renderLegacyScreenContent( props ) )
 	);
+};
+
+const isModernReadiness = ( readiness: AdminReadiness ): boolean =>
+	'source_count' in readiness &&
+	'completed_index_present' in readiness &&
+	'publishable_bot_present' in readiness;
+
+const modernScreenFor = ( screen: AdminScreen ): ModernAdminScreen => {
+	if ( screen === 'onboarding' || screen === 'overview' ) {
+		return 'overview';
+	}
+	if ( screen === 'publish' ) {
+		return 'publish';
+	}
+	return screen;
+};
+
+export const AdminShell = ( props: AdminShellProps ): unknown => {
+	if (
+		props.readiness !== undefined &&
+		isModernReadiness( props.readiness )
+	) {
+		return ModernAdminShell( {
+			state: props.state,
+			screen: modernScreenFor( props.screen ?? 'onboarding' ),
+			readiness: props.readiness,
+			botId: props.selectedBotId ?? props.botPage?.items[ 0 ]?.id,
+			legacyContent: renderLegacyScreenContent( props ),
+		} );
+	}
+
+	return renderLegacyAdminShell( props );
 };
 
 const renderAdminShell = (
@@ -1413,7 +1462,8 @@ const renderAdminShell = (
 	onDeleteBot?: ( bot: BotListItem ) => Promise< void >,
 	onReplaceProviderCredential?: ( credential: string ) => Promise< void >,
 	playgroundState?: PlaygroundControllerState,
-	onSubmitPlayground?: ( request: PlaygroundRequestDraft ) => void
+	onSubmitPlayground?: ( request: PlaygroundRequestDraft ) => void,
+	readiness?: AdminReadiness
 ): void => {
 	window.wp.element.render(
 		AdminShell( {
@@ -1454,6 +1504,7 @@ const renderAdminShell = (
 			onReplaceProviderCredential,
 			playgroundState,
 			onSubmitPlayground,
+			readiness,
 		} ),
 		root
 	);
@@ -1469,6 +1520,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	}
 
 	let currentState: AdminShellState = 'ready';
+	let currentReadiness: AdminReadiness | undefined;
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
@@ -1605,7 +1657,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentPlaygroundState,
 			( request ) => {
 				void submitPlayground( request );
-			}
+			},
+			currentReadiness
 		);
 	};
 
@@ -2356,6 +2409,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	void client
 		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
 		.then( async ( readiness ) => {
+			currentReadiness = readiness;
 			currentOnboardingStep = readiness.next_step;
 			currentOnboardingIssue = readiness.issue;
 			const screen = resolveAdminScreen( currentHash() );

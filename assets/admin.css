@@ -4,6 +4,273 @@
   margin: 20px 20px 0 0;
 }
 
+/* Modern setup shell: all selectors stay inside the admin mount. */
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-shell {
+  display: grid;
+  grid-template-columns: 188px minmax(0, 1fr);
+  min-height: 620px;
+  margin: 0 0 28px;
+  overflow: hidden;
+  border: 1px solid #e2e6eb;
+  border-radius: 16px;
+  background: #f5f7fa;
+  color: #1d2327;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail {
+  padding: 24px 14px;
+  background: #202832;
+  color: #fff;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-brand,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-eyebrow {
+  margin: 0 0 16px;
+  color: #7c8a9a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-brand {
+  padding: 0 10px 22px;
+  color: #fff;
+  font-size: 13px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail nav {
+  display: grid;
+  gap: 4px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail nav a {
+  display: block;
+  padding: 10px;
+  border-radius: 8px;
+  color: #c7d0da;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail nav a:hover,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail nav a:focus-visible,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail nav a[aria-current="page"] {
+  background: #354352;
+  color: #fff;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-main {
+  min-width: 0;
+  padding: 34px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-header {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-header h1 {
+  margin: 0 0 8px;
+  color: #17212b;
+  font-size: 30px;
+  line-height: 1.15;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-header p:not(.wp-rag-ai-admin-eyebrow),
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-card__detail,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-publish-card > p {
+  margin: 0;
+  color: #667382;
+  font-size: 14px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #fff1d6;
+  color: #805b00;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-badge--ready {
+  background: #dff5e5;
+  color: #166534;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-card,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #e1e6eb;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 5px rgb(23 33 43 / 3%);
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-card__topline {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-card h2,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel h2 {
+  margin: 0;
+  color: #17212b;
+  font-size: 15px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-card__value {
+  margin: 20px 0 6px;
+  color: #17212b;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 18px;
+  align-items: center;
+  margin-bottom: 18px;
+  border-color: #cbd8e6;
+  background: #f8fbff;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel .wp-rag-ai-admin-eyebrow,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel p:not(.wp-rag-ai-admin-eyebrow) {
+  grid-column: 1;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel .button {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-publish-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-publish-card code {
+  display: block;
+  min-height: 44px;
+  margin: 16px 0;
+  padding: 12px;
+  overflow-wrap: anywhere;
+  border-radius: 8px;
+  background: #f1f4f7;
+  color: #253342;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-publish-card .button,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel .button {
+  min-height: 38px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-shell a:focus-visible,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-shell button:focus-visible,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-shell input:focus-visible,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-shell textarea:focus-visible {
+  outline: 3px solid #2271b1;
+  outline-offset: 2px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-status {
+  margin: 0 0 16px;
+  color: #475569;
+  font-size: 14px;
+}
+
+#wp-rag-ai-chatbot-admin .screen-reader-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media screen and (max-width: 900px) {
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media screen and (max-width: 782px) {
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail {
+    padding: 14px;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-brand {
+    padding-bottom: 12px;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail nav {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-rail nav a {
+    flex: none;
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-main {
+    padding: 24px 16px;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-card-grid,
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-publish-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-header {
+    display: block;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-header > .wp-rag-ai-admin-badge {
+    display: inline-flex;
+    margin-top: 14px;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel {
+    display: block;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-admin-step-panel .button {
+    display: inline-flex;
+    margin-top: 14px;
+  }
+}
+
 #wp-rag-ai-chatbot-admin > [data-admin-state="ready"] {
   min-width: 0;
 }
