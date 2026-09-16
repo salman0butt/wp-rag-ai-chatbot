@@ -105,10 +105,14 @@ final class KnowledgeSourceSyncJobHandler implements JobHandler {
 				} catch ( JobQueueException ) {
 					throw new JobExecutionException( 'source_sync_document_queue_invalid', 'WordPress content produced an invalid document queue payload.', false );
 				}
-				$this->document_jobs->enqueue(
-					$index_payload,
-					$this->clock->now()
-				);
+				try {
+					$this->document_jobs->enqueue(
+						$index_payload,
+						$this->clock->now()
+					);
+				} catch ( JobQueueException ) {
+					throw new JobExecutionException( 'source_sync_child_queue_invalid', 'WordPress content could not be queued for indexing.', false );
+				}
 				$context->update_progress( new JobProgress( $index + 1, $total, 'Queued documents for indexing' ) );
 			}
 

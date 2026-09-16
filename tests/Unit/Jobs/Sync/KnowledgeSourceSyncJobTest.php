@@ -315,6 +315,26 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 		}
 	}
 
+	/** A child queue failure remains distinguishable from source normalization and payload validation. */
+	public function test_child_queue_failure_uses_child_queue_failure_code(): void {
+		$source  = $this->source( new DateTimeImmutable( '2026-09-15T10:00:00+00:00' ) );
+		$fixture = $this->handler_fixture( $source );
+		$fixture['documents']->method( 'findByKey' )->willReturn( null );
+		$fixture['documents']->method( 'save' )->willReturnCallback(
+			static fn ( DocumentRecord $document ): DocumentRecord => $document->withId( 11 )
+		);
+		$fixture['jobs']->expects( self::once() )->method( 'enqueue' )->willThrowException( new JobQueueException( 'private queue detail' ) );
+
+		try {
+			$fixture['handler']->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Child queue failure did not fail closed.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'source_sync_child_queue_invalid', $error->safe_code() );
+			self::assertSame( 'WordPress content could not be queued for indexing.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+		}
+	}
+
 	/** A standing no-argument hourly event cannot suppress the uniquely addressed immediate wake-up. */
 	public function test_source_enqueue_schedules_unique_existing_job_hook_after_persistence(): void {
 		if ( ! class_exists( KnowledgeSourceSyncJobEnqueuer::class ) ) {
