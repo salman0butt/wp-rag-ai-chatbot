@@ -1179,7 +1179,10 @@ export const KnowledgeManagementScreen = ( {
 	);
 };
 
-const renderLegacyScreenContent = ( props: AdminShellProps ): unknown => {
+const renderLegacyScreenContent = (
+	props: AdminShellProps,
+	includeHeading = true
+): unknown => {
 	const {
 		screen = 'onboarding',
 		onboardingStep,
@@ -1221,13 +1224,15 @@ const renderLegacyScreenContent = ( props: AdminShellProps ): unknown => {
 	const createElement = window.wp.element.createElement;
 	const selected = ADMIN_SCREENS.find( ( item ) => item.screen === screen );
 	const selectedLabel = selected?.label ?? 'Onboarding';
-	let screenContent: unknown = createElement( 'h1', null, selectedLabel );
+	const heading = (): unknown =>
+		includeHeading ? createElement( 'h1', null, selectedLabel ) : undefined;
+	let screenContent: unknown = heading();
 
 	if ( screen === 'onboarding' && onboardingStep !== undefined ) {
 		screenContent = createElement(
 			'div',
 			null,
-			createElement( 'h1', null, selectedLabel ),
+			heading(),
 			OnboardingFlow( {
 				nextStep: onboardingStep,
 				issue: onboardingIssue,
@@ -1237,7 +1242,7 @@ const renderLegacyScreenContent = ( props: AdminShellProps ): unknown => {
 		screenContent = createElement(
 			'div',
 			null,
-			createElement( 'h1', null, selectedLabel ),
+			heading(),
 			BotManagementScreen( {
 				page: botPage,
 				selectedBotId,
@@ -1269,7 +1274,7 @@ const renderLegacyScreenContent = ( props: AdminShellProps ): unknown => {
 		screenContent = createElement(
 			'div',
 			null,
-			createElement( 'h1', null, selectedLabel ),
+			heading(),
 			KnowledgeManagementScreen( {
 				page: knowledgePage,
 				selectedSourceId: selectedKnowledgeSourceId,
@@ -1292,7 +1297,7 @@ const renderLegacyScreenContent = ( props: AdminShellProps ): unknown => {
 		screenContent = createElement(
 			'div',
 			null,
-			createElement( 'h1', null, selectedLabel ),
+			heading(),
 			ProviderSettingsScreen( {
 				providerId,
 				credential: providerCredential,
@@ -1415,7 +1420,7 @@ export const AdminShell = ( props: AdminShellProps ): unknown => {
 			screen: modernScreenFor( props.screen ?? 'onboarding' ),
 			readiness: props.readiness,
 			botId: props.selectedBotId ?? props.botPage?.items[ 0 ]?.id,
-			legacyContent: renderLegacyScreenContent( props ),
+			legacyContent: renderLegacyScreenContent( props, false ),
 		} );
 	}
 
@@ -1521,6 +1526,7 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 	let currentState: AdminShellState = 'ready';
 	let currentReadiness: AdminReadiness | undefined;
+	let readinessGeneration = 0;
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
@@ -1682,6 +1688,30 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		nonce: config.nonce,
 		fetcher: fetcher.bind( window ),
 	} );
+	const refreshReadiness = async ( render = true ): Promise< boolean > => {
+		const requestGeneration = ++readinessGeneration;
+
+		try {
+			const readiness = await client.request< AdminOnboardingReadiness >(
+				'/admin/onboarding/readiness'
+			);
+
+			if ( requestGeneration !== readinessGeneration ) {
+				return false;
+			}
+
+			currentReadiness = readiness;
+			currentOnboardingStep = readiness.next_step;
+			currentOnboardingIssue = readiness.issue;
+			if ( render ) {
+				renderState( stateFromReadiness() );
+			}
+
+			return true;
+		} catch {
+			return false;
+		}
+	};
 	const playgroundRuntime = createPlaygroundRuntime( client, ( state ) => {
 		currentPlaygroundState = state;
 		renderState( stateFromReadiness() );
@@ -2091,6 +2121,11 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 
 		const screen = resolveAdminScreen( currentHash() );
 
+		if ( screen === 'overview' ) {
+			void refreshReadiness();
+			return;
+		}
+
 		if ( screen !== 'bots' ) {
 			botAppearanceGeneration += 1;
 			currentBotAppearance = undefined;
@@ -2291,7 +2326,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				body: draft,
 			} );
 			await refreshBotPage( 1 );
-			renderState( stateFromReadiness() );
+			if ( ! ( await refreshReadiness() ) ) {
+				renderState( stateFromReadiness() );
+			}
 		} catch {
 			renderState( 'error' );
 		}
@@ -2312,7 +2349,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				}
 			);
 			await refreshBotPage( 1 );
-			renderState( stateFromReadiness() );
+			if ( ! ( await refreshReadiness() ) ) {
+				renderState( stateFromReadiness() );
+			}
 		} catch {
 			renderState( 'error' );
 		}
@@ -2328,7 +2367,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				body: draft,
 			} );
 			await refreshKnowledgeJobs();
-			renderState( stateFromReadiness() );
+			if ( ! ( await refreshReadiness() ) ) {
+				renderState( stateFromReadiness() );
+			}
 		} catch ( error ) {
 			currentKnowledgeJobMutationError =
 				knowledgeJobMutationErrorFromError( error );
@@ -2349,7 +2390,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				{ method: 'POST' }
 			);
 			await refreshKnowledgeJobs();
-			renderState( stateFromReadiness() );
+			if ( ! ( await refreshReadiness() ) ) {
+				renderState( stateFromReadiness() );
+			}
 		} catch ( error ) {
 			currentKnowledgeJobMutationError =
 				knowledgeJobMutationErrorFromError( error );
@@ -2368,7 +2411,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				{ method: 'DELETE' }
 			);
 			await refreshBotPage( 1 );
-			renderState( stateFromReadiness() );
+			if ( ! ( await refreshReadiness() ) ) {
+				renderState( stateFromReadiness() );
+			}
 		} catch {
 			renderState( 'error' );
 		}
@@ -2400,62 +2445,60 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				await refreshProviderModelsState( providerId );
 			}
 
-			renderState( stateFromReadiness() );
+			if ( ! ( await refreshReadiness() ) ) {
+				renderState( stateFromReadiness() );
+			}
 		} catch {
 			renderState( 'error' );
 		}
 	};
 
-	void client
-		.request< AdminOnboardingReadiness >( '/admin/onboarding/readiness' )
-		.then( async ( readiness ) => {
-			currentReadiness = readiness;
-			currentOnboardingStep = readiness.next_step;
-			currentOnboardingIssue = readiness.issue;
-			const screen = resolveAdminScreen( currentHash() );
-
-			if ( screen === 'bots' ) {
-				await refreshBotPage();
-				const botId = activeBotId();
-				if ( botId !== undefined ) {
-					await Promise.all( [
-						refreshBotAppearance( botId ),
-						refreshBotDisplayRules( botId ),
-					] );
-				}
-			}
-
-			if ( screen === 'knowledge' ) {
-				const isCurrentKnowledgePage = await refreshKnowledgePage();
-
-				if ( ! isCurrentKnowledgePage ) {
-					return;
-				}
-				if ( resolveHashPath( currentHash() ) === 'knowledge' ) {
-					await refreshKnowledgeJobs();
-				}
-				const sourceId = resolveSelectedPersistedKnowledgeSourceId(
-					currentHash()
-				);
-
-				if ( sourceId !== undefined ) {
-					await refreshKnowledgeSelection( sourceId );
-				}
-			}
-
-			if ( screen === 'providers' ) {
-				const providerId = resolveSelectedProviderId( currentHash() );
-
-				if ( providerId !== undefined ) {
-					await refreshProviderSettings( providerId );
-				}
-			}
-
-			renderState( stateFromReadiness() );
-		} )
-		.catch( () => {
+	void refreshReadiness( false ).then( async ( readinessLoaded ) => {
+		if ( ! readinessLoaded ) {
 			renderState( 'error' );
-		} );
+			return;
+		}
+		const screen = resolveAdminScreen( currentHash() );
+
+		if ( screen === 'bots' ) {
+			await refreshBotPage();
+			const botId = activeBotId();
+			if ( botId !== undefined ) {
+				await Promise.all( [
+					refreshBotAppearance( botId ),
+					refreshBotDisplayRules( botId ),
+				] );
+			}
+		}
+
+		if ( screen === 'knowledge' ) {
+			const isCurrentKnowledgePage = await refreshKnowledgePage();
+
+			if ( ! isCurrentKnowledgePage ) {
+				return;
+			}
+			if ( resolveHashPath( currentHash() ) === 'knowledge' ) {
+				await refreshKnowledgeJobs();
+			}
+			const sourceId = resolveSelectedPersistedKnowledgeSourceId(
+				currentHash()
+			);
+
+			if ( sourceId !== undefined ) {
+				await refreshKnowledgeSelection( sourceId );
+			}
+		}
+
+		if ( screen === 'providers' ) {
+			const providerId = resolveSelectedProviderId( currentHash() );
+
+			if ( providerId !== undefined ) {
+				await refreshProviderSettings( providerId );
+			}
+		}
+
+		renderState( stateFromReadiness() );
+	} );
 
 	return true;
 };

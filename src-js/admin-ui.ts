@@ -33,6 +33,34 @@ const create = (): ElementFactory => window.wp.element.createElement;
 const safeCount = ( value: number ): number =>
 	Number.isSafeInteger( value ) && value >= 0 ? value : 0;
 
+export const resolveGuidedStep = ( readiness: AdminReadiness ): string => {
+	const providerReady =
+		readiness.configured_generation_provider &&
+		readiness.configured_gemini_embedding &&
+		readiness.model_available;
+
+	if ( ! providerReady ) {
+		return 'provider';
+	}
+
+	if (
+		safeCount( readiness.source_count ) === 0 ||
+		! readiness.completed_index_present
+	) {
+		return 'knowledge';
+	}
+
+	if ( safeCount( readiness.enabled_bot_count ) === 0 ) {
+		return 'first_bot';
+	}
+
+	if ( ! readiness.bound_bot_present ) {
+		return 'binding';
+	}
+
+	return readiness.publishable_bot_present ? 'complete' : 'publish';
+};
+
 const stepTarget = (
 	readiness: AdminReadiness
 ): {
@@ -40,7 +68,7 @@ const stepTarget = (
 	label: string;
 	description: string;
 } => {
-	switch ( readiness.next_step ) {
+	switch ( resolveGuidedStep( readiness ) ) {
 		case 'provider':
 		case 'model':
 			return {

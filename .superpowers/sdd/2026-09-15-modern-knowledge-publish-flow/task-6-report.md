@@ -11,26 +11,46 @@ Implemented the modern React admin shell and Publish/Test surface using the exis
 - Added scoped modern styles in `assets/admin.css`, including cards, rail, badges, focus rings, step panel, responsive grid, and mobile single-column fallback.
 - Added focused component coverage in `src-js/admin-ui.test.ts` and compatibility assertions in `src-js/index.test.ts`.
 
+## Review round 1 fixes
+
+- I1: Added a bounded client-side guided-step selector that prioritizes provider/model, knowledge source plus completed index, first enabled chatbot, binding, and publishable bot state. A server payload with `next_step: complete` but `completed_index_present: false` now routes Continue setup to `#/knowledge`.
+- I2: Added the bootstrap-level `refreshReadiness()` orchestration. Successful provider, bot, and knowledge job mutations refresh the readiness snapshot and re-render the shell; Overview entry refreshes the snapshot as well. The helper remains outside presentational `admin-ui.ts`.
+- M1: Added an `includeHeading` option to legacy screen rendering so nested modern-shell content suppresses its duplicate page heading while standalone legacy routes retain their headings.
+- Added focused coverage for the incomplete-index guided route, post-mutation readiness refresh, and nested legacy heading suppression.
+
 ## TDD evidence
 
-RED was observed first:
+The original Task 6 RED was observed first:
 
 ```text
 npx wp-scripts test-unit-js src-js/admin-ui.test.ts --runInBand
 FAIL — Cannot find module './admin-ui' from 'src-js/admin-ui.test.ts'
 ```
 
-After the minimum implementation, the focused suite passed 4/4 tests.
+After the minimum implementation, the original focused suite passed 4/4 tests.
+
+For review round 1, RED was observed before the fixes:
+
+```text
+npx wp-scripts test-unit-js src-js/admin-ui.test.ts --runInBand
+FAIL — expected #/knowledge, received #/publish for a complete server step with an incomplete index
+
+npx wp-scripts test-unit-js src-js/index.test.ts --runInBand
+FAIL — readiness request count expected 3, received 1
+FAIL — nested modern-shell heading count expected 1, received 2
+```
+
+The fix-round focused tests then passed 20/20.
 
 ## Verification
 
-- Focused Jest: 1 suite, 4 tests passed.
-- Full JS suite: 70 suites, 179 tests passed.
+- Focused Jest: 2 suites, 20 tests passed (`src-js/admin-ui.test.ts` and `src-js/index.test.ts`).
+- Full JS suite: 70 suites, 182 tests passed.
 - `npm run lint:js`: passed.
 - `npm run typecheck`: passed.
 - `npm run build`: passed; admin, widget, and Gutenberg bundles compiled.
 - `git diff --check`: passed.
 
-The Jest runs emitted a non-failing Watchman recrawl warning from the workspace; no test failures resulted. PHP and WordPress smoke checks were not part of this Task 6 JS scope and remain deferred to the plan's later gates.
+The Jest runs emitted a non-failing Watchman recrawl warning from the workspace (`UserDropped` recrawl); no test failures resulted. PHP and WordPress smoke checks were not part of this Task 6 JS scope and remain deferred to the plan's later gates.
 
 Commit: see the final git revision in the handoff.

@@ -122,6 +122,28 @@ describe( 'modern admin shell', () => {
 			root.querySelector( '[data-current-step]' )?.textContent
 		).toContain( 'Continue setup' );
 	} );
+
+	it( 'chooses Knowledge when the legacy server step is complete but indexing is incomplete', () => {
+		const root = document.createElement( 'div' );
+		root.append(
+			ModernAdminShell( {
+				state: 'ready',
+				screen: 'overview',
+				readiness: {
+					...readiness,
+					next_step: 'complete',
+					source_count: 1,
+					completed_index_present: false,
+				},
+			} ) as Node
+		);
+
+		expect(
+			root
+				.querySelector( '[data-current-step] a' )
+				?.getAttribute( 'href' )
+		).toBe( '#/knowledge' );
+	} );
 } );
 
 describe( 'publish/test screen', () => {

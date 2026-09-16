@@ -24,7 +24,7 @@ type AdminShellComponent = ( props: {
 	screen?: AdminScreen;
 } ) => Node;
 
-type TestElementProps = Record< string, string > | null;
+type TestElementProps = Record< string, unknown > | null;
 type TestRender = ( element: Node, root: Element ) => void;
 
 const createTestElement = (
@@ -35,15 +35,32 @@ const createTestElement = (
 	const element = document.createElement( tagName );
 
 	for ( const [ key, value ] of Object.entries( props ?? {} ) ) {
+		if ( value === undefined || key === 'key' ) {
+			continue;
+		}
 		if ( key === 'className' ) {
-			element.className = value;
+			element.className = String( value );
+		} else if ( key.startsWith( 'on' ) && typeof value === 'function' ) {
+			element.addEventListener(
+				key.slice( 2 ).toLowerCase(),
+				value as EventListener
+			);
+		} else if ( typeof value === 'boolean' ) {
+			if ( value ) {
+				element.setAttribute( key, '' );
+			}
 		} else {
-			element.setAttribute( key, value );
+			element.setAttribute(
+				key === 'htmlFor' ? 'for' : key,
+				String( value )
+			);
 		}
 	}
 
 	for ( const child of children ) {
-		element.append( child );
+		if ( child !== undefined ) {
+			element.append( child );
+		}
 	}
 
 	return element;
@@ -155,6 +172,13 @@ describe( 'createAdminApiClient', () => {
 } );
 
 describe( 'AdminShell', () => {
+	afterEach( () => {
+		document.body.innerHTML = '';
+		window.location.hash = '';
+		Reflect.deleteProperty( window, 'wpRagAiChatbotAdminConfig' );
+		Reflect.deleteProperty( window, 'fetch' );
+	} );
+
 	it( 'announces loading state without exposing interactive content', () => {
 		const root = renderAdminShell( 'loading' );
 
@@ -245,6 +269,192 @@ describe( 'AdminShell', () => {
 			4
 		);
 		expect( root.textContent ).toContain( 'Gemini connected' );
+	} );
+
+	it( 'refreshes readiness after a bot mutation and updates the Overview snapshot', async () => {
+		const render = jest.fn( ( element: Node, root: Element ) => {
+			root.replaceChildren( element );
+		} );
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			value: {
+				element: {
+					createElement: createTestElement,
+					render,
+				},
+			},
+		} );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+		Object.defineProperty( window, 'wpRagAiChatbotAdminConfig', {
+			configurable: true,
+			value: {
+				plugin: 'wp-rag-ai-chatbot',
+				restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+				nonce: 'rest-nonce',
+			},
+		} );
+		const initialReadiness = {
+			ready: true,
+			next_step: 'complete',
+			configured_generation_provider: true,
+			configured_gemini_embedding: true,
+			model_available: true,
+			source_count: 1,
+			completed_index_present: false,
+			enabled_bot_count: 0,
+			bound_bot_present: false,
+			publishable_bot_present: false,
+		};
+		const updatedReadiness = {
+			...initialReadiness,
+			completed_index_present: true,
+			enabled_bot_count: 1,
+			bound_bot_present: true,
+			publishable_bot_present: true,
+		};
+		const createdBot = {
+			id: 'bot-created',
+			name: 'Created Bot',
+			enabled: true,
+			provider_id: 'gemini_direct',
+			model_id: 'gemini-2.5-flash',
+			version: 1,
+			created_at: '2026-09-16T01:00:00+00:00',
+			updated_at: '2026-09-16T01:00:00+00:00',
+		};
+		const readinessResponses = [
+			initialReadiness,
+			updatedReadiness,
+			updatedReadiness,
+		];
+		let botPageCalls = 0;
+		const fetcher = jest
+			.fn()
+			.mockImplementation(
+				async ( url: string, options?: RequestInit ) => {
+					if ( url.endsWith( '/admin/onboarding/readiness' ) ) {
+						return {
+							ok: true,
+							status: 200,
+							json: async () => readinessResponses.shift(),
+						};
+					}
+					if ( url.endsWith( '/admin/bots?page=1&per_page=20' ) ) {
+						botPageCalls += 1;
+						return {
+							ok: true,
+							status: 200,
+							json: async () =>
+								botPageCalls === 1
+									? {
+											items: [],
+											total: 0,
+											page: 1,
+											per_page: 20,
+									  }
+									: {
+											items: [ createdBot ],
+											total: 1,
+											page: 1,
+											per_page: 20,
+									  },
+						};
+					}
+					if (
+						url.endsWith( '/admin/bots' ) &&
+						options?.method === 'POST'
+					) {
+						return {
+							ok: true,
+							status: 201,
+							json: async () => createdBot,
+						};
+					}
+					return { ok: true, status: 200, json: async () => ( {} ) };
+				}
+			);
+		Object.defineProperty( window, 'fetch', {
+			configurable: true,
+			value: fetcher,
+		} );
+
+		const bootstrapAdminApp = (
+			plugin as unknown as Record< string, unknown >
+		 ).bootstrapAdminApp as ( hash?: string ) => boolean;
+		expect( bootstrapAdminApp( '#/bots' ) ).toBe( true );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		const form = root.querySelector< HTMLFormElement >(
+			'form[data-bot-editor="create"]'
+		);
+		expect( form ).not.toBeNull();
+		if ( form === null ) {
+			return;
+		}
+		( form.elements.namedItem( 'name' ) as HTMLInputElement ).value =
+			'Created Bot';
+		( form.elements.namedItem( 'provider_id' ) as HTMLInputElement ).value =
+			'gemini_direct';
+		( form.elements.namedItem( 'model_id' ) as HTMLInputElement ).value =
+			'gemini-2.5-flash';
+		form.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		window.history.replaceState( null, '', '#/overview' );
+		window.dispatchEvent( new Event( 'hashchange' ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect(
+			fetcher.mock.calls.filter( ( call ) =>
+				String( call[ 0 ] ).endsWith( '/admin/onboarding/readiness' )
+			)
+		).toHaveLength( 3 );
+		expect(
+			root
+				.querySelector( '[data-current-step] a' )
+				?.getAttribute( 'href' )
+		).toBe( '#/publish' );
+		expect(
+			root.querySelector( '[data-readiness-card="publish"]' )?.textContent
+		).toContain( 'Ready to publish' );
+	} );
+
+	it( 'suppresses legacy headings inside the modern shell', () => {
+		configureTestElementRuntime();
+		const AdminShell = ( plugin as unknown as Record< string, unknown > )
+			.AdminShell as ( props: Record< string, unknown > ) => Node;
+		const root = document.createElement( 'div' );
+
+		root.append(
+			AdminShell( {
+				state: 'ready',
+				screen: 'bots',
+				botPage: { items: [], total: 0, page: 1, per_page: 20 },
+				readiness: {
+					ready: false,
+					next_step: 'first_bot',
+					configured_generation_provider: true,
+					configured_gemini_embedding: true,
+					model_available: true,
+					source_count: 0,
+					completed_index_present: false,
+					enabled_bot_count: 0,
+					bound_bot_present: false,
+					publishable_bot_present: false,
+				},
+			} )
+		);
+
+		expect( root.querySelectorAll( 'h1' ) ).toHaveLength( 1 );
 	} );
 } );
 
