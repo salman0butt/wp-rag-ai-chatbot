@@ -496,6 +496,61 @@ describe( 'bootstrapAdminApp', () => {
 		expect( render ).not.toHaveBeenCalled();
 	} );
 
+	it( 'uses one createRoot per admin container and skips legacy render', () => {
+		const legacyRender = jest.fn();
+		const rootRender = jest.fn();
+		const createRoot = jest.fn( () => ( { render: rootRender } ) );
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			value: {
+				element: {
+					createElement: createTestElement,
+					render: legacyRender,
+					createRoot,
+				},
+			},
+		} );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+
+		const bootstrapAdminApp = (
+			plugin as unknown as Record< string, unknown >
+		 ).bootstrapAdminApp as ( hash?: string ) => boolean;
+
+		expect( bootstrapAdminApp( '#/bots' ) ).toBe( true );
+		expect( bootstrapAdminApp( '#/bots' ) ).toBe( true );
+
+		expect( createRoot ).toHaveBeenCalledTimes( 1 );
+		expect( createRoot ).toHaveBeenCalledWith( root );
+		expect( rootRender ).toHaveBeenCalledTimes( 2 );
+		expect( legacyRender ).not.toHaveBeenCalled();
+	} );
+
+	it( 'falls back to legacy render when createRoot is unavailable', () => {
+		const legacyRender = jest.fn();
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			value: {
+				element: {
+					createElement: createTestElement,
+					render: legacyRender,
+				},
+			},
+		} );
+		const root = document.createElement( 'div' );
+		root.id = 'wp-rag-ai-chatbot-admin';
+		document.body.append( root );
+
+		const bootstrapAdminApp = (
+			plugin as unknown as Record< string, unknown >
+		 ).bootstrapAdminApp as ( hash?: string ) => boolean;
+
+		expect( bootstrapAdminApp( '#/bots' ) ).toBe( true );
+
+		expect( legacyRender ).toHaveBeenCalledTimes( 1 );
+	} );
+
 	it( 'mounts the selected ready screen from the safe WordPress boot payload', async () => {
 		const render = jest.fn( ( element: Node, root: Element ) => {
 			root.replaceChildren( element );

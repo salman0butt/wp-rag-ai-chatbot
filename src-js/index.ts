@@ -414,6 +414,8 @@ type ElementFactory = (
 ) => unknown;
 
 type ElementRenderer = ( element: unknown, root: Element ) => void;
+type ElementRoot = { render: ( element: unknown ) => void };
+type ElementRootFactory = ( root: Element ) => ElementRoot;
 
 interface AdminBootConfig {
 	plugin: string;
@@ -442,11 +444,14 @@ declare global {
 			element: {
 				createElement: ElementFactory;
 				render: ElementRenderer;
+				createRoot?: ElementRootFactory;
 			};
 		};
 		wpRagAiChatbotAdminConfig?: AdminBootConfig;
 	}
 }
+
+const adminElementRoots = new WeakMap< Element, ElementRoot >();
 
 const ADMIN_SCREENS: ReadonlyArray< {
 	screen: AdminScreen;
@@ -1606,66 +1611,76 @@ const renderAdminShell = (
 	publishBotError?: string,
 	onSelectPublishBot?: ( botId: string ) => void
 ): void => {
-	window.wp.element.render(
-		AdminShell( {
-			state,
-			screen,
-			onboardingStep,
-			onboardingIssue,
-			botPage,
-			botKnowledgeSources,
-			botRetrieval,
-			botRetrievalStatus,
-			botRetrievalError,
-			botKnowledgeSourcesStatus,
-			botKnowledgeSourcesError,
-			publishBotId,
-			publishBotOptions,
-			publishBotPublishable,
-			publishBotStatus,
-			publishBotError,
-			onSelectPublishBot,
-			onSaveBotKnowledge,
-			onDisconnectBotKnowledge,
-			selectedBotId,
-			botAppearance,
-			botAppearanceSaving,
-			botAppearanceError,
-			onChangeBotAppearance,
-			onSaveBotAppearance,
-			botDisplayRules,
-			botDisplayRulesSaving,
-			botDisplayRulesError,
-			onChangeBotDisplayRules,
-			onSaveBotDisplayRules,
-			knowledgePage,
-			selectedKnowledgeSourceId,
-			selectedKnowledgeDocumentKey,
-			knowledgeDetail,
-			knowledgeDocuments,
-			knowledgeChunks,
-			knowledgeJobs,
-			knowledgeJobMutationError,
-			knowledgeWizardError,
-			knowledgeSourceSubmitting,
-			woocommerceAvailable,
-			onCreateKnowledgeSource,
-			onCancelKnowledgeJob,
-			onRetryKnowledgeJob,
-			providerId,
-			providerCredential,
-			providerModels,
-			providerIssue,
-			onCreateBot,
-			onUpdateBot,
-			onDeleteBot,
-			onReplaceProviderCredential,
-			playgroundState,
-			onSubmitPlayground,
-			readiness,
-		} ),
-		root
-	);
+	const element = AdminShell( {
+		state,
+		screen,
+		onboardingStep,
+		onboardingIssue,
+		botPage,
+		botKnowledgeSources,
+		botRetrieval,
+		botRetrievalStatus,
+		botRetrievalError,
+		botKnowledgeSourcesStatus,
+		botKnowledgeSourcesError,
+		publishBotId,
+		publishBotOptions,
+		publishBotPublishable,
+		publishBotStatus,
+		publishBotError,
+		onSelectPublishBot,
+		onSaveBotKnowledge,
+		onDisconnectBotKnowledge,
+		selectedBotId,
+		botAppearance,
+		botAppearanceSaving,
+		botAppearanceError,
+		onChangeBotAppearance,
+		onSaveBotAppearance,
+		botDisplayRules,
+		botDisplayRulesSaving,
+		botDisplayRulesError,
+		onChangeBotDisplayRules,
+		onSaveBotDisplayRules,
+		knowledgePage,
+		selectedKnowledgeSourceId,
+		selectedKnowledgeDocumentKey,
+		knowledgeDetail,
+		knowledgeDocuments,
+		knowledgeChunks,
+		knowledgeJobs,
+		knowledgeJobMutationError,
+		knowledgeWizardError,
+		knowledgeSourceSubmitting,
+		woocommerceAvailable,
+		onCreateKnowledgeSource,
+		onCancelKnowledgeJob,
+		onRetryKnowledgeJob,
+		providerId,
+		providerCredential,
+		providerModels,
+		providerIssue,
+		onCreateBot,
+		onUpdateBot,
+		onDeleteBot,
+		onReplaceProviderCredential,
+		playgroundState,
+		onSubmitPlayground,
+		readiness,
+	} );
+	const createRoot = window.wp.element.createRoot;
+
+	if ( typeof createRoot === 'function' ) {
+		let elementRoot = adminElementRoots.get( root );
+		if ( elementRoot === undefined ) {
+			elementRoot = createRoot( root );
+			adminElementRoots.set( root, elementRoot );
+		}
+		elementRoot.render( element );
+		return;
+	}
+
+	window.wp.element.render( element, root );
 };
 
 const stateFromReadiness = (): AdminShellState => 'ready';
