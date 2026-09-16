@@ -95,6 +95,7 @@ const screenFromHash = ( hash: string ): AdminShellProps[ 'screen' ] => {
 
 	if (
 		path === 'overview' ||
+		path === 'onboarding' ||
 		path === 'bots' ||
 		path === 'knowledge' ||
 		path === 'playground' ||

@@ -30,6 +30,14 @@ import {
 	type KnowledgeWizardJob,
 	type KnowledgeWizardSource,
 } from './knowledge-wizard';
+import {
+	BotKnowledgeBinding,
+	deleteBotKnowledgeBinding,
+	saveBotKnowledgeBinding,
+	type BotKnowledgeBindingStatus,
+	type BotRetrievalProjection,
+	type KnowledgeSourceChoice,
+} from './bot-knowledge-binding';
 
 export const pluginIdentity = Object.freeze( {
 	slug: 'wp-rag-ai-chatbot',
@@ -194,6 +202,12 @@ export interface AdminShellProps {
 	onboardingStep?: OnboardingStep;
 	onboardingIssue?: OnboardingIssue;
 	botPage?: BotPage;
+	botKnowledgeSources?: ReadonlyArray< KnowledgeSourceChoice >;
+	botRetrieval?: BotRetrievalProjection;
+	botRetrievalStatus?: BotKnowledgeBindingStatus;
+	botRetrievalError?: string;
+	onSaveBotKnowledge?: ( sourceId: number ) => void | Promise< void >;
+	onDisconnectBotKnowledge?: () => void | Promise< void >;
 	selectedBotId?: string;
 	botAppearance?: WidgetAppearance;
 	botAppearanceSaving?: boolean;
@@ -1211,6 +1225,12 @@ const renderLegacyScreenContent = (
 		onboardingStep,
 		onboardingIssue,
 		botPage,
+		botKnowledgeSources,
+		botRetrieval,
+		botRetrievalStatus,
+		botRetrievalError,
+		onSaveBotKnowledge,
+		onDisconnectBotKnowledge,
 		selectedBotId,
 		botAppearance,
 		botAppearanceSaving = false,
@@ -1276,25 +1296,52 @@ const renderLegacyScreenContent = (
 				onUpdate: onUpdateBot,
 				onDelete: onDeleteBot,
 			} ),
+			botRetrieval === undefined
+				? undefined
+				: BotKnowledgeBinding( {
+						botId: selectedBotId ?? botPage.items[ 0 ]?.id ?? '',
+						sources: botKnowledgeSources ?? [],
+						retrieval: botRetrieval,
+						status: botRetrievalStatus,
+						error: botRetrievalError,
+						onSave: onSaveBotKnowledge,
+						onDisconnect: onDisconnectBotKnowledge,
+				  } ),
 			botAppearance === undefined
 				? undefined
-				: AppearanceCustomizer( {
-						appearance: botAppearance,
-						saving: botAppearanceSaving,
-						error: botAppearanceError,
-						onChange: onChangeBotAppearance ?? ( () => undefined ),
-						onSave: onSaveBotAppearance ?? ( () => undefined ),
-				  } ),
+				: createElement(
+						'details',
+						{ className: 'wp-rag-ai-admin-advanced', open: true },
+						createElement( 'summary', null, 'Advanced appearance' ),
+						AppearanceCustomizer( {
+							appearance: botAppearance,
+							saving: botAppearanceSaving,
+							error: botAppearanceError,
+							onChange:
+								onChangeBotAppearance ?? ( () => undefined ),
+							onSave: onSaveBotAppearance ?? ( () => undefined ),
+						} )
+				  ),
 			botDisplayRules === undefined
 				? undefined
-				: DisplayRulesEditor( {
-						config: botDisplayRules,
-						saving: botDisplayRulesSaving,
-						error: botDisplayRulesError,
-						onChange:
-							onChangeBotDisplayRules ?? ( () => undefined ),
-						onSave: onSaveBotDisplayRules ?? ( () => undefined ),
-				  } )
+				: createElement(
+						'details',
+						{ className: 'wp-rag-ai-admin-advanced', open: true },
+						createElement(
+							'summary',
+							null,
+							'Advanced display rules'
+						),
+						DisplayRulesEditor( {
+							config: botDisplayRules,
+							saving: botDisplayRulesSaving,
+							error: botDisplayRulesError,
+							onChange:
+								onChangeBotDisplayRules ?? ( () => undefined ),
+							onSave:
+								onSaveBotDisplayRules ?? ( () => undefined ),
+						} )
+				  )
 		);
 	} else if ( screen === 'knowledge' && knowledgePage !== undefined ) {
 		screenContent = createElement(
@@ -1500,7 +1547,13 @@ const renderAdminShell = (
 	onReplaceProviderCredential?: ( credential: string ) => Promise< void >,
 	playgroundState?: PlaygroundControllerState,
 	onSubmitPlayground?: ( request: PlaygroundRequestDraft ) => void,
-	readiness?: AdminReadiness
+	readiness?: AdminReadiness,
+	botKnowledgeSources?: ReadonlyArray< KnowledgeSourceChoice >,
+	botRetrieval?: BotRetrievalProjection,
+	botRetrievalStatus?: BotKnowledgeBindingStatus,
+	botRetrievalError?: string,
+	onSaveBotKnowledge?: ( sourceId: number ) => void | Promise< void >,
+	onDisconnectBotKnowledge?: () => void | Promise< void >
 ): void => {
 	window.wp.element.render(
 		AdminShell( {
@@ -1509,6 +1562,12 @@ const renderAdminShell = (
 			onboardingStep,
 			onboardingIssue,
 			botPage,
+			botKnowledgeSources,
+			botRetrieval,
+			botRetrievalStatus,
+			botRetrievalError,
+			onSaveBotKnowledge,
+			onDisconnectBotKnowledge,
 			selectedBotId,
 			botAppearance,
 			botAppearanceSaving,
@@ -1567,6 +1626,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentOnboardingStep: OnboardingStep | undefined;
 	let currentOnboardingIssue: OnboardingIssue | undefined;
 	let currentBotPage: BotPage | undefined;
+	let currentBotKnowledgeSources: KnowledgeSourceChoice[] = [];
+	let currentBotRetrieval: BotRetrievalProjection | undefined;
+	let currentBotRetrievalStatus: BotKnowledgeBindingStatus = 'loading';
+	let currentBotRetrievalError: string | undefined;
+	let loadedBotRetrievalId: string | undefined;
+	let botRetrievalGeneration = 0;
 	let currentBotAppearance: WidgetAppearance | undefined;
 	let currentBotAppearanceSaving = false;
 	let currentBotAppearanceError: string | undefined;
@@ -1615,6 +1680,9 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	) => Promise< void > = async () => undefined;
 	let deleteBot: ( bot: BotListItem ) => Promise< void > = async () =>
 		undefined;
+	let saveBotKnowledge: ( sourceId: number ) => Promise< void > = async () =>
+		undefined;
+	let disconnectBotKnowledge: () => Promise< void > = async () => undefined;
 	let changeBotAppearance: ( next: WidgetAppearance ) => void = () =>
 		undefined;
 	let saveBotAppearance: ( next: WidgetAppearance ) => void = () => undefined;
@@ -1714,7 +1782,17 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			( request ) => {
 				void submitPlayground( request );
 			},
-			currentReadiness
+			currentReadiness,
+			currentBotKnowledgeSources,
+			currentActiveBotId === loadedBotRetrievalId
+				? currentBotRetrieval
+				: undefined,
+			currentBotRetrievalStatus,
+			currentActiveBotId === loadedBotRetrievalId
+				? currentBotRetrievalError
+				: undefined,
+			saveBotKnowledge,
+			disconnectBotKnowledge
 		);
 	};
 
@@ -1780,6 +1858,82 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		currentBotPage = await client.request< BotPage >(
 			`/admin/bots?page=${ page }&per_page=20`
 		);
+	};
+	const emptyBotRetrieval = (): BotRetrievalProjection => ( {
+		configured: false,
+		source_id: null,
+		source_title: null,
+		collection_id: null,
+		collection_ready: false,
+	} );
+	const normalizeBotRetrieval = (
+		value: unknown
+	): BotRetrievalProjection => {
+		if ( typeof value !== 'object' || value === null ) {
+			return emptyBotRetrieval();
+		}
+		const candidate = value as Record< string, unknown >;
+		return {
+			configured: candidate.configured === true,
+			source_id:
+				typeof candidate.source_id === 'number' &&
+				Number.isSafeInteger( candidate.source_id )
+					? candidate.source_id
+					: null,
+			source_title:
+				typeof candidate.source_title === 'string'
+					? candidate.source_title
+					: null,
+			collection_id:
+				typeof candidate.collection_id === 'string'
+					? candidate.collection_id
+					: null,
+			collection_ready: candidate.collection_ready === true,
+		};
+	};
+	const refreshBotKnowledgeSources = async (): Promise< void > => {
+		try {
+			const page = await client.request< Partial< KnowledgeSourcePage > >(
+				'/admin/knowledge/sources?page=1&per_page=100'
+			);
+			currentBotKnowledgeSources = Array.isArray( page.items )
+				? page.items
+				: [];
+		} catch {
+			currentBotKnowledgeSources = [];
+		}
+	};
+	const refreshBotRetrieval = async ( botId: string ): Promise< boolean > => {
+		const requestGeneration = ++botRetrievalGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botRetrievalGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
+
+		currentBotRetrievalStatus = 'loading';
+		currentBotRetrievalError = undefined;
+		try {
+			const response = await client.request< { retrieval?: unknown } >(
+				`/admin/bots/${ encodeURIComponent( botId ) }/retrieval`
+			);
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+			currentBotRetrieval = normalizeBotRetrieval( response.retrieval );
+			loadedBotRetrievalId = botId;
+			currentBotRetrievalStatus = 'ready';
+			return true;
+		} catch {
+			if ( ! isCurrentRequest() ) {
+				return false;
+			}
+			currentBotRetrieval = emptyBotRetrieval();
+			loadedBotRetrievalId = botId;
+			currentBotRetrievalStatus = 'error';
+			currentBotRetrievalError =
+				'Knowledge connection could not be loaded. Try again.';
+			return true;
+		}
 	};
 	const refreshBotAppearance = async (
 		botId: string
@@ -2278,6 +2432,12 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 		}
 
 		if ( screen !== 'bots' ) {
+			botRetrievalGeneration += 1;
+			currentBotRetrieval = undefined;
+			currentBotRetrievalStatus = 'loading';
+			currentBotRetrievalError = undefined;
+			loadedBotRetrievalId = undefined;
+			currentBotKnowledgeSources = [];
 			botAppearanceGeneration += 1;
 			currentBotAppearance = undefined;
 			currentBotAppearanceSaving = false;
@@ -2324,6 +2484,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 						await Promise.all( [
 							refreshBotAppearance( botId ),
 							refreshBotDisplayRules( botId ),
+							refreshBotKnowledgeSources(),
+							refreshBotRetrieval( botId ),
 						] );
 					}
 				} )
@@ -2346,10 +2508,16 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentBotDisplayRules = undefined;
 			currentBotDisplayRulesSaving = false;
 			currentBotDisplayRulesError = undefined;
+			currentBotRetrieval = undefined;
+			currentBotRetrievalStatus = 'loading';
+			currentBotRetrievalError = undefined;
+			loadedBotRetrievalId = undefined;
 			renderState( currentState );
 			void Promise.all( [
 				refreshBotAppearance( currentActiveBotId ),
 				refreshBotDisplayRules( currentActiveBotId ),
+				refreshBotKnowledgeSources(),
+				refreshBotRetrieval( currentActiveBotId ),
 			] ).then( ( results ) => {
 				if ( results.some( Boolean ) ) {
 					renderState( stateFromReadiness() );
@@ -2517,6 +2685,82 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			renderState( 'error' );
 		}
 	};
+	saveBotKnowledge = async ( sourceId: number ): Promise< void > => {
+		const botId = activeBotId();
+		if ( botId === undefined ) {
+			return;
+		}
+		const requestGeneration = ++botRetrievalGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botRetrievalGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
+
+		currentBotRetrievalStatus = 'saving';
+		currentBotRetrievalError = undefined;
+		renderState( stateFromReadiness() );
+		try {
+			const response = ( await saveBotKnowledgeBinding(
+				client,
+				botId,
+				sourceId
+			) ) as {
+				retrieval?: unknown;
+			};
+			if ( ! isCurrentRequest() ) {
+				return;
+			}
+			currentBotRetrieval = normalizeBotRetrieval( response.retrieval );
+			loadedBotRetrievalId = botId;
+			currentBotRetrievalStatus = 'ready';
+			if ( ( await refreshReadiness() ) === 'failed' ) {
+				renderState( stateFromReadiness() );
+			}
+		} catch {
+			if ( ! isCurrentRequest() ) {
+				return;
+			}
+			currentBotRetrievalStatus = 'error';
+			currentBotRetrievalError =
+				'Knowledge connection could not be saved. Try again.';
+			renderState( stateFromReadiness() );
+		}
+	};
+	disconnectBotKnowledge = async (): Promise< void > => {
+		const botId = activeBotId();
+		if ( botId === undefined ) {
+			return;
+		}
+		const requestGeneration = ++botRetrievalGeneration;
+		const isCurrentRequest = (): boolean =>
+			requestGeneration === botRetrievalGeneration &&
+			resolveAdminScreen( currentHash() ) === 'bots' &&
+			activeBotId() === botId;
+
+		currentBotRetrievalStatus = 'saving';
+		currentBotRetrievalError = undefined;
+		renderState( stateFromReadiness() );
+		try {
+			await deleteBotKnowledgeBinding( client, botId );
+			if ( ! isCurrentRequest() ) {
+				return;
+			}
+			currentBotRetrieval = emptyBotRetrieval();
+			loadedBotRetrievalId = botId;
+			currentBotRetrievalStatus = 'ready';
+			if ( ( await refreshReadiness() ) === 'failed' ) {
+				renderState( stateFromReadiness() );
+			}
+		} catch {
+			if ( ! isCurrentRequest() ) {
+				return;
+			}
+			currentBotRetrievalStatus = 'error';
+			currentBotRetrievalError =
+				'Knowledge connection could not be disconnected. Try again.';
+			renderState( stateFromReadiness() );
+		}
+	};
 	const mutateKnowledgeJob = async (
 		job: KnowledgeJobItem,
 		action: 'cancel' | 'retry'
@@ -2629,6 +2873,8 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 				await Promise.all( [
 					refreshBotAppearance( botId ),
 					refreshBotDisplayRules( botId ),
+					refreshBotKnowledgeSources(),
+					refreshBotRetrieval( botId ),
 				] );
 			}
 		}

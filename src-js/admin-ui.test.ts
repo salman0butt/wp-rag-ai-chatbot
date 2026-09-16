@@ -181,7 +181,13 @@ describe( 'publish/test screen', () => {
 		const root = document.createElement( 'div' );
 		root.append(
 			PublishTestScreen( {
-				readiness: { ...readiness, next_step: 'publish' },
+				readiness: {
+					...readiness,
+					next_step: 'publish',
+					completed_index_present: true,
+					bound_bot_present: true,
+					publishable_bot_present: true,
+				},
 				botId: 'bot-123',
 			} ) as Node
 		);

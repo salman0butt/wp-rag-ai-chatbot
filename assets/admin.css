@@ -201,6 +201,78 @@
   font-size: 14px;
 }
 
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+  padding: 18px;
+  border: 1px solid #dbe4ed;
+  border-radius: 12px;
+  background: #fff;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding h2,
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding p {
+  margin: 0;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding form {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  align-items: center;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding select {
+  min-height: 40px;
+  max-width: 100%;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding button {
+  min-height: 40px;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding__details {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 14px;
+  margin: 0;
+  color: #475569;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding__details dt {
+  font-weight: 700;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding__details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-advanced {
+  margin: 18px 0;
+  padding: 14px 18px;
+  border: 1px solid #e1e6eb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+#wp-rag-ai-chatbot-admin .wp-rag-ai-admin-advanced > summary {
+  min-height: 32px;
+  color: #334155;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+#wp-rag-ai-chatbot-admin [data-publish-warning] {
+  color: #805b00;
+}
+
+#wp-rag-ai-chatbot-admin [data-copy-publish][disabled] {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
 #wp-rag-ai-chatbot-admin .screen-reader-text {
   position: absolute;
   width: 1px;
@@ -733,5 +805,14 @@
   #wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground [data-playground-form] button,
   #wp-rag-ai-chatbot-admin .wp-rag-ai-chatbot-playground details > summary {
     min-height: 44px;
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding form > *,
+  #wp-rag-ai-chatbot-admin .wp-rag-ai-bot-knowledge-binding > button {
+    grid-column: 1;
   }
 }

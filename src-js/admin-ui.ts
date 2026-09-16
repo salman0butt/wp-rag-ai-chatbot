@@ -11,8 +11,20 @@ export interface AdminReadiness {
 	enabled_bot_count: number;
 	bound_bot_present: boolean;
 	publishable_bot_present: boolean;
+	collection_ready?: boolean;
 	issue?: string;
 }
+
+export const isPublishReady = ( readiness: AdminReadiness ): boolean =>
+	readiness.configured_generation_provider === true &&
+	readiness.configured_gemini_embedding === true &&
+	readiness.model_available === true &&
+	safeCount( readiness.source_count ) > 0 &&
+	readiness.completed_index_present === true &&
+	safeCount( readiness.enabled_bot_count ) > 0 &&
+	readiness.bound_bot_present === true &&
+	readiness.collection_ready !== false &&
+	readiness.publishable_bot_present === true;
 
 export type ModernAdminScreen =
 	| 'overview'
@@ -286,6 +298,7 @@ export const PublishTestScreen = ( {
 	const createElement = create();
 	let copyMessage = '';
 	const cards = publishCards( botId );
+	const publishReady = isPublishReady( readiness );
 	const announce = ( message: string, source?: Element ): void => {
 		copyMessage = message;
 		const status =
@@ -307,10 +320,11 @@ export const PublishTestScreen = ( {
 				role: 'status',
 				'aria-live': 'polite',
 				className: 'wp-rag-ai-admin-status',
+				'data-publish-warning': publishReady ? undefined : true,
 			},
-			readiness.publishable_bot_present
+			publishReady
 				? 'This chatbot is ready to publish.'
-				: 'Finish setup before publishing this chatbot.'
+				: 'Publishing is disabled until the provider, model, source, completed index, enabled bot, and knowledge connection are ready.'
 		),
 		createElement(
 			'div',
@@ -350,6 +364,7 @@ export const PublishTestScreen = ( {
 							className: 'button',
 							'data-copy-publish': card.key,
 							'aria-label': `Copy ${ card.title } snippet`,
+							disabled: publishReady ? undefined : true,
 							type: 'button',
 							onClick: ( event: Event ) => {
 								const source = event.currentTarget as Element;

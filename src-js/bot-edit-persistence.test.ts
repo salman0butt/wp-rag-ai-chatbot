@@ -144,6 +144,29 @@ describe( 'persisted bot editing', () => {
 			.mockResolvedValueOnce( {
 				ok: true,
 				status: 200,
+				json: async () => ( {
+					items: [],
+					total: 0,
+					page: 1,
+					per_page: 100,
+				} ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
+				json: async () => ( {
+					retrieval: {
+						configured: false,
+						source_id: null,
+						source_title: null,
+						collection_id: null,
+						collection_ready: false,
+					},
+				} ),
+			} )
+			.mockResolvedValueOnce( {
+				ok: true,
+				status: 200,
 				json: async () => ( { bot: updatedBot } ),
 			} )
 			.mockResolvedValueOnce( {
@@ -162,6 +185,8 @@ describe( 'persisted bot editing', () => {
 		} );
 
 		expect( bootstrapAdminApp( '#/bots' ) ).toBe( true );
+		await tick();
+		await tick();
 		await tick();
 		await tick();
 
@@ -189,9 +214,11 @@ describe( 'persisted bot editing', () => {
 		);
 		await tick();
 		await tick();
+		await tick();
+		await tick();
 
 		expect( fetcher ).toHaveBeenNthCalledWith(
-			5,
+			7,
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots/bot-existing',
 			expect.objectContaining( {
 				method: 'PUT',
@@ -207,8 +234,7 @@ describe( 'persisted bot editing', () => {
 				} ),
 			} )
 		);
-		expect( fetcher ).toHaveBeenNthCalledWith(
-			6,
+		expect( fetcher ).toHaveBeenCalledWith(
 			'https://example.test/wp-json/wp-rag-ai-chatbot/v1/admin/bots?page=1&per_page=20',
 			expect.objectContaining( {
 				headers: expect.objectContaining( {
