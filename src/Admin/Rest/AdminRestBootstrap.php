@@ -834,7 +834,9 @@ final class AdminRestBootstrap {
 		return new KnowledgeJobRestResource(
 			new WpdbJobReadRepository( $connection, $tables ),
 			new WpdbJobRepository( $connection, $tables ),
-			new SystemClock()
+			new SystemClock(),
+			new WpdbKnowledgeSourceRepository( $connection, $tables ),
+			new WpdbDocumentRepository( $connection, $tables )
 		);
 	}
 

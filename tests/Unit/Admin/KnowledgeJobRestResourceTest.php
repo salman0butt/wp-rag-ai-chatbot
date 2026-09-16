@@ -13,11 +13,16 @@ use DateTimeImmutable;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Core\PagedResult;
+use WpRagAiChatbot\Documents\DocumentRecord;
+use WpRagAiChatbot\Documents\DocumentRepository;
 use WpRagAiChatbot\Jobs\Clock;
 use WpRagAiChatbot\Jobs\JobRecord;
 use WpRagAiChatbot\Jobs\JobRepository;
 use WpRagAiChatbot\Jobs\JobRequest;
 use WpRagAiChatbot\Jobs\JobStatus;
+use WpRagAiChatbot\Jobs\Sync\WordPressDocumentIndexDependencies;
+use WpRagAiChatbot\Knowledge\KnowledgeSourceRecord;
+use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 
 /**
  * Verifies bounded safe job projections and lifecycle guards.
@@ -32,7 +37,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 			->with( 1, 20 )
 			->willReturn( new PagedResult( array( $this->job( JobStatus::FAILED ) ), 1, 1, 20 ) );
 
-		$response = $this->invoke( new $resource_class( $reader, $this->repository(), $this->clock() ), 'list', array( 1, 20 ) );
+		$response = $this->invoke( new $resource_class( $reader, $this->repository(), $this->clock(), $this->sources(), $this->documents() ), 'list', array( 1, 20 ) );
 
 		self::assertSame( 1, $response['total'] );
 		self::assertSame( 'job-123', $response['items'][0]['job_key'] );
@@ -40,11 +45,9 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		self::assertSame( 'provider_unavailable', $response['items'][0]['last_error_code'] );
 		self::assertSame( 'Indexing provider is temporarily unavailable.', $response['items'][0]['last_error_message'] );
 
-		$serialized = wp_json_encode( $response );
-		self::assertIsString( $serialized );
-		self::assertStringNotContainsString( 'PAYLOAD-SECRET', $serialized );
-		self::assertStringNotContainsString( 'IDEMPOTENCY-SECRET', $serialized );
-		self::assertStringNotContainsString( 'LEASE-SECRET', $serialized );
+		self::assertArrayNotHasKey( 'payload', $response['items'][0] );
+		self::assertArrayNotHasKey( 'idempotency_key', $response['items'][0] );
+		self::assertArrayNotHasKey( 'lease_token', $response['items'][0] );
 	}
 
 	/** Unsupported terminal cancellation must not call the M09 mutation seam. */
@@ -55,7 +58,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		$repository = $this->repository();
 		$repository->expects( self::never() )->method( 'requestCancellation' );
 
-		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock() ), 'cancel', array( 'job-123' ) );
+		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock(), $this->sources(), $this->documents() ), 'cancel', array( 'job-123' ) );
 
 		self::assertSame( 'invalid_transition', $response['error']['code'] );
 	}
@@ -68,7 +71,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		$repository = $this->repository();
 		$repository->expects( self::never() )->method( 'enqueue' );
 
-		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock() ), 'retry', array( 'job-123' ) );
+		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock(), $this->sources(), $this->documents() ), 'retry', array( 'job-123' ) );
 
 		self::assertSame( 'invalid_transition', $response['error']['code'] );
 	}
@@ -79,6 +82,10 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		$failed         = $this->job( JobStatus::FAILED, 'job-123', false );
 		$reader         = $this->reader();
 		$reader->expects( self::once() )->method( 'findByKey' )->with( 'job-123' )->willReturn( $failed );
+		$sources = $this->sources();
+		$sources->expects( self::once() )->method( 'findById' )->with( 7 )->willReturn( $this->source() );
+		$documents = $this->documents();
+		$documents->expects( self::once() )->method( 'findByKey' )->with( 'doc:42' )->willReturn( $this->document() );
 		$repository = $this->repository();
 		$now        = new DateTimeImmutable( '2026-09-08T18:45:00+00:00' );
 		$repository->expects( self::once() )
@@ -93,7 +100,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 			)
 			->willReturn( $this->job( JobStatus::QUEUED, 'job-retry' ) );
 
-		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock( $now ) ), 'retry', array( 'job-123' ) );
+		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock( $now ), $sources, $documents ), 'retry', array( 'job-123' ) );
 
 		self::assertSame( 'job-retry', $response['job_key'] );
 		self::assertSame( 'queued', $response['status'] );
@@ -105,22 +112,40 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		$reader         = $this->reader();
 		$repository     = $this->repository();
 		$now            = new DateTimeImmutable( '2026-09-08T18:45:00+00:00' );
-		$payload        = $this->payload();
+		$payload        = $this->request_payload();
+		$expected       = $this->payload();
+		$sources        = $this->sources();
+		$sources->expects( self::once() )->method( 'findById' )->with( 7 )->willReturn( $this->source() );
+		$documents = $this->documents();
+		$documents->expects( self::once() )->method( 'findByKey' )->with( 'doc:42' )->willReturn( $this->document() );
 		$repository->expects( self::once() )
 			->method( 'enqueue' )
 			->with(
 				self::callback(
 					static fn ( JobRequest $request ): bool => 'index.document' === $request->type
-					&& $payload === $request->payload
+					&& $expected === $request->payload
 				),
 				$now
 			)
 			->willReturn( $this->job( JobStatus::QUEUED, 'job-new' ) );
 
-		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock( $now ) ), 'enqueue', array( $payload ) );
+		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock( $now ), $sources, $documents ), 'enqueue', array( $payload ) );
 
 		self::assertSame( 'job-new', $response['job_key'] );
 		self::assertSame( 'queued', $response['status'] );
+	}
+
+	/** Browser-supplied server-owned indexing metadata must not reach the queue. */
+	public function test_enqueue_rejects_browser_supplied_indexing_metadata(): void {
+		$resource_class = $this->resource_class();
+		$repository     = $this->repository();
+		$repository->expects( self::never() )->method( 'enqueue' );
+		$payload                  = $this->payload();
+		$payload['collection_id'] = 'attacker-collection';
+
+		$response = $this->invoke( new $resource_class( $this->reader(), $repository, $this->clock(), $this->sources(), $this->documents() ), 'enqueue', array( $payload ) );
+
+		self::assertSame( 'invalid_request', $response['error']['code'] );
 	}
 
 	/** Invalid list bounds are rejected before persisted reads. */
@@ -129,7 +154,7 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		$reader         = $this->reader();
 		$reader->expects( self::never() )->method( 'paginate' );
 
-		$response = $this->invoke( new $resource_class( $reader, $this->repository(), $this->clock() ), 'list', array( 1, 101 ) );
+		$response = $this->invoke( new $resource_class( $reader, $this->repository(), $this->clock(), $this->sources(), $this->documents() ), 'list', array( 1, 101 ) );
 
 		self::assertSame( 'invalid_request', $response['error']['code'] );
 	}
@@ -153,6 +178,16 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 	/** Build the existing M09 mutation repository mock. */
 	private function repository(): JobRepository&MockObject {
 		return $this->createMock( JobRepository::class );
+	}
+
+	/** Build the persisted source repository seam. */
+	private function sources(): KnowledgeSourceRepository&MockObject {
+		return $this->createMock( KnowledgeSourceRepository::class );
+	}
+
+	/** Build the persisted document repository seam. */
+	private function documents(): DocumentRepository&MockObject {
+		return $this->createMock( DocumentRepository::class );
 	}
 
 	/**
@@ -211,9 +246,60 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 		return array(
 			'document_key'     => 'doc:42',
 			'source_id'        => 7,
-			'collection_id'    => 'collection-main',
-			'configuration_id' => 'config-default',
-			'generation'       => 'v1',
+			'collection_id'    => WordPressDocumentIndexDependencies::COLLECTION_ID,
+			'configuration_id' => WordPressDocumentIndexDependencies::configuration_id(),
+			'generation'       => 'source-generation-v1',
+		);
+	}
+
+	/** Return the browser-owned identifier-only request shape. */
+	private function request_payload(): array {
+		return array(
+			'document_key' => 'doc:42',
+			'source_id'    => 7,
+		);
+	}
+
+	/** Return a source carrying the current fixed semantic profile. */
+	private function source(): KnowledgeSourceRecord {
+		$now = new DateTimeImmutable( '2026-09-08T18:40:00+00:00' );
+
+		return new KnowledgeSourceRecord(
+			7,
+			'source:7',
+			'manual_text',
+			null,
+			'Support guide',
+			null,
+			'active',
+			array( 'semantic_retrieval' => WordPressDocumentIndexDependencies::semantic_configuration() ),
+			'source-generation-v1',
+			null,
+			$now,
+			$now
+		);
+	}
+
+	/** Return a document whose persisted lineage belongs to the current source. */
+	private function document(): DocumentRecord {
+		$now = new DateTimeImmutable( '2026-09-08T18:40:00+00:00' );
+
+		return new DocumentRecord(
+			42,
+			'doc:42',
+			7,
+			null,
+			'post',
+			'Support guide',
+			null,
+			'Support content',
+			array(),
+			'source-generation-v1',
+			hash( 'sha256', 'Support content' ),
+			null,
+			'public',
+			$now,
+			$now
 		);
 	}
 

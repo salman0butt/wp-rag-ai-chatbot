@@ -15,8 +15,10 @@ use WpRagAiChatbot\Database\Connection;
 use WpRagAiChatbot\Database\Repository\WpdbJobReadRepository;
 use WpRagAiChatbot\Database\Repository\WpdbJobRepository;
 use WpRagAiChatbot\Database\TableNames;
+use WpRagAiChatbot\Documents\DocumentRepository;
 use WpRagAiChatbot\Jobs\Clock;
 use WpRagAiChatbot\Jobs\JobReadRepository;
+use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 
 /** Verifies bounded persisted Task 3 inspection without reopening terminal state. */
 final class KnowledgeJobAdminTest extends TestCase {
@@ -71,8 +73,10 @@ final class KnowledgeJobAdminTest extends TestCase {
 		$repository = new WpdbJobRepository( $connection, new TableNames( 'wp_' ) );
 		$clock      = $this->createMock( Clock::class );
 		$clock->method( 'now' )->willReturn( new DateTimeImmutable( '2026-09-08T19:00:00+00:00' ) );
+		$sources        = $this->createMock( KnowledgeSourceRepository::class );
+		$documents      = $this->createMock( DocumentRepository::class );
 		$resource_class = 'WpRagAiChatbot\\Admin\\Rest\\KnowledgeJobRestResource';
-		$resource       = new $resource_class( $reader, $repository, $clock );
+		$resource       = new $resource_class( $reader, $repository, $clock, $sources, $documents );
 
 		$response = call_user_func_array( array( $resource, 'cancel' ), array( 'job-terminal' ) );
 		self::assertIsArray( $response );

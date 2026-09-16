@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Admin\Rest;
 
+use WpRagAiChatbot\Database\DatabaseException;
+use WpRagAiChatbot\Documents\DocumentRepository;
+use WpRagAiChatbot\Jobs\Sync\WordPressDocumentIndexDependencies;
 use WpRagAiChatbot\Jobs\Clock;
 use WpRagAiChatbot\Jobs\JobQueueException;
 use WpRagAiChatbot\Jobs\JobReadRepository;
@@ -17,6 +20,7 @@ use WpRagAiChatbot\Jobs\JobRepository;
 use WpRagAiChatbot\Jobs\JobStatus;
 use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobEnqueuer;
 use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobPayload;
+use WpRagAiChatbot\Knowledge\KnowledgeSourceRepository;
 
 // phpcs:disable WordPress.NamingConventions -- DTO keys and repository API follow the approved domain contract.
 /**
@@ -26,14 +30,18 @@ final class KnowledgeJobRestResource {
 	/**
 	 * Create the resource.
 	 *
-	 * @param JobReadRepository $reader Read-only job inspection repository.
-	 * @param JobRepository     $repository Existing M09 mutation repository.
-	 * @param Clock             $clock Queue clock.
+	 * @param JobReadRepository         $reader Read-only job inspection repository.
+	 * @param JobRepository             $repository Existing M09 mutation repository.
+	 * @param Clock                     $clock Queue clock.
+	 * @param KnowledgeSourceRepository $sources Persisted source repository.
+	 * @param DocumentRepository        $documents Persisted document repository.
 	 */
 	public function __construct(
 		private readonly JobReadRepository $reader,
 		private readonly JobRepository $repository,
-		private readonly Clock $clock
+		private readonly Clock $clock,
+		private readonly KnowledgeSourceRepository $sources,
+		private readonly DocumentRepository $documents
 	) {
 	}
 
@@ -67,9 +75,10 @@ final class KnowledgeJobRestResource {
 	 */
 	public function enqueue( array $payload ): array {
 		try {
-			$safe_payload = DocumentIndexJobPayload::from_array( $payload );
+			$identifiers  = $this->request_identifiers( $payload );
+			$safe_payload = $this->server_owned_payload( $identifiers );
 			$record       = ( new DocumentIndexJobEnqueuer( $this->repository ) )->enqueue( $safe_payload, $this->clock->now() );
-		} catch ( JobQueueException ) {
+		} catch ( DatabaseException | JobQueueException ) {
 			return self::error( 'invalid_request', 'Request parameters are invalid.' );
 		}
 
@@ -110,13 +119,91 @@ final class KnowledgeJobRestResource {
 		}
 
 		try {
-			$payload = DocumentIndexJobPayload::from_array( $record->payload );
+			$payload = $this->server_owned_payload( $this->persisted_identifiers( $record->payload ) );
 			$retry   = ( new DocumentIndexJobEnqueuer( $this->repository ) )->enqueue( $payload, $this->clock->now() );
-		} catch ( JobQueueException ) {
+		} catch ( DatabaseException | JobQueueException ) {
 			return self::error( 'invalid_transition', 'The requested job transition is not allowed.' );
 		}
 
 		return self::project( $retry );
+	}
+
+	/**
+	 * Accept only the browser-owned document/source identifiers for a new enqueue request.
+	 *
+	 * @param array<string,mixed> $payload Raw REST payload.
+	 * @return array{document_key:string,source_id:int}
+	 * @throws JobQueueException When browser-supplied indexing metadata is present.
+	 */
+	private function request_identifiers( array $payload ): array {
+		$expected = array( 'document_key', 'source_id' );
+		$actual   = array_keys( $payload );
+		sort( $expected );
+		sort( $actual );
+
+		if ( $expected !== $actual || ! is_string( $payload['document_key'] ) || ! is_int( $payload['source_id'] ) ) {
+			throw new JobQueueException( 'Document indexing requests must not provide server-owned metadata.' );
+		}
+
+		return array(
+			'document_key' => $payload['document_key'],
+			'source_id'    => $payload['source_id'],
+		);
+	}
+
+	/**
+	 * Extract only the stable identifiers from a persisted legacy payload before re-deriving it.
+	 *
+	 * @param array<string,mixed> $payload Persisted queue payload.
+	 * @return array{document_key:string,source_id:int}
+	 * @throws JobQueueException When persisted lineage identifiers are missing or malformed.
+	 */
+	private function persisted_identifiers( array $payload ): array {
+		return $this->request_identifiers(
+			array(
+				'document_key' => $payload['document_key'] ?? null,
+				'source_id'    => $payload['source_id'] ?? null,
+			)
+		);
+	}
+
+	/**
+	 * Resolve lineage and rebuild the exact current fixed-profile document-index payload.
+	 *
+	 * @param array{document_key:string,source_id:int} $identifiers Browser/persisted lineage identifiers.
+	 * @throws DatabaseException|JobQueueException When persisted lineage or source semantics cannot produce a current job.
+	 */
+	private function server_owned_payload( array $identifiers ): DocumentIndexJobPayload {
+		$document = $this->documents->findByKey( $identifiers['document_key'] );
+		$source   = $this->sources->findById( $identifiers['source_id'] );
+		if ( null === $document || null === $source || $document->sourceId !== $identifiers['source_id'] ) {
+			throw new JobQueueException( 'Document indexing lineage is invalid.' );
+		}
+
+		$generation = $source->sourceHash;
+		$semantic   = $source->config['semantic_retrieval'] ?? null;
+		$expected   = WordPressDocumentIndexDependencies::semantic_configuration();
+		if ( null === $generation || '' === $generation || ! is_array( $semantic ) || count( $semantic ) !== count( $expected ) ) {
+			throw new JobQueueException( 'Document indexing source state is invalid.' );
+		}
+		foreach ( $expected as $key => $value ) {
+			if ( ! array_key_exists( $key, $semantic ) || $semantic[ $key ] !== $value ) {
+				throw new JobQueueException( 'Document indexing source state is invalid.' );
+			}
+		}
+
+		$payload = new DocumentIndexJobPayload(
+			$identifiers['document_key'],
+			$identifiers['source_id'],
+			(string) $semantic['collection_id'],
+			(string) $semantic['configuration_id'],
+			$generation
+		);
+		if ( ! WordPressDocumentIndexDependencies::matches_source_configuration( $source, $payload ) ) {
+			throw new JobQueueException( 'Document indexing source state is stale.' );
+		}
+
+		return $payload;
 	}
 
 	/**
