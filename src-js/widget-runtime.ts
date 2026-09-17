@@ -59,6 +59,17 @@ type WidgetEventHandlerMount = HTMLElement & {
 	[ WIDGET_EVENT_HANDLER_KEY ]?: ( event: Event ) => void;
 };
 
+const eventTargetMatches = ( event: Event, selector: string ): boolean => {
+	const target = event.target as {
+		closest?: ( value: string ) => unknown;
+	} | null;
+
+	return (
+		typeof target?.closest === 'function' &&
+		target.closest( selector ) !== null
+	);
+};
+
 export const handleWidgetEvent = ( event: Event ): void => {
 	const target = event.target as {
 		closest?: ( selector: string ) => WidgetEventHandlerMount | null;
@@ -689,12 +700,22 @@ export const mountWidgets = (
 					return;
 				}
 
-				if ( event.target === launcher ) {
+				if (
+					eventTargetMatches(
+						event,
+						'[data-wp-rag-ai-chatbot-launcher]'
+					)
+				) {
 					event.preventDefault();
 					event.stopImmediatePropagation();
 					proactiveDelay.cancel();
 					openPanel( true );
-				} else if ( event.target === close ) {
+				} else if (
+					eventTargetMatches(
+						event,
+						'[data-wp-rag-ai-chatbot-close]'
+					)
+				) {
 					event.preventDefault();
 					event.stopImmediatePropagation();
 					closePanel();
@@ -702,7 +723,12 @@ export const mountWidgets = (
 			};
 
 			const handleWidgetSubmit = ( event: Event ): void => {
-				if ( event.target !== form ) {
+				if (
+					! eventTargetMatches(
+						event,
+						'[data-wp-rag-ai-chatbot-form]'
+					)
+				) {
 					return;
 				}
 
@@ -718,7 +744,13 @@ export const mountWidgets = (
 			};
 
 			const handleWidgetPointerDown = ( event: Event ): void => {
-				if ( ! isFloating || event.target !== launcher ) {
+				if (
+					! isFloating ||
+					! eventTargetMatches(
+						event,
+						'[data-wp-rag-ai-chatbot-launcher]'
+					)
+				) {
 					return;
 				}
 
