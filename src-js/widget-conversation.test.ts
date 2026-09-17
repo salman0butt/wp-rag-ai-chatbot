@@ -260,6 +260,33 @@ describe( 'public widget conversation controls', () => {
 		}
 	} );
 
+	it( 'routes events from DOM targets outside the page Element realm', () => {
+		loadWidget();
+
+		const mount = document.querySelector< HTMLElement >(
+			'.wp-rag-ai-chatbot-widget'
+		);
+		const handler = jest.fn();
+		const target = {
+			closest: jest.fn().mockReturnValue( {
+				__wpRagAiChatbotHandleEvent: handler,
+			} ),
+		};
+		const event = new Event( 'click', { bubbles: true } );
+		Object.defineProperty( event, 'target', { value: target } );
+
+		const runtime = require( './widget-runtime' ) as {
+			handleWidgetEvent: ( value: Event ) => void;
+		};
+		runtime.handleWidgetEvent( event );
+
+		expect( target.closest ).toHaveBeenCalledWith(
+			'.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]'
+		);
+		expect( handler ).toHaveBeenCalledWith( event );
+		expect( mount ).not.toBeNull();
+	} );
+
 	it( 'registers capture guards before later window handlers can interrupt them', () => {
 		const originalReadyState = document.readyState;
 		Object.defineProperty( document, 'readyState', {

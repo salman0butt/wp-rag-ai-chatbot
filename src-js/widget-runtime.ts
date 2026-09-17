@@ -60,12 +60,13 @@ type WidgetEventHandlerMount = HTMLElement & {
 };
 
 export const handleWidgetEvent = ( event: Event ): void => {
-	const target = event.target;
-	if ( ! ( target instanceof Element ) ) {
-		return;
-	}
-
-	const mount = target.closest< WidgetEventHandlerMount >( MOUNT_SELECTOR );
+	const target = event.target as {
+		closest?: ( selector: string ) => WidgetEventHandlerMount | null;
+	} | null;
+	const mount =
+		typeof target?.closest === 'function'
+			? target.closest( MOUNT_SELECTOR )
+			: null;
 	mount?.[ WIDGET_EVENT_HANDLER_KEY ]?.( event );
 };
 
