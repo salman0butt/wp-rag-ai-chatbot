@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WP RAG AI Chatbot
  * Description: WordPress-native AI chatbot and RAG platform.
- * Version: 0.1.13
+ * Version: 0.1.14
  * Requires at least: 6.9
  * Requires PHP: 8.2
  * Author: Salman Butt

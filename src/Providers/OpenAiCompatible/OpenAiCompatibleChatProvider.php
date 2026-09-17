@@ -110,7 +110,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		);
 
 		$body = array(
-			'model'    => $request->model_id,
+			'model'    => $this->normalize_model_id( $request->model_id ),
 			'messages' => $messages,
 		);
 		if ( null !== $request->max_output_tokens ) {
@@ -210,7 +210,7 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 				: $item['id'];
 			$models[]     = new ModelInfo(
 				$this->provider_id,
-				$item['id'],
+				$this->normalize_model_id( $item['id'] ),
 				$display_name
 			);
 		}
@@ -298,6 +298,22 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		}
 
 		return $credential;
+	}
+
+	/**
+	 * Convert provider resource names to the model IDs accepted by OpenAI-compatible endpoints.
+	 *
+	 * Gemini's model catalog returns resource names such as models/gemini-2.5-flash,
+	 * while its compatibility endpoint expects the bare model ID.
+	 *
+	 * @param string $model_id Provider model identifier.
+	 */
+	private function normalize_model_id( string $model_id ): string {
+		if ( ProviderIds::GEMINI_DIRECT === $this->provider_id && str_starts_with( $model_id, 'models/' ) ) {
+			return substr( $model_id, 7 );
+		}
+
+		return $model_id;
 	}
 
 	/**

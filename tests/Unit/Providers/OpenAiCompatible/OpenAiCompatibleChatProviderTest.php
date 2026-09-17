@@ -72,7 +72,7 @@ final class OpenAiCompatibleChatProviderTest extends TestCase {
 				new HttpResponse(
 					200,
 					array(),
-					'{"data":[{"id":"gemini-2.5-flash","name":"Gemini 2.5 Flash"}]}'
+					'{"data":[{"id":"models/gemini-2.5-flash","name":"Gemini 2.5 Flash"}]}'
 				),
 			)
 		);
@@ -95,6 +95,33 @@ final class OpenAiCompatibleChatProviderTest extends TestCase {
 		self::assertSame( ProviderIds::GEMINI_DIRECT, $models[0]->provider_id );
 		self::assertSame( 'gemini-2.5-flash', $models[0]->model_id );
 		self::assertSame( 'Gemini 2.5 Flash', $models[0]->display_name );
+	}
+
+	/**
+	 * Gemini's REST model catalog names are accepted after removing its resource prefix.
+	 */
+	public function test_gemini_generation_normalizes_catalog_resource_model_id(): void {
+		$this->require_adapter();
+		$transport = new QueuedHttpTransport(
+			array(
+				new HttpResponse(
+					200,
+					array(),
+					'{"model":"gemini-2.5-flash","choices":[{"message":{"content":"Grounded answer"},"finish_reason":"stop"}]}'
+				),
+			)
+		);
+		$provider  = $this->provider(
+			ProviderIds::GEMINI_DIRECT,
+			'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+			'https://generativelanguage.googleapis.com/v1beta/openai/models',
+			$transport,
+			'gemini-secret'
+		);
+
+		$provider->generate( new GenerationRequest( 'models/gemini-2.5-flash', 'Answer', null, 64 ) );
+
+		self::assertSame( 'gemini-2.5-flash', $transport->requests[0]->json_body['model'] );
 	}
 
 	/**
