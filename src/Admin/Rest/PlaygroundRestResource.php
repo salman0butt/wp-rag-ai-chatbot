@@ -11,6 +11,7 @@ namespace WpRagAiChatbot\Admin\Rest;
 
 use Throwable;
 use WpRagAiChatbot\Citations\Citation;
+use WpRagAiChatbot\Chat\ChatException;
 use WpRagAiChatbot\Providers\Usage;
 use WpRagAiChatbot\Retrieval\RetrievalException;
 
@@ -60,6 +61,8 @@ final class PlaygroundRestResource {
 			unset( $exception );
 
 			return $this->error( 'retrieval_unavailable' );
+		} catch ( ChatException $exception ) {
+			return $this->error( $exception->reason->value );
 		} catch ( Throwable $throwable ) {
 			unset( $throwable );
 

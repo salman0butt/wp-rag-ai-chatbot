@@ -31,6 +31,11 @@ interface BotRepository {
 	public function find( BotId $id ): ?Bot;
 
 	/**
+	 * Find the oldest enabled bot for site-wide publishing.
+	 */
+	public function find_first_enabled(): ?Bot;
+
+	/**
 	 * Update one bot only when its expected version is current.
 	 *
 	 * @param BotId  $id Stable bot identifier.

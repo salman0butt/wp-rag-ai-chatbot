@@ -71,6 +71,13 @@ const PLAYGROUND_ERROR_MESSAGES: Record< string, string > = {
 	invalid_request:
 		'Check the persisted selectors and question, then try again.',
 	retrieval_unavailable: 'Retrieval is temporarily unavailable.',
+	insufficient_evidence:
+		'The knowledge base did not contain enough matching information.',
+	generation_unavailable: 'The configured AI provider is unavailable.',
+	generation_failed: 'The AI provider could not generate an answer.',
+	invalid_citations: 'The AI answer did not include valid sources.',
+	budget_exceeded: 'The configured AI usage budget has been reached.',
+	rate_limited: 'The AI provider is temporarily rate limited.',
 	playground_failed: 'The Playground request could not be completed.',
 };
 

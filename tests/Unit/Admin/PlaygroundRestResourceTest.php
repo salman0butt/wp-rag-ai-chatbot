@@ -14,6 +14,8 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use WpRagAiChatbot\Admin\Rest\PlaygroundExecutionResult;
 use WpRagAiChatbot\Admin\Rest\PlaygroundExecutor;
+use WpRagAiChatbot\Chat\ChatException;
+use WpRagAiChatbot\Chat\ChatFailureReason;
 use WpRagAiChatbot\Retrieval\RetrievalException;
 
 /**
@@ -52,6 +54,23 @@ final class PlaygroundRestResourceTest extends TestCase {
 		self::assertIsString( $serialized );
 
 		self::assertSame( 'retrieval_unavailable', $response['error']['code'] );
+		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', $serialized );
+	}
+
+	/** Production chat failures expose only their stable safe category to administrators. */
+	public function test_run_maps_chat_failure_reason_without_leaking_message(): void {
+		$executor = $this->executor(
+			static function (): PlaygroundExecutionResult {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test verifies only the stable enum value is returned.
+				throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'PROVIDER-SECRET-SENTINEL' );
+			}
+		);
+
+		$response   = $this->call_run( $executor, 'Explain the answer.' );
+		$serialized = wp_json_encode( $response );
+		self::assertIsString( $serialized );
+
+		self::assertSame( 'generation_failed', $response['error']['code'] );
 		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', $serialized );
 	}
 

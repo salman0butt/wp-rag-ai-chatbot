@@ -108,6 +108,31 @@ describe( 'public widget conversation controls', () => {
 		expect( send?.textContent ).toBe( 'Send' );
 	} );
 
+	it( 'waits for DOMContentLoaded when the footer script runs before the document is ready', () => {
+		const originalReadyState = document.readyState;
+		Object.defineProperty( document, 'readyState', {
+			configurable: true,
+			value: 'loading',
+		} );
+		document.body.innerHTML = '';
+
+		loadWidget();
+		expect(
+			document.querySelector( '[data-wp-rag-ai-chatbot-form]' )
+		).toBeNull();
+
+		document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
+		document.dispatchEvent( new Event( 'DOMContentLoaded' ) );
+
+		expect(
+			document.querySelector( '[data-wp-rag-ai-chatbot-form]' )
+		).not.toBeNull();
+		Object.defineProperty( document, 'readyState', {
+			configurable: true,
+			value: originalReadyState,
+		} );
+	} );
+
 	it( 'does not make a public chat request for whitespace-only input', () => {
 		loadWidget();
 		submitQuestion( '   ' );
@@ -133,6 +158,142 @@ describe( 'public widget conversation controls', () => {
 				} ),
 			}
 		);
+	} );
+
+	it( 'keeps submit events inside the widget so site-wide form handlers cannot reload the page', () => {
+		loadWidget();
+		const outsideSubmitHandler = jest.fn();
+		document.addEventListener( 'submit', outsideSubmitHandler );
+
+		submitQuestion( 'How can you help?' );
+
+		expect( outsideSubmitHandler ).not.toHaveBeenCalled();
+		document.removeEventListener( 'submit', outsideSubmitHandler );
+	} );
+
+	it( 'handles controls before theme capture handlers can interrupt them', () => {
+		loadWidget();
+
+		const mount = document.querySelector< HTMLElement >(
+			'.wp-rag-ai-chatbot-widget'
+		);
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const form = document.querySelector< HTMLFormElement >(
+			'[data-wp-rag-ai-chatbot-form]'
+		);
+
+		mount?.addEventListener(
+			'click',
+			( event ) => event.stopImmediatePropagation(),
+			true
+		);
+		mount?.addEventListener(
+			'submit',
+			( event ) => event.stopImmediatePropagation(),
+			true
+		);
+
+		launcher?.click();
+		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+
+		submitQuestion( 'How can you help?' );
+		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
+		form?.dispatchEvent(
+			new Event( 'submit', { bubbles: true, cancelable: true } )
+		);
+		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
+	} );
+
+	it( 'opens on pointer down when the page swallows the later click', () => {
+		loadWidget();
+
+		const mount = document.querySelector< HTMLElement >(
+			'.wp-rag-ai-chatbot-widget'
+		);
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+
+		mount?.addEventListener(
+			'click',
+			( event ) => event.stopImmediatePropagation(),
+			true
+		);
+		launcher?.dispatchEvent(
+			new Event( 'pointerdown', { bubbles: true, cancelable: true } )
+		);
+
+		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	it( 'handles controls before document capture handlers can interrupt them', () => {
+		loadWidget();
+
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const outsideCaptureHandler = ( event: Event ): void =>
+			event.stopImmediatePropagation();
+
+		document.addEventListener( 'click', outsideCaptureHandler, true );
+		document.addEventListener( 'submit', outsideCaptureHandler, true );
+
+		try {
+			launcher?.click();
+			expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+
+			submitQuestion( 'How can you help?' );
+			expect( fetchMock ).toHaveBeenCalledTimes( 1 );
+		} finally {
+			document.removeEventListener(
+				'click',
+				outsideCaptureHandler,
+				true
+			);
+			document.removeEventListener(
+				'submit',
+				outsideCaptureHandler,
+				true
+			);
+		}
+	} );
+
+	it( 'registers capture guards before later window handlers can interrupt them', () => {
+		const originalReadyState = document.readyState;
+		Object.defineProperty( document, 'readyState', {
+			configurable: true,
+			value: 'loading',
+		} );
+		document.body.innerHTML = '';
+		loadWidget();
+
+		const outsideCaptureHandler = ( event: Event ): void =>
+			event.stopImmediatePropagation();
+		window.addEventListener( 'click', outsideCaptureHandler, true );
+		window.addEventListener( 'submit', outsideCaptureHandler, true );
+
+		try {
+			document.body.innerHTML = `<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }"></div>`;
+			document.dispatchEvent( new Event( 'DOMContentLoaded' ) );
+
+			const launcher = document.querySelector< HTMLButtonElement >(
+				'[data-wp-rag-ai-chatbot-launcher]'
+			);
+			launcher?.click();
+			expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+
+			submitQuestion( 'How can you help?' );
+			expect( fetchMock ).toHaveBeenCalledTimes( 1 );
+		} finally {
+			window.removeEventListener( 'click', outsideCaptureHandler, true );
+			window.removeEventListener( 'submit', outsideCaptureHandler, true );
+			Object.defineProperty( document, 'readyState', {
+				configurable: true,
+				value: originalReadyState,
+			} );
+		}
 	} );
 
 	it( 'allows only one in-flight request and exposes a live loading state', () => {

@@ -219,6 +219,11 @@ describe( 'PlaygroundScreen', () => {
 	it.each( [
 		[ 'retrieval_unavailable', 'Retrieval is temporarily unavailable.' ],
 		[
+			'generation_failed',
+			'The AI provider could not generate an answer.',
+		],
+		[ 'invalid_citations', 'The AI answer did not include valid sources.' ],
+		[
 			'playground_failed',
 			'The Playground request could not be completed.',
 		],

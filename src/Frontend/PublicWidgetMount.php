@@ -42,4 +42,9 @@ final readonly class PublicWidgetMount {
 
 		return $this->configs->resolve( $bot_id );
 	}
+
+	/** Resolve the default enabled bot for the site-wide floating mount. */
+	public function resolve_default(): ?WidgetConfig {
+		return $this->configs->resolve_default();
+	}
 }

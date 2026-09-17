@@ -50,8 +50,40 @@ final class PublicWidgetBootstrapTest extends TestCase {
 		Functions\expect( 'add_shortcode' )->once()->with( 'wp_rag_ai_chatbot_embed', array( $bootstrap, 'render_embed_shortcode' ) );
 		Functions\expect( 'add_shortcode' )->once()->with( 'wp_rag_ai_chatbot_fullscreen', array( $bootstrap, 'render_fullscreen_shortcode' ) );
 		Functions\expect( 'add_action' )->once()->with( 'init', array( $bootstrap, 'register_block' ) );
+		Functions\expect( 'add_action' )->once()->with( 'wp_enqueue_scripts', array( $bootstrap, 'enqueue_global_assets' ), 1 );
+		Functions\expect( 'add_action' )->once()->with( 'wp_footer', array( $bootstrap, 'render_global_widget' ), 10 );
 
 		$bootstrap->register();
+	}
+
+	/** The first enabled bot is rendered as a floating support widget site-wide. */
+	public function test_global_widget_renders_first_enabled_bot_in_the_footer(): void {
+		$bot_id        = new BotId( self::BOT_ID );
+		$bots          = $this->createMock( BotRepository::class );
+		$appearances   = $this->createMock( BotAppearanceRepository::class );
+		$display_rules = $this->createMock( BotDisplayRulesRepository::class );
+		$bot           = new Bot( $bot_id, 'Support', true, 'openai', 'gpt-5', 1, '2026-09-12 00:00:00', '2026-09-12 00:00:00' );
+
+		$bots->expects( self::once() )->method( 'find_first_enabled' )->willReturn( $bot );
+		$appearances->expects( self::once() )->method( 'find' )->with( $bot_id )->willReturn( AppearanceConfig::defaults() );
+		$display_rules->expects( self::once() )->method( 'find' )->with( $bot_id )->willReturn( DisplayRulesConfig::defaults() );
+		$this->stub_public_render_functions();
+		Functions\when( 'wp_enqueue_style' )->justReturn( null );
+		Functions\when( 'wp_enqueue_script' )->justReturn( null );
+		Functions\when( 'wp_add_inline_script' )->justReturn( true );
+
+		$bootstrap = new PublicWidgetBootstrap(
+			new PublicWidgetMount( new WidgetConfigResolver( $bots, $appearances, $display_rules ) ),
+			self::PLUGIN_FILE
+		);
+
+		ob_start();
+		$bootstrap->render_global_widget();
+		$output = ob_get_clean();
+
+		self::assertIsString( $output );
+		self::assertStringContainsString( 'data-wp-rag-ai-chatbot-surface="floating"', $output );
+		self::assertStringContainsString( 'data-wp-rag-ai-chatbot-bot="' . self::BOT_ID . '"', $output );
 	}
 
 	/** The Gutenberg adapter registers metadata and delegates rendering to this bootstrap. */
@@ -129,14 +161,14 @@ final class PublicWidgetBootstrapTest extends TestCase {
 			'wp-rag-ai-chatbot-widget',
 			'https://example.test/plugins/wp-rag-ai-chatbot/assets/widget.css',
 			array(),
-			'0.1.1'
+			'0.1.8'
 		);
 		Functions\expect( 'wp_enqueue_script' )->once()->with(
 			'wp-rag-ai-chatbot-widget',
 			'https://example.test/plugins/wp-rag-ai-chatbot/build/widget.js',
 			array( 'wp-element' ),
-			'0.1.1',
-			true
+			'0.1.8',
+			false
 		);
 		Functions\expect( 'wp_add_inline_script' )
 			->once()

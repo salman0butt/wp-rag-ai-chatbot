@@ -42,6 +42,7 @@ type PublicChatError = {
 
 const MOUNT_SELECTOR = '.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]';
 const MOUNTED_DATA_KEY = 'wpRagAiChatbotMounted';
+export const WIDGET_EVENT_HANDLER_KEY = '__wpRagAiChatbotHandleEvent' as const;
 const MAX_CITATIONS = 8;
 const MAX_RENDERED_MESSAGES = 40;
 const TYPING_INTERVAL_MS = 24;
@@ -53,6 +54,20 @@ const LAUNCHER_STYLES = [ 'bubble', 'icon', 'text' ] as const;
 const PANEL_SIZES = [ 'small', 'medium', 'large' ] as const;
 const FONT_FAMILIES = [ 'system', 'sans', 'serif', 'mono' ] as const;
 const WIDGET_SURFACES = [ 'floating', 'embedded', 'fullscreen' ] as const;
+
+type WidgetEventHandlerMount = HTMLElement & {
+	[ WIDGET_EVENT_HANDLER_KEY ]?: ( event: Event ) => void;
+};
+
+export const handleWidgetEvent = ( event: Event ): void => {
+	const target = event.target;
+	if ( ! ( target instanceof Element ) ) {
+		return;
+	}
+
+	const mount = target.closest< WidgetEventHandlerMount >( MOUNT_SELECTOR );
+	mount?.[ WIDGET_EVENT_HANDLER_KEY ]?.( event );
+};
 
 const readChoice = < T extends string >(
 	appearance: Record< string, unknown >,
@@ -138,10 +153,14 @@ const applyAppearance = (
 
 const findConfig = (
 	botId: string,
+	surface: WidgetSurface | null,
 	configs: readonly WidgetBootstrapConfig[]
 ): WidgetBootstrapConfig | undefined =>
 	configs.find(
-		( config ) => config.botId === botId && config.config.bot_id === botId
+		( config ) =>
+			config.botId === botId &&
+			config.config.bot_id === botId &&
+			( surface === null || readSurface( config.surface ) === surface )
 	);
 
 const chatUrl = ( restBase: string ): string =>
@@ -255,7 +274,14 @@ export const mountWidgets = (
 			}
 
 			const botId = mount.dataset.wpRagAiChatbotBot ?? '';
-			const config = findConfig( botId, configs );
+			const requestedSurface = mount.dataset.wpRagAiChatbotSurface;
+			const config = findConfig(
+				botId,
+				requestedSurface === undefined
+					? null
+					: readSurface( requestedSurface ),
+				configs
+			);
 
 			if ( ! config ) {
 				return;
@@ -278,7 +304,7 @@ export const mountWidgets = (
 			): string =>
 				resolveWidgetMessage( displayDecision.locale, key, params );
 			const botName = { botName: config.config.name };
-			const surface = readSurface( config.surface );
+			const surface = readSurface( requestedSurface ?? config.surface );
 			const isFloating = surface === 'floating';
 			mount.dataset.wpRagAiChatbotSurface = surface;
 			applyAppearance( mount, config.config.appearance );
@@ -657,21 +683,30 @@ export const mountWidgets = (
 					);
 			};
 
-			if ( isFloating ) {
-				launcher.addEventListener( 'click', () => {
+			const handleWidgetClick = ( event: Event ): void => {
+				if ( ! isFloating ) {
+					return;
+				}
+
+				if ( event.target === launcher ) {
+					event.preventDefault();
+					event.stopImmediatePropagation();
 					proactiveDelay.cancel();
 					openPanel( true );
-				} );
+				} else if ( event.target === close ) {
+					event.preventDefault();
+					event.stopImmediatePropagation();
+					closePanel();
+				}
+			};
 
-				close.addEventListener( 'click', closePanel );
-				panel.addEventListener( 'keydown', ( event ) => {
-					if ( event.key === 'Escape' && ! panel.hidden ) {
-						closePanel();
-					}
-				} );
-			}
-			form.addEventListener( 'submit', ( event ) => {
+			const handleWidgetSubmit = ( event: Event ): void => {
+				if ( event.target !== form ) {
+					return;
+				}
+
 				event.preventDefault();
+				event.stopImmediatePropagation();
 				const value = question.value.trim();
 
 				if ( value === '' ) {
@@ -679,7 +714,61 @@ export const mountWidgets = (
 				}
 
 				sendQuestion( value, true );
-			} );
+			};
+
+			const handleWidgetPointerDown = ( event: Event ): void => {
+				if ( ! isFloating || event.target !== launcher ) {
+					return;
+				}
+
+				event.preventDefault();
+				event.stopImmediatePropagation();
+				proactiveDelay.cancel();
+				openPanel( true );
+			};
+
+			( mount as WidgetEventHandlerMount )[ WIDGET_EVENT_HANDLER_KEY ] = (
+				event: Event
+			): void => {
+				if ( event.type === 'click' ) {
+					handleWidgetClick( event );
+				} else if ( event.type === 'pointerdown' ) {
+					handleWidgetPointerDown( event );
+				} else if ( event.type === 'submit' ) {
+					handleWidgetSubmit( event );
+				}
+			};
+
+			mount.addEventListener( 'click', handleWidgetClick, true );
+			mount.addEventListener(
+				'pointerdown',
+				handleWidgetPointerDown,
+				true
+			);
+			mount.addEventListener( 'submit', handleWidgetSubmit, true );
+			documentRoot.defaultView?.addEventListener(
+				'click',
+				handleWidgetClick,
+				true
+			);
+			documentRoot.defaultView?.addEventListener(
+				'pointerdown',
+				handleWidgetPointerDown,
+				true
+			);
+			documentRoot.defaultView?.addEventListener(
+				'submit',
+				handleWidgetSubmit,
+				true
+			);
+
+			if ( isFloating ) {
+				panel.addEventListener( 'keydown', ( event ) => {
+					if ( event.key === 'Escape' && ! panel.hidden ) {
+						closePanel();
+					}
+				} );
+			}
 			retry.addEventListener( 'click', () => {
 				if ( retryQuestion !== null ) {
 					sendQuestion( retryQuestion, false );

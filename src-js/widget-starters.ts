@@ -6,10 +6,14 @@ const MAX_STARTERS = 4;
 
 const findConfig = (
 	botId: string,
+	surface: string,
 	configs: readonly WidgetBootstrapConfig[]
 ): WidgetBootstrapConfig | undefined =>
 	configs.find(
-		( config ) => config.botId === botId && config.config.bot_id === botId
+		( config ) =>
+			config.botId === botId &&
+			config.config.bot_id === botId &&
+			( config.surface ?? 'floating' ) === surface
 	);
 
 export const mountStarterSuggestions = (
@@ -26,7 +30,8 @@ export const mountStarterSuggestions = (
 			}
 
 			const botId = mount.dataset.wpRagAiChatbotBot ?? '';
-			const config = findConfig( botId, configs );
+			const surface = mount.dataset.wpRagAiChatbotSurface ?? 'floating';
+			const config = findConfig( botId, surface, configs );
 			const form = mount.querySelector< HTMLFormElement >(
 				'[data-wp-rag-ai-chatbot-form]'
 			);

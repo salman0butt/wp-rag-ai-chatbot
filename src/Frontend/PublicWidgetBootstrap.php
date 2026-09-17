@@ -20,7 +20,7 @@ use WpRagAiChatbot\Database\WpdbConnection;
  */
 final readonly class PublicWidgetBootstrap {
 	private const ASSET_HANDLE = 'wp-rag-ai-chatbot-widget';
-	private const VERSION      = '0.1.1';
+	private const VERSION      = '0.1.8';
 
 	/**
 	 * Create the public widget bootstrap.
@@ -62,6 +62,19 @@ final readonly class PublicWidgetBootstrap {
 		add_shortcode( 'wp_rag_ai_chatbot_embed', array( $this, 'render_embed_shortcode' ) );
 		add_shortcode( 'wp_rag_ai_chatbot_fullscreen', array( $this, 'render_fullscreen_shortcode' ) );
 		add_action( 'init', array( $this, 'register_block' ) );
+		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_global_assets' ), 1 );
+		add_action( 'wp_footer', array( $this, 'render_global_widget' ), 10 );
+	}
+
+	/** Prepare the global widget config and assets before frontend scripts run. */
+	public function enqueue_global_assets(): void {
+		$this->render_surface( array(), 'floating', true, true );
+	}
+
+	/** Render the first enabled bot as a floating widget on every frontend page. */
+	public function render_global_widget(): void {
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render_surface returns only escaped mount markup.
+		echo $this->render_surface( array(), 'floating', true, false );
 	}
 
 	/** Register the dynamic Gutenberg chatbot block from packaged metadata. */
@@ -118,13 +131,15 @@ final readonly class PublicWidgetBootstrap {
 	 *
 	 * @param array<string,mixed> $attributes Shortcode attributes.
 	 * @param string              $surface Finite browser presentation surface.
+	 * @param bool                $use_default Whether to select the default enabled bot.
+	 * @param bool                $enqueue_assets Whether this call should enqueue the public assets.
 	 */
-	private function render_surface( array $attributes, string $surface ): string {
+	private function render_surface( array $attributes, string $surface, bool $use_default = false, bool $enqueue_assets = true ): string {
 		if ( ! in_array( $surface, array( 'floating', 'embedded', 'fullscreen' ), true ) ) {
 			return '';
 		}
 
-		$config = $this->mount->resolve( $attributes );
+		$config = $use_default ? $this->mount->resolve_default() : $this->mount->resolve( $attributes );
 		if ( null === $config ) {
 			return '';
 		}
@@ -141,24 +156,26 @@ final readonly class PublicWidgetBootstrap {
 			return '';
 		}
 
-		wp_enqueue_style(
-			self::ASSET_HANDLE,
-			plugins_url( 'assets/widget.css', $this->plugin_file ),
-			array(),
-			self::VERSION
-		);
-		wp_enqueue_script(
-			self::ASSET_HANDLE,
-			plugins_url( 'build/widget.js', $this->plugin_file ),
-			array( 'wp-element' ),
-			self::VERSION,
-			true
-		);
-		wp_add_inline_script(
-			self::ASSET_HANDLE,
-			'window.wpRagAiChatbotWidgetConfigs = window.wpRagAiChatbotWidgetConfigs || []; window.wpRagAiChatbotWidgetConfigs.push(' . $encoded_config . ');',
-			'before'
-		);
+		if ( $enqueue_assets ) {
+			wp_enqueue_style(
+				self::ASSET_HANDLE,
+				plugins_url( 'assets/widget.css', $this->plugin_file ),
+				array(),
+				self::VERSION
+			);
+			wp_enqueue_script(
+				self::ASSET_HANDLE,
+				plugins_url( 'build/widget.js', $this->plugin_file ),
+				array( 'wp-element' ),
+				self::VERSION,
+				false
+			);
+			wp_add_inline_script(
+				self::ASSET_HANDLE,
+				'window.wpRagAiChatbotWidgetConfigs = window.wpRagAiChatbotWidgetConfigs || []; window.wpRagAiChatbotWidgetConfigs.push(' . $encoded_config . ');',
+				'before'
+			);
+		}
 
 		return '<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="' . esc_attr( $config->bot_id ) . '" data-wp-rag-ai-chatbot-surface="' . esc_attr( $surface ) . '"></div>';
 	}

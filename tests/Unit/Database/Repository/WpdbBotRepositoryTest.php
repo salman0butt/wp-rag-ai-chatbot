@@ -69,6 +69,18 @@ final class WpdbBotRepositoryTest extends TestCase {
 		self::assertSame( '0123456789abcdef0123456789abcdef', $bot?->id->value );
 	}
 
+	/** Global publishing selects the oldest enabled bot deterministically. */
+	public function test_find_first_enabled_uses_one_deterministic_query(): void {
+		$connection = $this->connection();
+		$connection->expects( self::once() )->method( 'get_row' )->with(
+			'SELECT bot_id, name, enabled, provider_id, model_id, version, created_at, updated_at FROM wp_rag_ai_bots WHERE enabled = 1 ORDER BY created_at ASC, bot_id ASC LIMIT 1'
+		)->willReturn( self::row( '0123456789abcdef0123456789abcdef' ) );
+
+		$bot = $this->repository( $connection )->find_first_enabled();
+
+		self::assertSame( '0123456789abcdef0123456789abcdef', $bot?->id->value );
+	}
+
 	/** Updates include the expected version so stale writes fail closed. */
 	public function test_update_uses_optimistic_version_and_increments_version(): void {
 		self::assertTrue( class_exists( WpdbBotRepository::class ), 'M12 Task 2 requires WpdbBotRepository.' );

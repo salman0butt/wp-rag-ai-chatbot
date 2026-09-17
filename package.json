@@ -1,6 +1,6 @@
 {
   "name": "wp-rag-ai-chatbot",
-  "version": "0.1.1",
+  "version": "0.1.8",
   "private": true,
   "description": "WordPress-native RAG AI chatbot and customer-support platform.",
   "author": "Salman Butt",

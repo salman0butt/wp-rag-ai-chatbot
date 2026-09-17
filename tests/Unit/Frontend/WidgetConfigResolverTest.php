@@ -22,6 +22,23 @@ use WpRagAiChatbot\Frontend\WidgetConfigResolver;
 
 /** Proves public widget configuration is explicit, bounded, and fail-closed. */
 final class WidgetConfigResolverTest extends TestCase {
+	/** The global widget resolves the oldest enabled bot without a bounded page scan. */
+	public function test_resolve_default_projects_the_first_enabled_bot(): void {
+		$bot_id        = new BotId( '0123456789abcdef0123456789abcdef' );
+		$bot           = $this->bot( $bot_id, true );
+		$bots          = $this->createMock( BotRepository::class );
+		$appearances   = $this->createMock( BotAppearanceRepository::class );
+		$display_rules = $this->createMock( BotDisplayRulesRepository::class );
+
+		$bots->expects( self::once() )->method( 'find_first_enabled' )->willReturn( $bot );
+		$appearances->expects( self::once() )->method( 'find' )->with( $bot_id )->willReturn( AppearanceConfig::defaults() );
+		$display_rules->expects( self::once() )->method( 'find' )->with( $bot_id )->willReturn( DisplayRulesConfig::defaults() );
+
+		$config = ( new WidgetConfigResolver( $bots, $appearances, $display_rules ) )->resolve_default();
+
+		self::assertSame( $bot_id->value, $config?->bot_id );
+	}
+
 	/** Enabled bots expose only public identity, appearance, and normalized display rules. */
 	public function test_resolve_projects_only_public_safe_enabled_bot_configuration(): void {
 		self::assertTrue( class_exists( WidgetConfig::class ), 'M15 Task 2D requires WidgetConfig.' );

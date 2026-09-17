@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Frontend;
 
+use WpRagAiChatbot\Bots\Bot;
 use WpRagAiChatbot\Bots\BotId;
 use WpRagAiChatbot\Bots\BotRepository;
 
@@ -39,8 +40,29 @@ final readonly class WidgetConfigResolver {
 			return null;
 		}
 
+		return $this->project( $bot );
+	}
+
+	/** Resolve the first enabled bot used by the site-wide floating widget. */
+	public function resolve_default(): ?WidgetConfig {
+		$bot = $this->bots->find_first_enabled();
+		if ( null === $bot || ! $bot->enabled ) {
+			return null;
+		}
+
+		return $this->project( $bot );
+	}
+
+	/**
+	 * Project one enabled bot to its public-safe widget configuration.
+	 *
+	 * @param Bot $bot Persisted enabled bot.
+	 */
+	private function project( Bot $bot ): WidgetConfig {
+		$bot_id = $bot->id;
+
 		return new WidgetConfig(
-			$bot->id->value,
+			$bot_id->value,
 			$bot->name,
 			$this->appearances->find( $bot_id ),
 			$this->display_rules->find( $bot_id )

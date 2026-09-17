@@ -16,4 +16,15 @@ describe( 'widget logical RTL layout', () => {
 		expect( css ).toContain( 'inset-inline-start: 0;' );
 		expect( css ).not.toMatch( /(^|\n)\s*(?:left|right):\s*/ );
 	} );
+
+	it( 'keeps the widget readable and clear of bottom-corner overlays', () => {
+		const css = readWidgetCss();
+
+		expect( css ).toMatch(
+			/\.wp-rag-ai-chatbot-widget\s*\{[^}]*font-size:\s*16px;/s
+		);
+		expect( css ).toContain( 'bottom: 80px;' );
+		expect( css ).toContain( 'min-width: 56px !important;' );
+		expect( css ).toContain( 'min-height: 480px !important;' );
+	} );
 } );

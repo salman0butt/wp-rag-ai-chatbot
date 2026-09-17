@@ -92,6 +92,16 @@ final class WpdbBotRepository implements BotRepository {
 		return null === $row ? null : $this->hydrate( $row );
 	}
 
+	/** Find the oldest enabled bot for site-wide publishing. */
+	public function find_first_enabled(): ?Bot {
+		$table = $this->tables->bots();
+		$row   = $this->connection->get_row(
+			"SELECT bot_id, name, enabled, provider_id, model_id, version, created_at, updated_at FROM {$table} WHERE enabled = 1 ORDER BY created_at ASC, bot_id ASC LIMIT 1"
+		);
+
+		return null === $row ? null : $this->hydrate( $row );
+	}
+
 	/**
 	 * Update one bot only when its expected version is current.
 	 *

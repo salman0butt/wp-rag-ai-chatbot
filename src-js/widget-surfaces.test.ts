@@ -82,4 +82,34 @@ describe( 'public widget embedding surfaces', () => {
 			expect( panel.hidden ).toBe( false );
 		}
 	);
+
+	it( 'matches each mount to the same-bot config for its own surface', () => {
+		document.body.innerHTML = `
+			<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }" data-wp-rag-ai-chatbot-surface="embedded"></div>
+			<div class="wp-rag-ai-chatbot-widget" data-wp-rag-ai-chatbot-bot="${ BOT_ID }" data-wp-rag-ai-chatbot-surface="floating"></div>`;
+		const config = {
+			botId: BOT_ID,
+			restBase: 'https://example.test/wp-json/wp-rag-ai-chatbot/v1',
+			config: {
+				bot_id: BOT_ID,
+				name: 'Support bot',
+				appearance,
+			},
+		};
+
+		mountWidgets( document, [
+			{ ...config, surface: 'floating' as const },
+			{ ...config, surface: 'embedded' as const },
+		] );
+
+		const mounts = document.querySelectorAll< HTMLElement >(
+			'.wp-rag-ai-chatbot-widget'
+		);
+		expect(
+			mounts[ 0 ].querySelector( '[data-wp-rag-ai-chatbot-launcher]' )
+		).toBeNull();
+		expect(
+			mounts[ 1 ].querySelector( '[data-wp-rag-ai-chatbot-launcher]' )
+		).not.toBeNull();
+	} );
 } );
