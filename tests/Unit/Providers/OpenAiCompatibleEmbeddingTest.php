@@ -81,6 +81,33 @@ final class OpenAiCompatibleEmbeddingTest extends TestCase {
 		}
 	}
 
+	/** Gemini's documented embedding endpoint accepts a single input as a string. */
+	public function test_gemini_single_input_uses_scalar_request_body(): void {
+		$transport = new QueuedHttpTransport(
+			array( new HttpResponse( 200, array(), '{"data":[{"index":0,"embedding":[0.1]}]}' ) )
+		);
+		$this->provider( $transport )->embed( new EmbeddingRequest( 'gemini-embedding-001', array( 'one' ) ) );
+
+		self::assertSame(
+			array(
+				'model' => 'gemini-embedding-001',
+				'input' => 'one',
+			),
+			$transport->requests[0]->json_body
+		);
+	}
+
+	/** Gemini may omit OpenAI's optional response index for a single embedding. */
+	public function test_embedding_response_defaults_missing_index_to_response_order(): void {
+		$transport = new QueuedHttpTransport(
+			array( new HttpResponse( 200, array(), '{"data":[{"embedding":[0.1]}]}' ) )
+		);
+
+		$result = $this->provider( $transport )->embed( new EmbeddingRequest( 'gemini-embedding-001', array( 'one' ) ) );
+
+		self::assertSame( 0, $result->vectors[0]->index );
+	}
+
 	/** Upstream embedding errors redact the configured Gemini secret. */
 	public function test_embed_redacts_authorization_secret_from_upstream_failure(): void {
 		$secret    = 'gemini-secret-value';

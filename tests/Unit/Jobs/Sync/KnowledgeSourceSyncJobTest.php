@@ -159,6 +159,8 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 				$now
 			)
 			->willReturn( $this->job( $now, 'index.document', array() ) );
+		Functions\when( 'wp_next_scheduled' )->justReturn( false );
+		Functions\when( 'wp_schedule_single_event' )->justReturn( true );
 
 		$registry = new KnowledgeSourceRegistry();
 		$registry->register( new ManualTextSource() );
@@ -329,8 +331,82 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 			$fixture['handler']->handle( $fixture['job'], $fixture['context'] );
 			self::fail( 'Child queue failure did not fail closed.' );
 		} catch ( JobExecutionException $error ) {
-			self::assertSame( 'source_sync_child_queue_invalid', $error->safe_code() );
+			self::assertSame( 'source_sync_child_queue_failure', $error->safe_code() );
 			self::assertSame( 'WordPress content could not be queued for indexing.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+		}
+	}
+
+	/** A locked child queue reports a stable busy category for live diagnosis. */
+	public function test_child_queue_lock_failure_uses_busy_failure_code(): void {
+		$source  = $this->source( new DateTimeImmutable( '2026-09-15T10:00:00+00:00' ) );
+		$fixture = $this->handler_fixture( $source );
+		$fixture['documents']->method( 'findByKey' )->willReturn( null );
+		$fixture['documents']->method( 'save' )->willReturnCallback(
+			static fn ( DocumentRecord $document ): DocumentRecord => $document->withId( 11 )
+		);
+		$fixture['jobs']->expects( self::once() )->method( 'enqueue' )->willThrowException( new JobQueueException( 'Could not acquire the job idempotency lock.' ) );
+
+		try {
+			$fixture['handler']->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Child queue lock failure did not fail closed.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'source_sync_child_lock_unavailable', $error->safe_code() );
+			self::assertSame( 'WordPress content indexing is temporarily busy.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+		}
+	}
+
+	/** An unclassified child queue failure remains distinct from source queue state failures. */
+	public function test_unclassified_child_queue_failure_uses_child_failure_code(): void {
+		$source  = $this->source( new DateTimeImmutable( '2026-09-15T10:00:00+00:00' ) );
+		$fixture = $this->handler_fixture( $source );
+		$fixture['documents']->method( 'findByKey' )->willReturn( null );
+		$fixture['documents']->method( 'save' )->willReturnCallback(
+			static fn ( DocumentRecord $document ): DocumentRecord => $document->withId( 11 )
+		);
+		$fixture['jobs']->expects( self::once() )->method( 'enqueue' )->willThrowException( new JobQueueException( 'Job transition was rejected by the current lease predicate.' ) );
+
+		try {
+			$fixture['handler']->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Unclassified child queue failure did not fail closed.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'source_sync_child_queue_failure', $error->safe_code() );
+		}
+	}
+
+	/** A lost queue progress lease reports a stable persistence category. */
+	public function test_progress_queue_failure_uses_progress_failure_code(): void {
+		$source  = $this->source( new DateTimeImmutable( '2026-09-15T10:00:00+00:00' ) );
+		$fixture = $this->handler_fixture( $source );
+		$fixture['jobs']->method( 'updateProgress' )->willThrowException( new JobQueueException( 'Job progress lost the current lease or moved backwards.' ) );
+
+		try {
+			$fixture['handler']->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Progress queue failure did not fail closed.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'source_sync_progress_unavailable', $error->safe_code() );
+			self::assertSame( 'WordPress content synchronization progress could not be saved.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+		}
+	}
+
+	/** A lost execution lease reports a stable heartbeat category. */
+	public function test_heartbeat_queue_failure_uses_heartbeat_failure_code(): void {
+		$source  = $this->source( new DateTimeImmutable( '2026-09-15T10:00:00+00:00' ) );
+		$fixture = $this->handler_fixture( $source );
+		$fixture['documents']->method( 'findByKey' )->willReturn( null );
+		$fixture['documents']->method( 'save' )->willReturnCallback(
+			static fn ( DocumentRecord $document ): DocumentRecord => $document->withId( 11 )
+		);
+		$fixture['jobs']->method( 'heartbeat' )->willThrowException( new JobQueueException( 'Job heartbeat lost the current lease.' ) );
+
+		try {
+			$fixture['handler']->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Heartbeat queue failure did not fail closed.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'source_sync_heartbeat_unavailable', $error->safe_code() );
+			self::assertSame( 'WordPress content synchronization lease could not be renewed.', $error->safe_message() );
 			self::assertFalse( $error->retryable() );
 		}
 	}
@@ -485,7 +561,7 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 			3,
 			$now,
 			'worker-token',
-			$now->modify( '+120 seconds' ),
+			$now->modify( '+10 seconds' ),
 			null,
 			null,
 			null,

@@ -68,7 +68,7 @@ final class WordPressPostSourceTest extends TestCase {
 		self::assertCount( 2, $documents );
 		self::assertSame( 'wordpress_posts', $normalizer->type() );
 		// phpcs:disable WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Domain records use the approved camelCase contract.
-		self::assertSame( 'wp-post:post:12', $documents[0]->documentKey );
+		self::assertSame( 'wp-post:17:post:12', $documents[0]->documentKey );
 		self::assertSame( '12', $documents[0]->externalId );
 		self::assertSame( 'Hello World', $documents[0]->title );
 		self::assertSame( 'https://example.test/?p=12', $documents[0]->canonicalUrl );
@@ -125,7 +125,7 @@ final class WordPressPostSourceTest extends TestCase {
 			( new WordPressPostSource( $gateway ) )->documents( $this->source( array( 'post_types' => array( 'book' ) ) ) )
 		);
 		self::assertCount( 1, $documents );
-		self::assertSame( 'wp-post:book:21', $documents[0]->documentKey ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+		self::assertSame( 'wp-post:17:book:21', $documents[0]->documentKey ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
 		$this->expectException( KnowledgeSourceException::class );
 		iterator_to_array(
@@ -155,7 +155,7 @@ final class WordPressPostSourceTest extends TestCase {
 			( new WordPressPostSource( $gateway ) )->documents( $this->source( array( 'post_types' => array( 'post' ) ) ) )
 		);
 		self::assertCount( 1, $documents );
-		self::assertSame( 'wp-post:post:6', $documents[0]->documentKey ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+		self::assertSame( 'wp-post:17:post:6', $documents[0]->documentKey ); // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
 
 		$private_gateway   = new FakeWordPressContentGateway(
 			array( 'post' ),

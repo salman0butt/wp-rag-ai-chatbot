@@ -302,6 +302,35 @@ export const mountWidgets = (
 				widgetMessage( 'chat_label', botName )
 			);
 
+			const header = documentRoot.createElement( 'header' );
+			header.dataset.wpRagAiChatbotHeader = '';
+
+			const avatar = documentRoot.createElement( 'span' );
+			avatar.dataset.wpRagAiChatbotAvatar = '';
+			avatar.setAttribute( 'aria-hidden', 'true' );
+			avatar.textContent = '✦';
+
+			const identity = documentRoot.createElement( 'div' );
+			identity.dataset.wpRagAiChatbotIdentity = '';
+
+			const eyebrow = documentRoot.createElement( 'span' );
+			eyebrow.dataset.wpRagAiChatbotEyebrow = '';
+			eyebrow.textContent = widgetMessage( 'assistant_label' );
+
+			const title = documentRoot.createElement( 'h2' );
+			title.dataset.wpRagAiChatbotTitle = '';
+			title.textContent = config.config.name;
+
+			const subtitle = documentRoot.createElement( 'p' );
+			subtitle.dataset.wpRagAiChatbotSubtitle = '';
+			subtitle.textContent = widgetMessage( 'welcome_body' );
+			identity.append( eyebrow, title, subtitle );
+
+			const online = documentRoot.createElement( 'span' );
+			online.dataset.wpRagAiChatbotOnline = '';
+			online.textContent = widgetMessage( 'online' );
+			header.append( avatar, identity, online );
+
 			const close = documentRoot.createElement( 'button' );
 			close.type = 'button';
 			close.textContent = widgetMessage( 'close' );
@@ -314,6 +343,19 @@ export const mountWidgets = (
 			const messages = documentRoot.createElement( 'div' );
 			messages.dataset.wpRagAiChatbotMessages = '';
 			messages.setAttribute( 'aria-live', 'polite' );
+
+			const emptyState = documentRoot.createElement( 'div' );
+			emptyState.dataset.wpRagAiChatbotEmptyState = '';
+			const emptyIcon = documentRoot.createElement( 'span' );
+			emptyIcon.dataset.wpRagAiChatbotEmptyIcon = '';
+			emptyIcon.setAttribute( 'aria-hidden', 'true' );
+			emptyIcon.textContent = '✦';
+			const emptyTitle = documentRoot.createElement( 'h3' );
+			emptyTitle.textContent = widgetMessage( 'welcome_title' );
+			const emptyBody = documentRoot.createElement( 'p' );
+			emptyBody.textContent = widgetMessage( 'welcome_body' );
+			emptyState.append( emptyIcon, emptyTitle, emptyBody );
+			messages.append( emptyState );
 
 			const form = documentRoot.createElement( 'form' );
 			form.dataset.wpRagAiChatbotForm = '';
@@ -564,6 +606,7 @@ export const mountWidgets = (
 				status.textContent = widgetMessage( 'sending' );
 
 				if ( appendUser ) {
+					emptyState.remove();
 					appendMessage( 'user', value );
 				}
 
@@ -644,11 +687,12 @@ export const mountWidgets = (
 			} );
 
 			if ( isFloating ) {
-				panel.append( close, messages, form );
+				header.append( close );
+				panel.append( header, messages, form );
 				mount.append( launcher, panel );
 				proactiveDelay.start();
 			} else {
-				panel.append( messages, form );
+				panel.append( header, messages, form );
 				mount.append( panel );
 			}
 			mount.dataset[ MOUNTED_DATA_KEY ] = 'true';

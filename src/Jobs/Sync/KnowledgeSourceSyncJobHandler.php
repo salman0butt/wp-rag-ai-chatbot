@@ -65,7 +65,7 @@ final class KnowledgeSourceSyncJobHandler implements JobHandler {
 
 		try {
 			$this->throw_if_cancelled( $context );
-			$context->update_progress( new JobProgress( 0, 1, 'Normalizing knowledge source' ) );
+			$this->update_progress( $context, new JobProgress( 0, 1, 'Normalizing knowledge source' ) );
 			$source = $this->sources->findById( $payload->source_id );
 			if ( null === $source ) {
 				throw new JobExecutionException( 'source_sync_not_found', 'Knowledge source is no longer available.', false );
@@ -110,23 +110,71 @@ final class KnowledgeSourceSyncJobHandler implements JobHandler {
 						$index_payload,
 						$this->clock->now()
 					);
-				} catch ( JobQueueException ) {
-					throw new JobExecutionException( 'source_sync_child_queue_invalid', 'WordPress content could not be queued for indexing.', false );
+				} catch ( JobQueueException $error ) {
+					$failure_code = $this->child_queue_failure_code( $error );
+					throw new JobExecutionException(
+						$failure_code,
+						'source_sync_child_lock_unavailable' === $failure_code
+							? 'WordPress content indexing is temporarily busy.'
+							: 'WordPress content could not be queued for indexing.',
+						false
+					);
 				}
-				$context->update_progress( new JobProgress( $index + 1, $total, 'Queued documents for indexing' ) );
+				$this->update_progress( $context, new JobProgress( $index + 1, $total, 'Queued documents for indexing' ) );
 			}
 
 			if ( array() === $normalized ) {
-				$context->update_progress( new JobProgress( 1, 1, 'Knowledge source synchronization complete' ) );
+				$this->update_progress( $context, new JobProgress( 1, 1, 'Knowledge source synchronization complete' ) );
 			}
 		} catch ( DatabaseException ) {
 			throw new JobExecutionException( 'source_sync_unavailable', 'Knowledge source persistence is temporarily unavailable.', true );
 		} catch ( KnowledgeSourceException ) {
 			throw new JobExecutionException( 'source_sync_content_invalid', 'WordPress content could not be normalized safely.', false );
-		} catch ( JobQueueException ) {
+		} catch ( JobQueueException $error ) {
+			$failure_code = $this->source_queue_failure_code( $error );
+			if ( 'source_sync_heartbeat_unavailable' === $failure_code ) {
+				throw new JobExecutionException( 'source_sync_heartbeat_unavailable', 'WordPress content synchronization lease could not be renewed.', false );
+			}
 			throw new JobExecutionException( 'source_sync_queue_invalid', 'WordPress content could not be queued for indexing.', false );
 		} catch ( InvalidArgumentException ) {
 			throw new JobExecutionException( 'source_sync_document_invalid', 'WordPress content produced an invalid document.', false );
+		}
+	}
+
+	/**
+	 * Translate child queue state failures into stable diagnostic categories.
+	 *
+	 * @param JobQueueException $error Child queue failure.
+	 */
+	private function child_queue_failure_code( JobQueueException $error ): string {
+		return str_contains( strtolower( $error->getMessage() ), 'lock' )
+			? 'source_sync_child_lock_unavailable'
+			: 'source_sync_child_queue_failure';
+	}
+
+	/**
+	 * Translate source-worker queue state failures into stable diagnostic categories.
+	 *
+	 * @param JobQueueException $error Source-worker queue failure.
+	 */
+	private function source_queue_failure_code( JobQueueException $error ): string {
+		return str_contains( strtolower( $error->getMessage() ), 'heartbeat' )
+			? 'source_sync_heartbeat_unavailable'
+			: 'source_sync_queue_invalid';
+	}
+
+	/**
+	 * Persist progress failures as a safe source-sync boundary error.
+	 *
+	 * @param JobExecutionContext $context Current lease context.
+	 * @param JobProgress         $progress Progress snapshot.
+	 * @throws JobExecutionException When progress persistence fails.
+	 */
+	private function update_progress( JobExecutionContext $context, JobProgress $progress ): void {
+		try {
+			$context->update_progress( $progress );
+		} catch ( JobQueueException ) {
+			throw new JobExecutionException( 'source_sync_progress_unavailable', 'WordPress content synchronization progress could not be saved.', false );
 		}
 	}
 

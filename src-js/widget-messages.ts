@@ -2,6 +2,10 @@ export type WidgetMessageKey =
 	| 'chat'
 	| 'open_chat'
 	| 'chat_label'
+	| 'assistant_label'
+	| 'welcome_title'
+	| 'welcome_body'
+	| 'online'
 	| 'close'
 	| 'close_chat'
 	| 'message'
@@ -25,6 +29,10 @@ const ENGLISH_MESSAGES: WidgetMessageCatalog = {
 	chat: 'Chat',
 	open_chat: 'Open {botName} chat',
 	chat_label: '{botName} chat',
+	assistant_label: 'AI assistant',
+	welcome_title: 'How can I help?',
+	welcome_body: 'Ask a question and I’ll search the knowledge base for you.',
+	online: 'Online',
 	close: 'Close',
 	close_chat: 'Close {botName} chat',
 	message: 'Message',
@@ -45,6 +53,10 @@ const URDU_MESSAGES: WidgetMessageCatalog = {
 	chat: 'چیٹ',
 	open_chat: '{botName} چیٹ کھولیں',
 	chat_label: '{botName} چیٹ',
+	assistant_label: 'اے آئی معاون',
+	welcome_title: 'میں کیسے مدد کر سکتا ہوں؟',
+	welcome_body: 'سوال پوچھیں، میں آپ کے لیے معلومات تلاش کروں گا۔',
+	online: 'آن لائن',
 	close: 'بند کریں',
 	close_chat: '{botName} چیٹ بند کریں',
 	message: 'پیغام',

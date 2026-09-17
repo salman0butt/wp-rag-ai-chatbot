@@ -93,7 +93,7 @@ final class WordPressDocumentIndexDependencies implements DocumentIndexDependenc
 			new IncrementalIndexPlanner()
 		);
 		$this->executor = new IndexEmbeddingExecutor(
-			new EmbeddingService( $provider, new EmbeddingBatchConfig( 100 ) ),
+			new EmbeddingService( $provider, new EmbeddingBatchConfig( 1 ) ),
 			$stores->upsert( self::VECTOR_STORE_ID ),
 			$stores->delete( self::VECTOR_STORE_ID ),
 			$collection

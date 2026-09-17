@@ -28,6 +28,13 @@ final class FakeWpdb {
 	public int $insert_id = 0;
 
 	/**
+	 * Scalar value returned by get_var().
+	 *
+	 * @var string|int|float|null
+	 */
+	public string|int|float|null $scalar_result = null;
+
+	/**
 	 * Executed SQL statements.
 	 *
 	 * @var string[]
@@ -65,5 +72,16 @@ final class FakeWpdb {
 	public function query( string $query ): int|false {
 		$this->queries[] = $query;
 		return $this->query_result;
+	}
+
+	/**
+	 * Return the configured scalar fixture.
+	 *
+	 * @param string $query SQL statement.
+	 * @return string|int|float|null
+	 */
+	public function get_var( string $query ): string|int|float|null {
+		$this->queries[] = $query;
+		return $this->scalar_result;
 	}
 }

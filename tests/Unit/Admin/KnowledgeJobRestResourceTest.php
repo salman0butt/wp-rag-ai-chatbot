@@ -114,6 +114,8 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 				$now
 			)
 			->willReturn( $this->job( JobStatus::QUEUED, 'job-retry' ) );
+		Functions\when( 'wp_next_scheduled' )->justReturn( false );
+		Functions\when( 'wp_schedule_single_event' )->justReturn( true );
 
 		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock( $now ), $sources, $documents ), 'retry', array( 'job-123' ) );
 
@@ -178,6 +180,8 @@ final class KnowledgeJobRestResourceTest extends TestCase {
 				$now
 			)
 			->willReturn( $this->job( JobStatus::QUEUED, 'job-new' ) );
+		Functions\when( 'wp_next_scheduled' )->justReturn( false );
+		Functions\when( 'wp_schedule_single_event' )->justReturn( true );
 
 		$response = $this->invoke( new $resource_class( $reader, $repository, $this->clock( $now ), $sources, $documents ), 'enqueue', array( $payload ) );
 

@@ -26,7 +26,7 @@ final class DocumentHasher {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Native encoding preserves JSON_THROW_ON_ERROR for this WordPress-independent domain utility.
 		$json = json_encode(
 			$canonical,
-			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR
+			JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR
 		);
 
 		return hash( 'sha256', $json );

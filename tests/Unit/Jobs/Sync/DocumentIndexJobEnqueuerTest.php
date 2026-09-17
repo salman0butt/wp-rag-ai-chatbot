@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Tests\Unit\Jobs\Sync;
 
+use Brain\Monkey;
+use Brain\Monkey\Functions;
 use DateTimeImmutable;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Jobs\JobRecord;
@@ -17,11 +19,24 @@ use WpRagAiChatbot\Jobs\JobRequest;
 use WpRagAiChatbot\Jobs\JobStatus;
 use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobEnqueuer;
 use WpRagAiChatbot\Jobs\Sync\DocumentIndexJobPayload;
+use WpRagAiChatbot\Jobs\WordPressJobCron;
 
 /**
  * Proves synchronization enqueue uses a stable typed and idempotent request.
  */
 final class DocumentIndexJobEnqueuerTest extends TestCase {
+	/** Start WordPress function isolation. */
+	protected function setUp(): void {
+		parent::setUp();
+		Monkey\setUp();
+	}
+
+	/** Stop WordPress function isolation. */
+	protected function tearDown(): void {
+		Monkey\tearDown();
+		parent::tearDown();
+	}
+
 	/**
 	 * Enqueue persists only the typed payload with a generation-derived idempotency key.
 	 */
@@ -46,6 +61,14 @@ final class DocumentIndexJobEnqueuerTest extends TestCase {
 				$now
 			)
 			->willReturn( $expected );
+		Functions\expect( 'wp_next_scheduled' )
+			->once()
+			->with( WordPressJobCron::HOOK, array( $expected->job_key ) )
+			->andReturn( false );
+		Functions\expect( 'wp_schedule_single_event' )
+			->once()
+			->with( $now->getTimestamp(), WordPressJobCron::HOOK, array( $expected->job_key ), true )
+			->andReturn( true );
 
 		$enqueuer = new DocumentIndexJobEnqueuer( $repository );
 

@@ -28,7 +28,7 @@ final class JobExecutionContextTest extends TestCase {
 	 */
 	public function test_heartbeat_delegates_through_current_lease(): void {
 		$now        = new DateTimeImmutable( '2026-09-05T06:00:00+00:00' );
-		$lease      = $this->lease( $now, 'worker-token' );
+		$lease      = $this->lease( $now, 'worker-token', 10 );
 		$refreshed  = $this->lease( $now->modify( '+1 second' ), 'worker-token' );
 		$repository = $this->createMock( JobRepository::class );
 		$clock      = $this->createMock( Clock::class );
@@ -42,6 +42,21 @@ final class JobExecutionContextTest extends TestCase {
 		$context = new JobExecutionContext( $repository, $lease, $clock, 120 );
 
 		self::assertSame( $refreshed, $context->heartbeat() );
+	}
+
+	/** A fresh lease does not perform a redundant same-second database update. */
+	public function test_heartbeat_skips_redundant_extension_for_a_fresh_lease(): void {
+		$now        = new DateTimeImmutable( '2026-09-05T06:00:00+00:00' );
+		$lease      = $this->lease( $now, 'worker-token', 120 );
+		$repository = $this->createMock( JobRepository::class );
+		$clock      = $this->createMock( Clock::class );
+
+		$clock->expects( self::once() )->method( 'now' )->willReturn( $now );
+		$repository->expects( self::never() )->method( 'heartbeat' );
+
+		$context = new JobExecutionContext( $repository, $lease, $clock, 120 );
+
+		self::assertSame( $lease, $context->heartbeat() );
 	}
 
 	/**
@@ -87,8 +102,9 @@ final class JobExecutionContextTest extends TestCase {
 	 *
 	 * @param DateTimeImmutable $now Fixture timestamp.
 	 * @param string            $owner Opaque lease owner.
+	 * @param int               $expires_in_seconds Seconds until the lease expires.
 	 */
-	private function lease( DateTimeImmutable $now, string $owner ): JobLease {
+	private function lease( DateTimeImmutable $now, string $owner, int $expires_in_seconds = 120 ): JobLease {
 		$job = new JobRecord(
 			id: 1,
 			job_key: 'job-0000000000000001',
@@ -100,7 +116,7 @@ final class JobExecutionContextTest extends TestCase {
 			max_attempts: 3,
 			available_at: $now,
 			lease_owner: $owner,
-			lease_expires_at: $now->modify( '+120 seconds' ),
+			lease_expires_at: $now->modify( '+' . $expires_in_seconds . ' seconds' ),
 			cancel_requested_at: null,
 			progress_current: null,
 			progress_total: null,

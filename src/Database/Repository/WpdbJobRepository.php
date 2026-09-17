@@ -516,7 +516,8 @@ final class WpdbJobRepository implements JobRepository {
 	 */
 	private function require_single_transition( string $sql, string $message ): void {
 		if ( 1 !== $this->connection->query( $sql ) ) {
-			throw new JobQueueException( 'Job transition was rejected by the current lease predicate.' );
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- The bounded queue failure message is not rendered as output.
+			throw new JobQueueException( $message );
 		}
 	}
 

@@ -74,10 +74,19 @@ final class WpdbConnection implements Connection {
 	 *
 	 * @param string $query SQL statement.
 	 */
-	public function get_var( string $query ): ?string {
+	public function get_var( string $query ): string|int|float|null {
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Connection callers prepare all value-bearing SQL before execution.
 		$value = $this->wpdb->get_var( $query );
-		return is_string( $value ) ? $value : null;
+		if ( is_string( $value ) ) {
+			$integer = filter_var( $value, FILTER_VALIDATE_INT, FILTER_NULL_ON_FAILURE );
+			if ( is_int( $integer ) ) {
+				return $integer;
+			}
+
+			return is_numeric( $value ) ? (float) $value : $value;
+		}
+
+		return $value;
 	}
 
 	/**

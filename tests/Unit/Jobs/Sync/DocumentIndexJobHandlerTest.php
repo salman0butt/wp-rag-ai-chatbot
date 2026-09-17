@@ -10,7 +10,9 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\Tests\Unit\Jobs\Sync;
 
 use DateTimeImmutable;
+use DomainException;
 use InvalidArgumentException;
+use JsonException;
 use PHPUnit\Framework\TestCase;
 use WpRagAiChatbot\Indexing\Planning\IndexPlan;
 use WpRagAiChatbot\Jobs\Clock;
@@ -175,6 +177,56 @@ final class DocumentIndexJobHandlerTest extends TestCase {
 		}
 	}
 
+	/** Token-counting domain failures become the same safe terminal plan failure. */
+	public function test_domain_plan_failure_is_translated_without_leaking_detail(): void {
+		$fixture      = $this->fixture();
+		$dependencies = $this->createMock( DocumentIndexDependencies::class );
+		$dependencies->method( 'plan' )->willThrowException( new DomainException( 'private token detail' ) );
+
+		try {
+			( new DocumentIndexJobHandler( $dependencies ) )->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Domain plan failure was not translated to a safe queue failure.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'index_plan_invalid', $error->safe_code() );
+			self::assertSame( 'Document content could not be prepared for indexing.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+			self::assertStringNotContainsString( 'private token', $error->safe_message() );
+		}
+	}
+
+	/** Hashing failures from malformed source metadata become safe terminal plan failures. */
+	public function test_json_plan_failure_is_translated_without_leaking_detail(): void {
+		$fixture      = $this->fixture();
+		$dependencies = $this->createMock( DocumentIndexDependencies::class );
+		$dependencies->method( 'plan' )->willThrowException( new JsonException( 'private JSON detail' ) );
+
+		try {
+			( new DocumentIndexJobHandler( $dependencies ) )->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'JSON plan failure was not translated to a safe queue failure.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'index_plan_invalid', $error->safe_code() );
+			self::assertSame( 'Document content could not be prepared for indexing.', $error->safe_message() );
+			self::assertFalse( $error->retryable() );
+			self::assertStringNotContainsString( 'private JSON', $error->safe_message() );
+		}
+	}
+
+	/** Runtime planning failures are classified without leaking internal details. */
+	public function test_runtime_plan_failure_is_classified_without_leaking_detail(): void {
+		$fixture      = $this->fixture();
+		$dependencies = $this->createMock( DocumentIndexDependencies::class );
+		$dependencies->method( 'plan' )->willThrowException( new \RuntimeException( 'Internal planner detail' ) );
+
+		try {
+			( new DocumentIndexJobHandler( $dependencies ) )->handle( $fixture['job'], $fixture['context'] );
+			self::fail( 'Runtime planning failure was not classified.' );
+		} catch ( JobExecutionException $error ) {
+			self::assertSame( 'index_plan_runtime_error', $error->safe_code() );
+			self::assertFalse( $error->retryable() );
+			self::assertStringNotContainsString( 'Internal planner detail', $error->safe_message() );
+		}
+	}
+
 	/**
 	 * Build a current lease/context fixture for failure translation tests.
 	 *
@@ -216,7 +268,7 @@ final class DocumentIndexJobHandlerTest extends TestCase {
 			max_attempts: 3,
 			available_at: $now,
 			lease_owner: 'worker-token',
-			lease_expires_at: $now->modify( '+120 seconds' ),
+			lease_expires_at: $now->modify( '+10 seconds' ),
 			cancel_requested_at: null,
 			progress_current: null,
 			progress_total: null,

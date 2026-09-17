@@ -33,7 +33,12 @@ final class JobExecutionContext {
 	 * Extend and replace the current lease using the repository boundary.
 	 */
 	public function heartbeat(): JobLease {
-		$this->lease = $this->repository->heartbeat( $this->lease, $this->clock->now(), $this->lease_seconds );
+		$now = $this->clock->now();
+		if ( null !== $this->lease->job->lease_expires_at && $this->lease->job->lease_expires_at > $now->modify( '+' . intdiv( $this->lease_seconds, 2 ) . ' seconds' ) ) {
+			return $this->lease;
+		}
+
+		$this->lease = $this->repository->heartbeat( $this->lease, $now, $this->lease_seconds );
 		return $this->lease;
 	}
 

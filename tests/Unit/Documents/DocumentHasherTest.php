@@ -78,6 +78,16 @@ final class DocumentHasherTest extends TestCase {
 		);
 	}
 
+	/** WordPress content with invalid bytes must still produce a stable identity. */
+	public function test_hash_substitutes_invalid_utf8(): void {
+		$this->requireHasher();
+
+		self::assertMatchesRegularExpression(
+			'/^[a-f0-9]{64}$/',
+			DocumentHasher::hash( array( 'content' => "Broken \xB1 text" ) )
+		);
+	}
+
 	/**
 	 * Fail as an assertion while the test-first production type does not exist.
 	 */

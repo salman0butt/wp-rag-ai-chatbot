@@ -86,13 +86,13 @@ final class AdminBootstrap {
 			$handle,
 			plugins_url( 'assets/admin.css', dirname( __DIR__, 2 ) . '/wp-rag-ai-chatbot.php' ),
 			array(),
-			'0.1.0-dev'
+			'0.1.1'
 		);
 		wp_enqueue_script(
 			$handle,
 			plugins_url( 'build/index.js', dirname( __DIR__, 2 ) . '/wp-rag-ai-chatbot.php' ),
 			array( 'wp-element' ),
-			'0.1.0-dev',
+			'0.1.1',
 			true
 		);
 		wp_add_inline_script(

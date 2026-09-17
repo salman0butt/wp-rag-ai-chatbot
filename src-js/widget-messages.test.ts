@@ -2,6 +2,10 @@ type WidgetMessageKey =
 	| 'chat'
 	| 'open_chat'
 	| 'chat_label'
+	| 'assistant_label'
+	| 'welcome_title'
+	| 'welcome_body'
+	| 'online'
 	| 'close'
 	| 'close_chat'
 	| 'message'
@@ -33,6 +37,12 @@ describe( 'bounded widget message catalog', () => {
 		const { resolveWidgetMessage } = loadMessages();
 
 		expect( resolveWidgetMessage( 'en-US', 'chat' ) ).toBe( 'Chat' );
+		expect( resolveWidgetMessage( 'en-US', 'assistant_label' ) ).toBe(
+			'AI assistant'
+		);
+		expect( resolveWidgetMessage( 'en-US', 'welcome_title' ) ).toBe(
+			'How can I help?'
+		);
 		expect(
 			resolveWidgetMessage( 'en-US', 'open_chat', {
 				botName: 'Support Bot',
@@ -67,6 +77,10 @@ describe( 'bounded widget message catalog', () => {
 			'chat',
 			'open_chat',
 			'chat_label',
+			'assistant_label',
+			'welcome_title',
+			'welcome_body',
+			'online',
 			'close',
 			'close_chat',
 			'message',

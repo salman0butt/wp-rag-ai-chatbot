@@ -116,7 +116,7 @@ final class AdminSurfaceTest extends TestCase {
 				'wp-rag-ai-chatbot-admin',
 				'https://example.test/wp-content/plugins/wp-rag-ai-chatbot/assets/admin.css',
 				array(),
-				'0.1.0-dev'
+				'0.1.1'
 			);
 		Functions\expect( 'wp_enqueue_script' )
 			->once()
@@ -124,7 +124,7 @@ final class AdminSurfaceTest extends TestCase {
 				'wp-rag-ai-chatbot-admin',
 				'https://example.test/wp-content/plugins/wp-rag-ai-chatbot/build/index.js',
 				array( 'wp-element' ),
-				'0.1.0-dev',
+				'0.1.1',
 				true
 			);
 		Functions\expect( 'wp_add_inline_script' )

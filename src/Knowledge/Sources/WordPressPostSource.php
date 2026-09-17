@@ -132,7 +132,7 @@ final class WordPressPostSource implements KnowledgeSource {
 		$taxonomy_labels = $this->taxonomyLabels( $post->taxonomyLabels );
 		$title           = $this->normalizeText( $post->title );
 		$content         = $this->content( $title, $post->excerpt, $post->content, $taxonomy_labels );
-		$document_key    = 'wp-post:' . $post->type . ':' . $post->id;
+		$document_key    = 'wp-post:' . $source->id . ':' . $post->type . ':' . $post->id;
 		$source_version  = $post->modifiedGmt . ':' . $post->id;
 		$visibility      = 'private' === $post->status ? 'private' : 'public';
 		$metadata        = array(

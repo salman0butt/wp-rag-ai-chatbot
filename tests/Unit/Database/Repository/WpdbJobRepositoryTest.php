@@ -189,6 +189,7 @@ final class WpdbJobRepositoryTest extends TestCase {
 			'old-worker-token-012345678901234'
 		);
 
+		$this->expectExceptionMessage( 'Job completion lost the current lease or was cancelled.' );
 		$this->expectException( JobQueueException::class );
 		$this->repository( $connection )->complete( $lease, self::utc( '2026-09-05 01:02:00' ) );
 	}

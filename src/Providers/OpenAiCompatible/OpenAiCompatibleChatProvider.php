@@ -34,6 +34,7 @@ use WpRagAiChatbot\Providers\ProviderHealth;
 use WpRagAiChatbot\Providers\ProviderHealthStatus;
 use WpRagAiChatbot\Providers\Security\SecretRedactor;
 use WpRagAiChatbot\Providers\Usage;
+use WpRagAiChatbot\Providers\ProviderIds;
 
 // phpcs:disable WordPress.Security.EscapeOutput -- ProviderException metadata is sanitized/internal and is never rendered directly.
 /**
@@ -235,7 +236,9 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		$credential = $this->required_credential();
 		$body       = array(
 			'model' => $request->model,
-			'input' => $request->inputs,
+			'input' => ProviderIds::GEMINI_DIRECT === $this->provider_id && 1 === count( $request->inputs )
+				? $request->inputs[0]
+				: $request->inputs,
 		);
 		if ( null !== $request->dimensions ) {
 			$body['dimensions'] = $request->dimensions;
@@ -435,18 +438,21 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		}
 
 		$vectors = array();
-		foreach ( $data as $item ) {
+		foreach ( array_values( $data ) as $position => $item ) {
 			if (
 				! is_array( $item )
-				|| ! isset( $item['index'], $item['embedding'] )
-				|| ! is_int( $item['index'] )
+				|| ! isset( $item['embedding'] )
 				|| ! is_array( $item['embedding'] )
 			) {
 				throw $this->malformed_response();
 			}
+			$index = $item['index'] ?? $position;
+			if ( ! is_int( $index ) ) {
+				throw $this->malformed_response();
+			}
 
 			try {
-				$vectors[] = new EmbeddingVector( $item['index'], $item['embedding'] );
+				$vectors[] = new EmbeddingVector( $index, $item['embedding'] );
 			} catch ( InvalidArgumentException ) {
 				throw $this->malformed_response();
 			}

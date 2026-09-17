@@ -13,6 +13,7 @@ use DateTimeImmutable;
 use WpRagAiChatbot\Jobs\JobRecord;
 use WpRagAiChatbot\Jobs\JobRepository;
 use WpRagAiChatbot\Jobs\JobRequest;
+use WpRagAiChatbot\Jobs\WordPressJobCron;
 
 /**
  * Enqueues one active synchronization generation with deterministic deduplication.
@@ -54,6 +55,14 @@ final class DocumentIndexJobEnqueuer {
 			3
 		);
 
-		return $this->repository->enqueue( $request, $now );
+		$record = $this->repository->enqueue( $request, $now );
+		if ( function_exists( 'wp_next_scheduled' ) && function_exists( 'wp_schedule_single_event' ) ) {
+			$wake_args = array( $record->job_key );
+			if ( false === wp_next_scheduled( WordPressJobCron::HOOK, $wake_args ) ) {
+				wp_schedule_single_event( $now->getTimestamp(), WordPressJobCron::HOOK, $wake_args, true );
+			}
+		}
+
+		return $record;
 	}
 }

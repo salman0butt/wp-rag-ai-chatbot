@@ -9,7 +9,9 @@ declare(strict_types=1);
 
 namespace WpRagAiChatbot\Jobs\Sync;
 
+use DomainException;
 use InvalidArgumentException;
+use JsonException;
 use WpRagAiChatbot\Database\DatabaseException;
 use WpRagAiChatbot\Indexing\Chunking\ChunkingException;
 use WpRagAiChatbot\Jobs\JobCancelledException;
@@ -57,8 +59,16 @@ final class DocumentIndexJobHandler implements JobHandler {
 			$context->update_progress( new JobProgress( 0, 2, 'Planning index changes' ) );
 			try {
 				$plan = $this->dependencies->plan( $payload );
-			} catch ( ChunkingException | InvalidArgumentException ) {
+			} catch ( ChunkingException | DomainException | InvalidArgumentException | JsonException ) {
 				throw new JobExecutionException( 'index_plan_invalid', 'Document content could not be prepared for indexing.', false );
+			} catch ( ProviderException $error ) {
+				throw $this->provider_failure( $error );
+			} catch ( VectorStoreException $error ) {
+				throw $this->vector_failure( $error );
+			} catch ( DatabaseException ) {
+				throw $this->projection_failure();
+			} catch ( \Throwable ) {
+				throw new JobExecutionException( 'index_plan_runtime_error', 'Document content could not be prepared for indexing.', false );
 			}
 
 			$context->heartbeat();

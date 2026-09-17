@@ -104,6 +104,26 @@ describe( 'public widget launcher and panel state', () => {
 		);
 	} );
 
+	it( 'renders a branded header and useful empty state before the first question', () => {
+		loadWidget();
+
+		const panel = document.querySelector< HTMLElement >(
+			'[data-wp-rag-ai-chatbot-panel]'
+		);
+
+		expect(
+			panel?.querySelector( '[data-wp-rag-ai-chatbot-header]' )
+		).not.toBeNull();
+		expect(
+			panel?.querySelector( '[data-wp-rag-ai-chatbot-title]' )
+				?.textContent
+		).toBe( 'Support bot' );
+		expect(
+			panel?.querySelector( '[data-wp-rag-ai-chatbot-empty-state]' )
+		).not.toBeNull();
+		expect( panel?.textContent ).toContain( 'How can I help?' );
+	} );
+
 	it( 'projects normalized appearance into bounded widget presentation tokens', () => {
 		loadWidget();
 
