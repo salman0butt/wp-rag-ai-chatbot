@@ -17,10 +17,14 @@ type WidgetConfigWindow = Window & {
 const BOT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const originalFetch = globalThis.fetch;
 let fetchMock: jest.Mock;
+let widgetRuntime: {
+	handleWidgetEvent: ( value: Event ) => void;
+};
 
 const loadWidget = (): void => {
 	jest.resetModules();
 	jest.isolateModules( () => {
+		widgetRuntime = require( './widget-runtime' ) as typeof widgetRuntime;
 		require( './widget' );
 	} );
 };
@@ -275,10 +279,7 @@ describe( 'public widget conversation controls', () => {
 		const event = new Event( 'click', { bubbles: true } );
 		Object.defineProperty( event, 'target', { value: target } );
 
-		const runtime = require( './widget-runtime' ) as {
-			handleWidgetEvent: ( value: Event ) => void;
-		};
-		runtime.handleWidgetEvent( event );
+		widgetRuntime.handleWidgetEvent( event );
 
 		expect( target.closest ).toHaveBeenCalledWith(
 			'.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]'
@@ -338,6 +339,82 @@ describe( 'public widget conversation controls', () => {
 		widgetHandler?.( event );
 
 		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	it( 'resolves the mount directly from a composed path node', () => {
+		loadWidget();
+
+		const handler = jest.fn();
+		const mount = {
+			matches: jest.fn().mockReturnValue( true ),
+			__wpRagAiChatbotHandleEvent: handler,
+		};
+		const event = {
+			target: {},
+			composedPath: () => [ mount ],
+		} as unknown as Event;
+		widgetRuntime.handleWidgetEvent( event );
+
+		expect( mount.matches ).toHaveBeenCalledWith(
+			'.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]'
+		);
+		expect( handler ).toHaveBeenCalledWith( event );
+	} );
+
+	it( 'routes wrapped mounts through the bot id registry', () => {
+		loadWidget();
+
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const target = {
+			getAttribute: jest.fn( ( name: string ) =>
+				name === 'data-wp-rag-ai-chatbot-launcher' ? '' : null
+			),
+			closest: jest
+				.fn()
+				.mockImplementation( ( selector: string ) =>
+					selector ===
+					'.wp-rag-ai-chatbot-widget[data-wp-rag-ai-chatbot-bot]'
+						? { getAttribute: () => BOT_ID }
+						: launcher
+				),
+		};
+		const event = {
+			type: 'click',
+			target,
+			preventDefault: jest.fn(),
+			stopImmediatePropagation: jest.fn(),
+		} as unknown as Event;
+
+		widgetRuntime.handleWidgetEvent( event );
+
+		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
+	it( 'repairs a cloned mount before routing its event', () => {
+		loadWidget();
+
+		const mount = document.querySelector< HTMLElement >(
+			'.wp-rag-ai-chatbot-widget'
+		);
+		const clone = mount?.cloneNode( true ) as HTMLElement;
+		mount?.replaceWith( clone );
+		const launcher = clone.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+
+		launcher?.dispatchEvent(
+			new Event( 'click', { bubbles: true, cancelable: true } )
+		);
+
+		expect(
+			document
+				.querySelector< HTMLButtonElement >(
+					'[data-wp-rag-ai-chatbot-launcher]'
+				)
+				?.getAttribute( 'aria-expanded' )
+		).toBe( 'true' );
 	} );
 
 	it( 'registers capture guards before later window handlers can interrupt them', () => {

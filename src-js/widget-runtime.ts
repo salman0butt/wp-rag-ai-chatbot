@@ -47,6 +47,7 @@ const MAX_CITATIONS = 8;
 const MAX_RENDERED_MESSAGES = 40;
 const TYPING_INTERVAL_MS = 24;
 const MAX_TYPING_TICKS = 48;
+const widgetEventHandlers = new Map< string, ( event: Event ) => void >();
 
 const COLOR_MODES = [ 'light', 'dark', 'system' ] as const;
 const POSITIONS = [ 'bottom-left', 'bottom-right' ] as const;
@@ -58,6 +59,12 @@ const WIDGET_SURFACES = [ 'floating', 'embedded', 'fullscreen' ] as const;
 type WidgetEventHandlerMount = HTMLElement & {
 	[ WIDGET_EVENT_HANDLER_KEY ]?: ( event: Event ) => void;
 };
+type WidgetEventHandlerTarget = WidgetEventHandlerMount & {
+	getAttribute?: ( name: string ) => string | null;
+};
+type WidgetEventHandlerWindow = Window & {
+	wpRagAiChatbotWidgetConfigs?: WidgetBootstrapConfig[];
+};
 
 const eventPath = ( event: Event ): unknown[] => [
 	event.target,
@@ -68,10 +75,29 @@ const closestEventTarget = (
 	event: Event,
 	selector: string
 ): unknown | null => {
+	const attributeSelector = /^\[([^=\]]+)\]$/.exec( selector )?.[ 1 ];
+
 	for ( const value of eventPath( event ) ) {
 		const target = value as {
+			matches?: ( value: string ) => boolean;
 			closest?: ( value: string ) => unknown;
+			getAttribute?: ( value: string ) => string | null;
 		};
+
+		if (
+			typeof target.matches === 'function' &&
+			target.matches( selector )
+		) {
+			return value;
+		}
+
+		if (
+			attributeSelector !== undefined &&
+			typeof target.getAttribute === 'function' &&
+			target.getAttribute( attributeSelector ) !== null
+		) {
+			return value;
+		}
 
 		if ( typeof target.closest === 'function' ) {
 			const match = target.closest( selector );
@@ -88,12 +114,53 @@ const eventTargetMatches = ( event: Event, selector: string ): boolean => {
 	return closestEventTarget( event, selector ) !== null;
 };
 
+const findCurrentMount = (
+	botId: string | null | undefined
+): WidgetEventHandlerMount | null => {
+	if ( botId === null || botId === undefined ) {
+		return null;
+	}
+
+	return (
+		Array.from(
+			document.querySelectorAll< WidgetEventHandlerMount >(
+				MOUNT_SELECTOR
+			)
+		).find(
+			( candidate ) =>
+				candidate.getAttribute( 'data-wp-rag-ai-chatbot-bot' ) === botId
+		) ?? null
+	);
+};
+
 export const handleWidgetEvent = ( event: Event ): void => {
 	const mount = closestEventTarget(
 		event,
 		MOUNT_SELECTOR
-	) as WidgetEventHandlerMount | null;
-	mount?.[ WIDGET_EVENT_HANDLER_KEY ]?.( event );
+	) as WidgetEventHandlerTarget | null;
+	const botId =
+		mount && typeof mount.getAttribute === 'function'
+			? mount.getAttribute( 'data-wp-rag-ai-chatbot-bot' )
+			: null;
+	let currentMount = findCurrentMount( botId );
+	if (
+		currentMount &&
+		typeof currentMount[ WIDGET_EVENT_HANDLER_KEY ] !== 'function'
+	) {
+		const configs = ( window as WidgetEventHandlerWindow )
+			.wpRagAiChatbotWidgetConfigs;
+		if ( Array.isArray( configs ) ) {
+			mountWidgets( document, configs );
+			currentMount = findCurrentMount( botId );
+		}
+	}
+	const handler =
+		currentMount?.[ WIDGET_EVENT_HANDLER_KEY ] ??
+		mount?.[ WIDGET_EVENT_HANDLER_KEY ] ??
+		( botId === null || botId === undefined
+			? undefined
+			: widgetEventHandlers.get( botId ) );
+	handler?.( event );
 };
 
 const readChoice = < T extends string >(
@@ -296,8 +363,20 @@ export const mountWidgets = (
 	documentRoot
 		.querySelectorAll< HTMLElement >( MOUNT_SELECTOR )
 		.forEach( ( mount ) => {
-			if ( mount.dataset[ MOUNTED_DATA_KEY ] === 'true' ) {
+			const eventMount = mount as WidgetEventHandlerMount;
+			if (
+				mount.dataset[ MOUNTED_DATA_KEY ] === 'true' &&
+				typeof eventMount[ WIDGET_EVENT_HANDLER_KEY ] === 'function'
+			) {
 				return;
+			}
+			if ( mount.dataset[ MOUNTED_DATA_KEY ] === 'true' ) {
+				mount
+					.querySelectorAll(
+						'[data-wp-rag-ai-chatbot-launcher], [data-wp-rag-ai-chatbot-panel]'
+					)
+					.forEach( ( element ) => element.remove() );
+				delete mount.dataset[ MOUNTED_DATA_KEY ];
 			}
 
 			const botId = mount.dataset.wpRagAiChatbotBot ?? '';
@@ -715,12 +794,12 @@ export const mountWidgets = (
 					return;
 				}
 
-				if (
-					eventTargetMatches(
-						event,
-						'[data-wp-rag-ai-chatbot-launcher]'
-					)
-				) {
+				const launcherMatch = eventTargetMatches(
+					event,
+					'[data-wp-rag-ai-chatbot-launcher]'
+				);
+
+				if ( launcherMatch ) {
 					event.preventDefault();
 					event.stopImmediatePropagation();
 					proactiveDelay.cancel();
@@ -775,9 +854,7 @@ export const mountWidgets = (
 				openPanel( true );
 			};
 
-			( mount as WidgetEventHandlerMount )[ WIDGET_EVENT_HANDLER_KEY ] = (
-				event: Event
-			): void => {
+			const handleWidgetEventForMount = ( event: Event ): void => {
 				if ( event.type === 'click' ) {
 					handleWidgetClick( event );
 				} else if ( event.type === 'pointerdown' ) {
@@ -786,6 +863,9 @@ export const mountWidgets = (
 					handleWidgetSubmit( event );
 				}
 			};
+			( mount as WidgetEventHandlerMount )[ WIDGET_EVENT_HANDLER_KEY ] =
+				handleWidgetEventForMount;
+			widgetEventHandlers.set( botId, handleWidgetEventForMount );
 
 			mount.addEventListener( 'click', handleWidgetClick, true );
 			mount.addEventListener(
@@ -794,21 +874,6 @@ export const mountWidgets = (
 				true
 			);
 			mount.addEventListener( 'submit', handleWidgetSubmit, true );
-			documentRoot.defaultView?.addEventListener(
-				'click',
-				handleWidgetClick,
-				true
-			);
-			documentRoot.defaultView?.addEventListener(
-				'pointerdown',
-				handleWidgetPointerDown,
-				true
-			);
-			documentRoot.defaultView?.addEventListener(
-				'submit',
-				handleWidgetSubmit,
-				true
-			);
 
 			if ( isFloating ) {
 				panel.addEventListener( 'keydown', ( event ) => {
