@@ -313,6 +313,33 @@ describe( 'public widget conversation controls', () => {
 		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
 	} );
 
+	it( 'matches a launcher found in the composed event path', () => {
+		loadWidget();
+
+		const mount = document.querySelector< HTMLElement >(
+			'.wp-rag-ai-chatbot-widget'
+		);
+		const launcher = document.querySelector< HTMLButtonElement >(
+			'[data-wp-rag-ai-chatbot-launcher]'
+		);
+		const widgetHandler = (
+			mount as HTMLElement & {
+				__wpRagAiChatbotHandleEvent?: ( event: Event ) => void;
+			}
+		 ).__wpRagAiChatbotHandleEvent;
+		const event = {
+			type: 'click',
+			target: {},
+			composedPath: () => [ launcher ],
+			preventDefault: jest.fn(),
+			stopImmediatePropagation: jest.fn(),
+		} as unknown as Event;
+
+		widgetHandler?.( event );
+
+		expect( launcher?.getAttribute( 'aria-expanded' ) ).toBe( 'true' );
+	} );
+
 	it( 'registers capture guards before later window handlers can interrupt them', () => {
 		const originalReadyState = document.readyState;
 		Object.defineProperty( document, 'readyState', {

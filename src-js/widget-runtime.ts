@@ -59,25 +59,40 @@ type WidgetEventHandlerMount = HTMLElement & {
 	[ WIDGET_EVENT_HANDLER_KEY ]?: ( event: Event ) => void;
 };
 
-const eventTargetMatches = ( event: Event, selector: string ): boolean => {
-	const target = event.target as {
-		closest?: ( value: string ) => unknown;
-	} | null;
+const eventPath = ( event: Event ): unknown[] => [
+	event.target,
+	...( typeof event.composedPath === 'function' ? event.composedPath() : [] ),
+];
 
-	return (
-		typeof target?.closest === 'function' &&
-		target.closest( selector ) !== null
-	);
+const closestEventTarget = (
+	event: Event,
+	selector: string
+): unknown | null => {
+	for ( const value of eventPath( event ) ) {
+		const target = value as {
+			closest?: ( value: string ) => unknown;
+		};
+
+		if ( typeof target.closest === 'function' ) {
+			const match = target.closest( selector );
+			if ( match !== null ) {
+				return match;
+			}
+		}
+	}
+
+	return null;
+};
+
+const eventTargetMatches = ( event: Event, selector: string ): boolean => {
+	return closestEventTarget( event, selector ) !== null;
 };
 
 export const handleWidgetEvent = ( event: Event ): void => {
-	const target = event.target as {
-		closest?: ( selector: string ) => WidgetEventHandlerMount | null;
-	} | null;
-	const mount =
-		typeof target?.closest === 'function'
-			? target.closest( MOUNT_SELECTOR )
-			: null;
+	const mount = closestEventTarget(
+		event,
+		MOUNT_SELECTOR
+	) as WidgetEventHandlerMount | null;
 	mount?.[ WIDGET_EVENT_HANDLER_KEY ]?.( event );
 };
 
