@@ -260,6 +260,9 @@ const findConfig = (
 const chatUrl = ( restBase: string ): string =>
 	`${ restBase.replace( /\/+$/, '' ) }/chat`;
 
+const stripCitationMarkers = ( answer: string ): string =>
+	answer.replace( /\s*\[C\d+\]/gi, '' );
+
 const readCitation = ( value: unknown ): PublicCitation | null => {
 	if ( typeof value !== 'object' || value === null ) {
 		return null;
@@ -306,7 +309,7 @@ const readSuccess = ( value: unknown ): PublicChatSuccess | null => {
 		: [];
 
 	return {
-		answer: candidate.answer,
+		answer: stripCitationMarkers( candidate.answer ),
 		conversation_id: conversationId,
 		citations,
 	};

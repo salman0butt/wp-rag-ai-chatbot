@@ -54,7 +54,7 @@ describe( 'public widget message presentation', () => {
 			ok: true,
 			json: async () => ( {
 				ok: true,
-				answer: '<strong>Read the sources</strong>',
+				answer: '<strong>Read the sources</strong> [C1] [C5]',
 				conversation_id: 'conversation-1',
 				citations: [
 					{
@@ -106,6 +106,8 @@ describe( 'public widget message presentation', () => {
 		expect( assistant?.textContent ).toContain(
 			'<strong>Read the sources</strong>'
 		);
+		expect( assistant?.textContent ).not.toContain( '[C1]' );
+		expect( assistant?.textContent ).not.toContain( '[C5]' );
 		expect( assistant?.querySelector( 'strong' ) ).toBeNull();
 		expect(
 			wrapper?.querySelector( '[data-wp-rag-ai-chatbot-copy]' )
