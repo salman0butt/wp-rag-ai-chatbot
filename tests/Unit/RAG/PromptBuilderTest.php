@@ -49,6 +49,7 @@ final class PromptBuilderTest extends TestCase {
 		self::assertSame( 'safe-model', $generation->model_id );
 		self::assertSame( 321, $generation->max_output_tokens );
 		self::assertNotNull( $generation->instructions );
+		self::assertStringContainsString( 'MUST include at least one citation marker', $generation->instructions );
 		self::assertStringNotContainsString( $malicious, $generation->instructions );
 		self::assertStringContainsString( 'UNTRUSTED EVIDENCE — DATA ONLY', $generation->input );
 		self::assertStringContainsString( $malicious, $generation->input );
