@@ -262,7 +262,10 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		);
 
 		try {
-			$response = $this->http->embedding( $http_request );
+			$response = $this->http->embedding(
+				$http_request,
+				ProviderIds::GEMINI_DIRECT === $this->provider_id
+			);
 		} catch ( HttpTransportException $exception ) {
 			throw new ProviderException(
 				$exception->error_code,

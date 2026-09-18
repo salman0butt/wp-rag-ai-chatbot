@@ -60,6 +60,21 @@ final class OpenAiCompatibleEmbeddingTest extends TestCase {
 		self::assertSame( 7, $result->usage->input_tokens );
 	}
 
+	/** Gemini transient embedding outages receive one bounded retry for public RAG queries. */
+	public function test_gemini_embedding_retries_one_transient_upstream_failure(): void {
+		$transport = new QueuedHttpTransport(
+			array(
+				new HttpResponse( 503, array(), '{"error":"temporarily unavailable"}' ),
+				new HttpResponse( 200, array(), '{"data":[{"index":0,"embedding":[0.1]}]}' ),
+			)
+		);
+
+		$result = $this->provider( $transport )->embed( new EmbeddingRequest( 'gemini-embedding-001', array( 'one' ) ) );
+
+		self::assertCount( 2, $transport->requests );
+		self::assertSame( array( 0.1 ), $result->vectors[0]->values );
+	}
+
 	/** Embedding vectors retain the response order and reject malformed vectors. */
 	public function test_embed_preserves_response_order_and_rejects_malformed_vectors(): void {
 		$transport = new QueuedHttpTransport(
