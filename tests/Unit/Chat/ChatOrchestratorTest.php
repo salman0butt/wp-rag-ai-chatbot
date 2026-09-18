@@ -25,6 +25,8 @@ use WpRagAiChatbot\Providers\GenerationProvider;
 use WpRagAiChatbot\Providers\GenerationRequest;
 use WpRagAiChatbot\Providers\GenerationResult;
 use WpRagAiChatbot\Providers\GenerationStatus;
+use WpRagAiChatbot\Providers\ProviderErrorCode;
+use WpRagAiChatbot\Providers\ProviderException;
 use WpRagAiChatbot\Providers\Usage;
 use WpRagAiChatbot\RAG\DeterministicGroundingPolicy;
 use WpRagAiChatbot\RAG\GroundingMode;
@@ -160,7 +162,12 @@ final class ChatOrchestratorTest extends TestCase {
 	 */
 	public function test_provider_failure_is_sanitized(): void {
 		$log       = new ArrayObject();
-		$provider  = $this->provider( $log, '', true, new RuntimeException( 'provider api-key leak' ) );
+		$provider  = $this->provider(
+			$log,
+			'',
+			true,
+			new ProviderException( ProviderErrorCode::TIMEOUT, 'task7-fake', 'provider api-key leak' )
+		);
 		$candidate = $this->ranked( 'refund-policy', 1.0 );
 
 		try {
@@ -175,6 +182,7 @@ final class ChatOrchestratorTest extends TestCase {
 		} catch ( Throwable $exception ) {
 			self::assertSame( 'WpRagAiChatbot\\Chat\\ChatException', $exception::class );
 			self::assertSame( ChatFailureReason::GENERATION_FAILED, $this->property_value( $exception, 'reason' ) );
+			self::assertSame( ProviderErrorCode::TIMEOUT, $this->property_value( $exception, 'provider_error_code' ) );
 			self::assertStringNotContainsString( 'api-key', $exception->getMessage() );
 		}
 	}
@@ -279,7 +287,7 @@ final class ChatOrchestratorTest extends TestCase {
 		ArrayObject $log,
 		string $answer,
 		bool $available = true,
-		?RuntimeException $failure = null
+		?Throwable $failure = null
 	): GenerationProvider {
 		return new class( $log, $answer, $available, $failure ) implements GenerationProvider {
 			/**
@@ -309,7 +317,7 @@ final class ChatOrchestratorTest extends TestCase {
 				private ArrayObject $log,
 				private string $answer,
 				private bool $available,
-				private ?RuntimeException $failure
+				private ?Throwable $failure
 			) {
 			}
 

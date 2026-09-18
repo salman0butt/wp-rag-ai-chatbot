@@ -19,6 +19,7 @@ use WpRagAiChatbot\Memory\ConversationMemory;
 use WpRagAiChatbot\Memory\MemoryAssembler;
 use WpRagAiChatbot\Providers\GenerationProvider;
 use WpRagAiChatbot\Providers\GenerationStatus;
+use WpRagAiChatbot\Providers\ProviderException;
 use WpRagAiChatbot\RAG\GroundingMode;
 use WpRagAiChatbot\RAG\GroundingPolicy;
 use WpRagAiChatbot\RAG\PromptBuilder;
@@ -124,6 +125,9 @@ final class ChatOrchestrator implements ChatResponder {
 
 		try {
 			$generation = $this->provider->generate( $generation_request );
+		} catch ( ProviderException $exception ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Only the stable provider error enum is retained for admin diagnostics.
+			throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'Generation failed.', $exception->error_code );
 		} catch ( Throwable ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'Generation failed.' );

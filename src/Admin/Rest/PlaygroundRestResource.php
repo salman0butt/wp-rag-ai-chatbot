@@ -62,7 +62,12 @@ final class PlaygroundRestResource {
 
 			return $this->error( 'retrieval_unavailable' );
 		} catch ( ChatException $exception ) {
-			return $this->error( $exception->reason->value );
+			$code = $exception->reason->value;
+			if ( null !== $exception->provider_error_code ) {
+				$code .= '_' . $exception->provider_error_code->value;
+			}
+
+			return $this->error( $code );
 		} catch ( Throwable $throwable ) {
 			unset( $throwable );
 

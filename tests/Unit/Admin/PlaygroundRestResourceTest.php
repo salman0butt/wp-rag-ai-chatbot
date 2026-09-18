@@ -16,6 +16,7 @@ use WpRagAiChatbot\Admin\Rest\PlaygroundExecutionResult;
 use WpRagAiChatbot\Admin\Rest\PlaygroundExecutor;
 use WpRagAiChatbot\Chat\ChatException;
 use WpRagAiChatbot\Chat\ChatFailureReason;
+use WpRagAiChatbot\Providers\ProviderErrorCode;
 use WpRagAiChatbot\Retrieval\RetrievalException;
 
 /**
@@ -49,8 +50,9 @@ final class PlaygroundRestResourceTest extends TestCase {
 			}
 		);
 
-		$response   = $this->call_run( $executor, 'How does retrieval work?' );
-		$serialized = wp_json_encode( $response );
+		$response = $this->call_run( $executor, 'How does retrieval work?' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test bootstrap intentionally has no WordPress runtime.
+		$serialized = json_encode( $response );
 		self::assertIsString( $serialized );
 
 		self::assertSame( 'retrieval_unavailable', $response['error']['code'] );
@@ -66,11 +68,30 @@ final class PlaygroundRestResourceTest extends TestCase {
 			}
 		);
 
-		$response   = $this->call_run( $executor, 'Explain the answer.' );
-		$serialized = wp_json_encode( $response );
+		$response = $this->call_run( $executor, 'Explain the answer.' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test bootstrap intentionally has no WordPress runtime.
+		$serialized = json_encode( $response );
 		self::assertIsString( $serialized );
 
 		self::assertSame( 'generation_failed', $response['error']['code'] );
+		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', $serialized );
+	}
+
+	/** Provider failures expose a bounded admin diagnostic category without leaking details. */
+	public function test_run_maps_provider_failure_category_for_admin_diagnostics(): void {
+		$executor = $this->executor(
+			static function (): PlaygroundExecutionResult {
+				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test verifies only the bounded diagnostic category is returned.
+				throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'PROVIDER-SECRET-SENTINEL', ProviderErrorCode::TIMEOUT );
+			}
+		);
+
+		$response = $this->call_run( $executor, 'Explain the answer.' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test bootstrap intentionally has no WordPress runtime.
+		$serialized = json_encode( $response );
+		self::assertIsString( $serialized );
+
+		self::assertSame( 'generation_failed_timeout', $response['error']['code'] );
 		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', $serialized );
 	}
 
@@ -82,8 +103,9 @@ final class PlaygroundRestResourceTest extends TestCase {
 			}
 		);
 
-		$response   = $this->call_run( $executor, 'Explain the answer.' );
-		$serialized = wp_json_encode( $response );
+		$response = $this->call_run( $executor, 'Explain the answer.' );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test bootstrap intentionally has no WordPress runtime.
+		$serialized = json_encode( $response );
 		self::assertIsString( $serialized );
 
 		self::assertSame( 'playground_failed', $response['error']['code'] );

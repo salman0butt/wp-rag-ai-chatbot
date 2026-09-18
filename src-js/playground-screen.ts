@@ -75,6 +75,26 @@ const PLAYGROUND_ERROR_MESSAGES: Record< string, string > = {
 		'The knowledge base did not contain enough matching information.',
 	generation_unavailable: 'The configured AI provider is unavailable.',
 	generation_failed: 'The AI provider could not generate an answer.',
+	generation_failed_configuration:
+		'The AI provider is not configured correctly. Check the provider settings.',
+	generation_failed_authentication:
+		'The AI provider rejected the credential. Replace the API key and try again.',
+	generation_failed_authorization:
+		'The AI provider rejected this request. Check the API key permissions.',
+	generation_failed_rate_limit:
+		'The AI provider rate limit was reached. Try again shortly.',
+	generation_failed_timeout:
+		'The AI provider request timed out. Check server outbound access and try again.',
+	generation_failed_transport:
+		'The server could not reach the AI provider. Check outbound HTTPS access.',
+	generation_failed_malformed_response:
+		'The AI provider returned an unsupported response.',
+	generation_failed_unsupported_capability:
+		'The selected AI provider does not support this request.',
+	generation_failed_upstream_server:
+		'The AI provider is temporarily unavailable. Try again shortly.',
+	generation_failed_unknown:
+		'The AI provider returned an unexpected error.',
 	invalid_citations: 'The AI answer did not include valid sources.',
 	budget_exceeded: 'The configured AI usage budget has been reached.',
 	rate_limited: 'The AI provider is temporarily rate limited.',
