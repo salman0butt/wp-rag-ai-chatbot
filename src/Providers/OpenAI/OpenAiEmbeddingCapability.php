@@ -55,7 +55,7 @@ trait OpenAiEmbeddingCapability {
 		);
 
 		try {
-			$response = $this->http->generation( $http_request );
+			$response = $this->http->embedding( $http_request );
 		} catch ( HttpTransportException $exception ) {
 			throw new ProviderException(
 				$exception->error_code,

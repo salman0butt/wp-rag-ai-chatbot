@@ -22,12 +22,28 @@ final class ProviderHttpClient {
 	}
 
 	/**
-	 * Send a paid generation request exactly once.
+	 * Send a paid generation request, retrying one transient upstream failure.
 	 *
 	 * @param HttpRequest $request Provider generation request.
 	 * @throws HttpTransportException When transport fails.
 	 */
 	public function generation( HttpRequest $request ): HttpResponse {
+		$response = $this->transport->send( $request );
+
+		if ( in_array( $response->status, array( 502, 503, 504 ), true ) ) {
+			return $this->transport->send( $request );
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Send one billable embedding request without retrying it.
+	 *
+	 * @param HttpRequest $request Provider embedding request.
+	 * @throws HttpTransportException When transport fails.
+	 */
+	public function embedding( HttpRequest $request ): HttpResponse {
 		return $this->transport->send( $request );
 	}
 

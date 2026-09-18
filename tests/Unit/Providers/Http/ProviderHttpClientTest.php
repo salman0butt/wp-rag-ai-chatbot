@@ -76,6 +76,25 @@ final class ProviderHttpClientTest extends TestCase {
 	}
 
 	/**
+	 * Generation retries one transient upstream-unavailable response.
+	 */
+	public function test_generation_retries_once_after_transient_upstream_failure(): void {
+		$this->require_http_contracts();
+		$request   = $this->request();
+		$recovered = new HttpResponse( 200, array(), '{"ok":true}' );
+		$transport = $this->createMock( HttpTransport::class );
+		$calls     = 0;
+		$transport->expects( self::exactly( 2 ) )->method( 'send' )->with( $request )->willReturnCallback(
+			static function () use ( &$calls, $recovered ): HttpResponse {
+				++$calls;
+				return 1 === $calls ? new HttpResponse( 503, array(), 'temporarily unavailable' ) : $recovered;
+			}
+		);
+
+		self::assertSame( $recovered, ( new ProviderHttpClient( $transport ) )->generation( $request ) );
+	}
+
+	/**
 	 * Generation transport failures are never retried.
 	 */
 	public function test_generation_does_not_retry_transport_failure(): void {
