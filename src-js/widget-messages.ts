@@ -12,8 +12,6 @@ export type WidgetMessageKey =
 	| 'send'
 	| 'send_message'
 	| 'retry'
-	| 'copy'
-	| 'copy_assistant_message'
 	| 'sources'
 	| 'assistant_typing'
 	| 'sending'
@@ -39,8 +37,6 @@ const ENGLISH_MESSAGES: WidgetMessageCatalog = {
 	send: 'Send',
 	send_message: 'Send message',
 	retry: 'Retry',
-	copy: 'Copy',
-	copy_assistant_message: 'Copy assistant message',
 	sources: 'Sources',
 	assistant_typing: 'Assistant is typing…',
 	sending: 'Sending…',
@@ -63,8 +59,6 @@ const URDU_MESSAGES: WidgetMessageCatalog = {
 	send: 'بھیجیں',
 	send_message: 'پیغام بھیجیں',
 	retry: 'دوبارہ کوشش کریں',
-	copy: 'کاپی کریں',
-	copy_assistant_message: 'معاون کا پیغام کاپی کریں',
 	sources: 'ذرائع',
 	assistant_typing: 'معاون لکھ رہا ہے…',
 	sending: 'بھیجا جا رہا ہے…',

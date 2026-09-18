@@ -75,6 +75,22 @@ final class OpenAiCompatibleEmbeddingTest extends TestCase {
 		self::assertSame( array( 0.1 ), $result->vectors[0]->values );
 	}
 
+	/** Gemini embeddings tolerate two consecutive transient upstream failures. */
+	public function test_gemini_embedding_retries_twice_before_recovering(): void {
+		$transport = new QueuedHttpTransport(
+			array(
+				new HttpResponse( 503, array(), '{"error":"temporarily unavailable"}' ),
+				new HttpResponse( 503, array(), '{"error":"temporarily unavailable"}' ),
+				new HttpResponse( 200, array(), '{"data":[{"index":0,"embedding":[0.2]}]}' ),
+			)
+		);
+
+		$result = $this->provider( $transport )->embed( new EmbeddingRequest( 'gemini-embedding-001', array( 'one' ) ) );
+
+		self::assertCount( 3, $transport->requests );
+		self::assertSame( array( 0.2 ), $result->vectors[0]->values );
+	}
+
 	/** Embedding vectors retain the response order and reject malformed vectors. */
 	public function test_embed_preserves_response_order_and_rejects_malformed_vectors(): void {
 		$transport = new QueuedHttpTransport(

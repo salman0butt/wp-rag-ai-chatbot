@@ -12,8 +12,6 @@ type WidgetMessageKey =
 	| 'send'
 	| 'send_message'
 	| 'retry'
-	| 'copy'
-	| 'copy_assistant_message'
 	| 'sources'
 	| 'assistant_typing'
 	| 'sending'
@@ -52,7 +50,6 @@ describe( 'bounded widget message catalog', () => {
 		expect( resolveWidgetMessage( 'en-US', 'message' ) ).toBe( 'Message' );
 		expect( resolveWidgetMessage( 'en-US', 'send' ) ).toBe( 'Send' );
 		expect( resolveWidgetMessage( 'en-US', 'retry' ) ).toBe( 'Retry' );
-		expect( resolveWidgetMessage( 'en-US', 'copy' ) ).toBe( 'Copy' );
 		expect( resolveWidgetMessage( 'en-US', 'sources' ) ).toBe( 'Sources' );
 		expect( resolveWidgetMessage( 'en-US', 'sending' ) ).toBe( 'Sending…' );
 	} );
@@ -87,8 +84,6 @@ describe( 'bounded widget message catalog', () => {
 			'send',
 			'send_message',
 			'retry',
-			'copy',
-			'copy_assistant_message',
 			'sources',
 			'assistant_typing',
 			'sending',

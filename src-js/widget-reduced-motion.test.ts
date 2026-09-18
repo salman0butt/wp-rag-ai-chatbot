@@ -88,7 +88,7 @@ describe( 'widget reduced-motion presentation', () => {
 		expect( status?.textContent ).toBe( '' );
 		expect(
 			document.querySelector( '[data-wp-rag-ai-chatbot-copy]' )
-		).not.toBeNull();
+		).toBeNull();
 		expect( jest.getTimerCount() ).toBe( 0 );
 	} );
 } );

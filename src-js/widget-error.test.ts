@@ -90,6 +90,7 @@ describe( 'public widget conversation errors', () => {
 		expect( status?.textContent ).toBe(
 			'Too many requests. Please try again shortly.'
 		);
+		expect( status?.dataset.wpRagAiChatbotStatusState ).toBe( 'error' );
 		expect( document.body.textContent ).not.toContain(
 			'provider secret detail'
 		);

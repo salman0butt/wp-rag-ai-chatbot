@@ -94,6 +94,23 @@ final class ProviderHttpClientTest extends TestCase {
 		self::assertSame( $recovered, ( new ProviderHttpClient( $transport ) )->generation( $request ) );
 	}
 
+	/** Generation tolerates two consecutive transient upstream failures. */
+	public function test_generation_retries_twice_before_recovering_from_transient_failures(): void {
+		$this->require_http_contracts();
+		$request   = $this->request();
+		$recovered = new HttpResponse( 200, array(), '{"ok":true}' );
+		$transport = $this->createMock( HttpTransport::class );
+		$calls     = 0;
+		$transport->expects( self::exactly( 3 ) )->method( 'send' )->with( $request )->willReturnCallback(
+			static function () use ( &$calls, $recovered ): HttpResponse {
+				++$calls;
+				return $calls < 3 ? new HttpResponse( 503, array(), 'temporarily unavailable' ) : $recovered;
+			}
+		);
+
+		self::assertSame( $recovered, ( new ProviderHttpClient( $transport ) )->generation( $request ) );
+	}
+
 	/**
 	 * Generation transport failures are never retried.
 	 */

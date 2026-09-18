@@ -117,7 +117,7 @@ describe( 'public widget simulated typing fallback', () => {
 		expect( status?.textContent ).toBe( '' );
 		expect(
 			document.querySelector( '[data-wp-rag-ai-chatbot-copy]' )
-		).not.toBeNull();
+		).toBeNull();
 		expect(
 			document.querySelector( '[data-wp-rag-ai-chatbot-sources]' )
 		).not.toBeNull();

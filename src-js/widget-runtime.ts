@@ -569,25 +569,6 @@ export const mountWidgets = (
 				trimMessageHistory();
 
 				const appendCompletionControls = (): void => {
-					const copy = documentRoot.createElement( 'button' );
-					copy.type = 'button';
-					copy.textContent = widgetMessage( 'copy' );
-					copy.dataset.wpRagAiChatbotCopy = '';
-					copy.setAttribute(
-						'aria-label',
-						widgetMessage( 'copy_assistant_message' )
-					);
-					copy.addEventListener( 'click', () => {
-						const clipboard =
-							documentRoot.defaultView?.navigator.clipboard;
-						if ( clipboard ) {
-							void clipboard
-								.writeText( text )
-								.catch( () => undefined );
-						}
-					} );
-					wrapper.append( copy );
-
 					if ( citations.length > 0 ) {
 						const details = documentRoot.createElement( 'details' );
 						details.dataset.wpRagAiChatbotSources = '';
@@ -721,6 +702,7 @@ export const mountWidgets = (
 
 			const showError = ( code: string | null, value: string ): void => {
 				finishRequest();
+				status.dataset.wpRagAiChatbotStatusState = 'error';
 				if ( question.value.trim() === '' ) {
 					question.value = value;
 				}
@@ -744,6 +726,7 @@ export const mountWidgets = (
 				send.textContent = widgetMessage( 'sending' );
 				send.setAttribute( 'aria-label', widgetMessage( 'sending' ) );
 				retry.hidden = true;
+				delete status.dataset.wpRagAiChatbotStatusState;
 				status.textContent = widgetMessage( 'sending' );
 
 				if ( appendUser ) {

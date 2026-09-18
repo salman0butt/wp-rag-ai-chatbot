@@ -8,9 +8,7 @@ type WidgetConfigWindow = Window & {
 
 const BOT_ID = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const originalFetch = globalThis.fetch;
-const originalClipboard = navigator.clipboard;
 let fetchMock: jest.Mock;
-let writeText: jest.Mock;
 
 const flushPromises = async (): Promise< void > => {
 	for ( let index = 0; index < 6; index += 1 ) {
@@ -77,11 +75,6 @@ describe( 'public widget message presentation', () => {
 			writable: true,
 			configurable: true,
 		} );
-		writeText = jest.fn().mockResolvedValue( undefined );
-		Object.defineProperty( navigator, 'clipboard', {
-			value: { writeText },
-			configurable: true,
-		} );
 	} );
 
 	afterEach( () => {
@@ -93,13 +86,9 @@ describe( 'public widget message presentation', () => {
 			writable: true,
 			configurable: true,
 		} );
-		Object.defineProperty( navigator, 'clipboard', {
-			value: originalClipboard,
-			configurable: true,
-		} );
 	} );
 
-	it( 'renders assistant text, copy, and citations without trusting HTML or unsafe URLs', async () => {
+	it( 'renders assistant text and citations without trusting HTML or unsafe URLs', async () => {
 		loadWidget();
 		submitQuestion( 'Show sources' );
 		await flushPromises();
@@ -109,9 +98,6 @@ describe( 'public widget message presentation', () => {
 			'[data-wp-rag-ai-chatbot-message="assistant"]'
 		);
 		const wrapper = assistant?.parentElement;
-		const copy = wrapper?.querySelector< HTMLButtonElement >(
-			'[data-wp-rag-ai-chatbot-copy]'
-		);
 		const sources = wrapper?.querySelector< HTMLDetailsElement >(
 			'[data-wp-rag-ai-chatbot-sources]'
 		);
@@ -121,13 +107,9 @@ describe( 'public widget message presentation', () => {
 			'<strong>Read the sources</strong>'
 		);
 		expect( assistant?.querySelector( 'strong' ) ).toBeNull();
-		expect( copy?.getAttribute( 'aria-label' ) ).toBe(
-			'Copy assistant message'
-		);
-		copy?.click();
-		expect( writeText ).toHaveBeenCalledWith(
-			'<strong>Read the sources</strong>'
-		);
+		expect(
+			wrapper?.querySelector( '[data-wp-rag-ai-chatbot-copy]' )
+		).toBeNull();
 		expect( sources?.querySelector( 'summary' )?.textContent ).toBe(
 			'Sources'
 		);
