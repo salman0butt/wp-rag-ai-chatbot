@@ -20,7 +20,7 @@ use WpRagAiChatbot\Database\WpdbConnection;
  */
 final readonly class PublicWidgetBootstrap {
 	private const ASSET_HANDLE = 'wp-rag-ai-chatbot-widget';
-	private const VERSION      = '0.1.14';
+	private const VERSION      = '0.1.15';
 
 	/**
 	 * Create the public widget bootstrap.

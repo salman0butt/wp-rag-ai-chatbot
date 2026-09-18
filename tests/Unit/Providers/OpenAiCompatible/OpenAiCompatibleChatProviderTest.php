@@ -124,6 +124,31 @@ final class OpenAiCompatibleChatProviderTest extends TestCase {
 		self::assertSame( 'gemini-2.5-flash', $transport->requests[0]->json_body['model'] );
 	}
 
+	/** Google-compatible responses may return an uppercase native stop reason. */
+	public function test_gemini_generation_accepts_uppercase_stop_reason(): void {
+		$this->require_adapter();
+		$transport = new QueuedHttpTransport(
+			array(
+				new HttpResponse(
+					200,
+					array(),
+					'{"model":"gemini-2.5-flash","choices":[{"message":{"content":"Grounded answer"},"finish_reason":"STOP"}]}'
+				),
+			)
+		);
+		$provider  = $this->provider(
+			ProviderIds::GEMINI_DIRECT,
+			'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+			'https://generativelanguage.googleapis.com/v1beta/openai/models',
+			$transport,
+			'gemini-secret'
+		);
+
+		$result = $provider->generate( new GenerationRequest( 'gemini-2.5-flash', 'Answer', null, 64 ) );
+
+		self::assertSame( GenerationStatus::COMPLETED, $result->status );
+	}
+
 	/**
 	 * Build one compatible provider around deterministic boundaries.
 	 *

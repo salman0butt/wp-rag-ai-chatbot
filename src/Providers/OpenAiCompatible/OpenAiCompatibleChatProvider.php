@@ -417,6 +417,10 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 	 * @param mixed $finish_reason Provider finish reason.
 	 */
 	private function generation_status( mixed $finish_reason ): GenerationStatus {
+		if ( is_string( $finish_reason ) ) {
+			$finish_reason = strtolower( trim( $finish_reason ) );
+		}
+
 		return match ( $finish_reason ) {
 			'stop' => GenerationStatus::COMPLETED,
 			'length' => GenerationStatus::INCOMPLETE,
