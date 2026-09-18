@@ -500,6 +500,37 @@ describe( 'public widget conversation controls', () => {
 		).toBe( 'Please try this again' );
 	} );
 
+	it( 'clears the restored question after retry succeeds', async () => {
+		fetchMock
+			.mockRejectedValueOnce( new Error( 'network failure' ) )
+			.mockResolvedValueOnce( {
+				ok: true,
+				json: async () => ( {
+					answer: 'Recovered answer',
+					conversation_id: 'conversation-1',
+					citations: [],
+				} ),
+			} );
+		loadWidget();
+
+		submitQuestion( 'Please try this again' );
+		await flushPromises();
+
+		document
+			.querySelector< HTMLButtonElement >(
+				'[data-wp-rag-ai-chatbot-retry]'
+			)
+			?.click();
+		await flushPromises();
+		jest.runAllTimers();
+
+		expect(
+			document.querySelector< HTMLTextAreaElement >(
+				'[data-wp-rag-ai-chatbot-question]'
+			)?.value
+		).toBe( '' );
+	} );
+
 	it( 'renders successful text safely and reuses the returned conversation id', async () => {
 		loadWidget();
 		submitQuestion( '<strong>Hello?</strong>' );

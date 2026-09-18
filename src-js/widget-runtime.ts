@@ -789,6 +789,12 @@ export const mountWidgets = (
 							}
 
 							conversationId = success.conversation_id;
+							if (
+								! appendUser &&
+								question.value.trim() === value
+							) {
+								question.value = '';
+							}
 							retryQuestion = null;
 							appendAssistantMessage(
 								success.answer,
