@@ -375,20 +375,50 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 		}
 	}
 
-	/** A lost queue progress lease reports a stable persistence category. */
-	public function test_progress_queue_failure_uses_progress_failure_code(): void {
-		$source  = $this->source( new DateTimeImmutable( '2026-09-15T10:00:00+00:00' ) );
-		$fixture = $this->handler_fixture( $source );
-		$fixture['jobs']->method( 'updateProgress' )->willThrowException( new JobQueueException( 'Job progress lost the current lease or moved backwards.' ) );
+	/** A lost queue progress lease does not discard later documents in a multi-document source. */
+	public function test_progress_queue_failure_does_not_abort_document_sync(): void {
+		$source    = $this->source( new DateTimeImmutable( '2026-09-15T10:00:00+00:00' ) );
+		$now       = $source->updatedAt;
+		$payload   = $this->payload();
+		$job       = $this->job( $now, 'sync.source', $payload->to_array() );
+		$lease     = new JobLease( $job, 'worker-token' );
+		$sources   = $this->createMock( KnowledgeSourceRepository::class );
+		$documents = $this->createMock( DocumentRepository::class );
+		$jobs      = $this->createMock( JobRepository::class );
+		$clock     = $this->createMock( Clock::class );
+		$records   = array(
+			$this->document( 'manual:first', 'First document', $now ),
+			$this->document( 'manual:second', 'Second document', $now ),
+		);
 
-		try {
-			$fixture['handler']->handle( $fixture['job'], $fixture['context'] );
-			self::fail( 'Progress queue failure did not fail closed.' );
-		} catch ( JobExecutionException $error ) {
-			self::assertSame( 'source_sync_progress_unavailable', $error->safe_code() );
-			self::assertSame( 'WordPress content synchronization progress could not be saved.', $error->safe_message() );
-			self::assertFalse( $error->retryable() );
-		}
+		$sources->expects( self::once() )->method( 'findById' )->with( 7 )->willReturn( $source );
+		$documents->expects( self::exactly( 2 ) )->method( 'findByKey' )->willReturn( null );
+		$documents->expects( self::exactly( 2 ) )->method( 'save' )->willReturnCallback(
+			static fn ( DocumentRecord $document ): DocumentRecord => $document->withId( 11 )
+		);
+		$jobs->method( 'cancellationRequested' )->willReturn( false );
+		$jobs->method( 'heartbeat' )->willReturn( $lease );
+		$jobs->method( 'updateProgress' )->willThrowException( new JobQueueException( 'Job progress lost the current lease or moved backwards.' ) );
+		$jobs->expects( self::exactly( 2 ) )->method( 'enqueue' )->willReturn( $this->job( $now, 'index.document', array() ) );
+		$clock->method( 'now' )->willReturn( $now );
+		Functions\when( 'wp_next_scheduled' )->justReturn( false );
+		Functions\when( 'wp_schedule_single_event' )->justReturn( true );
+
+		$registry       = new KnowledgeSourceRegistry();
+		$source_adapter = $this->createMock( KnowledgeSource::class );
+		$source_adapter->method( 'type' )->willReturn( 'manual_text' );
+		$source_adapter->method( 'documents' )->willReturn( $records );
+		$registry->register( $source_adapter );
+		$handler = new KnowledgeSourceSyncJobHandler(
+			$sources,
+			$registry,
+			$documents,
+			new DocumentIndexJobEnqueuer( $jobs ),
+			$clock
+		);
+
+		$handler->handle( $job, new JobExecutionContext( $jobs, $lease, $clock, 120 ) );
+		self::addToAssertionCount( 1 );
 	}
 
 	/** A lost execution lease reports a stable heartbeat category. */
@@ -532,6 +562,33 @@ final class KnowledgeSourceSyncJobTest extends TestCase {
 			),
 			'generation-1',
 			null,
+			$now,
+			$now
+		);
+	}
+
+	/**
+	 * Build one valid normalized document for synchronization tests.
+	 *
+	 * @param string            $key Document key.
+	 * @param string            $title Document title and content.
+	 * @param DateTimeImmutable $now Fixture timestamp.
+	 */
+	private function document( string $key, string $title, DateTimeImmutable $now ): DocumentRecord {
+		return new DocumentRecord(
+			null,
+			$key,
+			7,
+			null,
+			'manual_text',
+			$title,
+			null,
+			$title,
+			array(),
+			'generation-1',
+			hash( 'sha256', $title ),
+			null,
+			'public',
 			$now,
 			$now
 		);

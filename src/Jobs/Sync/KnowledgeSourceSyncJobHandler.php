@@ -168,13 +168,13 @@ final class KnowledgeSourceSyncJobHandler implements JobHandler {
 	 *
 	 * @param JobExecutionContext $context Current lease context.
 	 * @param JobProgress         $progress Progress snapshot.
-	 * @throws JobExecutionException When progress persistence fails.
 	 */
 	private function update_progress( JobExecutionContext $context, JobProgress $progress ): void {
 		try {
 			$context->update_progress( $progress );
 		} catch ( JobQueueException ) {
-			throw new JobExecutionException( 'source_sync_progress_unavailable', 'WordPress content synchronization progress could not be saved.', false );
+			// Progress is observability; a failed update must not discard saved documents.
+			return;
 		}
 	}
 

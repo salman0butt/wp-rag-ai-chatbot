@@ -410,10 +410,16 @@ export const KnowledgeWizard = (
 						'data-knowledge-add-faq': '',
 						type: 'button',
 						onClick: ( event: Event ) => {
-							const container = (
+							const panel = (
 								event.currentTarget as HTMLElement
-							 ).closest( '[data-knowledge-faq-rows]' );
-							if ( container !== null ) {
+							 ).closest( '[data-knowledge-source-panel="faq"]' );
+							const container = panel?.querySelector(
+								'[data-knowledge-faq-rows]'
+							);
+							if (
+								container !== null &&
+								container !== undefined
+							) {
 								appendFaqRow( container as HTMLElement );
 							}
 						},
@@ -608,7 +614,7 @@ export const KnowledgeWizard = (
 								: undefined,
 					},
 					createElement( 'input', {
-						checked: item.type === 'wordpress_posts',
+						defaultChecked: item.type === 'wordpress_posts',
 						disabled:
 							item.type === 'woocommerce_product' &&
 							! woocommerceAvailable,

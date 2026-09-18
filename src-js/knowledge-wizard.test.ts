@@ -40,6 +40,10 @@ const createTestElement = (
 			element.setAttribute( 'for', String( value ) );
 			continue;
 		}
+		if ( key === 'defaultChecked' ) {
+			( element as HTMLInputElement ).defaultChecked = Boolean( value );
+			continue;
+		}
 		if ( typeof value === 'boolean' ) {
 			if ( value ) {
 				element.setAttribute( key, '' );
@@ -327,6 +331,65 @@ describe( 'knowledge wizard', () => {
 		await Promise.resolve();
 		expect( create ).toHaveBeenCalledTimes( 1 );
 		reactRoot.unmount();
+	} );
+
+	it( 'submits the selected FAQ source type', async () => {
+		Object.defineProperty( window, 'wp', {
+			configurable: true,
+			value: { element: { createElement: reactCreateElement } },
+		} );
+		const create = jest.fn().mockResolvedValue( undefined );
+		const root = document.createElement( 'div' );
+		const reactRoot = createRoot( root );
+		flushSync( () =>
+			reactRoot.render(
+				KnowledgeWizard( { onCreate: create } ) as Parameters<
+					typeof reactRoot.render
+				>[ 0 ]
+			)
+		);
+
+		const faq = root.querySelector< HTMLInputElement >(
+			'input[name="source_type"][value="faq"]'
+		);
+		faq?.click();
+		( root.querySelector( '[name="title"]' ) as HTMLInputElement ).value =
+			'Site FAQ';
+		(
+			root.querySelector( '[name="faq_question"]' ) as HTMLInputElement
+		 ).value = 'What services are available?';
+		(
+			root.querySelector( '[name="faq_answer"]' ) as HTMLTextAreaElement
+		 ).value = 'Website development and digital marketing.';
+		root
+			.querySelector( 'form' )
+			?.dispatchEvent(
+				new Event( 'submit', { bubbles: true, cancelable: true } )
+			);
+		await Promise.resolve();
+
+		expect( create ).toHaveBeenCalledWith(
+			expect.objectContaining( { sourceType: 'faq' } )
+		);
+		reactRoot.unmount();
+	} );
+
+	it( 'adds another FAQ row from the FAQ panel', () => {
+		const root = document.createElement( 'div' );
+		root.append( KnowledgeWizard() as Node );
+		root
+			.querySelector< HTMLInputElement >(
+				'input[name="source_type"][value="faq"]'
+			)
+			?.click();
+
+		root
+			.querySelector< HTMLButtonElement >( '[data-knowledge-add-faq]' )
+			?.click();
+
+		expect(
+			root.querySelectorAll( '[data-knowledge-faq-row]' )
+		).toHaveLength( 2 );
 	} );
 } );
 
