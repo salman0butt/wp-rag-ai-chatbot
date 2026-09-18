@@ -17,7 +17,11 @@ export const PlaygroundPanel = ( {
 	if ( state.status === 'success' ) {
 		screen = PlaygroundScreen( { result: state.result, onSubmit } );
 	} else if ( state.status === 'error' ) {
-		screen = PlaygroundScreen( { errorCode: state.errorCode, onSubmit } );
+		screen = PlaygroundScreen( {
+			errorCode: state.errorCode,
+			errorDetail: state.errorDetail,
+			onSubmit,
+		} );
 	} else {
 		screen = PlaygroundScreen( { onSubmit } );
 	}

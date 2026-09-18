@@ -82,7 +82,7 @@ final class PlaygroundRestResourceTest extends TestCase {
 		$executor = $this->executor(
 			static function (): PlaygroundExecutionResult {
 				// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Test verifies only the bounded diagnostic category is returned.
-				throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'PROVIDER-SECRET-SENTINEL', ProviderErrorCode::TIMEOUT );
+				throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'PROVIDER-SECRET-SENTINEL', ProviderErrorCode::TIMEOUT, 'Provider request timed out.' );
 			}
 		);
 
@@ -92,6 +92,7 @@ final class PlaygroundRestResourceTest extends TestCase {
 		self::assertIsString( $serialized );
 
 		self::assertSame( 'generation_failed_timeout', $response['error']['code'] );
+		self::assertSame( 'Provider request timed out.', $response['error']['detail'] );
 		self::assertStringNotContainsString( 'PROVIDER-SECRET-SENTINEL', $serialized );
 	}
 

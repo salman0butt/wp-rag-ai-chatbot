@@ -67,7 +67,7 @@ final class PlaygroundRestResource {
 				$code .= '_' . $exception->provider_error_code->value;
 			}
 
-			return $this->error( $code );
+			return $this->error( $code, $exception->provider_error_message );
 		} catch ( Throwable $throwable ) {
 			unset( $throwable );
 
@@ -169,14 +169,18 @@ final class PlaygroundRestResource {
 	/**
 	 * Create one stable safe error payload.
 	 *
-	 * @param string $code Repository-owned error code.
+	 * @param string      $code Repository-owned error code.
+	 * @param string|null $detail Optional already-sanitized administrator diagnostic detail.
 	 * @return array<string,array<string,string>>
 	 */
-	private function error( string $code ): array {
+	private function error( string $code, ?string $detail = null ): array {
+		$error = array( 'code' => $code );
+		if ( null !== $detail && '' !== trim( $detail ) ) {
+			$error['detail'] = self::bound_utf8( trim( $detail ), 512 );
+		}
+
 		return array(
-			'error' => array(
-				'code' => $code,
-			),
+			'error' => $error,
 		);
 	}
 }

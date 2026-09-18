@@ -127,7 +127,7 @@ final class ChatOrchestrator implements ChatResponder {
 			$generation = $this->provider->generate( $generation_request );
 		} catch ( ProviderException $exception ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Only the stable provider error enum is retained for admin diagnostics.
-			throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'Generation failed.', $exception->error_code );
+			throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'Generation failed.', $exception->error_code, $exception->getMessage() );
 		} catch ( Throwable ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Application exception reason enum is not rendered output.
 			throw new ChatException( ChatFailureReason::GENERATION_FAILED, 'Generation failed.' );

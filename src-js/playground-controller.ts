@@ -8,7 +8,7 @@ export type PlaygroundControllerState =
 	| { status: 'idle' }
 	| { status: 'loading' }
 	| { status: 'success'; result: PlaygroundResult }
-	| { status: 'error'; errorCode: string };
+	| { status: 'error'; errorCode: string; errorDetail?: string };
 
 export interface PlaygroundController {
 	submit: ( request: PlaygroundRequestDraft ) => Promise< void >;
@@ -27,6 +27,14 @@ const errorCodeFrom = ( error: unknown ): string => {
 
 	return 'admin_request_failed';
 };
+
+const errorDetailFrom = ( error: unknown ): string | undefined =>
+	typeof error === 'object' &&
+	error !== null &&
+	'detail' in error &&
+	typeof error.detail === 'string'
+		? error.detail
+		: undefined;
 
 export const createPlaygroundController = (
 	api: PlaygroundApi,
@@ -52,9 +60,11 @@ export const createPlaygroundController = (
 					return;
 				}
 
+				const errorDetail = errorDetailFrom( error );
 				onChange( {
 					status: 'error',
 					errorCode: errorCodeFrom( error ),
+					...( errorDetail === undefined ? {} : { errorDetail } ),
 				} );
 			}
 		},

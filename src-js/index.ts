@@ -69,12 +69,14 @@ export interface AdminApiClient {
 export class AdminApiError extends Error {
 	public readonly code: string;
 	public readonly status: number;
+	public readonly detail?: string;
 
-	public constructor( status: number, code: string ) {
+	public constructor( status: number, code: string, detail?: string ) {
 		super( 'The admin request could not be completed.' );
 		this.name = 'AdminApiError';
 		this.code = code;
 		this.status = status;
+		this.detail = detail;
 	}
 }
 
@@ -97,6 +99,22 @@ const getAdminErrorCode = ( payload: unknown ): string | undefined => {
 		typeof payload.error.code === 'string'
 	) {
 		return payload.error.code;
+	}
+
+	return undefined;
+};
+
+const getAdminErrorDetail = ( payload: unknown ): string | undefined => {
+	if (
+		typeof payload === 'object' &&
+		payload !== null &&
+		'error' in payload &&
+		typeof payload.error === 'object' &&
+		payload.error !== null &&
+		'detail' in payload.error &&
+		typeof payload.error.detail === 'string'
+	) {
+		return payload.error.detail;
 	}
 
 	return undefined;
@@ -137,7 +155,8 @@ export const createAdminApiClient = (
 			if ( ! response.ok || errorCode !== undefined ) {
 				throw new AdminApiError(
 					response.status,
-					errorCode ?? 'admin_request_failed'
+					errorCode ?? 'admin_request_failed',
+					getAdminErrorDetail( payload )
 				);
 			}
 
@@ -166,7 +185,8 @@ export const createAdminApiClient = (
 			if ( ! response.ok || errorCode !== undefined ) {
 				throw new AdminApiError(
 					response.status,
-					errorCode ?? 'admin_request_failed'
+					errorCode ?? 'admin_request_failed',
+					getAdminErrorDetail( payload )
 				);
 			}
 

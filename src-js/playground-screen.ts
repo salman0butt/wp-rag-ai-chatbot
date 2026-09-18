@@ -64,6 +64,7 @@ export interface PlaygroundRequestDraft {
 export interface PlaygroundScreenProps {
 	result?: PlaygroundResult;
 	errorCode?: string;
+	errorDetail?: string;
 	onSubmit?: ( request: PlaygroundRequestDraft ) => void;
 }
 
@@ -93,8 +94,7 @@ const PLAYGROUND_ERROR_MESSAGES: Record< string, string > = {
 		'The selected AI provider does not support this request.',
 	generation_failed_upstream_server:
 		'The AI provider is temporarily unavailable. Try again shortly.',
-	generation_failed_unknown:
-		'The AI provider returned an unexpected error.',
+	generation_failed_unknown: 'The AI provider returned an unexpected error.',
 	invalid_citations: 'The AI answer did not include valid sources.',
 	budget_exceeded: 'The configured AI usage budget has been reached.',
 	rate_limited: 'The AI provider is temporarily rate limited.',
@@ -194,6 +194,7 @@ const playgroundForm = (
 export const PlaygroundScreen = ( {
 	result,
 	errorCode,
+	errorDetail,
 	onSubmit,
 }: PlaygroundScreenProps ): unknown => {
 	const createElement = window.wp.element.createElement;
@@ -204,7 +205,10 @@ export const PlaygroundScreen = ( {
 					'div',
 					{ role: 'alert', 'data-playground-error': true },
 					PLAYGROUND_ERROR_MESSAGES[ errorCode ] ??
-						GENERIC_PLAYGROUND_ERROR
+						GENERIC_PLAYGROUND_ERROR,
+					errorDetail === undefined
+						? undefined
+						: createElement( 'code', null, ` ${ errorDetail }` )
 			  );
 	const form = playgroundForm( createElement, onSubmit );
 

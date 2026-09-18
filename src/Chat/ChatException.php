@@ -23,12 +23,14 @@ final class ChatException extends RuntimeException {
 	 * @param ChatFailureReason      $reason Stable application-owned failure reason.
 	 * @param string                 $safe_message Sanitized diagnostic safe for transport mapping.
 	 * @param ProviderErrorCode|null $provider_error_code Bounded provider category for administrator diagnostics.
+	 * @param string|null            $provider_error_message Sanitized provider detail for administrator diagnostics.
 	 * @throws InvalidArgumentException When the safe message is blank.
 	 */
 	public function __construct(
 		public readonly ChatFailureReason $reason,
 		string $safe_message,
-		public readonly ?ProviderErrorCode $provider_error_code = null
+		public readonly ?ProviderErrorCode $provider_error_code = null,
+		public readonly ?string $provider_error_message = null
 	) {
 		if ( '' === trim( $safe_message ) ) {
 			throw new InvalidArgumentException( 'Chat exception safe message must not be blank.' );
