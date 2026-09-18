@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace WpRagAiChatbot\RAG;
 
 use WpRagAiChatbot\Chat\ChatRequest;
+use WpRagAiChatbot\Citations\Citation;
 use WpRagAiChatbot\Citations\CitationRegistry;
 use WpRagAiChatbot\Memory\ConversationMemory;
 use WpRagAiChatbot\Providers\GenerationRequest;
@@ -38,7 +39,8 @@ final class PromptBuilder {
 			. $context->render()
 			. "\n<QUESTION>\n"
 			. self::escape_untrusted( $request->question )
-			. "\n</QUESTION>";
+			. "\n</QUESTION>"
+			. $this->render_output_requirements( $citations );
 
 		return new GenerationRequest(
 			$request->model_id,
@@ -74,5 +76,25 @@ final class PromptBuilder {
 	 */
 	private static function escape_untrusted( string $text ): string {
 		return htmlspecialchars( $text, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', false );
+	}
+
+	/**
+	 * Keep the final provider-facing instruction explicit and request-local.
+	 *
+	 * @param CitationRegistry $citations Request-local selected citations.
+	 */
+	private function render_output_requirements( CitationRegistry $citations ): string {
+		$markers = array_map(
+			static fn ( Citation $citation ): string => '[' . $citation->id . ']',
+			$citations->all()
+		);
+
+		if ( array() === $markers ) {
+			return '';
+		}
+
+		return "\n<OUTPUT_REQUIREMENTS>\nYour answer MUST include at least one exact citation marker from this list: "
+			. implode( ', ', $markers )
+			. '. Place the marker immediately after the sentence it supports. Return only the answer.\n</OUTPUT_REQUIREMENTS>';
 	}
 }

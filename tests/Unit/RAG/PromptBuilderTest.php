@@ -118,6 +118,10 @@ final class PromptBuilderTest extends TestCase {
 		self::assertLessThan( $second_evidence, $second_citation );
 		self::assertLessThan( $question_start, $second_evidence );
 		self::assertLessThan( $question, $question_start );
+		$output_requirements = strpos( $input, '<OUTPUT_REQUIREMENTS>' );
+		self::assertIsInt( $output_requirements );
+		self::assertGreaterThan( $question, $output_requirements );
+		self::assertStringContainsString( 'at least one exact citation marker from this list: [C1], [C2]', $input );
 		self::assertStringNotContainsString( 'chunk-a', $input );
 		self::assertStringNotContainsString( 'document-a', $input );
 	}
