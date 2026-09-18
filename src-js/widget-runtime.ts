@@ -498,9 +498,11 @@ export const mountWidgets = (
 
 			const send = documentRoot.createElement( 'button' );
 			send.type = 'submit';
-			send.textContent = widgetMessage( 'send' );
+			const sendLabel = widgetMessage( 'send' );
+			const sendMessageLabel = widgetMessage( 'send_message' );
+			send.textContent = sendLabel;
 			send.dataset.wpRagAiChatbotSend = '';
-			send.setAttribute( 'aria-label', widgetMessage( 'send_message' ) );
+			send.setAttribute( 'aria-label', sendMessageLabel );
 
 			const retry = documentRoot.createElement( 'button' );
 			retry.type = 'button';
@@ -540,6 +542,8 @@ export const mountWidgets = (
 			const finishRequest = (): void => {
 				requestInFlight = false;
 				send.disabled = false;
+				send.textContent = sendLabel;
+				send.setAttribute( 'aria-label', sendMessageLabel );
 			};
 
 			const cancelActivePresentation = (): void => {
@@ -717,6 +721,9 @@ export const mountWidgets = (
 
 			const showError = ( code: string | null, value: string ): void => {
 				finishRequest();
+				if ( question.value.trim() === '' ) {
+					question.value = value;
+				}
 				retryQuestion = value;
 				status.textContent = widgetMessage(
 					publicErrorMessageKey( code )
@@ -734,10 +741,13 @@ export const mountWidgets = (
 
 				requestInFlight = true;
 				send.disabled = true;
+				send.textContent = widgetMessage( 'sending' );
+				send.setAttribute( 'aria-label', widgetMessage( 'sending' ) );
 				retry.hidden = true;
 				status.textContent = widgetMessage( 'sending' );
 
 				if ( appendUser ) {
+					question.value = '';
 					emptyState.remove();
 					appendMessage( 'user', value );
 				}

@@ -458,6 +458,10 @@ describe( 'public widget conversation controls', () => {
 		loadWidget();
 
 		submitQuestion( 'First question' );
+		const question = document.querySelector< HTMLTextAreaElement >(
+			'[data-wp-rag-ai-chatbot-question]'
+		);
+		expect( question?.value ).toBe( '' );
 		submitQuestion( 'Second question' );
 
 		const send = document.querySelector< HTMLButtonElement >(
@@ -469,9 +473,31 @@ describe( 'public widget conversation controls', () => {
 
 		expect( fetchMock ).toHaveBeenCalledTimes( 1 );
 		expect( send?.disabled ).toBe( true );
+		expect( send?.textContent ).toBe( 'Sending…' );
 		expect( status?.getAttribute( 'role' ) ).toBe( 'status' );
 		expect( status?.getAttribute( 'aria-live' ) ).toBe( 'polite' );
 		expect( status?.textContent ).toBe( 'Sending…' );
+		expect( question?.value ).toBe( 'Second question' );
+	} );
+
+	it( 'restores a submitted question when the request fails', async () => {
+		fetchMock.mockRejectedValueOnce( new Error( 'network failure' ) );
+		loadWidget();
+
+		submitQuestion( 'Please try this again' );
+		expect(
+			document.querySelector< HTMLTextAreaElement >(
+				'[data-wp-rag-ai-chatbot-question]'
+			)?.value
+		).toBe( '' );
+
+		await flushPromises();
+
+		expect(
+			document.querySelector< HTMLTextAreaElement >(
+				'[data-wp-rag-ai-chatbot-question]'
+			)?.value
+		).toBe( 'Please try this again' );
 	} );
 
 	it( 'renders successful text safely and reuses the returned conversation id', async () => {
