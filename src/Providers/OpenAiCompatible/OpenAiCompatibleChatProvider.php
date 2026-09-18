@@ -116,6 +116,9 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 		if ( null !== $request->max_output_tokens ) {
 			$body['max_tokens'] = $request->max_output_tokens;
 		}
+		if ( ProviderIds::GEMINI_DIRECT === $this->provider_id ) {
+			$body['tool_choice'] = 'none';
+		}
 
 		list( $authorization, $known_secrets ) = $this->credential_material( $credential );
 		$http_request                          = new HttpRequest(

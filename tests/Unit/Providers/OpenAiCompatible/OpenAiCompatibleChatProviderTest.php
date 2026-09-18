@@ -171,6 +171,7 @@ final class OpenAiCompatibleChatProviderTest extends TestCase {
 
 		$result = $provider->generate( new GenerationRequest( 'gemini-2.5-flash', 'Answer', null, 64 ) );
 
+		self::assertSame( 'none', $transport->requests[0]->json_body['tool_choice'] );
 		self::assertSame( 'Grounded answer', $result->output_text );
 		self::assertSame( GenerationStatus::COMPLETED, $result->status );
 	}

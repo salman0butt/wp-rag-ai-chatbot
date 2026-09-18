@@ -161,13 +161,13 @@ final class PublicWidgetBootstrapTest extends TestCase {
 			'wp-rag-ai-chatbot-widget',
 			'https://example.test/plugins/wp-rag-ai-chatbot/assets/widget.css',
 			array(),
-			'0.1.16'
+			'0.1.17'
 		);
 		Functions\expect( 'wp_enqueue_script' )->once()->with(
 			'wp-rag-ai-chatbot-widget',
 			'https://example.test/plugins/wp-rag-ai-chatbot/build/widget.js',
 			array( 'wp-element' ),
-			'0.1.16',
+			'0.1.17',
 			false
 		);
 		Functions\expect( 'wp_add_inline_script' )

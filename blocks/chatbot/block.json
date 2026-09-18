@@ -2,7 +2,7 @@
   "$schema": "https://schemas.wp.org/trunk/block.json",
   "apiVersion": 3,
   "name": "wp-rag-ai-chatbot/chatbot",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "title": "RAG AI Chatbot",
   "category": "widgets",
   "icon": "format-chat",
