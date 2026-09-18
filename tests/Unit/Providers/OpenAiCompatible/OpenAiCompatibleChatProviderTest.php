@@ -149,6 +149,32 @@ final class OpenAiCompatibleChatProviderTest extends TestCase {
 		self::assertSame( GenerationStatus::COMPLETED, $result->status );
 	}
 
+	/** Google-compatible responses may return text parts instead of one string. */
+	public function test_gemini_generation_normalizes_text_parts(): void {
+		$this->require_adapter();
+		$transport = new QueuedHttpTransport(
+			array(
+				new HttpResponse(
+					200,
+					array(),
+					'{"model":"gemini-2.5-flash","choices":[{"message":{"content":[{"type":"text","text":"Grounded "},{"type":"text","text":"answer"}]},"finish_reason":"STOP"}]}'
+				),
+			)
+		);
+		$provider  = $this->provider(
+			ProviderIds::GEMINI_DIRECT,
+			'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+			'https://generativelanguage.googleapis.com/v1beta/openai/models',
+			$transport,
+			'gemini-secret'
+		);
+
+		$result = $provider->generate( new GenerationRequest( 'gemini-2.5-flash', 'Answer', null, 64 ) );
+
+		self::assertSame( 'Grounded answer', $result->output_text );
+		self::assertSame( GenerationStatus::COMPLETED, $result->status );
+	}
+
 	/**
 	 * Build one compatible provider around deterministic boundaries.
 	 *

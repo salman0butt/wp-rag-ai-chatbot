@@ -395,11 +395,23 @@ final class OpenAiCompatibleChatProvider implements GenerationProvider, ModelCat
 	 * @param array<string, mixed> $data Decoded provider response.
 	 */
 	private function output_text( array $data ): string {
-		if ( ! isset( $data['choices'][0]['message']['content'] ) || ! is_string( $data['choices'][0]['message']['content'] ) ) {
+		$content = $data['choices'][0]['message']['content'] ?? null;
+		if ( is_string( $content ) ) {
+			return $content;
+		}
+		if ( ! is_array( $content ) ) {
 			return '';
 		}
 
-		return $data['choices'][0]['message']['content'];
+		$text = '';
+		foreach ( $content as $part ) {
+			if ( ! is_array( $part ) || ! isset( $part['text'] ) || ! is_string( $part['text'] ) ) {
+				return '';
+			}
+			$text .= $part['text'];
+		}
+
+		return $text;
 	}
 
 	/**
