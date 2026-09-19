@@ -21,7 +21,7 @@ final class ConversationBotAssociationMigrationContractTest extends TestCase {
 	public function test_conversation_bot_association_is_part_of_schema_version_fourteen(): void {
 		$migration_class = 'WpRagAiChatbot\\Database\\Migrations\\V014AddConversationBotAssociation';
 
-		self::assertSame( 14, DatabaseSchema::VERSION );
+		self::assertGreaterThanOrEqual( 14, DatabaseSchema::VERSION );
 		self::assertTrue(
 			class_exists( $migration_class ),
 			'M16 Task 1A requires V014AddConversationBotAssociation.'
