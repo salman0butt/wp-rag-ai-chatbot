@@ -13,6 +13,10 @@ namespace WpRagAiChatbot\Leads;
  * Persists normalized lead capture payloads.
  */
 interface LeadRepository {
-	/** Persist one normalized lead capture. */
+	/**
+	 * Persist one normalized lead capture.
+	 *
+	 * @param LeadDraft $draft Normalized lead capture payload.
+	 */
 	public function create( LeadDraft $draft ): Lead;
 }
