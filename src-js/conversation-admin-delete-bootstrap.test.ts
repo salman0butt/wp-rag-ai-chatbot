@@ -18,10 +18,7 @@ const response = ( payload: unknown ) => ( {
 	json: async () => payload,
 } );
 
-const findProp = (
-	value: unknown,
-	prop: string
-): unknown => {
+const findProp = ( value: unknown, prop: string ): unknown => {
 	if ( typeof value !== 'object' || value === null ) {
 		return undefined;
 	}
@@ -50,25 +47,27 @@ describe( 'conversation admin delete bootstrap', () => {
 	} );
 
 	it( 'deletes the selected conversation through the protected client and returns to the inbox', async () => {
-		const fetcher = jest.fn( async ( requestUrl: string, request?: RequestInit ) => {
-			if ( requestUrl.includes( '/admin/onboarding/readiness' ) ) {
-				return response( { ready: true, next_step: 'complete' } );
+		const fetcher = jest.fn(
+			async ( requestUrl: string, request?: RequestInit ) => {
+				if ( requestUrl.includes( '/admin/onboarding/readiness' ) ) {
+					return response( { ready: true, next_step: 'complete' } );
+				}
+				if ( request?.method === 'DELETE' ) {
+					return response( { deleted: true } );
+				}
+				if ( requestUrl.includes( '/admin/conversations/conv-1?' ) ) {
+					return response( {
+						conversation: {
+							conversation_id: 'conv-1',
+							bot_id: 'bot-1',
+							started_at: '2026-09-14 10:00:00',
+							messages: [],
+						},
+					} );
+				}
+				return response( { items: [], page: 1, per_page: 25 } );
 			}
-			if ( request?.method === 'DELETE' ) {
-				return response( { deleted: true } );
-			}
-			if ( requestUrl.includes( '/admin/conversations/conv-1?' ) ) {
-				return response( {
-					conversation: {
-						conversation_id: 'conv-1',
-						bot_id: 'bot-1',
-						started_at: '2026-09-14 10:00:00',
-						messages: [],
-					},
-				} );
-			}
-			return response( { items: [], page: 1, per_page: 25 } );
-		} );
+		);
 		const render = jest.fn();
 		Object.defineProperty( window, 'wp', {
 			configurable: true,
