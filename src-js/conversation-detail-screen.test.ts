@@ -145,4 +145,36 @@ describe( 'ConversationDetailScreen', () => {
 		expect( onConfirmDelete ).toHaveBeenCalledTimes( 1 );
 		expect( onRequestDelete ).not.toHaveBeenCalled();
 	} );
+
+	it( 'restores focus to the destructive trigger when deletion is cancelled', async () => {
+		const root = document.createElement( 'div' );
+		document.body.append( root );
+		const conversation = {
+			conversation_id: 'conv-focus',
+			bot_id: 'bot-support',
+			started_at: '2026-09-14 12:00:00',
+			messages: [],
+		};
+
+		const render = ( confirmationOpen: boolean ): void => {
+			root.replaceChildren(
+				ConversationDetailScreen( {
+					conversation,
+					deleteConfirmationOpen: confirmationOpen,
+					onRequestDelete: jest.fn(),
+					onCancelDelete: () => render( false ),
+					onConfirmDelete: jest.fn(),
+				} ) as Node
+			);
+		};
+
+		render( true );
+		( root.querySelector( '[data-cancel-delete]' ) as HTMLButtonElement ).click();
+		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
+
+		expect( document.activeElement ).toBe(
+			root.querySelector( '[data-request-delete]' )
+		);
+		root.remove();
+	} );
 } );
