@@ -1487,10 +1487,6 @@ const renderAdminShell = (
 	onRetryKnowledgeJob?: ( job: KnowledgeJobItem ) => Promise< void >,
 	conversationList?: ConversationListResponse,
 	conversationDetail?: ConversationDetail,
-	conversationDeleteConfirmationOpen?: boolean,
-	onRequestConversationDelete?: () => void,
-	onCancelConversationDelete?: () => void,
-	onConfirmConversationDelete?: () => void,
 	providerId?: string,
 	providerCredential?: ProviderCredentialState,
 	providerModels?: ReadonlyArray< ProviderModelChoice >,
@@ -1533,10 +1529,6 @@ const renderAdminShell = (
 			onRetryKnowledgeJob,
 			conversationList,
 			conversationDetail,
-			conversationDeleteConfirmationOpen,
-			onRequestConversationDelete,
-			onCancelConversationDelete,
-			onConfirmConversationDelete,
 			providerId,
 			providerCredential,
 			providerModels,
@@ -1597,7 +1589,6 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 	let currentConversationList: ConversationListResponse | undefined;
 	let currentConversationDetail: ConversationDetail | undefined;
 	let loadedConversationDetailId: string | undefined;
-	let currentConversationDeleteConfirmationOpen = false;
 	let currentProviderCredential: ProviderCredentialState | undefined;
 	let currentProviderModels: ProviderModelChoice[] | undefined;
 	let currentProviderIssue: ProviderSettingsIssue | undefined;
@@ -1698,39 +1689,6 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 					loadedConversationDetailId
 				? currentConversationDetail
 				: undefined,
-			currentConversationDeleteConfirmationOpen,
-			() => {
-				currentConversationDeleteConfirmationOpen = true;
-				renderState( stateFromReadiness() );
-			},
-			() => {
-				currentConversationDeleteConfirmationOpen = false;
-				renderState( stateFromReadiness() );
-			},
-			() => {
-				const selectedConversationId = resolveConversationRouteState(
-					currentHash()
-				).selectedConversationId;
-				if ( selectedConversationId === undefined ) {
-					return;
-				}
-
-				void client
-					.request< { deleted: true } >(
-						`/admin/conversations/${ encodeURIComponent(
-							selectedConversationId
-						) }`,
-						{ method: 'DELETE' }
-					)
-					.then( () => {
-						conversationLoader.invalidateDetail();
-						currentConversationDeleteConfirmationOpen = false;
-						currentConversationDetail = undefined;
-						loadedConversationDetailId = undefined;
-						window.location.hash = '#/conversations';
-					} )
-					.catch( () => renderState( 'error' ) );
-			},
 			providerId,
 			providerId === loadedProviderId
 				? currentProviderCredential
@@ -2227,7 +2185,6 @@ export const bootstrapAdminApp = ( hash = window.location.hash ): boolean => {
 			currentConversationList = undefined;
 			currentConversationDetail = undefined;
 			loadedConversationDetailId = undefined;
-			currentConversationDeleteConfirmationOpen = false;
 		}
 
 		if ( screen !== 'playground' ) {
