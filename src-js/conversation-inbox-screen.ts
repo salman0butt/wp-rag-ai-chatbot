@@ -48,12 +48,21 @@ export const ConversationInboxScreen = (
 				'data-conversation-id': conversation.conversation_id,
 			},
 			createElement(
-				'strong',
-				null,
-				conversation.bot_id ?? 'Unassigned'
-			),
-			' ',
-			messageCountLabel( conversation.message_count )
+				'a',
+				{
+					'data-conversation-link': true,
+					href: `#/conversations/${ encodeURIComponent(
+						conversation.conversation_id
+					) }?page=${ page }`,
+				},
+				createElement(
+					'strong',
+					null,
+					conversation.bot_id ?? 'Unassigned'
+				),
+				' ',
+				messageCountLabel( conversation.message_count )
+			)
 		)
 	);
 

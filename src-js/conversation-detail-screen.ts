@@ -61,7 +61,16 @@ export const ConversationDetailScreen = (
 				{
 					type: 'button',
 					'data-cancel-delete': true,
-					onClick: props.onCancelDelete,
+					onClick: () => {
+						props.onCancelDelete();
+						window.setTimeout( () => {
+							document
+								.querySelector< HTMLButtonElement >(
+									'[data-request-delete]'
+								)
+								?.focus();
+						}, 0 );
+					},
 				},
 				'Cancel'
 			),
