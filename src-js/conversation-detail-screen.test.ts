@@ -169,10 +169,13 @@ describe( 'ConversationDetailScreen', () => {
 		};
 
 		render( true );
-		( root.querySelector( '[data-cancel-delete]' ) as HTMLButtonElement ).click();
+		const cancelButton = root.querySelector(
+			'[data-cancel-delete]'
+		) as HTMLButtonElement;
+		cancelButton.click();
 		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
-		expect( document.activeElement ).toBe(
+		expect( root.ownerDocument.activeElement ).toBe(
 			root.querySelector( '[data-request-delete]' )
 		);
 		root.remove();

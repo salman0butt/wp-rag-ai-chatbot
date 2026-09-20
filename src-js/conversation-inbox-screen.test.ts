@@ -120,9 +120,9 @@ describe( 'ConversationInboxScreen', () => {
 		expect( rows[ 0 ]?.textContent ).toContain( '4 messages' );
 		expect( rows[ 1 ]?.textContent ).toContain( 'Unassigned' );
 		expect(
-			rows[ 0 ]?.querySelector( '[data-conversation-link]' )?.getAttribute(
-				'href'
-			)
+			rows[ 0 ]
+				?.querySelector( '[data-conversation-link]' )
+				?.getAttribute( 'href' )
 		).toBe( '#/conversations/conv-alpha?page=1' );
 	} );
 
