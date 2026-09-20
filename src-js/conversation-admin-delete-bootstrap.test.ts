@@ -18,18 +18,22 @@ const response = ( payload: unknown ) => ( {
 	json: async () => payload,
 } );
 
-const findProp = ( value: unknown, prop: string ): unknown => {
+const findElementByProp = (
+	value: unknown,
+	prop: string,
+	expected: unknown
+): TestElement | undefined => {
 	if ( typeof value !== 'object' || value === null ) {
 		return undefined;
 	}
 
 	const element = value as Partial< TestElement >;
-	if ( element.props !== null && element.props?.[ prop ] !== undefined ) {
-		return element.props[ prop ];
+	if ( element.props?.[ prop ] === expected ) {
+		return element as TestElement;
 	}
 
 	for ( const child of element.children ?? [] ) {
-		const found = findProp( child, prop );
+		const found = findElementByProp( child, prop, expected );
 		if ( found !== undefined ) {
 			return found;
 		}
@@ -93,13 +97,21 @@ describe( 'conversation admin delete bootstrap', () => {
 		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
 		const rendered = render.mock.calls.at( -1 )?.[ 0 ];
-		const requestDelete = findProp( rendered, 'onClick' );
+		const requestDelete = findElementByProp(
+			rendered,
+			'data-request-delete',
+			true
+		)?.props?.onClick;
 		expect( typeof requestDelete ).toBe( 'function' );
 		( requestDelete as () => void )();
 		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
 
 		const confirmation = render.mock.calls.at( -1 )?.[ 0 ];
-		const confirmDelete = findProp( confirmation, 'onConfirmDelete' );
+		const confirmDelete = findElementByProp(
+			confirmation,
+			'data-confirm-delete',
+			true
+		)?.props?.onClick;
 		expect( typeof confirmDelete ).toBe( 'function' );
 		( confirmDelete as () => void )();
 		await new Promise( ( resolve ) => setTimeout( resolve, 0 ) );
